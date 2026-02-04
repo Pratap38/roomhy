@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "buildCommand": "npm install && cd roomhy-backend && npm install",
+  "devCommand": "node api/index.js",
+  "functions": {
+    "api/index.js": {
+      "memory": 3008,
+      "maxDuration": 60,
+      "includeFiles": "roomhy-backend/**"
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.js",
+      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    }
+  ]
+}
