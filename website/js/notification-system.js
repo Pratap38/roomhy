@@ -8,7 +8,7 @@ const NOTIFICATION_SERVICE = {
             const userId = localStorage.getItem('websiteUserId') || sessionStorage.getItem('userId');
             if (!userId) return;
 
-            const API_URL = window.API_URL || 'http://localhost:5000';
+            const API_URL = window.API_URL || 'http://localhost:5001';
             const response = await fetch(`${API_URL}/api/website-enquiry/booking-status/${userId}`);
             
             if (response.ok) {
@@ -43,7 +43,7 @@ const NOTIFICATION_SERVICE = {
             const userId = localStorage.getItem('websiteUserId') || sessionStorage.getItem('userId');
             if (!userId) return;
 
-            const API_URL = window.API_URL || 'http://localhost:5000';
+            const API_URL = window.API_URL || 'http://localhost:5001';
             const response = await fetch(`${API_URL}/api/chat/unread/${userId}`);
             
             if (response.ok) {
@@ -75,7 +75,7 @@ const NOTIFICATION_SERVICE = {
             const userId = localStorage.getItem('websiteUserId') || sessionStorage.getItem('userId');
             if (!userId) return;
 
-            const API_URL = window.API_URL || 'http://localhost:5000';
+            const API_URL = window.API_URL || 'http://localhost:5001';
             
             const response = await fetch(`${API_URL}/api/notifications/website/create`, {
                 method: 'POST',

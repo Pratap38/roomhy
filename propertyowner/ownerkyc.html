@@ -195,9 +195,9 @@
             idProofInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if(file) {
-                    // Check size (limit to 500KB for localStorage safety)
-                    if (file.size > 500000) {
-                        alert("File is too large! Please upload an image smaller than 500KB for this demo.");
+                    // Check size (limit to 5MB for MongoDB storage)
+                    if (file.size > 5000000) {
+                        alert("File is too large! Please upload an image smaller than 5MB.");
                         this.value = ""; // Reset
                         return;
                     }

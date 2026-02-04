@@ -1,0 +1,19 @@
+// ============================================================================
+// COPY THIS ENTIRE CODE AND PASTE IN BROWSER CONSOLE (F12 → Console Tab)
+// THEN PRESS ENTER
+// ============================================================================
+
+// Set owner database
+localStorage.setItem('roomhy_owners_db', '{"ROOMHY2776":{"name":"Raj Kumar","email":"raj.kumar@example.com","phone":"9876543210","address":"123 Main Street, Bangalore","locationCode":"KO","password":"password123","profile":{"name":"Raj Kumar","bankName":"HDFC Bank","accountNumber":"1234567890123456","ifscCode":"HDFC0001234","branchName":"Bangalore Main"},"kycStatus":"Verified"},"ROOMHY6261":{"name":"Priya Singh","email":"priya.singh@example.com","phone":"9876543211","address":"456 Park Avenue, Bangalore","locationCode":"KO","password":"password123","profile":{"name":"Priya Singh","bankName":"ICICI Bank","accountNumber":"9876543210987654","ifscCode":"ICIC0000123","branchName":"Bangalore South"},"kycStatus":"Verified"},"ROOMHY1310":{"name":"Amit Patel","email":"amit.patel@example.com","phone":"9876543212","address":"789 Tech Park, Bangalore","locationCode":"KO","password":"password123","profile":{"name":"Amit Patel","bankName":"SBI Bank","accountNumber":"5678901234567890","ifscCode":"SBIN0001234","branchName":"Bangalore North"},"kycStatus":"Verified"},"ROOMHY6461":{"name":"Deepak Sharma","email":"deepak.sharma@example.com","phone":"9876543213","address":"321 Commercial Street, Bangalore","locationCode":"KO","password":"password123","profile":{"name":"Deepak Sharma","bankName":"Axis Bank","accountNumber":"1112223334445556","ifscCode":"AXISBANK123","branchName":"Bangalore East"},"kycStatus":"Pending"}}');
+
+// Set visit database
+localStorage.setItem('roomhy_visits', '[{"propertyInfo":{"ownerName":"Raj Kumar","contactPhone":"9876543210","area":"KO","propertyType":"Apartment","bedrooms":2,"furnished":"Semi-Furnished"},"monthlyRent":15000,"deposit":30000,"amenities":["WiFi","AC","Parking"],"visitDate":"2026-02-04T08:25:00.000Z","notes":"Good property, verified details"},{"propertyInfo":{"ownerName":"Priya Singh","contactPhone":"9876543211","area":"KO","propertyType":"Apartment","bedrooms":3,"furnished":"Furnished"},"monthlyRent":20000,"deposit":40000,"amenities":["WiFi","AC","Gym","Parking"],"visitDate":"2026-02-04T08:25:00.000Z","notes":"Premium property"},{"propertyInfo":{"ownerName":"Amit Patel","contactPhone":"9876543212","area":"KO","propertyType":"Flat","bedrooms":1,"furnished":"Unfurnished"},"monthlyRent":12000,"deposit":25000,"amenities":["WiFi","Parking"],"visitDate":"2026-02-04T08:25:00.000Z","notes":"Affordable option"},{"propertyInfo":{"ownerName":"Deepak Sharma","contactPhone":"9876543213","area":"KO","propertyType":"Villa","bedrooms":4,"furnished":"Furnished"},"monthlyRent":25000,"deposit":50000,"amenities":["WiFi","AC","Garden","Parking","Security"],"visitDate":"2026-02-04T08:25:00.000Z","notes":"Luxury property"}]');
+
+// Verify and reload
+console.log('✅ Owners loaded:', Object.keys(JSON.parse(localStorage.getItem('roomhy_owners_db'))).length);
+console.log('✅ Visits loaded:', JSON.parse(localStorage.getItem('roomhy_visits')).length);
+location.reload();
+
+// ============================================================================
+// RESULT: All 14 columns in owner.html will be filled with data!
+// ============================================================================

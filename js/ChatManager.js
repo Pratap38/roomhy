@@ -10,19 +10,27 @@ const ChatManager = {
      */
     generateWebsiteUserLoginId: function(email) {
         if (!email) return null;
-        
-        // Extract the part before @ and convert to a valid login ID
-        const emailPrefix = email.split('@')[0];
-        
-        // Replace invalid characters with underscores
-        const sanitized = emailPrefix.replace(/[^a-zA-Z0-9_-]/g, '_');
-        
-        // Add a timestamp to ensure uniqueness
-        const timestamp = Math.floor(Date.now() / 1000);
-        
-        // Combine to create login ID (max 255 chars, but keep it reasonable)
-        const loginId = `WEB_${sanitized.substring(0, 20)}_${timestamp}`;
-        
+
+        // Generate a 6-digit random number for uniqueness
+        const sixDigit = Math.floor(Math.random() * 900000) + 100000;
+
+        // Create login ID as "roomhyweb" followed by 6 digits
+        const loginId = `roomhyweb${sixDigit}`;
+
+        return loginId;
+    },
+
+    /**
+     * Generate a property owner login ID
+     * @returns {string} - Generated owner login ID
+     */
+    generateOwnerLoginId: function() {
+        // Generate a 4-digit random number for uniqueness
+        const fourDigit = Math.floor(Math.random() * 9000) + 1000;
+
+        // Create login ID as "ROOMHY" followed by 4 digits
+        const loginId = `ROOMHY${fourDigit}`;
+
         return loginId;
     },
 

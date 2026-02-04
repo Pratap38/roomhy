@@ -13,6 +13,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../sessionManager.js"></script>
+    <script src="../js/NotificationManager.js"></script>
+    <script src="../js/PropertyOwnerNotifications.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .sidebar { background-color: #111827; color: #9ca3af; }
@@ -90,12 +92,9 @@
                 <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                 <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
                 <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
-                <a href="documents.html" class="sidebar-link"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents</a>
-                <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                 <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                 <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
                 <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
-                <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
                 <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                 <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
                 
@@ -121,7 +120,30 @@
                     <h2 class="text-lg font-semibold text-slate-800">Dashboard</h2>
                 </div>
                 <div class="flex items-center gap-4">
-                    <button class="text-slate-400 hover:text-slate-600"><i data-lucide="bell" class="w-5 h-5"></i></button>
+                    <!-- Notification Bell with Badge -->
+    <div class="relative">
+        <button id="notificationBellBtn" class="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-lg transition-colors">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+        </button>
+        
+        <!-- Notification Dropdown -->
+        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg py-2 ring-1 ring-black ring-opacity-5 z-50">
+            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="font-semibold text-gray-800">Notifications</h3>
+                <div class="flex gap-2">
+                    <button onclick="ownerNotifications.markAllAsRead()" class="text-xs text-purple-600 hover:text-purple-800">Mark all read</button>
+                    <button onclick="ownerNotifications.clearAll()" class="text-xs text-gray-400 hover:text-gray-600">Clear</button>
+                </div>
+            </div>
+            <div id="notificationList" class="max-h-96 overflow-y-auto custom-scrollbar">
+                <div class="px-4 py-8 text-center text-gray-400">
+                    <i data-lucide="bell-off" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                    <p>No notifications yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
                     <div class="relative group">
                         <button class="flex items-center gap-3 hover:bg-gray-50 p-1.5 rounded-full transition-colors">
                             <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold border border-purple-200" id="headerAvatar">OP</div>
@@ -493,9 +515,138 @@
                 }
             });
             document.getElementById('statTenants').innerText = tenantCount;
+
+            // ===== LOAD COMMISSION DATA =====
+            await loadCommissionData();
         });
 
-        // Logout
+        // Load and display commission data
+        async function loadCommissionData() {
+            try {
+                console.log('📡 Loading commission data...');
+                
+                // Determine API URL based on environment
+                const apiUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://localhost:5001'
+                    : 'https://roomhy-backend-wqwo.onrender.com';
+
+                const response = await fetch(`${apiUrl}/api/rents`);
+                if (!response.ok) {
+                    console.warn('⚠️ Commission API returned:', response.status);
+                    // Use fallback values
+                    displayCommissionCards(0, 10, 0);
+                    return;
+                }
+
+                const responseData = await response.json();
+                const paidData = responseData.rents || responseData;
+                console.log('✅ Commission data received:', paidData.length);
+
+                // Filter only completed/paid payments
+                const paidPayments = paidData.filter(p => 
+                    p.paymentStatus === 'completed' || 
+                    p.paymentStatus === 'paid' || 
+                    p.paidAmount > 0
+                );
+
+                console.log('✅ Paid payments:', paidPayments.length);
+
+                // Calculate commissions
+                const commissionStats = calculatePlatformCommissions(paidPayments);
+                console.log('✅ Commission stats:', commissionStats);
+
+                // Display the data
+                displayCommissionCards(
+                    commissionStats.totalPlatformRevenue,
+                    10, // Standard commission rate is always 10%
+                    commissionStats.pendingPayouts
+                );
+            } catch (err) {
+                console.warn('⚠️ Failed to load commission data:', err);
+                // Use fallback values
+                displayCommissionCards(0, 10, 0);
+            }
+        }
+
+        // Calculate commission statistics
+        function calculatePlatformCommissions(paidData) {
+            // Sort payments by owner and creation date to properly identify first payments
+            const ownerPayments = {};
+            
+            paidData.forEach(payment => {
+                const ownerLoginId = payment.ownerLoginId || payment.owner_id;
+                if (!ownerPayments[ownerLoginId]) {
+                    ownerPayments[ownerLoginId] = [];
+                }
+                ownerPayments[ownerLoginId].push({
+                    rentAmount: payment.rentAmount || 0,
+                    createdAt: new Date(payment.createdAt || Date.now())
+                });
+            });
+
+            // Sort payments by date for each owner
+            Object.keys(ownerPayments).forEach(ownerId => {
+                ownerPayments[ownerId].sort((a, b) => a.createdAt - b.createdAt);
+            });
+
+            // Calculate commissions
+            const commissions = {};
+            Object.entries(ownerPayments).forEach(([ownerLoginId, payments]) => {
+                commissions[ownerLoginId] = {
+                    totalRent: 0,
+                    totalCommission: 0,
+                    serviceFee: 0,
+                    payout: 0
+                };
+
+                payments.forEach((payment, paymentIndex) => {
+                    const rentAmount = payment.rentAmount;
+                    
+                    // First payment (index 0) gets 10% commission
+                    const monthlyCommission = paymentIndex === 0 ? (rentAmount * 0.10) : 0;
+                    const serviceFee = 50; // Always ₹50 per payment
+
+                    commissions[ownerLoginId].totalRent += rentAmount;
+                    commissions[ownerLoginId].totalCommission += monthlyCommission;
+                    commissions[ownerLoginId].serviceFee += serviceFee;
+                    commissions[ownerLoginId].payout = commissions[ownerLoginId].totalRent 
+                        - commissions[ownerLoginId].totalCommission 
+                        - commissions[ownerLoginId].serviceFee;
+                });
+            });
+
+            // Calculate totals
+            const stats = Object.values(commissions).reduce((acc, owner) => {
+                acc.totalRent += owner.totalRent;
+                acc.totalCommission += owner.totalCommission;
+                acc.totalServiceFees += owner.serviceFee;
+                acc.totalPayouts += owner.payout;
+                return acc;
+            }, {
+                totalRent: 0,
+                totalCommission: 0,
+                totalServiceFees: 0,
+                totalPayouts: 0
+            });
+
+            console.log('Commission Breakdown:');
+            console.log('  Total Rent: ₹' + stats.totalRent);
+            console.log('  Total Commission (10%): ₹' + stats.totalCommission);
+            console.log('  Total Service Fees: ₹' + stats.totalServiceFees);
+            console.log('  Platform Revenue: ₹' + (stats.totalCommission + stats.totalServiceFees));
+            console.log('  Total Payouts: ₹' + stats.totalPayouts);
+
+            return {
+                totalPlatformRevenue: stats.totalCommission + stats.totalServiceFees,
+                pendingPayouts: stats.totalPayouts,
+                totalRent: stats.totalRent
+            };
+        }
+
+        // Refresh statistics periodically
+        setInterval(loadCommissionData, 30000); // Refresh every 30 seconds
+
+
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('user');
@@ -650,6 +801,11 @@
         // Initialize accounts on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadAccounts();
+            
+            // Initialize notifications
+            if (typeof PropertyOwnerNotifications !== 'undefined') {
+                window.ownerNotifications = new PropertyOwnerNotifications();
+            }
         });
 
     </script>

@@ -72,8 +72,25 @@
                                 <textarea id="address" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter your full address" required></textarea>
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Bank Account Details <span class="text-red-500">*</span></label>
-                                <input type="text" id="bank-account" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Account No, IFSC, Bank Name" required>
+                                <label class="block text-sm font-medium text-gray-700 mb-4 font-bold">Bank Account Details <span class="text-red-500">*</span></label>
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Bank Name</label>
+                                        <input type="text" id="bank-name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g., HDFC, ICICI, SBI" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Number</label>
+                                        <input type="text" id="account-number" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g., 1234567890" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">IFSC Code</label>
+                                        <input type="text" id="ifsc-code" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g., HDFC0000001" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Branch Name</label>
+                                        <input type="text" id="branch-name" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g., Bangalore Main" required>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -108,7 +125,10 @@
             if(existing) {
                 if(existing.email) document.getElementById('email').value = existing.email;
                 if(existing.address) document.getElementById('address').value = existing.address;
-                if(existing.bankAccount) document.getElementById('bank-account').value = existing.bankAccount;
+                if(existing.bankName) document.getElementById('bank-name').value = existing.bankName;
+                if(existing.accountNumber) document.getElementById('account-number').value = existing.accountNumber;
+                if(existing.ifscCode) document.getElementById('ifsc-code').value = existing.ifscCode;
+                if(existing.branchName) document.getElementById('branch-name').value = existing.branchName;
             }
 
             // Auto-fill from latest visit if available
@@ -140,14 +160,43 @@
             const phone = document.getElementById('phone').value;
             const email = document.getElementById('email').value;
             const address = document.getElementById('address').value;
-            const bankAccount = document.getElementById('bank-account').value;
+            const bankName = document.getElementById('bank-name').value;
+            const accountNumber = document.getElementById('account-number').value;
+            const ifscCode = document.getElementById('ifsc-code').value;
+            const branchName = document.getElementById('branch-name').value;
 
+            // Prepare data for MongoDB
+            const profileData = {
+                profile: {
+                    name, phone, email, address, bankName, accountNumber, ifscCode, branchName,
+                    updatedAt: new Date().toISOString()
+                }
+            };
+
+            // Save to MongoDB
+            fetch(`http://localhost:5001/api/owners/${encodeURIComponent(loginId)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(profileData)
+            })
+            .then(res => {
+                if (res.ok) {
+                    console.log('✅ Profile saved to MongoDB');
+                    return res.json();
+                } else {
+                    console.warn('⚠️ Failed to save to MongoDB');
+                    return null;
+                }
+            })
+            .catch(err => console.warn('⚠️ MongoDB save error:', err));
+
+            // Also save to localStorage as fallback
             const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
             if (!db[loginId]) db[loginId] = { kyc: { status: 'pending'} };
             
             db[loginId].profile = {
                 ...db[loginId].profile,
-                name, phone, email, address, bankAccount,
+                name, phone, email, address, bankName, accountNumber, ifscCode, branchName,
                 updatedAt: new Date().toISOString()
             };
             db[loginId].profileFilled = true; // Mark profile as done
@@ -165,7 +214,11 @@
             // Update Session
             user.name = name;
             user.email = email;
-            user.bankAccount = bankAccount;
+            user.phone = phone;
+            user.bankName = bankName;
+            user.accountNumber = accountNumber;
+            user.ifscCode = ifscCode;
+            user.branchName = branchName;
             localStorage.setItem('user', JSON.stringify(user));
             sessionStorage.setItem('owner_session', JSON.stringify(user));
 

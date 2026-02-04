@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
     <title>Roomhy - Website Properties</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -173,8 +174,10 @@
     <script>
         lucide.createIcons();
 
-        // Change API_URL to your backend URL
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        // Change API_URL to your backend URL - development use localhost:5001
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend-wqwo.onrender.com';
 
         function toggleSubmenu(id, element) {
             const submenu = document.getElementById(id);
@@ -222,20 +225,26 @@
                 tbody.innerHTML = visits.map(v => {
                     const prop = v.propertyInfo || {};
                     const profPhotos = v.professionalPhotos || [];
-                    const fieldPhotos = v.photos || [];
+                    const fieldPhotos = prop.photos || v.photos || [];
                     const allPhotos = [...profPhotos, ...fieldPhotos];
+                    const visitId = v.visitId || v._id || '';
+                    const propType = prop.propertyType || '';
+                    const propArea = prop.area || '';
+                    const propGender = prop.genderSuitability || '';
+                    const propPhone = prop.ownerPhone || prop.contactPhone || '';
+                    const propRent = prop.rent || v.monthlyRent || 0;
 
                     return `
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-4 py-3 font-mono text-xs text-gray-600">${v.propertyId ? v.propertyId.slice(-8).toUpperCase() : '-'}</td>
+                        <td class="px-4 py-3 font-mono text-xs text-gray-600">${visitId ? visitId.slice(-8).toUpperCase() : '-'}</td>
                         <td class="px-4 py-3 text-sm text-gray-600">${v.submittedAt ? new Date(v.submittedAt).toLocaleDateString() : '-'}</td>
                         <td class="px-4 py-3 font-semibold text-gray-800">${prop.name || '-'}</td>
-                        <td class="px-4 py-3">${prop.propertyType || '-'}</td>
-                        <td class="px-4 py-3">${prop.area || '-'}</td>
-                        <td class="px-4 py-3">${v.gender || '-'}</td>
+                        <td class="px-4 py-3">${propType || '-'}</td>
+                        <td class="px-4 py-3">${propArea || '-'}</td>
+                        <td class="px-4 py-3">${propGender || '-'}</td>
                         <td class="px-4 py-3">${prop.ownerName || '-'}</td>
-                        <td class="px-4 py-3 text-sm">${prop.contactPhone || '-'}</td>
-                        <td class="px-4 py-3 font-bold">₹${v.monthlyRent || 0}</td>
+                        <td class="px-4 py-3 text-sm">${propPhone || '-'}</td>
+                        <td class="px-4 py-3 font-bold">₹${propRent}</td>
                         <td class="px-4 py-3">
                             <span class="text-[10px] font-bold ${profPhotos.length ? 'text-green-600 bg-green-50' : 'text-orange-600 bg-orange-50'} px-2 py-1 rounded">
                                 ${profPhotos.length ? 'Yes (' + profPhotos.length + ')' : 'Pending'}
@@ -272,11 +281,10 @@
 
         async function updateTabCounts() {
             try {
-                const response = await fetch(`${API_URL}/api/website-property-data/all`);
+                const response = await fetch(`${API_URL}/api/approved-properties/all`);
                 if (!response.ok) return;
                 
                 let visitsAll = (await response.json()).properties || [];
-                visitsAll = visitsAll.filter(v => v.status === 'approved');
                 const online = visitsAll.filter(v => v.isLiveOnWebsite === true).length;
                 const offline = visitsAll.filter(v => !v.isLiveOnWebsite).length;
                 const onlineBtn = document.getElementById('tabOnline');
@@ -375,7 +383,7 @@
 
         async function toggleWebStatus(propertyId) {
             try {
-                const response = await fetch(`${API_URL}/api/website-property-data/${propertyId}/toggle-live`, {
+                const response = await fetch(`${API_URL}/api/approved-properties/${propertyId}/toggle-live`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -383,11 +391,11 @@
                 if (!response.ok) throw new Error('Failed to toggle status');
                 
                 const data = await response.json();
-                alert(data.message);
+                alert(data.message || 'Status updated');
                 loadWebsite();
             } catch (error) {
                 console.error('Error toggling web status:', error);
-                alert('Error toggling property status');
+                alert('Error toggling property status: ' + error.message);
             }
         }
 
@@ -395,8 +403,9 @@
             if(!confirm("Are you sure you want to delete this property permanently? This action cannot be undone.")) return;
             
             try {
-                const response = await fetch(`${API_URL}/api/website-property-data/${propertyId}`, {
-                    method: 'DELETE'
+                const response = await fetch(`${API_URL}/api/approved-properties/${propertyId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 
                 if (!response.ok) throw new Error('Failed to delete property');
@@ -405,7 +414,7 @@
                 alert('Property has been deleted.');
             } catch (error) {
                 console.error('Error deleting property:', error);
-                alert('Error deleting property');
+                alert('Error deleting property: ' + error.message);
             }
         }
 

@@ -7,12 +7,44 @@ const bookingRequestSchema = new mongoose.Schema({
     property_type: { type: String },
     rent_amount: { type: Number },
 
+    // Property images and details
+    propertyPhotos: [{ type: String }],
+    property_photos: [{ type: String }],
+    propertyImage: { type: String },
+    property_image: { type: String },
+    photos: [{ type: String }],
+
+    // Booking dates
+    check_in_date: { type: Date },
+    checkInDate: { type: Date },
+    start_date: { type: Date },
+    check_out_date: { type: Date },
+    checkOutDate: { type: Date },
+    end_date: { type: Date },
+
+    // Booking amounts
+    total_amount: { type: Number },
+    totalAmount: { type: Number },
+    price: { type: Number },
+
+    // Booking status (confirmed, active, completed)
+    booking_status: { 
+        type: String, 
+        enum: ['pending', 'confirmed', 'active', 'completed', 'rejected', 'cancelled'], 
+        default: 'pending' 
+    },
+    bookingStatus: { 
+        type: String, 
+        enum: ['pending', 'confirmed', 'active', 'completed', 'rejected', 'cancelled']
+    },
+
     user_id: { type: String, required: true, index: true },
     name: { type: String, required: true },
     phone: { type: String, default: null, sparse: true },
     email: { type: String, required: true },
 
     owner_id: { type: String, required: true, index: true },
+    owner_name: { type: String },
     area_manager_id: { type: String, index: true },
 
     request_type: { 
@@ -41,6 +73,25 @@ const bookingRequestSchema = new mongoose.Schema({
         enum: ['not_scheduled', 'scheduled', 'completed'], 
         default: 'not_scheduled' 
     },
+
+    // Personal information
+    guardian_name: { type: String },
+    guardian_phone: { type: String },
+
+    // Address information
+    address_street: { type: String },
+    address_city: { type: String },
+    address_state: { type: String },
+    address_postal_code: { type: String },
+    address_country: { type: String },
+
+    // Payment information
+    payment_id: { type: String, sparse: true },
+    paymentId: { type: String, sparse: true },
+    payment_amount: { type: Number },
+    payment_status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'pending' },
+    payment_method: { type: String }, // 'card', 'upi', 'wallet', 'netbanking', etc
+    payment_details: { type: String }, // Masked card/account number or payment method details
 
     // Chat decision fields
     owner_liked: { type: Boolean, default: false },

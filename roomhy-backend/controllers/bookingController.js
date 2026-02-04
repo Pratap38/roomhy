@@ -1,4 +1,5 @@
 const BookingRequest = require('../models/BookingRequest');
+const RefundRequest = require('../models/RefundRequest');
 const User = require('../models/user');
 
 // ==================== BOOKING REQUEST OPERATIONS ====================
@@ -9,6 +10,8 @@ const User = require('../models/user');
  */
 exports.createBookingRequest = async (req, res) => {
     try {
+        console.log('📨 Booking Request Received:', JSON.stringify(req.body, null, 2));
+        
         const { 
             property_id, property_name, area, property_type, rent_amount,
             user_id, owner_id, name, phone, email, request_type, bid_amount, message,
@@ -17,6 +20,7 @@ exports.createBookingRequest = async (req, res) => {
 
         // Validation
         if (!property_id || !user_id || !request_type) {
+            console.warn('❌ Missing required fields');
             return res.status(400).json({ 
                 success: false, 
                 message: 'Missing required fields: property_id, user_id, request_type' 
@@ -25,19 +29,27 @@ exports.createBookingRequest = async (req, res) => {
 
         // ✅ NEW: Validate owner_id is present
         if (!owner_id) {
+            console.warn('❌ owner_id is missing from request');
             return res.status(400).json({
                 success: false,
                 message: 'Property owner ID is required'
             });
         }
 
+        console.log(`✅ Creating ${request_type} for property: ${property_name}, owner: ${owner_id}`);
+
         // Find area manager by area (for notifications)
         const manager = await User.findOne({ role: 'area_manager', area: area });
+        
+        // Find owner to get owner name
+        const owner = await User.findOne({ loginId: owner_id });
+        const ownerName = owner ? owner.fullName || owner.name || owner.loginId : owner_id;
+        console.log(`📍 Owner found: ${ownerName}`);
         
         // Generate unique chat room ID
         const chatRoomId = `chat_${property_id}_${Date.now()}`;
 
-        // ✅ UPDATED: Create booking with owner_id properly set
+        // ✅ UPDATED: Create booking with owner_id and owner_name properly set
         const newRequest = new BookingRequest({
             property_id,
             property_name,
@@ -49,6 +61,7 @@ exports.createBookingRequest = async (req, res) => {
             phone: phone || null,  // Allow null if phone not provided
             email,
             owner_id,                      // ✅ SET OWNER ID FROM REQUEST
+            owner_name: ownerName,          // ✅ SET OWNER NAME FROM USER DB
             request_type,
             bid_amount: request_type === 'bid' ? (bid_amount || 500) : 0,
             message,
@@ -59,19 +72,20 @@ exports.createBookingRequest = async (req, res) => {
         });
 
         await newRequest.save();
+        console.log(`✅ Booking saved with ID: ${newRequest._id}`);
+        
         if (request_type === 'bid') {
             const holdExpiry = new Date();
             holdExpiry.setDate(holdExpiry.getDate() + 7); // 7-day hold
 
             // Store hold info in booking (simplified approach)
             newRequest.hold_expiry_date = holdExpiry;
-            newRequest.payment_status = 'paid';
+            newRequest.payment_status = 'pending'; // ✅ Use valid enum value
             await newRequest.save();
         }
 
         // Send email notification to owner
         try {
-            const owner = await User.findOne({ loginId: owner_id });
             if (owner && owner.email) {
                 const mailer = require('../utils/mailer');
                 const subject = `New ${request_type.charAt(0).toUpperCase() + request_type.slice(1)} Request`;
@@ -127,10 +141,12 @@ exports.createBookingRequest = async (req, res) => {
             data: newRequest
         });
     } catch (error) {
-        console.error('Error creating booking:', error);
+        console.error('❌ Error creating booking:', error.message);
+        console.error('Stack:', error.stack);
         res.status(500).json({ 
             success: false, 
-            message: error.message 
+            message: error.message,
+            details: error.stack
         });
     }
 };
@@ -272,6 +288,7 @@ exports.getBookingRequests = async (req, res) => {
 
         // ✅ NEW: Support owner_id query param for property owner panel
         if (owner_id) {
+            console.log(`🔍 Fetching bookings for owner_id: ${owner_id}`);
             // For bulk requests, check if owner_id is in the owner_ids array
             query.$or = [
                 { owner_id: owner_id }, // Regular requests
@@ -291,6 +308,15 @@ exports.getBookingRequests = async (req, res) => {
         const requests = await BookingRequest.find(query)
             .sort({ created_at: -1 })
             .lean();
+
+        console.log(`📊 Found ${requests.length} bookings for query:`, JSON.stringify(query));
+        
+        // Log request_type values for debugging
+        if (requests.length > 0) {
+            const requestTypes = requests.map(r => r.request_type);
+            console.log(`📋 request_type values in response:`, requestTypes);
+            console.log(`📋 First booking structure:`, JSON.stringify(requests[0], null, 2));
+        }
 
         res.status(200).json({
             success: true,
@@ -326,6 +352,44 @@ exports.getBookingRequestById = async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching booking:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
+    }
+};
+
+/**
+ * GET USER BOOKINGS (for tenant's mystays.html)
+ * Fetches all confirmed bookings for a specific user with property details
+ */
+exports.getUserBookings = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'User ID is required' 
+            });
+        }
+
+        console.log(`📖 Fetching bookings for user: ${userId}`);
+
+        // Find all confirmed bookings for this user
+        const bookings = await BookingRequest.find({ 
+            user_id: userId, 
+            booking_status: { $in: ['confirmed', 'active', 'completed'] } 
+        }).sort({ createdAt: -1 });
+
+        console.log(`✅ Found ${bookings.length} bookings for user ${userId}`);
+
+        res.status(200).json({ 
+            success: true, 
+            data: bookings 
+        });
+    } catch (error) {
+        console.error('Error fetching user bookings:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message 
@@ -750,6 +814,579 @@ exports.updateChatDecision = async (req, res) => {
         res.status(500).json({ 
             success: false, 
             message: error.message 
+        });
+    }
+};
+
+// ==================== BOOKING CONFIRMATION (FROM BOOKING FORM) ====================
+
+/**
+ * CONFIRM BOOKING FROM BOOKING FORM
+ * Saves the complete booking with tenant info, payment details, and property info
+ */
+exports.confirmBooking = async (req, res) => {
+    try {
+        const {
+            userId,
+            user_id,
+            paymentId,
+            payment_id,
+            bookingStatus,
+            paymentAmount,
+            payment_amount,
+            fullName,
+            name,
+            phone,
+            email,
+            guardianName,
+            guardian_name,
+            guardianPhone,
+            guardian_phone,
+            address,
+            address_street,
+            address_city,
+            address_state,
+            address_postal_code,
+            address_country,
+            propertyId,
+            property_id,
+            propertyName,
+            property_name,
+            ownerName,
+            owner_name,
+            ownerId,
+            owner_id,
+            rentAmount,
+            rent_amount,
+            area,
+            propertyType,
+            property_type,
+            request_type,
+            paymentMethod,
+            payment_method,
+            paymentStatus,
+            payment_status,
+            bidAmount,
+            bid_amount,
+            message,
+            bookedAt,
+            status,
+            // Booking dates and amounts
+            checkInDate,
+            check_in_date,
+            checkOutDate,
+            check_out_date,
+            totalAmount,
+            total_amount,
+            propertyImage,
+            property_image,
+            propertyPhotos,
+            property_photos
+        } = req.body;
+
+        // Normalize field names (handle both camelCase and snake_case)
+        const normalizedUserId = userId || user_id;
+        const normalizedPaymentId = paymentId || payment_id;
+        const normalizedName = name || fullName;
+        const normalizedPropertyId = property_id || propertyId;
+        const normalizedPropertyName = property_name || propertyName;
+        const normalizedOwnerId = owner_id || ownerId;
+        const normalizedOwnerName = owner_name || ownerName;
+        const normalizedArea = area;
+        const normalizedRequestType = request_type || 'request';
+        const normalizedRent = rent_amount || rentAmount;
+        const normalizedPropertyType = property_type || propertyType;
+        const normalizedGuardianName = guardian_name || guardianName;
+        const normalizedGuardianPhone = guardian_phone || guardianPhone;
+        const normalizedPaymentAmount = payment_amount || paymentAmount;
+        const normalizedPaymentMethod = payment_method || paymentMethod || 'razorpay';
+        const normalizedPaymentStatus = payment_status || paymentStatus || 'completed';
+        const normalizedBidAmount = bid_amount || bidAmount;
+
+        // Validation - userId and paymentId are required
+        if (!normalizedUserId || !normalizedPaymentId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: userId, paymentId'
+            });
+        }
+
+        // Check other required fields
+        if (!normalizedName || !email || !normalizedPropertyId || !normalizedArea || !normalizedOwnerId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required booking information. Please provide: name, email, property_id, area, owner_id'
+            });
+        }
+
+        // Build address string
+        let fullAddress = 'N/A';
+        if (address) {
+            fullAddress = typeof address === 'string' ? address : 
+                `${address.street || ''}, ${address.city || ''}, ${address.state || ''}, ${address.postalCode || ''}`.trim();
+        } else if (address_street || address_city || address_state || address_postal_code) {
+            fullAddress = `${address_street || ''}, ${address_city || ''}, ${address_state || ''}, ${address_postal_code || ''}`.replace(/^,\s*|,\s*$/g, '').trim();
+        }
+
+        // Create booking confirmation record with all fields
+        const booking = new BookingRequest({
+            user_id: normalizedUserId,
+            payment_id: normalizedPaymentId,
+            paymentId: normalizedPaymentId,
+            payment_amount: normalizedPaymentAmount,
+            payment_method: normalizedPaymentMethod,
+            payment_status: normalizedPaymentStatus,
+            name: normalizedName,
+            phone: phone,
+            email: email,
+            guardian_name: normalizedGuardianName,
+            guardian_phone: normalizedGuardianPhone,
+            property_id: normalizedPropertyId,
+            property_name: normalizedPropertyName,
+            owner_id: normalizedOwnerId,
+            owner_name: normalizedOwnerName,
+            rent_amount: normalizedRent,
+            area: normalizedArea,
+            property_type: normalizedPropertyType,
+            request_type: normalizedRequestType,
+            address_street: address_street,
+            address_city: address_city,
+            address_state: address_state,
+            address_postal_code: address_postal_code,
+            address_country: address_country,
+            full_address: fullAddress,
+            bid_amount: normalizedBidAmount || 0,
+            message: message || `Booking confirmed via booking form with payment ${normalizedPaymentId}`,
+            status: status || 'confirmed',
+            booking_status: bookingStatus || 'confirmed',
+            bookingStatus: bookingStatus || 'confirmed',
+            // Booking dates
+            check_in_date: checkInDate || check_in_date,
+            checkInDate: checkInDate || check_in_date,
+            check_out_date: checkOutDate || check_out_date,
+            checkOutDate: checkOutDate || check_out_date,
+            // Booking amounts
+            total_amount: totalAmount || total_amount || normalizedPaymentAmount,
+            totalAmount: totalAmount || total_amount || normalizedPaymentAmount,
+            price: totalAmount || total_amount || normalizedPaymentAmount,
+            // Property images
+            propertyImage: propertyImage || property_image,
+            property_image: propertyImage || property_image,
+            propertyPhotos: propertyPhotos || property_photos || [],
+            property_photos: propertyPhotos || property_photos || [],
+            created_at: new Date(),
+            updated_at: new Date()
+        });
+
+        await booking.save();
+
+        res.status(201).json({
+            success: true,
+            message: 'Booking confirmed successfully',
+            data: booking
+        });
+
+    } catch (error) {
+        console.error('Error confirming booking:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// ==================== REFUND REQUEST OPERATIONS ====================
+
+/**
+ * CREATE REFUND REQUEST
+ * Handles user requesting refund with payment details
+ */
+exports.createRefundRequest = async (req, res) => {
+    try {
+        const {
+            booking_id,
+            user_id,
+            payment_id,
+            user_name,
+            user_phone,
+            user_email,
+            refund_amount,
+            request_type, // 'refund' or 'alternative_property'
+            refund_method, // 'upi', 'bank', 'other'
+            upi_id,
+            bank_account_holder,
+            bank_account_number,
+            bank_ifsc_code,
+            bank_name,
+            other_details,
+            preferred_area,
+            property_requirements
+        } = req.body;
+
+        // Validation
+        if (!booking_id || !user_id || !payment_id || !user_name || !user_phone || !request_type) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: booking_id, user_id, payment_id, user_name, user_phone, request_type'
+            });
+        }
+
+        // Validate request type
+        if (!['refund', 'alternative_property'].includes(request_type)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request type. Must be "refund" or "alternative_property"'
+            });
+        }
+
+        // For refund requests, validate payment method details
+        if (request_type === 'refund') {
+            if (!refund_method) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Refund method is required for refund requests'
+                });
+            }
+
+            if (refund_method === 'upi' && !upi_id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'UPI ID is required for UPI refund method'
+                });
+            }
+
+            if (refund_method === 'bank' && (!bank_account_holder || !bank_account_number || !bank_ifsc_code)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Bank account details are required for bank transfer refund method'
+                });
+            }
+        }
+
+        // Create refund request
+        const refundRequest = new RefundRequest({
+            booking_id,
+            user_id,
+            payment_id,
+            user_name,
+            user_phone,
+            user_email,
+            request_type,
+            refund_method,
+            upi_id,
+            bank_account_holder,
+            bank_account_number,
+            bank_ifsc_code,
+            bank_name,
+            other_details,
+            preferred_area,
+            property_requirements,
+            refund_status: 'pending',
+            refund_amount: refund_amount || 500, // Use provided amount or default to 500
+            created_at: new Date(),
+            updated_at: new Date()
+        });
+
+        await refundRequest.save();
+
+        res.status(201).json({
+            success: true,
+            message: `${request_type === 'refund' ? 'Refund' : 'Alternative property'} request submitted successfully`,
+            data: refundRequest
+        });
+
+    } catch (error) {
+        console.error('Error creating refund request:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+/**
+ * GET ALL REFUND REQUESTS
+ * Fetch all refund requests for superadmin dashboard
+ */
+exports.getAllRefundRequests = async (req, res) => {
+    try {
+        const { status, request_type } = req.query;
+        let filter = {};
+
+        if (status) {
+            filter.refund_status = status;
+        }
+
+        if (request_type) {
+            filter.request_type = request_type;
+        }
+
+        const refundRequests = await RefundRequest.find(filter)
+            .sort({ created_at: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: refundRequests.length,
+            data: refundRequests
+        });
+
+    } catch (error) {
+        console.error('Error fetching refund requests:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+/**
+ * GET REFUND REQUEST BY ID
+ */
+exports.getRefundRequestById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const refundRequest = await RefundRequest.findById(id);
+
+        if (!refundRequest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Refund request not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: refundRequest
+        });
+
+    } catch (error) {
+        console.error('Error fetching refund request:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+/**
+ * PROCESS REFUND
+ * Admin processes refund and sends money to user
+ */
+exports.processRefund = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { 
+            admin_notes, 
+            processed_by,
+            razorpay_payment_id,
+            razorpay_order_id,
+            razorpay_signature
+        } = req.body;
+
+        const refundRequest = await RefundRequest.findById(id);
+
+        if (!refundRequest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Refund request not found'
+            });
+        }
+
+        // Check if already processed
+        if (refundRequest.refund_status === 'processed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Refund has already been processed'
+            });
+        }
+
+        // Update refund status
+        refundRequest.refund_status = 'processed';
+        refundRequest.refund_date = new Date();
+        
+        // If Razorpay payment details provided, use them
+        if (razorpay_payment_id) {
+            refundRequest.refund_transaction_id = razorpay_payment_id;
+            refundRequest.razorpay_order_id = razorpay_order_id;
+            refundRequest.razorpay_payment_id = razorpay_payment_id;
+        } else {
+            refundRequest.refund_transaction_id = `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        refundRequest.admin_notes = admin_notes || 'Refund processed';
+        refundRequest.processed_by = processed_by;
+        refundRequest.updated_at = new Date();
+
+        await refundRequest.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Refund processed successfully',
+            data: refundRequest
+        });
+
+    } catch (error) {
+        console.error('Error processing refund:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+/**
+ * UPDATE REFUND REQUEST STATUS
+ */
+exports.updateRefundRequestStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { refund_status, admin_notes } = req.body;
+
+        if (!['pending', 'approved', 'rejected', 'processed'].includes(refund_status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid refund status'
+            });
+        }
+
+        const refundRequest = await RefundRequest.findByIdAndUpdate(
+            id,
+            {
+                refund_status,
+                admin_notes,
+                updated_at: new Date()
+            },
+            { new: true }
+        );
+
+        if (!refundRequest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Refund request not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Refund request status updated successfully',
+            data: refundRequest
+        });
+
+    } catch (error) {
+        console.error('Error updating refund request:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+/**
+ * CREATE RAZORPAY ORDER FOR REFUND
+ */
+exports.createRefundOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { amount, currency, user_name, user_email, user_phone } = req.body;
+
+        // Get refund request details
+        const refundRequest = await RefundRequest.findById(id);
+        if (!refundRequest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Refund request not found'
+            });
+        }
+
+        // Mock order creation (In production, use actual Razorpay API)
+        const mockOrder = {
+            id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            entity: 'order',
+            amount: amount,
+            amount_paid: 0,
+            amount_due: amount,
+            currency: currency || 'INR',
+            receipt: `refund_${refundRequest._id}`,
+            status: 'created',
+            attempts: 0,
+            notes: {
+                refund_request_id: refundRequest._id,
+                booking_id: refundRequest.booking_id
+            },
+            created_at: Math.floor(Date.now() / 1000)
+        };
+
+        res.status(200).json({
+            success: true,
+            order_id: mockOrder.id,
+            amount: amount,
+            currency: currency,
+            refund_request_id: id
+        });
+
+    } catch (error) {
+        console.error('Error creating refund order:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+/**
+ * PROCESS REFUND WITH RAZORPAY PAYMENT (Updated)
+ */
+exports.processRefundPayment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { 
+            razorpay_payment_id, 
+            razorpay_order_id, 
+            razorpay_signature, 
+            admin_notes 
+        } = req.body;
+
+        const refundRequest = await RefundRequest.findById(id);
+
+        if (!refundRequest) {
+            return res.status(404).json({
+                success: false,
+                message: 'Refund request not found'
+            });
+        }
+
+        // Check if already processed
+        if (refundRequest.refund_status === 'processed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Refund has already been processed'
+            });
+        }
+
+        // Update refund status with Razorpay payment details
+        refundRequest.refund_status = 'processed';
+        refundRequest.refund_date = new Date();
+        refundRequest.refund_transaction_id = razorpay_payment_id || `TXN_${Date.now()}`;
+        refundRequest.razorpay_order_id = razorpay_order_id;
+        refundRequest.razorpay_payment_id = razorpay_payment_id;
+        refundRequest.admin_notes = admin_notes || 'Refund processed via Razorpay';
+        refundRequest.updated_at = new Date();
+
+        await refundRequest.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Refund processed successfully',
+            data: refundRequest,
+            transaction_id: razorpay_payment_id
+        });
+
+    } catch (error) {
+        console.error('Error processing refund payment:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 };

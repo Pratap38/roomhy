@@ -1,6 +1,7 @@
 const Tenant = require('../models/Tenant');
 const User = require('../models/user');
 const Property = require('../models/Property');
+const Rent = require('../models/Rent');
 const generateTenantId = require('../utils/generateTenantId');
 const crypto = require('crypto');
 const mailer = require('../utils/mailer');
@@ -67,8 +68,28 @@ exports.assignTenant = async (req, res) => {
         // Populate for response (include locationCode and owner info)
         await tenant.populate('property', 'title roomType locationCode owner ownerLoginId');
 
+        // Create Rent record for this tenant
+        const rentAmount = parseInt(agreedRent);
+        const rent = await Rent.create({
+            propertyName: property.title,
+            roomNumber: roomNo,
+            area: property.area || '-',
+            tenantName: name,
+            tenantEmail: email,
+            tenantPhone: phone,
+            tenantLoginId: loginId,
+            rentAmount: rentAmount,
+            totalDue: rentAmount,
+            paidAmount: 0,
+            paymentStatus: 'pending',
+            moveInDate: moveInDate ? new Date(moveInDate) : new Date(),
+            dueDate: moveInDate ? new Date(moveInDate) : new Date(),
+            createdAt: new Date()
+        });
+
         // Log notification for super admin
         console.log(`[TENANT ASSIGNED] ${name} (${loginId}) assigned to ${property.title}, Room ${roomNo}`);
+        console.log(`[RENT RECORD CREATED] Rent ID: ${rent._id}, Amount: ₹${rentAmount}`);
 
         // Send email to tenant with loginId & tempPassword (non-blocking)
         try {

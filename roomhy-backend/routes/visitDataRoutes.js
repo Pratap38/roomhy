@@ -17,9 +17,13 @@ function stringToBoolean(value) {
 router.post('/', async (req, res) => {
     try {
         const visitData = req.body;
+        console.log('📨 [visits/POST] Received data visitId:', visitData._id || visitData.visitId);
 
         // Process the data to handle type conversions
         const processedData = { ...visitData };
+        
+        // Remove _id if present (MongoDB will generate it)
+        delete processedData._id;
 
         // Convert boolean fields from strings to booleans
         processedData.visitorsAllowed = stringToBoolean(processedData.visitorsAllowed);
@@ -28,20 +32,22 @@ router.post('/', async (req, res) => {
         processedData.petsAllowed = stringToBoolean(processedData.petsAllowed);
 
         // Generate visitId if not provided
-        const visitId = processedData.visitId || ('v_' + Date.now());
+        // Use _id from frontend as visitId (it comes as _id from visit.html)
+        const visitId = processedData.visitId || visitData._id || ('v_' + Date.now());
 
-        // Create new visit document with visitId as _id to ensure consistency across frontend and backend
+        // Create new visit document - let MongoDB generate _id, use visitId for consistency
         const newVisit = new VisitData({
             ...processedData,
-            _id: visitId,  // Use visitId as MongoDB _id for consistency
-            visitId: visitId,
+            visitId: visitId,  // Use visitId as custom field (not _id)
             submittedAt: new Date(),
             status: processedData.status || 'submitted'
         });
 
+        console.log('💾 [visits/POST] Saving visit with visitId:', visitId);
+        console.log('📋 [visits/POST] Visit fields:', Object.keys(newVisit.toObject()).slice(0, 10).join(', '));
         await newVisit.save();
 
-        console.log('✅ [visits/POST] Visit saved to MongoDB:', newVisit._id);
+        console.log('✅ [visits/POST] Visit saved to MongoDB:', newVisit._id, 'visitId:', visitId);
 
         res.status(201).json({
             success: true,
@@ -51,6 +57,18 @@ router.post('/', async (req, res) => {
 
     } catch (error) {
         console.error('❌ [visits/POST] Error saving visit:', error.message);
+        console.error('❌ [visits/POST] Error stack:', error.stack);
+        
+        // Check for duplicate visitId error
+        if (error.code === 11000) {
+            console.error('❌ [visits/POST] Duplicate key error. Field:', Object.keys(error.keyValue || {}));
+            return res.status(409).json({
+                success: false,
+                message: 'Visit with this ID already exists',
+                error: 'Duplicate visitId'
+            });
+        }
+        
         res.status(500).json({
             success: false,
             message: 'Error saving visit',
@@ -127,8 +145,10 @@ router.get('/pending', async (req, res) => {
 router.post('/approve', async (req, res) => {
     try {
         const { visitId, status, isLiveOnWebsite, loginId, tempPassword } = req.body;
+        console.log('📨 [visits/approve] Received request:', { visitId, status, isLiveOnWebsite });
 
         if (!visitId) {
+            console.error('❌ [visits/approve] Missing visitId in request body');
             return res.status(400).json({
                 success: false,
                 message: 'Missing visitId'
@@ -139,9 +159,22 @@ router.post('/approve', async (req, res) => {
         const finalLoginId = loginId || `ROOMHY${Math.floor(1000 + Math.random() * 9000)}`;
         const finalPassword = tempPassword || Math.random().toString(36).slice(-8);
 
+        console.log('🔍 [visits/approve] Finding visit by visitId:', visitId);
+        
+        // Build query - check if visitId is a valid MongoDB ObjectId or a timestamp-based ID
+        const mongoose = require('mongoose');
+        let query;
+        if (mongoose.Types.ObjectId.isValid(visitId) && visitId.match(/^[0-9a-fA-F]{24}$/)) {
+            // It's a valid ObjectId
+            query = { $or: [{ _id: visitId }, { visitId: visitId }] };
+        } else {
+            // It's a timestamp-based ID like v_1234567890, search by visitId field only
+            query = { visitId: visitId };
+        }
+        
         // Find and update visit status to approved
         const visit = await VisitData.findOneAndUpdate(
-            { $or: [{ _id: visitId }, { visitId: visitId }] },
+            query,
             {
                 status: status || 'approved',
                 approvedAt: new Date(),
@@ -155,41 +188,60 @@ router.post('/approve', async (req, res) => {
         );
 
         if (!visit) {
+            console.error('❌ [visits/approve] Visit not found:', visitId);
             return res.status(404).json({
                 success: false,
                 message: 'Visit not found'
             });
         }
 
-        // If approved and live on website, also save to ApprovedProperty collection
-        if (status === 'approved' && isLiveOnWebsite) {
-            const ApprovedProperty = require('../models/ApprovedProperty');
+        console.log('✅ [visits/approve] Visit found and updated:', visit._id);
 
-            await ApprovedProperty.findOneAndUpdate(
-                { visitId: visit._id || visit.visitId },
-                {
-                    visitId: visit._id || visit.visitId,
-                    propertyInfo: visit.propertyInfo || {
-                        name: visit.propertyName,
-                        propertyType: visit.propertyType,
-                        area: visit.area,
-                        ownerName: visit.ownerName,
-                        contactPhone: visit.ownerPhone,
-                        address: visit.address
-                    },
-                    generatedCredentials: {
-                        loginId: finalLoginId,
-                        tempPassword: finalPassword
-                    },
-                    isLiveOnWebsite: true,
-                    status: 'approved',
-                    approvedAt: new Date()
+        // Always save/update approved visit to ApprovedProperty collection
+        try {
+            const ApprovedProperty = require('../models/ApprovedProperty');
+            const propData = {
+                visitId: visit._id || visit.visitId,
+                propertyInfo: {
+                    name: visit.propertyName || (visit.propertyInfo && visit.propertyInfo.name) || 'Property',
+                    address: visit.address || (visit.propertyInfo && visit.propertyInfo.address) || '',
+                    city: visit.city || (visit.propertyInfo && visit.propertyInfo.city) || '',
+                    area: visit.area || (visit.propertyInfo && visit.propertyInfo.area) || '',
+                    photos: visit.photos || (visit.propertyInfo && visit.propertyInfo.photos) || [],
+                    ownerName: visit.ownerName || (visit.propertyInfo && visit.propertyInfo.ownerName) || '',
+                    ownerPhone: visit.ownerPhone || visit.contactPhone || (visit.propertyInfo && visit.propertyInfo.contactPhone) || '',
+                    ownerEmail: visit.ownerEmail || (visit.propertyInfo && visit.propertyInfo.ownerEmail) || '',
+                    rent: visit.monthlyRent || 0,
+                    deposit: visit.deposit || '',
+                    description: visit.description || '',
+                    amenities: visit.amenities || [],
+                    genderSuitability: visit.gender || (visit.propertyInfo && visit.propertyInfo.genderSuitability) || '',
+                    propertyType: visit.propertyType || (visit.propertyInfo && visit.propertyInfo.propertyType) || ''
                 },
+                professionalPhotos: visit.professionalPhotos || [],
+                generatedCredentials: {
+                    loginId: finalLoginId,
+                    tempPassword: finalPassword
+                },
+                isLiveOnWebsite: isLiveOnWebsite || false,
+                status: isLiveOnWebsite ? 'live' : 'approved',
+                approvedAt: new Date(),
+                submittedAt: visit.submittedAt || new Date(),
+                approvedBy: 'superadmin'
+            };
+            
+            const approvedProp = await ApprovedProperty.findOneAndUpdate(
+                { visitId: visit._id || visit.visitId },
+                propData,
                 { upsert: true, new: true }
             );
+            console.log('✅ [visits/approve] Saved to ApprovedProperty collection:', approvedProp._id);
+        } catch (approvedErr) {
+            console.warn('⚠️ [visits/approve] Warning saving to ApprovedProperty:', approvedErr.message);
+            // Don't fail the approval if ApprovedProperty save fails
         }
 
-        console.log('✅ [visits/approve] Visit approved:', visitId);
+        console.log('✅ [visits/approve] Visit approved successfully:', visitId);
 
         res.json({
             success: true,
@@ -201,7 +253,8 @@ router.post('/approve', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ [visits/approve] Error approving visit:', error);
+        console.error('❌ [visits/approve] Error approving visit:', error.message);
+        console.error('❌ [visits/approve] Error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Error approving visit',

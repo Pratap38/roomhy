@@ -245,7 +245,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Fallback middleware: serve index.html for any unmatched route (SPA fallback)
 // Must come AFTER all other routes and static middleware
@@ -263,5 +263,5 @@ app.use((req, res, next) => {
     return res.status(404).send('Not Found');
 });
 
-server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`\n✅ API Server running on http://localhost:${PORT}\n`));
 

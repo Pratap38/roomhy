@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bid Status Check</title>
+    <script src="js/api-config.js"></script>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; text-align: left; border: 1px solid #ddd; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bidding Requests Status Check</h1>
+        
+        <div id="status"></div>
+        <table id="biddingTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>Property</th>
+                    <th>Bidder Name</th>
+                    <th>Budget Range</th>
+                    <th>Request Type</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                </tr>
+            </thead>
+            <tbody id="biddingBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API_URL = window.API_URL || 'http://localhost:5001';
+        const statusDiv = document.getElementById('status');
+        
+        async function checkBidStatus() {
+            try {
+                // Get owner from session/storage
+                const ownerSessionRaw = sessionStorage.getItem('owner_session') || localStorage.getItem('owner_session');
+                let ownerId = null;
+                
+                if (ownerSessionRaw) {
+                    const ownerSession = JSON.parse(ownerSessionRaw);
+                    ownerId = ownerSession.loginId || ownerSession.ownerId || ownerSession.id;
+                }
+                
+                if (!ownerId) {
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    ownerId = user.ownerId || user.loginId;
+                }
+                
+                statusDiv.innerHTML += `<div class="status info">Owner ID: <strong>${ownerId || 'NOT FOUND'}</strong></div>`;
+                
+                if (!ownerId) {
+                    statusDiv.innerHTML += `<div class="status error">⚠️ No owner ID found. Please login as a property owner first at <a href="propertyowner/ownerlogin.html">ownerlogin.html</a></div>`;
+                    return;
+                }
+                
+                // Fetch bookings
+                const url = `${API_URL}/api/booking/requests?owner_id=${encodeURIComponent(ownerId)}`;
+                statusDiv.innerHTML += `<div class="status info">Fetching from: <code>${url}</code></div>`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const allBookings = data.data || [];
+                const bids = allBookings.filter(b => b.request_type === 'bid');
+                
+                statusDiv.innerHTML += `<div class="status success">✅ Total bookings: ${allBookings.length}</div>`;
+                statusDiv.innerHTML += `<div class="status success">✅ Bidding requests: ${bids.length}</div>`;
+                
+                if (bids.length === 0) {
+                    statusDiv.innerHTML += `<div class="status info">ℹ️ All request types in response: ${allBookings.map(b => b.request_type).join(', ')}</div>`;
+                    return;
+                }
+                
+                // Display bids
+                document.getElementById('biddingTable').style.display = 'table';
+                const tbody = document.getElementById('biddingBody');
+                tbody.innerHTML = bids.map(bid => `
+                    <tr>
+                        <td>${bid.property_name}</td>
+                        <td>${bid.name}</td>
+                        <td>₹${bid.bid_min || 'N/A'} - ₹${bid.bid_max || 'N/A'}</td>
+                        <td><strong>${bid.request_type}</strong></td>
+                        <td>${bid.status}</td>
+                        <td>${new Date(bid.created_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+                
+            } catch (error) {
+                statusDiv.innerHTML += `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        checkBidStatus();
+    </script>
+</body>
+</html>

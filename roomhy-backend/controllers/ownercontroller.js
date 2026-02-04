@@ -92,7 +92,23 @@ exports.getAllOwners = async (req, res) => {
             owners.forEach(o => { o.propertyCount = 0; });
         }
 
-        res.json({ success: true, owners });
+        // ✅ NEW: Ensure all owners have merged profile data at top level for easy frontend access
+        const enrichedOwners = owners.map(o => ({
+            ...o,
+            // Merge profile data to top level (profile takes priority, then top-level field)
+            name: o.profile?.name || o.name || 'Unknown',
+            email: o.profile?.email || o.email || '',
+            phone: o.profile?.phone || o.phone || '',
+            address: o.profile?.address || o.address || '',
+            locationCode: o.profile?.locationCode || o.locationCode || '',
+            bankAccount: o.profile?.bankAccount || o.bankAccount || '',
+            aadharNumber: o.kyc?.aadharNumber || '',
+            kycStatus: o.kyc?.status || 'pending',
+            documentImage: o.kyc?.documentImage || '',
+            password: o.credentials?.password || ''
+        }));
+
+        res.json({ success: true, owners: enrichedOwners });
     } catch (err) {
         console.error('Get Owners Error:', err);
         res.status(500).json({ success: false, message: 'Server error' });

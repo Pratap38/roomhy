@@ -11,16 +11,20 @@ const ApprovedPropertySchema = new mongoose.Schema({
         name: { type: String, required: true },
         address: { type: String },
         city: { type: String, index: true },
+        area: { type: String },
         photos: [{ type: String }],
         ownerGmail: { type: String },
         ownerName: { type: String },
         ownerPhone: { type: String },
+        ownerEmail: { type: String },
         rent: { type: Number },
         deposit: { type: String },
         description: { type: String },
         amenities: [{ type: String }],
-        genderSuitability: { type: String }
+        genderSuitability: { type: String },
+        propertyType: { type: String }
     },
+    professionalPhotos: [{ type: String }],
     generatedCredentials: {
         loginId: { type: String },
         tempPassword: { type: String }
@@ -35,6 +39,10 @@ const ApprovedPropertySchema = new mongoose.Schema({
         enum: ['approved', 'live', 'offline'],
         default: 'approved',
         index: true
+    },
+    submittedAt: {
+        type: Date,
+        default: Date.now
     },
     approvedAt: {
         type: Date,

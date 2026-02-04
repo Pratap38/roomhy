@@ -1,15 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
     <script>
         // API Configuration - Support both local and production
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000'
+            ? 'http://localhost:5001'
             : 'https://roomhy-backend-wqwo.onrender.com';
         console.log('Using API_URL:', API_URL);
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
     <title>Athena House, Hinjawadi - Roomhy</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,7 +154,7 @@
                 <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
                     <i data-lucide="users" class="w-6 h-6 text-gray-600"></i>
                 </div>
-                <span class="text-lg font-semibold text-gray-800">Hi Yasmine ðŸ‘‹</span>
+                <span class="text-lg font-semibold text-gray-800">Hi Yasmine Ã°Å¸â€˜â€¹</span>
             </div>
             <a href="profile.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
         </div>
@@ -264,7 +265,7 @@
                     <div class="mb-4">
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="text-sm font-semibold text-gray-800">All Photos</h4>
-                            <span class="text-xs font-medium text-gray-500">â† Scroll to browse â†’</span>
+                            <span class="text-xs font-medium text-gray-500">Ã¢â€ Â Scroll to browse Ã¢â€ â€™</span>
                         </div>
                         <div class="flex gap-3 overflow-x-auto pb-2 thumbnail-strip" id="galleryThumbnails">
                             <!-- Thumbnails will be populated dynamically -->
@@ -293,10 +294,10 @@
                     
                     <!-- Zoom Controls -->
                     <div class="zoom-controls">
-                        <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">âˆ’</button>
+                        <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">Ã¢Ë†â€™</button>
                         <div class="zoom-level" id="zoomLevel">100%</div>
                         <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">+</button>
-                        <button class="zoom-btn" onclick="resetZoom()" title="Reset">âŸ²</button>
+                        <button class="zoom-btn" onclick="resetZoom()" title="Reset">Ã¢Å¸Â²</button>
                     </div>
                     
                     <!-- Image Navigation -->
@@ -369,7 +370,7 @@
                                 </div>
                             </div>
                             <div id="student-reviews-stars" class="flex gap-1 text-3xl text-amber-400 mb-4">
-                                <span>★</span><span>★</span><span>★</span><span>★</span><span>☆</span>
+                                <span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜†</span>
                             </div>
                             <p id="student-reviews-comment" class="text-gray-700 text-sm italic border-t border-gray-200 pt-4">No student reviews available yet</p>
                         </div>
@@ -387,7 +388,7 @@
                                 </div>
                             </div>
                             <div id="employee-rating-stars" class="flex gap-1 text-3xl text-emerald-500 mb-4">
-                                <span>★</span><span>★</span><span>★</span><span>★</span><span>☆</span>
+                                <span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜†</span>
                             </div>
                             <p id="employee-rating-comment" class="text-gray-700 text-sm italic border-t border-gray-200 pt-4">No employee rating available yet</p>
                         </div>
@@ -463,7 +464,7 @@
                 <div class="light-card p-8 rounded-2xl sticky sticky-booking-card border-l-4 border-teal-500">
                     <!-- Pricing Header -->
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Monthly Budget</p>
-                    <p id="property-budget" class="text-4xl font-bold text-gray-900 mb-8">₹10,000 <span class="text-lg font-normal text-gray-500">/ month</span></p>
+                    <p id="property-budget" class="text-4xl font-bold text-gray-900 mb-8">â‚¹10,000 <span class="text-lg font-normal text-gray-500">/ month</span></p>
                     
                     <!-- Tab Navigation -->
                     <div class="flex gap-3 mb-6 border-b border-gray-200">
@@ -522,7 +523,7 @@
                                 <p class="text-sm text-gray-500">Co-Living</p>
                                 <h3 class="font-bold text-lg mt-1 truncate">The Hive</h3>
                                 <p class="text-gray-500 text-sm mt-1 truncate">Koramangala, BLR</p>
-                                <p class="font-bold mt-2">₹18,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                                <p class="font-bold mt-2">â‚¹18,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
                             </div>
                         </div>
                     </a>
@@ -533,7 +534,7 @@
                                 <p class="text-sm text-gray-500">Private Studio</p>
                                 <h3 class="font-bold text-lg mt-1 truncate">Campus Corner</h3>
                                 <p class="text-gray-500 text-sm mt-1 truncate">North Campus, Delhi</p>
-                                <p class="font-bold mt-2">₹13,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                                <p class="font-bold mt-2">â‚¹13,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
                             </div>
                         </div>
                     </a>
@@ -544,7 +545,7 @@
                                 <p class="text-sm text-gray-500">Co-Living</p>
                                 <h3 class="font-bold text-lg mt-1 truncate">Prime Student Living</h3>
                                 <p class="text-gray-500 text-sm mt-1 truncate">Saket Nagar, Indore</p>
-                                <p class="font-bold mt-2">₹11,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                                <p class="font-bold mt-2">â‚¹11,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
                             </div>
                         </div>
                     </a>
@@ -555,7 +556,7 @@
                                 <p class="text-sm text-gray-500">Apartment</p>
                                 <h3 class="font-bold text-lg mt-1 truncate">Modern Loft</h3>
                                 <p class="text-gray-500 text-sm mt-1 truncate">Powai, Mumbai</p>
-                                <p class="font-bold mt-2">₹22,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                                <p class="font-bold mt-2">â‚¹22,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
                             </div>
                         </div>
                     </a>
@@ -564,75 +565,9 @@
             </div>
         </section>
 
-         <section id="similar-properties" class="mt-16 md:mt-24">
-            <div class="flex items-center space-x-4 mb-10">
-                <h2 class="text-4xl font-bold text-gray-900">Similar Properties Near You</h2>
-                <span class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">Recommended</span>
-            </div>
-            <div class="relative">
-                <button id="similar-prev" class="absolute -left-3 top-1/2 -translate-y-1/2 z-10 p-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full shadow-lg hover:shadow-xl text-white hidden sm:block transition-all duration-300 hover:scale-110"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
-                <div id="similar-slider" class="flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth horizontal-slider">
-                    <a href="property.html?id=4" class="group block flex-shrink-0 snap-start w-80">
-                        <div class="light-card rounded-2xl overflow-hidden h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-200">
-                            <div class="relative h-48 overflow-hidden">
-                                <img src="https://images.unsplash.com/photo-1570129477492-45c003edd2be?q=80&w=2070&auto:format&fit=crop" alt="Similar Property 1" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                                <div class="absolute top-3 left-3 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold">For Boys</div>
-                            </div>
-                            <div class="p-5">
-                                <h3 class="font-bold text-lg mt-1 truncate text-gray-900">Modern Student Hub</h3>
-                                <div class="flex items-center space-x-1 text-gray-600 text-sm mt-2">
-                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
-                                    <p class="truncate">Hinjawadi, Pune</p>
-                                </div>
-                                <div class="flex justify-between items-end mt-4 pt-4 border-t border-gray-200">
-                                    <p class="font-bold text-lg text-gray-900">₹11,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
-                                    <button class="text-emerald-600 hover:text-emerald-700 font-bold text-sm">View â†’</button>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                    <a href="property.html?id=5" class="group block flex-shrink-0 snap-start w-80">
-                        <div class="light-card rounded-2xl overflow-hidden h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-200">
-                            <div class="relative h-48 overflow-hidden">
-                                <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto:format&fit=crop" alt="Similar Property 2" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                                <div class="absolute top-3 left-3 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-bold">Co-Ed</div>
-                            </div>
-                            <div class="p-5">
-                                <h3 class="font-bold text-lg mt-1 truncate text-gray-900">The Scholar's Den</h3>
-                                <div class="flex items-center space-x-1 text-gray-600 text-sm mt-2">
-                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
-                                    <p class="truncate">Wakad, Pune</p>
-                                </div>
-                                <div class="flex justify-between items-end mt-4 pt-4 border-t border-gray-200">
-                                    <p class="font-bold text-lg text-gray-900">₹14,500 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
-                                    <button class="text-emerald-600 hover:text-emerald-700 font-bold text-sm">View â†’</button>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                    <a href="property.html?id=3" class="group block flex-shrink-0 snap-start w-80">
-                        <div class="light-card rounded-2xl overflow-hidden h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-200">
-                            <div class="relative h-48 overflow-hidden">
-                                <img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1974&auto:format&fit=crop" alt="Similar Property 3" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                                <div class="absolute top-3 left-3 bg-pink-600 text-white px-3 py-1 rounded-full text-xs font-bold">For Girls</div>
-                            </div>
-                            <div class="p-5">
-                                <h3 class="font-bold text-lg mt-1 truncate text-gray-900">Campus Comforts PG</h3>
-                                <div class="flex items-center space-x-1 text-gray-600 text-sm mt-2">
-                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
-                                    <p class="truncate">Hinjawadi, Pune</p>
-                                </div>
-                                <div class="flex justify-between items-end mt-4 pt-4 border-t border-gray-200">
-                                    <p class="font-bold text-lg text-gray-900">₹10,500 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
-                                    <button class="text-emerald-600 hover:text-emerald-700 font-bold text-sm">View â†’</button>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <button id="similar-next" class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 p-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full shadow-lg hover:shadow-xl text-white hidden sm:block transition-all duration-300 hover:scale-110"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
-            </div>
-        </section>
+    </main>
+            
+
 
     </main>
 
@@ -667,10 +602,10 @@
                         <span>Explore</span>
                     </h4>
                     <ul class="space-y-3">
-                        <li><a href="stays.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>â†’</span><span>Apartments</span></a></li>
-                        <li><a href="stays.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>â†’</span><span>Hostels</span></a></li>
-                        <li><a href="stays.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>â†’</span><span>Co-Living</span></a></li>
-                        <li><a href="stays.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>â†’</span><span>PGs</span></a></li>
+                        <li><a href="stays.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>Ã¢â€ â€™</span><span>Apartments</span></a></li>
+                        <li><a href="stays.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>Ã¢â€ â€™</span><span>Hostels</span></a></li>
+                        <li><a href="stays.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>Ã¢â€ â€™</span><span>Co-Living</span></a></li>
+                        <li><a href="stays.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>Ã¢â€ â€™</span><span>PGs</span></a></li>
                     </ul>
                 </div>
                 <div>
@@ -679,10 +614,10 @@
                         <span>Company</span>
                     </h4>
                     <ul class="space-y-3">
-                        <li><a href="about.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>â†’</span><span>About Us</span></a></li>
-                        <li><a href="list.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>â†’</span><span>List Your Property</span></a></li>
-                        <li><a href="privacy.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>â†’</span><span>Privacy Policy</span></a></li>
-                        <li><a href="terms.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>â†’</span><span>Terms of Service</span></a></li>
+                        <li><a href="about.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>Ã¢â€ â€™</span><span>About Us</span></a></li>
+                        <li><a href="list.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>Ã¢â€ â€™</span><span>List Your Property</span></a></li>
+                        <li><a href="privacy.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>Ã¢â€ â€™</span><span>Privacy Policy</span></a></li>
+                        <li><a href="terms.html" class="text-gray-300 hover:text-white transition-colors flex items-center space-x-2"><span>Ã¢â€ â€™</span><span>Terms of Service</span></a></li>
                     </ul>
                 </div>
                 <div>
@@ -708,7 +643,7 @@
             </div>
             <div class="mt-12 border-t border-gray-700 pt-8 text-center text-gray-400 text-sm">
                 <p class="flex items-center justify-center space-x-2">
-                    <span>© 2025 Roomhy. All Rights Reserved. Built with</span>
+                    <span>Â© 2025 Roomhy. All Rights Reserved. Built with</span>
                     <i data-lucide="heart" class="w-4 h-4 text-red-500 fill-red-500"></i>
                     <span>for students.</span>
                 </p>
@@ -726,7 +661,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <button id="gallery-zoom-in" class="p-2 bg-white/10 text-white rounded hover:bg-white/20">+</button>
-                    <button id="gallery-zoom-out" class="p-2 bg-white/10 text-white rounded hover:bg-white/20">âˆ’</button>
+                    <button id="gallery-zoom-out" class="p-2 bg-white/10 text-white rounded hover:bg-white/20">Ã¢Ë†â€™</button>
                     <button id="gallery-reset" class="p-2 bg-white/10 text-white rounded hover:bg-white/20">Reset</button>
                     <button id="gallery-close" class="p-2 bg-white/10 text-white rounded hover:bg-white/20"><i data-lucide="x" class="w-5 h-5"></i></button>
                 </div>
@@ -792,7 +727,7 @@
                     <div class="space-y-2 text-sm text-gray-600">
                         <div class="flex justify-between">
                             <span>Budget</span>
-                            <span id="payment-budget" class="font-semibold text-gray-900">₹0</span>
+                            <span id="payment-budget" class="font-semibold text-gray-900">â‚¹0</span>
                         </div>
                         <div class="flex justify-between">
                             <span>Bid Type</span>
@@ -805,11 +740,11 @@
                 <div class="space-y-3 border-b border-gray-200 pb-4">
                     <div class="flex justify-between items-center text-sm">
                         <label class="text-gray-600">Bid Amount <span class="text-xs text-gray-500">(Refundable)</span></label>
-                        <span class="font-semibold text-gray-900">₹500</span>
+                        <span class="font-semibold text-gray-900">â‚¹500</span>
                     </div>
                     <div class="flex justify-between items-center text-sm">
                         <label class="text-gray-600">Processing Fee</label>
-                        <span class="font-semibold text-gray-900">₹0</span>
+                        <span class="font-semibold text-gray-900">â‚¹0</span>
                     </div>
                 </div>
 
@@ -817,9 +752,9 @@
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div class="flex justify-between items-center">
                         <span class="text-lg font-semibold text-gray-900">Total Amount</span>
-                        <span id="payment-total" class="text-2xl font-bold text-yellow-700">₹500</span>
+                        <span id="payment-total" class="text-2xl font-bold text-yellow-700">â‚¹500</span>
                     </div>
-                    <p class="text-xs text-gray-600 mt-2">âœ“ Fully refundable bid amount. If you don't like the place after visits, full refund will be processed.</p>
+                    <p class="text-xs text-gray-600 mt-2">Ã¢Å“â€œ Fully refundable bid amount. If you don't like the place after visits, full refund will be processed.</p>
                 </div>
 
                 <!-- Terms & Conditions -->
@@ -839,7 +774,7 @@
                 <!-- Secure Badge -->
                 <div class="text-center text-xs text-gray-500 flex items-center justify-center space-x-1">
                     <i data-lucide="shield-check" class="w-4 h-4 text-green-600"></i>
-                    <span>SSL Secure "¢ PCI Compliant</span>
+                    <span>SSL Secure "Â¢ PCI Compliant</span>
                 </div>
             </div>
         </div>
@@ -980,7 +915,7 @@
                     const commentEl = document.getElementById(commentId);
                     
                     if (!rating || rating === '-' || rating === 0) {
-                        if (starsEl) starsEl.innerHTML = '<span>★</span><span>★</span><span>★</span><span>★</span><span>☆</span>';
+                        if (starsEl) starsEl.innerHTML = '<span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜†</span>';
                         if (ratingEl) ratingEl.textContent = '-';
                         if (commentEl) commentEl.textContent = isStudent ? 'No student reviews available yet' : 'No employee rating available yet';
                         return;
@@ -990,8 +925,8 @@
                     const fullStars = Math.floor(ratingValue);
                     const emptyStars = 5 - fullStars;
                     let starsHtml = '';
-                    for (let i = 0; i < fullStars; i++) starsHtml += '<span>★</span>';
-                    for (let i = 0; i < emptyStars; i++) starsHtml += '<span>☆</span>';
+                    for (let i = 0; i < fullStars; i++) starsHtml += '<span>â˜…</span>';
+                    for (let i = 0; i < emptyStars; i++) starsHtml += '<span>â˜†</span>';
                     
                     if (starsEl) starsEl.innerHTML = starsHtml;
                     if (ratingEl) ratingEl.textContent = ratingValue.toFixed(1);
@@ -1036,8 +971,8 @@
                     if (v.furnishing) facts.push({k:'Furnishing', v: v.furnishing});
                     if (v.ventilation) facts.push({k:'Ventilation', v: v.ventilation});
                     if (v.minStay) facts.push({k:'Min Stay (months)', v: v.minStay});
-                    if (v.monthlyRent) facts.push({k:'Rent', v: '₹' + v.monthlyRent});
-                    if (v.deposit) facts.push({k:'Deposit', v: '₹' + v.deposit});
+                    if (v.monthlyRent) facts.push({k:'Rent', v: 'â‚¹' + v.monthlyRent});
+                    if (v.deposit) facts.push({k:'Deposit', v: 'â‚¹' + v.deposit});
 
                     if (facts.length === 0) {
                         quickFactsGrid.innerHTML = '<div class="text-sm text-gray-500 col-span-2 md:col-span-3">No quick facts available.</div>';
@@ -1281,7 +1216,7 @@
                 const priceCard = document.querySelector('.sticky-booking-card p.text-3xl');
                 if (priceCard) {
                     const rent = v.monthlyRent || v.rent || v.price || prop.monthlyRent || prop.rent || 0;
-                    priceCard.innerHTML = `₹${rent} <span class="text-base font-normal text-gray-500">/ bed</span>`;
+                    priceCard.innerHTML = `â‚¹${rent} <span class="text-base font-normal text-gray-500">/ bed</span>`;
                 }
 
                 document.title = `${title} - Roomhy`;
@@ -1476,7 +1411,7 @@
                             const title = p.name || p.title || r.title || 'Property';
                             const loc = p.area || p.locality || r.city || '';
                             const price = r.monthlyRent || r.rent || p.monthlyRent || p.rent || 'N/A';
-                            return `<a href="property.html?id=${r._id||r.id||''}" class="group block flex-shrink-0 snap-start w-80"><div class="light-card rounded-xl overflow-hidden h-full"><img src="${img}" alt="Recommended Property" class="w-full h-48 object-cover"><div class="p-4"><h3 class="font-bold text-lg mt-1 truncate">${title}</h3><p class="text-gray-500 text-sm mt-1 truncate">${loc}</p><p class="font-bold mt-2">₹${price} <span class=\"text-sm font-normal text-gray-500\">/ mo</span></p></div></div></a>`;
+                            return `<a href="property.html?id=${r._id||r.id||''}" class="group block flex-shrink-0 snap-start w-80"><div class="light-card rounded-xl overflow-hidden h-full"><img src="${img}" alt="Recommended Property" class="w-full h-48 object-cover"><div class="p-4"><h3 class="font-bold text-lg mt-1 truncate">${title}</h3><p class="text-gray-500 text-sm mt-1 truncate">${loc}</p><p class="font-bold mt-2">â‚¹${price} <span class=\"text-sm font-normal text-gray-500\">/ mo</span></p></div></div></a>`;
                         }).join('');
                     }
                     // Render Similar Properties (only professional photos)
@@ -1488,7 +1423,7 @@
                             const title = p.name || p.title || r.title || 'Property';
                             const loc = p.area || p.locality || r.city || '';
                             const price = r.monthlyRent || r.rent || p.monthlyRent || p.rent || 'N/A';
-                            return `<a href="property.html?id=${r._id||r.id||''}" class="group block flex-shrink-0 snap-start w-80"><div class="light-card rounded-2xl overflow-hidden h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-200"><div class="relative h-48 overflow-hidden"><img src="${img}" alt="Similar Property" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"></div><div class="p-5"><h3 class="font-bold text-lg mt-1 truncate text-gray-900">${title}</h3><div class="flex items-center space-x-1 text-gray-600 text-sm mt-2"><i data-lucide=\"map-pin\" class=\"w-4 h-4\"></i><p class="truncate">${loc}</p></div><div class="flex justify-between items-end mt-4 pt-4 border-t border-gray-200"><p class="font-bold text-lg text-gray-900">₹${price} <span class=\"text-sm font-normal text-gray-500\">/ mo</span></p><button class=\"text-emerald-600 hover:text-emerald-700 font-bold text-sm\">View â†’</button></div></div></div></a>`;
+                            return `<a href="property.html?id=${r._id||r.id||''}" class="group block flex-shrink-0 snap-start w-80"><div class="light-card rounded-2xl overflow-hidden h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-200"><div class="relative h-48 overflow-hidden"><img src="${img}" alt="Similar Property" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"></div><div class="p-5"><h3 class="font-bold text-lg mt-1 truncate text-gray-900">${title}</h3><div class="flex items-center space-x-1 text-gray-600 text-sm mt-2"><i data-lucide=\"map-pin\" class=\"w-4 h-4\"></i><p class="truncate">${loc}</p></div><div class="flex justify-between items-end mt-4 pt-4 border-t border-gray-200"><p class="font-bold text-lg text-gray-900">â‚¹${price} <span class=\"text-sm font-normal text-gray-500\">/ mo</span></p><button class=\"text-emerald-600 hover:text-emerald-700 font-bold text-sm\">View Ã¢â€ â€™</button></div></div></div></a>`;
                         }).join('');
                     }
                 } else {
@@ -1560,7 +1495,7 @@
                             return;
                         }
 
-                        // ✅ CHECK IF EMAIL HAS USER ID IN NEW_SIGNUPS
+                        // âœ… CHECK IF EMAIL HAS USER ID IN NEW_SIGNUPS
                         const kycTableKey = 'roomhy_kyc_verification';
                         const signupUsers = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
                         const userSignup = signupUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
@@ -1569,12 +1504,12 @@
                         if (userSignup && userSignup.id) {
                             // User found in new_signups with user ID
                             userId = userSignup.id;
-                            console.log('✅ User found in new_signups with ID:', userId);
+                            console.log('âœ… User found in new_signups with ID:', userId);
                             // Proceed directly with booking
                             await submitBookingRequest(user, name, email, userId, scheduleForm);
                         } else {
                             // User not found - show attractive modal popup
-                            console.warn('⚠️ Email not found in new_signups, showing signup modal');
+                            console.warn('âš ï¸ Email not found in new_signups, showing signup modal');
                             
                             // Show modal with callback for guest proceed
                             showSignupModal(email, async () => {
@@ -1585,16 +1520,16 @@
                     });
                 }
 
-                // ✅ HELPER FUNCTION: Submit booking request
+                // âœ… HELPER FUNCTION: Submit booking request
                 async function submitBookingRequest(user, name, email, userId, scheduleForm) {
                     // Get property details from page
                     const propertyId = getParam('id') || '1';
                     const propertyName = document.getElementById('property-title')?.textContent || 'Property';
                     const area = document.querySelector('[id="property-location"]')?.textContent || 'Unknown';
                     const propertyType = document.querySelector('[data-field="property-type"]')?.textContent || 'PG';
-                    const rentAmount = document.querySelector('[data-field="rent-amount"]')?.textContent?.replace(/₹|,/g, '') || 0;
+                    const rentAmount = document.querySelector('[data-field="rent-amount"]')?.textContent?.replace(/â‚¹|,/g, '') || 0;
 
-                    // ✅ Get property owner ID from approved visit data
+                    // âœ… Get property owner ID from approved visit data
                     let propertyOwnerId = null;
                     const visits = getVisitsFromStorage();
                     const propertyId_str = String(propertyId);
@@ -1607,7 +1542,9 @@
                         );
                         
                         if (foundVisit) {
-                            if (foundVisit.status !== 'approved') {
+                            // Accept both 'approved' and 'live' statuses
+                            const validStatuses = ['approved', 'live'];
+                            if (!validStatuses.includes(foundVisit.status)) {
                                 alert('Error: This property has not been approved by admin yet. Please contact support.');
                                 return;
                             }
@@ -1629,7 +1566,7 @@
                     try {
                         const apiUrl = API_URL;
 
-                        // ✅ ADD USER ID TO BOOKING REQUEST
+                        // âœ… ADD USER ID TO BOOKING REQUEST
                         const bookingData = {
                             property_id: propertyId,
                             property_name: propertyName,
@@ -1645,10 +1582,10 @@
                             message: ''
                         };
 
-                        // ✅ INCLUDE NEW_SIGNUPS USER ID IF AVAILABLE
+                        // âœ… INCLUDE NEW_SIGNUPS USER ID IF AVAILABLE
                         if (userId) {
                             bookingData.signup_user_id = userId;
-                            console.log('📋 Adding signup user ID to booking request:', userId);
+                            console.log('ðŸ“‹ Adding signup user ID to booking request:', userId);
                         }
 
                         const response = await fetch(`${apiUrl}/api/booking/create`, {
@@ -1661,7 +1598,7 @@
                             const result = await response.json();
                             const bookingId = result.bookingId || result._id || result.id;
                             
-                            // ✅ INITIALIZE CHAT WITH USER ID
+                            // âœ… INITIALIZE CHAT WITH USER ID
                             if (userId) {
                                 const chatData = {
                                     user_id: userId,
@@ -1677,13 +1614,13 @@
                                 const existingChats = JSON.parse(localStorage.getItem('roomhy_booking_chats') || '{}');
                                 existingChats[bookingId] = chatData;
                                 localStorage.setItem('roomhy_booking_chats', JSON.stringify(existingChats));
-                                console.log('💬 Chat flow initialized with user ID:', userId);
+                                console.log('ðŸ’¬ Chat flow initialized with user ID:', userId);
                             }
 
                             alert(`Thank you ${name}! Your request has been sent to the property owner. We'll contact you soon.`);
                             scheduleForm.reset();
                             
-                            // ✅ REDIRECT TO INDEX PAGE ONLY
+                            // âœ… REDIRECT TO INDEX PAGE ONLY
                             setTimeout(() => {
                                 window.location.href = '../index.html';
 
@@ -1788,20 +1725,7 @@
             });
         }
 
-        /* Similar Properties Slider */
-        const similarSlider = document.getElementById('similar-slider');
-        const similarPrev = document.getElementById('similar-prev');
-        const similarNext = document.getElementById('similar-next');
-        
-        if (similarSlider && similarPrev && similarNext) {
-            const similarCardWidth = similarSlider.querySelector(':first-child')?.offsetWidth + 24 || 344; // w-80 + gap-6
-            similarNext.addEventListener('click', () => {
-                similarSlider.scrollBy({ left: similarCardWidth, behavior: 'smooth' });
-            });
-            similarPrev.addEventListener('click', () => {
-                similarSlider.scrollBy({ left: -similarCardWidth, behavior: 'smooth' });
-            });
-        }
+
 
 
         /* Share Modal Logic */
@@ -2075,7 +1999,7 @@
                     propertyId: document.getElementById('property-title')?.textContent || 'Unknown Property',
                     propertyName: document.getElementById('property-title')?.textContent || 'Unknown Property',
                     location: document.getElementById('property-location')?.textContent || 'Unknown Location',
-                    budget: document.getElementById('property-budget')?.textContent || '₹0',
+                    budget: document.getElementById('property-budget')?.textContent || 'â‚¹0',
                 };
 
                 const enquiryRecord = {
@@ -2098,7 +2022,7 @@
                 ownerEnquiries.unshift(enquiryRecord);
                 localStorage.setItem('owner_enquiries_' + ownerId, JSON.stringify(ownerEnquiries));
 
-                // Chat integration removed — do not emit socket events
+                // Chat integration removed â€” do not emit socket events
 
                 // Redirect to owner booking requests page filtered by property and owner
                 try {
@@ -2266,7 +2190,7 @@
         })();
     </script>
 
-    <!-- ✅ ATTRACTIVE SIGNUP POPUP MODAL -->
+    <!-- âœ… ATTRACTIVE SIGNUP POPUP MODAL -->
     <div id="signupModalOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" style="animation: fadeIn 0.3s ease-in-out;">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8" style="animation: slideUp 0.3s ease-out;">
             <!-- Close Button -->
@@ -2340,12 +2264,12 @@
 
             <!-- Security Note -->
             <p class="text-xs text-gray-500 text-center mt-6">
-                🔒 Your information is secure. We never share your data.
+                ðŸ”’ Your information is secure. We never share your data.
             </p>
         </div>
     </div>
 
-    <!-- ✅ MODAL ANIMATIONS -->
+    <!-- âœ… MODAL ANIMATIONS -->
     <style>
         @keyframes fadeIn {
             from {
@@ -2368,7 +2292,7 @@
         }
     </style>
 
-    <!-- ✅ MODAL CONTROL FUNCTIONS -->
+    <!-- âœ… MODAL CONTROL FUNCTIONS -->
     <script>
         let userEmailForSignup = '';
         let guestProceedCallback = null;
@@ -2418,3 +2342,4 @@
     </script>
 </body>
 </html>
+

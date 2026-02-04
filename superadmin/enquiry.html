@@ -7,7 +7,7 @@
     <script>
         // API Configuration with better debugging
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000'
+            ? 'http://localhost:5001'
             : 'https://roomhy-backend-wqwo.onrender.com';
         
         console.log(`🔗 Using API_URL: ${API_URL}`);
@@ -373,7 +373,7 @@
 
                 return `
                 <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-4 py-3 text-xs font-mono text-gray-600">${v._id ? v._id.slice(-8).toUpperCase() : '-'}</td>
+                    <td class="px-4 py-3 text-xs font-mono text-gray-600">${v.visitId || v._id.slice(-8).toUpperCase()}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${v.submittedAt ? new Date(v.submittedAt).toLocaleString() : '-'}</td>
                     <td class="px-4 py-3 text-sm font-semibold text-slate-700">${v.staffName || prop.staffName || '-'}</td>
                     <td class="px-4 py-3 text-sm">${v.staffId || prop.staffId || '-'}</td>
@@ -414,15 +414,15 @@
                     </td>
                     <td class="px-4 py-3">${geoOk}</td>
                     <td class="px-4 py-3">
-                        <button onclick="openMap('${v._id}')" class="text-xs px-2 py-1 bg-gray-50 rounded border text-gray-600 hover:bg-gray-100" ${!(v.latitude && v.longitude) ? 'disabled' : ''}>Map</button>
+                        <button onclick="openMap('${v.visitId}')" class="text-xs px-2 py-1 bg-gray-50 rounded border text-gray-600 hover:bg-gray-100" ${!(v.latitude && v.longitude) ? 'disabled' : ''}>Map</button>
                     </td>
                     <td class="px-4 py-3">${v.status || '-'}</td>
                     <td class="px-4 py-3 font-mono text-sm text-purple-700">${loginId}</td>
                     <td class="px-4 py-3 font-mono text-sm">${password}</td>
                     <td class="px-4 py-3 text-center">
                         <div class="flex items-center justify-center gap-2">
-                            <button onclick="approve('${v._id}')" class="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors" title="Approve"><i data-lucide="check" class="w-4 h-4"></i></button>
-                            <button onclick="holdVisit('${v._id}')" class="p-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors" title="Hold"><i data-lucide="pause" class="w-4 h-4"></i></button>
+                            <button onclick="approve('${v.visitId}')" class="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors" title="Approve"><i data-lucide="check" class="w-4 h-4"></i></button>
+                            <button onclick="holdVisit('${v.visitId}')" class="p-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors" title="Hold"><i data-lucide="pause" class="w-4 h-4"></i></button>
                         </div>
                     </td>
                 </tr>`;
@@ -667,7 +667,12 @@
         }
 
         async function confirmApproval(shouldUpload) {
-            if(!currentApprovingId) return;
+            console.log('🔘 confirmApproval called with shouldUpload:', shouldUpload, 'currentApprovingId:', currentApprovingId);
+            
+            if(!currentApprovingId) {
+                console.error('❌ No visit ID to approve');
+                return;
+            }
             
             let visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
             let sessionVisits = JSON.parse(sessionStorage.getItem('roomhy_visits') || '[]');
@@ -686,57 +691,84 @@
                 visits = merged;
             }
             
-            const idx = visits.findIndex(v => v._id === currentApprovingId);
+            // Find visit in storage - check both _id and visitId fields
+            const idx = visits.findIndex(v => v._id === currentApprovingId || v.visitId === currentApprovingId);
+            let visitData = null;
+            
             if(idx !== -1) {
-                const loginId = `ROOMHY${Math.floor(1000 + Math.random() * 9000)}`;
-                const password = Math.random().toString(36).slice(-8);
+                visitData = visits[idx];
+                console.log('✅ Visit found at index', idx, '- Setting status to approved');
+            } else {
+                console.warn('⚠️ Visit not found in storage - will proceed with API call only');
+                // Create a minimal visit object for API call
+                visitData = { _id: currentApprovingId, visitId: currentApprovingId };
+            }
+            
+            const loginId = `ROOMHY${Math.floor(1000 + Math.random() * 9000)}`;
+            const password = Math.random().toString(36).slice(-8);
 
+            // Update status in storage if found
+            if (idx !== -1) {
                 visits[idx].status = 'approved';
                 visits[idx].isLiveOnWebsite = shouldUpload;
                 visits[idx].generatedCredentials = { loginId, tempPassword: password };
                 if (window.safeStorage) { window.safeStorage.setVisits(visits); } else { localStorage.setItem('roomhy_visits', JSON.stringify(visits)); }
-                
-                // Always sync approval with backend API
-                try {
-                    const response = await fetch(API_URL + '/api/visits/approve', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': sessionStorage.getItem('token') || localStorage.getItem('token') || ''
-                        },
-                        body: JSON.stringify({
-                            visitId: currentApprovingId,
-                            status: 'approved',
-                            isLiveOnWebsite: shouldUpload,
-                            loginId: loginId,
-                            tempPassword: password
-                        })
-                    });
-                    if (!response.ok) {
-                        console.warn(`API Error ${response.status}: ${response.statusText} from ${API_URL}/api/visits/approve`);
-                    } else {
-                        const data = await response.json();
-                        console.log('✅ Visit approved and synced to backend:', data);
-                    }
-                } catch (err) {
-                    console.warn('Backend sync failed:', err.message);
-                }
-                
-                document.getElementById('modalLoginId').innerText = loginId;
-                document.getElementById('modalPassword').innerText = password;
-                
-                // Send email with owner credentials
-                const ownerEmail = visits[idx].ownerEmail || visits[idx].email;
-                const ownerName = visits[idx].ownerName || visits[idx].name || 'Owner';
-                if (ownerEmail) {
-                    sendOwnerCredentialsEmail(ownerEmail, ownerName, loginId, password);
-                }
-                
-                document.getElementById('approveModal').classList.add('hidden');
-                document.getElementById('successModal').classList.remove('hidden');
-                document.getElementById('successModal').classList.add('flex');
-                fetchEnquiries();
             }
+            
+            // Always sync approval with backend API
+            console.log('🌐 Syncing to backend API:', API_URL + '/api/visits/approve');
+            try {
+                const payload = {
+                    visitId: currentApprovingId,
+                    status: 'approved',
+                    isLiveOnWebsite: shouldUpload,
+                    loginId: loginId,
+                    tempPassword: password
+                };
+                console.log('📤 Sending payload:', payload);
+                
+                const response = await fetch(API_URL + '/api/visits/approve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': sessionStorage.getItem('token') || localStorage.getItem('token') || ''
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log('📥 Backend response status:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`❌ API Error ${response.status}: ${errorText}`);
+                    console.warn(`API Error ${response.status}: ${response.statusText} from ${API_URL}/api/visits/approve`);
+                } else {
+                    const data = await response.json();
+                    console.log('✅ Visit approved and synced to backend:', data);
+                }
+            } catch (err) {
+                console.error('❌ Backend sync error:', err);
+                console.warn('Backend sync failed:', err.message);
+            }
+            
+            document.getElementById('modalLoginId').innerText = loginId;
+            document.getElementById('modalPassword').innerText = password;
+            
+            // Send email with owner credentials
+            const ownerEmail = visitData.ownerEmail || visitData.email;
+            const ownerName = visitData.ownerName || visitData.name || 'Owner';
+            if (ownerEmail) {
+                console.log('📧 Sending credentials email to:', ownerEmail);
+                sendOwnerCredentialsEmail(ownerEmail, ownerName, loginId, password);
+            } else {
+                console.warn('⚠️ No owner email found for', currentApprovingId);
+            }
+            
+            document.getElementById('approveModal').classList.add('hidden');
+            document.getElementById('successModal').classList.remove('hidden');
+            document.getElementById('successModal').classList.add('flex');
+            fetchEnquiries();
+            
             currentApprovingId = null;
         }
 

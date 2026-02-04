@@ -214,9 +214,9 @@
                 </div>
 
                 <!-- Active Chat Area -->
-                <div id="chat-active" class="flex-1 flex flex-col hidden">
+                <div id="chat-active" class="flex-1 flex flex-col hidden h-full">
                     <!-- Chat Header -->
-                    <div class="px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div class="px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
                         <div class="flex items-center gap-2 sm:gap-4">
                             <button id="back-btn" class="md:hidden text-slate-400"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
                             <div class="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-sm sm:text-base" id="active-chat-avatar">O</div>
@@ -326,7 +326,9 @@
     </footer>
 
     <script>
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') {
+            try { lucide.createIcons(); } catch(e) { console.warn('Lucide icons failed to load', e); }
+        }
 
         // Mobile menu functionality
         const menuToggle = document.getElementById('menu-toggle');
@@ -375,7 +377,7 @@
             const loginId = currentUser.loginId;
             const userId = localStorage.getItem('user_id');
             const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-                ? 'http://localhost:5000' 
+                ? 'http://localhost:5001' 
                 : 'https://roomhy-backend-wqwo.onrender.com';
 
             try {
@@ -415,16 +417,20 @@
                     const ownerId = b.owner_id || b.ownerLoginId;
                     if (ownerId && !seenOwners.has(ownerId)) {
                         seenOwners.add(ownerId);
-                        // Ensure chat object has all necessary properties
+                        // Ensure chat object has all necessary properties, including bookingId
                         const chat = {
+                            _id: b._id || b.id || b.bookingId,  // Preserve booking ID from original
+                            id: b._id || b.id || b.bookingId,
+                            bookingId: b._id || b.id || b.bookingId,
                             owner_name: b.owner_name || b.ownerName || 'Property Owner',
                             owner_id: ownerId,
                             ownerLoginId: b.ownerLoginId || ownerId,
                             property_name: b.property_name || 'Roomhy Partner',
                             status: b.status || 'pending',
-                            chatRoomId: b.chatRoomId || `${userId}_${ownerId}`,
+                            chatRoomId: b._id || b.id || b.bookingId || `${userId}_${ownerId}`,
                             timestamp: b.timestamp || new Date().toISOString()
                         };
+                        console.log('Chat object created with booking ID:', chat._id);
                         uniqueOwners.push(chat);
                     }
                 });
@@ -439,6 +445,9 @@
                     const textColors = ['text-indigo-700', 'text-blue-700', 'text-green-700', 'text-purple-700', 'text-pink-700'];
                     const hoverBg = ['group-hover:bg-indigo-600', 'group-hover:bg-blue-600', 'group-hover:bg-green-600', 'group-hover:bg-purple-600', 'group-hover:bg-pink-600'];
                     
+                    const bookingId = chat._id || chat.id || chat.bookingId;
+                    const chatDisplayId = bookingId ? bookingId.substring(0, 8) : 'N/A';
+                    
                     item.innerHTML = `
                         <div class="w-10 sm:w-12 h-10 sm:h-12 rounded-full ${colors[colorIndex]} ${textColors[colorIndex]} flex items-center justify-center font-bold text-xs sm:text-sm ${hoverBg[colorIndex]} group-hover:text-white transition-all flex-shrink-0">
                             ${ownerInitial}
@@ -446,7 +455,7 @@
                         <div class="flex-1 min-w-0">
                             <h4 class="text-xs sm:text-sm font-bold text-slate-800 truncate">${chat.owner_name}</h4>
                             <p class="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-wider truncate">${chat.property_name}</p>
-                            <p class="text-[7px] sm:text-[9px] text-slate-500 mt-0.5 sm:mt-1">${chat.status === 'accepted' ? '✅ Accepted' : '⏳ Pending'}</p>
+                            <p class="text-[7px] sm:text-[9px] text-slate-500 mt-0.5 sm:mt-1">${chat.status === 'accepted' ? '✅ Accepted' : '⏳ Pending'} | ID: ${chatDisplayId}</p>
                         </div>
                     `;
                     item.onclick = () => openChat(chat);
@@ -490,22 +499,51 @@
         function loadMessages() {
             if (!currentChat || !currentUser) return;
 
-            const userId = currentUser.loginId;
-            const ownerId = currentChat.owner_id;
-            const chatId = `${userId}_${ownerId}`;
+            const bookingId = currentChat._id || currentChat.id || currentChat.bookingId;
+            if (!bookingId) {
+                console.error('❌ No booking ID found in current chat:', currentChat);
+                return;
+            }
             
-            const messagesRef = window.collection(window.db, 'chats', chatId, 'messages');
+            console.log('🔄 Loading messages for booking:', bookingId);
+            console.log('Current user ID:', currentUser.loginId);
+            const messagesRef = window.collection(window.db, 'chats', bookingId, 'messages');
             const q = window.query(messagesRef, window.orderBy('timestamp', 'asc'));
 
             if (unsubscribeMessages) unsubscribeMessages();
 
             unsubscribeMessages = window.onSnapshot(q, (snapshot) => {
+                console.log('📬 Firestore snapshot received, message count:', snapshot.size);
                 const messagesDiv = document.getElementById('messages');
+                
+                if (!messagesDiv) {
+                    console.error('❌ Messages div not found in DOM');
+                    return;
+                }
+                
                 messagesDiv.innerHTML = '';
 
+                if (snapshot.empty) {
+                    console.log('⚠️ No messages in Firestore for booking:', bookingId);
+                    messagesDiv.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">No messages yet. Start the conversation!</div>';
+                    return;
+                }
+
+                let messageCount = 0;
                 snapshot.forEach((msgDoc) => {
+                    messageCount++;
                     const msg = msgDoc.data();
-                    const isMine = msg.senderId === currentUser.loginId;
+                    
+                    // Determine if message is from current user or from the other party
+                    // For websitechat (tenant view): 'user' messages are mine, 'owner' messages are received
+                    const isMine = msg.sender === 'user';
+                    
+                    console.log(`📨 Message ${messageCount}:`, {
+                        sender: msg.sender,
+                        senderId: msg.senderId,
+                        text: msg.text.substring(0, 50),
+                        isMine: isMine
+                    });
                     
                     const msgContainer = document.createElement('div');
                     msgContainer.className = `message-container flex w-full ${isMine ? 'justify-end' : 'justify-start'}`;
@@ -522,6 +560,10 @@
 
                     // Handle system messages with links
                     let messageText = msg.text.replace(/\d{10,}/g, '***');
+                    
+                    // Convert URLs to clickable links
+                    messageText = messageText.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">$1</a>');
+                    
                     if (msg.isLink) {
                         // Handle schedule visit links
                         const linkMatch = messageText.match(/\[Schedule Visit\]\(([^)]+)\)/);
@@ -554,10 +596,18 @@
                         </div>
                     `;
                     messagesDiv.appendChild(msgContainer);
+                    console.log(`✅ Rendered message ${messageCount}`);
                 });
 
+                console.log(`✅ Total messages rendered: ${messageCount}`);
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 lucide.createIcons();
+            }, (error) => {
+                console.error('❌ Error loading messages from Firestore:', error);
+                const messagesDiv = document.getElementById('messages');
+                if (messagesDiv) {
+                    messagesDiv.innerHTML = '<div class="p-4 text-center text-xs text-red-400">Error loading messages. Please try again.</div>';
+                }
             });
         }
 
@@ -565,17 +615,31 @@
             const input = document.getElementById('message-text');
             const text = input.value.trim();
             if (!text || !currentChat || !currentUser) return;
+            
+            // Check for phone numbers (10+ consecutive digits)
+            if (/\d{10,}/.test(text)) {
+                alert('⚠️ Please do not share mobile numbers in chat for security reasons. Use the contact button to reach the owner directly.');
+                return;
+            }
 
-            const chatId = `${currentUser.loginId}_${currentChat.owner_id}`;
-            const messagesRef = window.collection(window.db, 'chats', chatId, 'messages');
+            const bookingId = currentChat._id || currentChat.id || currentChat.bookingId;
+            if (!bookingId) {
+                alert('Chat room ID not found. Please refresh and try again.');
+                return;
+            }
+            
+            console.log('📤 Sending message to booking:', bookingId, 'Text:', text);
+            const messagesRef = window.collection(window.db, 'chats', bookingId, 'messages');
 
             try {
                 await window.addDoc(messagesRef, {
                     text: text,
                     sender: 'user',
                     senderId: currentUser.loginId,
+                    bookingId: bookingId,
                     timestamp: window.serverTimestamp()
                 });
+                console.log('✅ Message sent successfully');
                 input.value = '';
                 input.style.height = 'auto';
 
@@ -588,25 +652,31 @@
                             ownerId: currentChat.owner_id,
                             tenantName: currentUser.name || currentUser.firstName || 'Tenant',
                             message: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
-                            chatId: chatId
+                            chatId: bookingId
                         })
                     });
                 } catch (emailError) {
                     console.error('Failed to send chat notification:', emailError);
                 }
-            } catch (err) { console.error("Send error", err); }
+            } catch (err) { 
+                console.error("❌ Send error", err);
+                alert('Failed to send message: ' + err.message);
+            }
         }
 
         async function sendReaction(type) {
             if (!currentChat || !currentUser) return;
-            const chatId = `${currentUser.loginId}_${currentChat.owner_id}`;
-            const messagesRef = window.collection(window.db, 'chats', chatId, 'messages');
+            const bookingId = currentChat._id || currentChat.id || currentChat.bookingId;
+            if (!bookingId) return;
+            
+            const messagesRef = window.collection(window.db, 'chats', bookingId, 'messages');
             
             try {
                 await window.addDoc(messagesRef, {
-                    text: type === 'like' ? '??' : '??',
+                    text: type === 'like' ? '👍' : '👎',
                     sender: 'user',
                     senderId: currentUser.loginId,
+                    bookingId: bookingId,
                     timestamp: window.serverTimestamp(),
                     reaction: type
                 });
@@ -614,14 +684,18 @@
                 // Update chat decision
                 const decision = type === 'like' ? 'like' : 'reject';
                 await updateChatDecision(decision, 'user');
-            } catch (err) { console.error("Reaction error", err); }
+            } catch (err) { console.error("❌ Reaction error", err); }
         }
 
         async function handleEdit(msgId, currentText) {
             const newText = prompt("Edit your message:", currentText);
             if (newText && newText.trim() !== currentText) {
-                const chatId = `${currentUser.loginId}_${currentChat.owner_id}`;
-                const msgRef = window.doc(window.db, 'chats', chatId, 'messages', msgId);
+                const bookingId = currentChat._id || currentChat.id || currentChat.bookingId;
+                if (!bookingId) {
+                    alert('Chat room ID not found.');
+                    return;
+                }
+                const msgRef = window.doc(window.db, 'chats', bookingId, 'messages', msgId);
                 try {
                     await window.updateDoc(msgRef, {
                         text: newText.trim(),
@@ -634,8 +708,12 @@
 
         async function handleDelete(msgId) {
             if (!confirm("Delete this message?")) return;
-            const chatId = `${currentUser.loginId}_${currentChat.owner_id}`;
-            const msgRef = window.doc(window.db, 'chats', chatId, 'messages', msgId);
+            const bookingId = currentChat._id || currentChat.id || currentChat.bookingId;
+            if (!bookingId) {
+                alert('Chat room ID not found.');
+                return;
+            }
+            const msgRef = window.doc(window.db, 'chats', bookingId, 'messages', msgId);
             try {
                 await window.deleteDoc(msgRef);
             } catch (e) { alert("Cannot delete message"); }
@@ -645,10 +723,13 @@
             if (!currentChat) return;
             
             const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-                ? 'http://localhost:5000' 
+                ? 'http://localhost:5001' 
                 : 'https://roomhy-backend-wqwo.onrender.com';
+            const bookingId = currentChat._id || currentChat.id;
+            const userId = currentUser?.loginId || currentUser?.id || 'user';
+            
             try {
-                const response = await fetch(`${API_URL}/api/booking/requests/${currentChat._id || currentChat.id}/decision`, {
+                const response = await fetch(`${API_URL}/api/booking/requests/${bookingId}/decision`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ decision, userType })
@@ -658,14 +739,86 @@
                     const result = await response.json();
                     console.log('Decision updated:', result);
                     
-                    // If both liked, show message
-                    if (result.data.owner_liked && result.data.user_liked) {
-                        alert('Both parties liked! Visit scheduled and booking details sent to booking.html');
+                    // If user liked, send booking form link
+                    if (decision === 'like' && userType === 'user') {
+                        // Create booking form link with bookingId and userId
+                        const bookingFormLink = `${window.location.origin}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                        const messagesRef = window.collection(window.db, 'chats', bookingId, 'messages');
+
+                        // Save booking details to MongoDB
+                        try {
+                            const bookingPayload = {
+                                _id: bookingId,
+                                bookingId: bookingId,
+                                userId: userId,
+                                user_name: currentUser.name || currentUser.firstName || 'User',
+                                user_phone: currentUser.phone || '',
+                                user_email: currentUser.email || '',
+                                property_id: currentChat._id,
+                                property_name: currentChat.property_name || 'Property',
+                                owner_id: currentChat.owner_id || currentChat.ownerId || '',
+                                owner_name: currentChat.owner_name || 'Owner',
+                                rent: currentChat.rent || 0,
+                                createdAt: new Date().toISOString(),
+                                status: 'accepted'
+                            };
+
+                            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+                                ? 'http://localhost:5001' 
+                                : 'https://roomhy-backend-wqwo.onrender.com';
+                            
+                            await fetch(`${API_URL}/api/bookings`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(bookingPayload)
+                            });
+                            console.log('✅ Booking saved to MongoDB');
+                        } catch (dbErr) {
+                            console.warn('Could not save booking to MongoDB:', dbErr);
+                        }
+
+                        // Send booking link as system message
+                        await window.addDoc(messagesRef, {
+                            text: `🎉 Great! You have accepted the booking! Please complete your booking by clicking the link below:\n\n${bookingFormLink}`,
+                            sender: 'system',
+                            senderId: 'system',
+                            timestamp: window.serverTimestamp(),
+                            isLink: true,
+                            linkUrl: bookingFormLink
+                        });
+
+                        alert('✅ Booking form link sent!');
                     }
                     
-                    // If rejected, show message
-                    if (result.data.owner_rejected || result.data.user_rejected) {
+                    // If rejected, end chat
+                    if (result.data && (result.data.owner_rejected || result.data.user_rejected)) {
+                        try {
+                            // Add system message indicating chat ended
+                            const messagesRef = window.collection(window.db, 'chats', bookingId, 'messages');
+                            await window.addDoc(messagesRef, {
+                                text: '❌ Chat has been closed as one party rejected the booking.',
+                                sender: 'system',
+                                senderId: 'system',
+                                timestamp: window.serverTimestamp(),
+                                isSystemEnd: true
+                            });
+                        } catch (msgErr) {
+                            console.warn('Could not add system message:', msgErr);
+                        }
+                        
                         alert('Booking rejected. Chat closed.');
+                        
+                        // Close current chat and refresh list
+                        try {
+                            currentChat = null;
+                            const chatActive = document.getElementById('chat-active');
+                            const noChatSelected = document.getElementById('no-chat-selected');
+                            if (chatActive) chatActive.classList.add('hidden');
+                            if (noChatSelected) noChatSelected.classList.remove('hidden');
+                            loadChats(); // Refresh to remove if rejected
+                        } catch (uiErr) {
+                            console.warn('Could not update UI:', uiErr);
+                        }
                     }
                 } else {
                     console.error('Failed to update decision');

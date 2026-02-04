@@ -190,3 +190,477 @@ exports.sendBookingAcceptNotification = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+/**
+ * Send Email Notification to Owner (NEW)
+ * Supports: Booking Requests, Chat Messages, Complaints
+ */
+exports.sendEmailNotification = async (req, res) => {
+    try {
+        const { ownerEmail, subject, message, data, type } = req.body;
+
+        if (!ownerEmail) {
+            return res.status(400).json({ error: 'Owner email is required' });
+        }
+
+        // Build email HTML based on type
+        const emailHTML = buildNotificationEmail(type, message, data);
+        const nodemailer = require('nodemailer');
+
+        // Configure Gmail SMTP
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER || 'your-email@gmail.com',
+                pass: process.env.GMAIL_APP_PASSWORD || 'your-app-password'
+            },
+            tls: {
+                rejectUnauthorized: false
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.GMAIL_USER || 'noreply@roomhy.com',
+            to: ownerEmail,
+            subject: subject,
+            html: emailHTML,
+            text: message
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ Email notification sent to ${ownerEmail} for ${type}`);
+        
+        res.status(200).json({ success: true, message: 'Email sent successfully' });
+
+    } catch (error) {
+        console.error('❌ Error sending email notification:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/**
+ * Test Email Notification (NEW)
+ */
+exports.testEmailNotification = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        const testHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: 'Arial', sans-serif; background-color: #f5f5f5; }
+                    .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+                    .header { border-bottom: 3px solid #7c3aed; padding-bottom: 15px; margin-bottom: 20px; }
+                    .logo { color: #7c3aed; font-weight: bold; font-size: 18px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="logo">✅ RoomHy Email Notification Test</div>
+                    </div>
+                    <p>Hello,</p>
+                    <p>This is a test email to confirm your notification system is working correctly!</p>
+                    <p>You will receive notifications for:</p>
+                    <ul>
+                        <li>📅 New Booking Requests</li>
+                        <li>💬 New Chat Messages</li>
+                        <li>⚠️ New Complaints</li>
+                    </ul>
+                    <p>If you received this email, your notifications are properly configured.</p>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER || 'your-email@gmail.com',
+                pass: process.env.GMAIL_APP_PASSWORD || 'your-app-password'
+            },
+            tls: {
+                rejectUnauthorized: false
+            }
+        });
+
+        const mailOptions = {
+            from: process.env.GMAIL_USER || 'noreply@roomhy.com',
+            to: email,
+            subject: '✅ RoomHy Notification System - Test Email',
+            html: testHTML
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.status(200).json({ success: true, message: 'Test email sent successfully' });
+
+    } catch (error) {
+        console.error('❌ Error sending test email:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/**
+ * Helper function: Build HTML email template
+ */
+function buildNotificationEmail(type, message, data) {
+    const timestamp = new Date().toLocaleString();
+    const typeIcon = {
+        'Booking Request': '📅',
+        'New Chat Message': '💬',
+        'New Complaint': '⚠️'
+    }[type] || '🔔';
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: 'Arial', sans-serif; background-color: #f5f5f5; }
+                .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+                .header { border-bottom: 3px solid #7c3aed; padding-bottom: 15px; margin-bottom: 20px; }
+                .header h1 { margin: 0; color: #1f2937; font-size: 24px; }
+                .logo { color: #7c3aed; font-weight: bold; font-size: 18px; }
+                .content { margin: 20px 0; }
+                .alert-box { background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px; }
+                .alert-box.booking { background: #fef3c7; border-left-color: #f59e0b; }
+                .alert-box.chat { background: #f3e8ff; border-left-color: #a855f7; }
+                .alert-box.complaint { background: #fee2e2; border-left-color: #ef4444; }
+                .alert-title { font-weight: bold; font-size: 16px; margin-bottom: 8px; }
+                .details { background: #f9fafb; padding: 12px; border-radius: 4px; margin: 10px 0; font-size: 14px; }
+                .button { display: inline-block; background: #7c3aed; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; margin: 15px 0; }
+                .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="logo">🏠 RoomHy Notifications</div>
+                </div>
+
+                <div class="content">
+                    <div class="alert-box ${type === 'Booking Request' ? 'booking' : type === 'New Chat Message' ? 'chat' : 'complaint'}">
+                        <div class="alert-title">${typeIcon} ${type}</div>
+                        <p>${message}</p>
+                    </div>
+
+                    ${type === 'Booking Request' ? `
+                        <div class="details">
+                            <strong>Booking Details:</strong><br>
+                            Property: ${data?.propertyName || 'N/A'}<br>
+                            Guest: ${data?.guestName || 'N/A'}<br>
+                            Check-in: ${data?.checkInDate ? new Date(data.checkInDate).toLocaleDateString() : 'N/A'}<br>
+                            Status: <span style="color: #f59e0b; font-weight: bold;">${data?.status || 'Pending'}</span>
+                        </div>
+                    ` : type === 'New Chat Message' ? `
+                        <div class="details">
+                            <strong>Message from:</strong> ${data?.senderName || 'Someone'}<br>
+                            <strong>Preview:</strong> ${(data?.message || '').substring(0, 100)}...<br>
+                            <strong>Time:</strong> ${new Date(data?.timestamp || Date.now()).toLocaleString()}
+                        </div>
+                    ` : `
+                        <div class="details">
+                            <strong>Complaint from:</strong> ${data?.complaintBy || 'N/A'}<br>
+                            <strong>Category:</strong> ${data?.category || 'General'}<br>
+                            <strong>Priority:</strong> <span style="color: #ef4444; font-weight: bold;">${data?.priority || 'Medium'}</span><br>
+                            <strong>Issue:</strong> ${(data?.description || '').substring(0, 100)}...
+                        </div>
+                    `}
+
+                    <p style="text-align: center; margin: 20px 0;">
+                        <a href="https://roomhy.com" class="button">View in RoomHy Portal</a>
+                    </p>
+
+                    <p>Please log in to your RoomHy owner dashboard to take action on this notification.</p>
+                </div>
+
+                <div class="footer">
+                    <p>This is an automated notification from RoomHy.</p>
+                    <p>Sent at: ${timestamp}</p>
+                    <p>© 2026 RoomHy. All rights reserved.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+}
+
+// ==================== SUPERADMIN NOTIFICATIONS ====================
+
+/**
+ * Send notification to Super Admin for new booking
+ */
+exports.sendSuperAdminNewBookingNotification = async (req, res) => {
+    try {
+        const { bookingId, propertyName, guestName, ownerName, amount, checkInDate } = req.body;
+        
+        // Create in-app notification
+        const notification = await Notification.create({
+            toRole: 'superadmin',
+            toLoginId: 'superadmin',
+            from: 'system',
+            type: 'new_booking',
+            meta: { bookingId, propertyName, guestName, ownerName, amount, checkInDate },
+            read: false
+        });
+        
+        console.log(`📢 New booking notification created: ${bookingId}`);
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'New booking notification sent to superadmin',
+            notification 
+        });
+    } catch (error) {
+        console.error('Error sending new booking notification:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Send notification to Super Admin for new enquiry
+ */
+exports.sendSuperAdminNewEnquiryNotification = async (req, res) => {
+    try {
+        const { enquiryId, userName, userEmail, propertyName, message } = req.body;
+        
+        // Create in-app notification
+        const notification = await Notification.create({
+            toRole: 'superadmin',
+            toLoginId: 'superadmin',
+            from: 'system',
+            type: 'new_enquiry',
+            meta: { enquiryId, userName, userEmail, propertyName, message },
+            read: false
+        });
+        
+        console.log(`📢 New enquiry notification created: ${enquiryId}`);
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'New enquiry notification sent to superadmin',
+            notification 
+        });
+    } catch (error) {
+        console.error('Error sending new enquiry notification:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ==================== PROPERTY OWNER NOTIFICATIONS ====================
+
+/**
+ * Send notification to Property Owner for new booking request
+ */
+exports.sendOwnerNewBookingRequestNotification = async (req, res) => {
+    try {
+        const { ownerLoginId, ownerEmail, bookingId, propertyName, guestName, checkInDate, amount } = req.body;
+        
+        // Create in-app notification
+        const notification = await Notification.create({
+            toRole: 'owner',
+            toLoginId: ownerLoginId,
+            from: 'system',
+            type: 'owner_new_booking_request',
+            meta: { bookingId, propertyName, guestName, checkInDate, amount },
+            read: false
+        });
+        
+        // Send email notification
+        if (ownerEmail) {
+            const mailer = require('../utils/mailer');
+            const subject = `📅 New Booking Request for ${propertyName}`;
+            const html = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #7c3aed;">New Booking Request</h2>
+                    <p>You have received a new booking request for your property.</p>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                        <p><strong>Property:</strong> ${propertyName}</p>
+                        <p><strong>Guest:</strong> ${guestName}</p>
+                        <p><strong>Check-in:</strong> ${checkInDate}</p>
+                        <p><strong>Amount:</strong> ₹${amount}</p>
+                    </div>
+                    <p>Please check your owner panel to accept or reject this booking.</p>
+                </div>
+            `;
+            await mailer.sendMail(ownerEmail, subject, '', html);
+        }
+        
+        console.log(`📢 New booking request notification sent to owner: ${ownerLoginId}`);
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'Booking request notification sent to owner',
+            notification 
+        });
+    } catch (error) {
+        console.error('Error sending booking request notification:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Send notification to Property Owner for new chat message
+ */
+exports.sendOwnerNewChatNotification = async (req, res) => {
+    try {
+        const { ownerLoginId, ownerEmail, senderName, senderRole, message, chatId } = req.body;
+        
+        // Create in-app notification
+        const notification = await Notification.create({
+            toRole: 'owner',
+            toLoginId: ownerLoginId,
+            from: senderName,
+            type: 'owner_new_chat',
+            meta: { senderName, senderRole, message, chatId },
+            read: false
+        });
+        
+        // Send email notification
+        if (ownerEmail) {
+            const mailer = require('../utils/mailer');
+            const subject = `💬 New Message from ${senderName}`;
+            const html = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #3b82f6;">New Chat Message</h2>
+                    <p>You have received a new message from a ${senderRole}.</p>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                        <p><strong>From:</strong> ${senderName}</p>
+                        <p><strong>Message:</strong> ${message}</p>
+                    </div>
+                    <p>Please check your chat in the owner panel to respond.</p>
+                </div>
+            `;
+            await mailer.sendMail(ownerEmail, subject, '', html);
+        }
+        
+        console.log(`📢 New chat notification sent to owner: ${ownerLoginId}`);
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'Chat notification sent to owner',
+            notification 
+        });
+    } catch (error) {
+        console.error('Error sending chat notification:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Send notification to Property Owner for new bidding activity
+ */
+exports.sendOwnerNewBiddingNotification = async (req, res) => {
+    try {
+        const { ownerLoginId, ownerEmail, propertyName, bidderName, bidAmount, bidId } = req.body;
+        
+        // Create in-app notification
+        const notification = await Notification.create({
+            toRole: 'owner',
+            toLoginId: ownerLoginId,
+            from: 'system',
+            type: 'owner_new_bidding',
+            meta: { propertyName, bidderName, bidAmount, bidId },
+            read: false
+        });
+        
+        // Send email notification
+        if (ownerEmail) {
+            const mailer = require('../utils/mailer');
+            const subject = `💰 New Bid for ${propertyName}`;
+            const html = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #10b981;">New Bid Received</h2>
+                    <p>You have received a new bid for your property.</p>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                        <p><strong>Property:</strong> ${propertyName}</p>
+                        <p><strong>Bidder:</strong> ${bidderName}</p>
+                        <p><strong>Bid Amount:</strong> ₹${bidAmount}</p>
+                    </div>
+                    <p>Please check your owner panel to review and respond to this bid.</p>
+                </div>
+            `;
+            await mailer.sendMail(ownerEmail, subject, '', html);
+        }
+        
+        console.log(`📢 New bidding notification sent to owner: ${ownerLoginId}`);
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'Bidding notification sent to owner',
+            notification 
+        });
+    } catch (error) {
+        console.error('Error sending bidding notification:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Get unread notification count for a user/role
+ */
+exports.getUnreadCount = async (req, res) => {
+    try {
+        const { toLoginId, toRole } = req.query;
+        
+        const filter = { read: false };
+        if (toLoginId) filter.toLoginId = toLoginId;
+        if (toRole) filter.toRole = toRole;
+        
+        const count = await Notification.countDocuments(filter);
+        
+        res.json({ success: true, count });
+    } catch (error) {
+        console.error('Error getting unread count:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Mark all notifications as read
+ */
+exports.markAllRead = async (req, res) => {
+    try {
+        const { toLoginId, toRole } = req.body;
+        
+        const filter = { read: false };
+        if (toLoginId) filter.toLoginId = toLoginId;
+        if (toRole) filter.toRole = toRole;
+        
+        await Notification.updateMany(filter, { read: true });
+        
+        res.json({ success: true, message: 'All notifications marked as read' });
+    } catch (error) {
+        console.error('Error marking all as read:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Delete all read notifications
+ */
+exports.deleteReadNotifications = async (req, res) => {
+    try {
+        const { toLoginId, toRole } = req.query;
+        
+        const filter = { read: true };
+        if (toLoginId) filter.toLoginId = toLoginId;
+        if (toRole) filter.toRole = toRole;
+        
+        const result = await Notification.deleteMany(filter);
+        
+        res.json({ success: true, deletedCount: result.deletedCount });
+    } catch (error) {
+        console.error('Error deleting read notifications:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

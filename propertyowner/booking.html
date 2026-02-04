@@ -139,11 +139,48 @@
     <script>
         let currentOwner = null;
 
+        // Verify user exists in new_signups.html data
+        function verifyUserFromSignups(userId) {
+            try {
+                const signupData = localStorage.getItem('roomhy_kyc_verification');
+                if (!signupData) {
+                    console.warn('⚠️ No signup data found in localStorage');
+                    return null;
+                }
+
+                const signups = JSON.parse(signupData);
+                const user = signups.find(u => u.userData?.id === userId);
+                
+                if (user) {
+                    console.log('✅ User verified from new_signups.html:', userId);
+                    return user;
+                } else {
+                    console.warn('⚠️ User NOT from new_signups.html - showing bookings anyway');
+                    return null;
+                }
+            } catch (err) {
+                console.error('Error verifying user from signups:', err);
+                return null;
+            }
+        }
+
         // Load owner session
         async function loadOwner() {
             const owner = JSON.parse(sessionStorage.getItem('owner_user') || localStorage.getItem('user') || 'null');
             if (owner) {
                 currentOwner = owner;
+                
+                // Verify owner is from new_signups if they have a userId
+                if (owner.loginId || owner.ownerId) {
+                    const ownerId = owner.loginId || owner.ownerId;
+                    const verifiedOwner = verifyUserFromSignups(ownerId);
+                    if (verifiedOwner) {
+                        console.log('✅ Owner verified from new_signups.html');
+                    } else {
+                        console.log('ℹ️ Owner not from new_signups.html (property owner account)');
+                    }
+                }
+                
                 const ownerId = owner.loginId || owner.ownerId || '...';
                 const ownerName = owner.name || owner.ownerName || 'Owner';
                 
@@ -168,6 +205,17 @@
                 const data = await response.json();
                 const bookings = data.data || [];
 
+                // Load signup data for validation
+                let signups = [];
+                try {
+                    const signupData = localStorage.getItem('roomhy_kyc_verification');
+                    if (signupData) {
+                        signups = JSON.parse(signupData);
+                    }
+                } catch (err) {
+                    console.warn('Could not load signup data:', err);
+                }
+
                 const tableBody = document.getElementById('bookingsTableBody');
                 
                 if (bookings.length === 0) {
@@ -183,7 +231,12 @@
                     return;
                 }
 
-                tableBody.innerHTML = bookings.map(booking => `
+                tableBody.innerHTML = bookings.map(booking => {
+                    // Check if this booking is from a new_signups user
+                    const isFromSignup = signups.some(u => u.userData?.id === booking.user_id);
+                    const signupBadge = isFromSignup ? '<span class="ml-2 px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800" title="User from new_signups">✓ Signup</span>' : '';
+                    
+                    return `
                     <tr class="hover:bg-gray-50 text-sm border-b border-gray-200">
                         <td class="px-4 py-3">
                             <div>
@@ -195,6 +248,7 @@
                             <div>
                                 <p class="font-medium text-gray-900">${booking.name || 'N/A'}</p>
                                 <p class="text-xs text-gray-500">ID: ${booking.user_id || 'N/A'}</p>
+                                ${signupBadge}
                             </div>
                         </td>
                         <td class="px-4 py-3 text-gray-600">
@@ -215,7 +269,7 @@
                             <button onclick="viewDetails('${booking._id}')" class="px-3 py-1 rounded bg-blue-100 text-blue-700 text-sm">View Details</button>
                         </td>
                     </tr>
-                `).join('');
+                `}).join('');
 
                 lucide.createIcons();
             } catch (err) {

@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide icons: try CDN (keeps working when local file missing) -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="../js/NotificationManager.js"></script>
+    <script src="../js/PropertyOwnerNotifications.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         
@@ -91,11 +93,10 @@
 
                 <a href="rooms.html" class="sidebar-link active"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                 <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
-                <a href="documents.html" class="sidebar-link"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents</a>
-                <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
+                <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                 <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
-                <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
+                <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
+                <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
                 <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                 <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
             </nav>
@@ -365,7 +366,7 @@
         window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.createIcons(); });
 
         // Backend base for dev (Live Server / different origin). Adjust if your backend runs elsewhere.
-        const backendBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5000' : 'https://roomhy-backend-wqwo.onrender.com';
+        const backendBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
         let backendRoomsCache = null; // store rooms fetched from backend for this owner
 
         // 1. Session & Property Init
@@ -878,6 +879,8 @@
                 t.roomNo = allRooms[roomIdx].number;
                 t.bedNo = bedIdx + 1;
                 t.propertyId = allRooms[roomIdx].propertyId;
+                t.agreedRent = allRooms[roomIdx].rent || 0;
+                t.moveInDate = new Date().toISOString().split('T')[0];
                 // assign property object or fallback to title for display
                 try {
                     const props = JSON.parse(localStorage.getItem('roomhy_properties') || '[]');
@@ -887,6 +890,30 @@
                     else if (currentProperty) t.property = { title: currentProperty.title || currentProperty.name };
                 } catch (err) {}
                 t.assignedBy = ownerId;
+
+                // Sync existing tenant to backend with agreedRent
+                (async () => {
+                    try {
+                        const payload = {
+                            name: t.name,
+                            phone: t.phone,
+                            email: t.email,
+                            propertyId: t.propertyId,
+                            roomNo: t.roomNo,
+                            bedNo: t.bedNo,
+                            moveInDate: t.moveInDate,
+                            agreedRent: t.agreedRent
+                        };
+                        const assignUrl = `${backendBase}/api/tenants/assign`;
+                        await fetch(assignUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    } catch (err) {
+                        console.warn('Tenant sync to backend failed (continuing with local record):', err);
+                    }
+                })();
             } else {
                 const name = document.getElementById('newTenantName').value.trim();
                 const phone = document.getElementById('newTenantPhone').value.trim();
@@ -906,6 +933,8 @@
                     roomNo: allRooms[roomIdx].number,
                     bedNo: bedIdx + 1,
                     propertyId: allRooms[roomIdx].propertyId,
+                    agreedRent: allRooms[roomIdx].rent || 0,
+                    moveInDate: new Date().toISOString().split('T')[0],
                     // attach property object for immediate display in tenant records
                     property: (function(){
                         try {
@@ -937,8 +966,8 @@
                             propertyId: newTenant.propertyId,
                             roomNo: newTenant.roomNo,
                             bedNo: newTenant.bedNo,
-                            moveInDate: newTenant.joinedDate,
-                            agreedRent: newTenant.agreedRent || 0
+                            moveInDate: newTenant.moveInDate,
+                            agreedRent: newTenant.agreedRent
                         };
                         const assignUrl = `${backendBase}/api/tenants/assign`;
                         const resp = await fetch(assignUrl, {

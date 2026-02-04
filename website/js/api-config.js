@@ -2,7 +2,8 @@
 // Smart endpoint selection: Use localhost for development, Render for production
 const getAPIURL = () => {
     const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    return isDevelopment ? 'http://localhost:5000' : 'https://roomhy-backend-wqwo.onrender.com';
+    // Frontend on 5000, Backend API on 5001
+    return isDevelopment ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
 };
 
 const API_URL = getAPIURL();

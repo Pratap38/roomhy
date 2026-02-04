@@ -79,10 +79,10 @@ router.get('/all', async (req, res) => {
         console.log('🔍 [approved-properties/all] Fetching all approved properties...');
         
         const properties = await ApprovedProperty.find({ 
-            isLiveOnWebsite: true 
+            status: { $in: ['approved', 'live'] }
         }).sort({ approvedAt: -1 });
         
-        console.log('✅ [approved-properties/all] Found', properties.length, 'live properties');
+        console.log('✅ [approved-properties/all] Found', properties.length, 'approved properties');
 
         res.status(200).json({
             success: true,
@@ -138,32 +138,40 @@ router.get('/public/approved', async (req, res) => {
     try {
         console.log('🔍 [approved-properties/public/approved] Fetching public approved properties...');
 
+        // For now, return all approved properties (both live and offline) to test display
+        // Later we can filter by isLiveOnWebsite: true for production
         const properties = await ApprovedProperty.find({
-            status: { $in: ['approved', 'live'] },
-            isLiveOnWebsite: true
+            status: { $in: ['approved', 'live'] }
         }).sort({ approvedAt: -1 });
 
-        console.log('✅ [approved-properties/public/approved] Found', properties.length, 'live approved properties');
+        console.log('✅ [approved-properties/public/approved] Found', properties.length, 'approved properties');
 
         // Transform to match ourproperty.html expectations
         const transformedProperties = properties.map(prop => ({
             _id: prop.visitId,
             enquiry_id: prop.visitId,
+            propertyId: prop.visitId,
+            visitId: prop.visitId,
             property_name: prop.propertyInfo?.name || 'Property',
             property_type: prop.propertyInfo?.propertyType || '',
             locality: prop.propertyInfo?.area || '',
             city: prop.propertyInfo?.city || '',
-            rent: prop.monthlyRent || prop.propertyInfo?.monthlyRent || 0,
-            photos: prop.photos || [],
+            rent: prop.propertyInfo?.rent || 0,
+            photos: prop.propertyInfo?.photos || [],
             professionalPhotos: prop.professionalPhotos || [],
             isVerified: true,
             rating: 4.5,
             reviewsCount: 10,
             propertyInfo: prop.propertyInfo,
-            monthlyRent: prop.monthlyRent || prop.propertyInfo?.monthlyRent || 0,
-            gender: prop.propertyInfo?.gender || 'Co-ed',
+            monthlyRent: prop.propertyInfo?.rent || 0,
+            gender: prop.propertyInfo?.genderSuitability || 'Co-ed',
             status: prop.status,
-            isLiveOnWebsite: prop.isLiveOnWebsite
+            isLiveOnWebsite: prop.isLiveOnWebsite,
+            submittedAt: prop.submittedAt,
+            approvedAt: prop.approvedAt,
+            generatedCredentials: prop.generatedCredentials,
+            ownerLoginId: prop.generatedCredentials?.loginId,
+            createdBy: prop.approvedBy
         }));
 
         res.status(200).json(transformedProperties);
@@ -303,6 +311,101 @@ router.delete('/:visitId', async (req, res) => {
 
     } catch (error) {
         console.error('❌ [approved-properties/delete] Error:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting property',
+            error: error.message
+        });
+    }
+});
+
+// ============================================================
+// PUT: Toggle property live status (for website.html admin panel)
+// ============================================================
+router.put('/:id/toggle-live', async (req, res) => {
+    try {
+        const propertyId = req.params.id;
+        console.log('🔄 [approved-properties/toggle-live] Toggling live status for:', propertyId);
+
+        const property = await ApprovedProperty.findOne({
+            $or: [
+                { _id: propertyId },
+                { visitId: propertyId },
+                { propertyId: propertyId }
+            ]
+        });
+
+        if (!property) {
+            console.error('❌ [approved-properties/toggle-live] Property not found:', propertyId);
+            return res.status(404).json({
+                success: false,
+                message: 'Property not found'
+            });
+        }
+
+        // Toggle the live status
+        property.isLiveOnWebsite = !property.isLiveOnWebsite;
+        property.status = property.isLiveOnWebsite ? 'live' : 'approved';
+        await property.save();
+
+        console.log('✅ [approved-properties/toggle-live] Toggled to:', property.isLiveOnWebsite);
+
+        res.status(200).json({
+            success: true,
+            message: 'Property live status updated',
+            property: {
+                _id: property._id,
+                visitId: property.visitId,
+                isLiveOnWebsite: property.isLiveOnWebsite,
+                status: property.status,
+                propertyInfo: property.propertyInfo
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ [approved-properties/toggle-live] Error:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Error toggling live status',
+            error: error.message
+        });
+    }
+});
+
+// ============================================================
+// DELETE: Delete property by ID (for website.html admin panel)
+// ============================================================
+router.delete('/:id', async (req, res) => {
+    try {
+        const propertyId = req.params.id;
+        console.log('🗑️ [approved-properties/delete-by-id] Deleting property:', propertyId);
+
+        const property = await ApprovedProperty.findOne({
+            $or: [
+                { _id: propertyId },
+                { visitId: propertyId },
+                { propertyId: propertyId }
+            ]
+        });
+
+        if (!property) {
+            console.error('❌ [approved-properties/delete-by-id] Property not found:', propertyId);
+            return res.status(404).json({
+                success: false,
+                message: 'Property not found'
+            });
+        }
+
+        await ApprovedProperty.deleteOne({ _id: property._id });
+        console.log('✅ [approved-properties/delete-by-id] Property deleted:', propertyId);
+
+        res.status(200).json({
+            success: true,
+            message: 'Property deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('❌ [approved-properties/delete-by-id] Error:', error.message);
         res.status(500).json({
             success: false,
             message: 'Error deleting property',

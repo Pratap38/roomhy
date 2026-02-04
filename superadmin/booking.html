@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - Bookings</title>
     <script>
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+            ? 'http://localhost:5001' 
+            : 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -150,7 +152,31 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <button class="text-slate-400 hover:text-slate-600"><i data-lucide="bell" class="w-5 h-5"></i></button>
+                    <!-- Notification Bell with Badge -->
+                    <div class="relative">
+                        <button id="notificationBellBtn" class="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-lg transition-colors">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+                        </button>
+                        
+                        <!-- Notification Dropdown -->
+                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg py-2 ring-1 ring-black ring-opacity-5 z-50">
+                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                <h3 class="font-semibold text-gray-800">Notifications</h3>
+                                <div class="flex gap-2">
+                                    <button onclick="markAllRead()" class="text-xs text-purple-600 hover:text-purple-800">Mark all read</button>
+                                    <button onclick="clearAll()" class="text-xs text-gray-400 hover:text-gray-600">Clear</button>
+                                </div>
+                            </div>
+                            <div id="notificationList" class="max-h-96 overflow-y-auto custom-scrollbar">
+                                <div class="px-4 py-8 text-center text-gray-400">
+                                    <i data-lucide="bell-off" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                                    <p>No notifications yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="relative group">
                         <button class="flex items-center gap-3 hover:bg-gray-50 p-1.5 rounded-full transition-colors">
                             <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-xs">SP</div>
@@ -208,22 +234,27 @@
                                         <th>Type</th>
                                         <th>Rent</th>
                                         <th>User ID</th>
-                                        <th>Name</th>
+                                        <th>Tenant Name</th>
                                         <th>Phone</th>
                                         <th>Email</th>
+                                        <th>Guardian Name</th>
+                                        <th>Guardian Phone</th>
+                                        <th>Address</th>
+                                        <th>Payment ID</th>
+                                        <th>Payment Amount</th>
+                                        <th>Payment Method</th>
+                                        <th>Payment Type</th>
+                                        <th>Card/UPI Details</th>
+                                        <th>Payment Status</th>
                                         <th>Request Type</th>
                                         <th>Bid Amount</th>
                                         <th>Message</th>
-                                        <th>Status</th>
-                                        <th>Visit Date</th>
-                                        <th>Visit Slot</th>
-                                        <th>Visit Notes</th>
                                         <th class="text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="bookingsTableBody">
                                     <tr class="text-center py-8 text-gray-500">
-                                        <td colspan="7" class="py-8">
+                                        <td colspan="22" class="py-8">
                                             <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
                                             <p>Loading bookings...</p>
                                         </td>
@@ -379,25 +410,22 @@
     <script>
         lucide.createIcons();
 
-        // Load scheduled bookings (confirmed bookings with visit schedules)
+        // Load all bookings (confirmed and pending)
         async function loadBookings() {
             try {
-                // Fetch all confirmed bookings, then filter for those with visit schedules
+                // Fetch all confirmed bookings (regardless of visit schedule)
                 const response = await fetch(`${API_URL}/api/booking/requests?status=confirmed`);
                 const data = await response.json();
                 const allBookings = data.data || [];
 
-                // Filter for bookings that have visit schedules (visit_date exists)
-                const scheduledBookings = allBookings.filter(booking => booking.visit_date && booking.visit_time_slot);
-
                 const tableBody = document.getElementById('bookingsTableBody');
 
-                if (scheduledBookings.length === 0) {
+                if (allBookings.length === 0) {
                     tableBody.innerHTML = `
                         <tr>
-                            <td colspan="17" class="py-8 text-center text-gray-500">
+                            <td colspan="22" class="py-8 text-center text-gray-500">
                                 <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
-                                <p>No scheduled bookings found</p>
+                                <p>No confirmed bookings found</p>
                             </td>
                         </tr>
                     `;
@@ -405,40 +433,103 @@
                     return;
                 }
 
-                tableBody.innerHTML = scheduledBookings.map(booking => `
+                tableBody.innerHTML = allBookings.map(booking => {
+                    // Extract payment details - handle different payment structures
+                    let paymentTypeDisplay = 'N/A';
+                    let cardDetails = 'N/A';
+                    
+                    if (booking.payment_method) {
+                        const method = booking.payment_method.toLowerCase();
+                        if (method.includes('upi')) {
+                            paymentTypeDisplay = 'UPI';
+                            cardDetails = booking.upi_id || booking.payment_details?.upi_id || booking.upi || booking.upi_address || 'N/A';
+                        } else if (method.includes('card')) {
+                            paymentTypeDisplay = 'Card';
+                            if (booking.card_last_four) {
+                                cardDetails = `****${booking.card_last_four}`;
+                            } else if (booking.payment_details?.card_last_four) {
+                                cardDetails = `****${booking.payment_details.card_last_four}`;
+                            } else if (booking.card_number) {
+                                cardDetails = `****${booking.card_number.slice(-4)}`;
+                            } else if (booking.payment_details?.card_number) {
+                                cardDetails = `****${booking.payment_details.card_number.slice(-4)}`;
+                            } else {
+                                cardDetails = 'Card Payment';
+                            }
+                        } else if (method.includes('other') || method.includes('cash') || method.includes('bank')) {
+                            paymentTypeDisplay = booking.payment_method;
+                            cardDetails = booking.payment_details?.reference_id || booking.reference_id || booking.transaction_id || booking.bank_name || 'Payment Pending';
+                        } else {
+                            paymentTypeDisplay = booking.payment_method;
+                            cardDetails = booking.payment_details?.id || booking.payment_id || booking.transaction_id || 'N/A';
+                        }
+                    }
+
+                    // Get full address - enhanced fallback handling
+                    let fullAddress = 'N/A';
+                    if (booking.address_street || booking.address_city || booking.address_state || booking.address_postal_code) {
+                        fullAddress = `${booking.address_street || ''}, ${booking.address_city || ''}, ${booking.address_state || ''}, ${booking.address_postal_code || ''}`.replace(/^,\s*|,\s*$/g, '').trim();
+                    } else if (booking.address) {
+                        fullAddress = typeof booking.address === 'string' ? booking.address : `${booking.address.street || ''}, ${booking.address.city || ''}, ${booking.address.state || ''}, ${booking.address.postalCode || ''}`.trim();
+                    } else if (booking.full_address) {
+                        fullAddress = booking.full_address;
+                    }
+
+                    // Get payment amount - check multiple field names
+                    const paymentAmt = booking.payment_amount || booking.paymentAmount || booking.advance_amount || booking.amount || 0;
+                    
+                    // Get rent amount
+                    const rentAmt = booking.rent_amount || booking.rent || booking.monthly_rent || 0;
+                    
+                    // Get guardian details - handle missing fields
+                    const guardianName = booking.guardian_name || booking.guardianName || 'N/A';
+                    const guardianPhone = booking.guardian_phone || booking.guardianPhone || 'N/A';
+                    
+                    // Get tenant details
+                    const tenantName = booking.name || booking.tenant_name || booking.full_name || booking.fullName || 'N/A';
+                    const tenantPhone = booking.phone || booking.contact_phone || booking.mobile || 'N/A';
+                    const tenantEmail = booking.email || booking.contact_email || 'N/A';
+
+                    return `
                     <tr class="hover:bg-gray-50 text-sm border-b border-gray-200">
-                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${booking.property_id || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-900 whitespace-nowrap">${booking.property_name || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.area || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.property_type || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">?${booking.rent_amount || 0}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.user_id || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${booking.name || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.phone || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.email || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.request_type || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">?${booking.bid_amount || 0}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap max-w-xs truncate" title="${booking.message || ''}">${booking.message || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${booking.property_id || booking.propertyId || booking.property || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-900 whitespace-nowrap">${booking.property_name || booking.propertyName || booking.property_name || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.area || booking.location || booking.city || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.property_type || booking.roomType || booking.type || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">₹${rentAmt}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap font-medium">${booking.user_id || booking.userId || booking.customer_id || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${tenantName}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap font-semibold">${tenantPhone}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap text-sm">${tenantEmail}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${guardianName}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap font-semibold">${guardianPhone}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap text-xs max-w-xs truncate" title="${fullAddress}">${fullAddress}</td>
+                        <td class="px-4 py-3 text-gray-900 font-mono whitespace-nowrap text-xs">${booking.payment_id || booking.paymentId || booking.razorpay_payment_id || booking.transaction_id || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">₹${paymentAmt}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap capitalize">${booking.payment_method || booking.paymentMethod || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap font-medium">${paymentTypeDisplay}</td>
+                        <td class="px-4 py-3 text-gray-900 whitespace-nowrap font-mono text-xs" title="${cardDetails}">${cardDetails && cardDetails.length > 15 ? cardDetails.substring(0, 15) + '...' : cardDetails}</td>
                         <td class="px-4 py-3 whitespace-nowrap">
-                            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                                Confirmed
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold ${booking.payment_status === 'completed' || booking.payment_status === 'success' ? 'bg-green-100 text-green-800' : booking.payment_status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${booking.payment_status || booking.status || 'Pending'}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.visit_date ? new Date(booking.visit_date).toLocaleDateString() : 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.visit_time_slot || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap max-w-xs truncate" title="${booking.visit_notes || ''}">${booking.visit_notes || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${booking.request_type || booking.requestType || booking.type || 'Booking'}</td>
+                        <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">₹${booking.bid_amount || booking.bidAmount || 0}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap max-w-xs truncate" title="${booking.message || booking.notes || ''}">${booking.message || booking.notes || booking.comment || 'N/A'}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-right">
-                            <button onclick="viewBooking('${booking._id}')" class="px-3 py-1 rounded bg-purple-100 text-purple-700 text-sm">View Details</button>
+                            <button onclick="viewBooking('${booking._id}')" class="px-3 py-1 rounded bg-purple-100 text-purple-700 text-sm hover:bg-purple-200 transition-colors">View</button>
                         </td>
                     </tr>
-                `).join('');
+                    `;
+                }).join('');
 
                 lucide.createIcons();
             } catch (error) {
                 console.error('Error loading bookings:', error);
                 document.getElementById('bookingsTableBody').innerHTML = `
                     <tr>
-                        <td colspan="17" class="py-8 text-center text-red-500">
+                        <td colspan="22" class="py-8 text-center text-red-500">
                             <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-3"></i>
                             <p>Error loading bookings</p>
                         </td>
@@ -496,6 +587,57 @@
 
         // Initialize
         loadBookings();
+    </script>
+    
+    <!-- Notification System -->
+    <script src="js/SuperAdminNotificationManager.js"></script>
+    <script>
+        // Initialize notification system when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize notification manager
+            window.superAdminNotificationManager = new SuperAdminNotificationManager();
+            
+            // Request notification permission
+            window.superAdminNotificationManager.requestNotificationPermission().then(granted => {
+                if (granted) {
+                    console.log('✅ Notification permission granted');
+                }
+            });
+            
+            // Start polling for notifications
+            window.superAdminNotificationManager.startPolling();
+            
+            // Setup notification bell click handler
+            const bellBtn = document.getElementById('notificationBellBtn');
+            const dropdown = document.getElementById('notificationDropdown');
+            
+            if (bellBtn && dropdown) {
+                bellBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+        });
+        
+        // Global functions for notification actions
+        function markAllRead() {
+            if (window.superAdminNotificationManager) {
+                window.superAdminNotificationManager.markAllAsRead();
+            }
+        }
+        
+        function clearAll() {
+            if (window.superAdminNotificationManager) {
+                window.superAdminNotificationManager.clearAll();
+            }
+        }
     </script>
 </body>
 </html>

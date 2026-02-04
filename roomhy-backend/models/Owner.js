@@ -15,7 +15,9 @@ const ownerSchema = new mongoose.Schema({
         email: String,
         phone: String,
         address: String,
-        locationCode: String
+        locationCode: String,
+        bankAccount: String,
+        updatedAt: Date
     },
     credentials: {
         password: String,
@@ -25,7 +27,8 @@ const ownerSchema = new mongoose.Schema({
         status: { type: String, default: 'pending' },
         aadharNumber: String,
         documentImage: String,
-        verifiedAt: Date
+        verifiedAt: Date,
+        submittedAt: Date
     },
     isActive: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }

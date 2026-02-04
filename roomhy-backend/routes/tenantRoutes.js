@@ -4,6 +4,10 @@ const Tenant = require('../models/Tenant');
 const Room = require('../models/Room');
 const Property = require('../models/Property');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const tenantController = require('../controllers/tenantController');
+
+// 0. Assign tenant to room - POST must come before GET
+router.post('/assign', tenantController.assignTenant);
 
 // 1. Get all tenants
 router.get('/', async (req, res) => {

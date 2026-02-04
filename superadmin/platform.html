@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - Platform Commissions</title>
     <script>
-        const API_URL = 'https://roomhy-backend.onrender.com';
+        // Dynamic API configuration
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -235,61 +238,14 @@
                                         <th>Property Owner</th>
                                         <th>Total Rent Collected</th>
                                         <th>Commission (10%)</th>
+                                        <th>Service Fee</th>
                                         <th>Owner Payout</th>
                                         <th>Status</th>
                                         <th class="text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Row 1: Pending Payout -->
-                                    <tr>
-                                        <td>
-                                            <div class="flex items-center">
-                                                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs mr-3">RK</div>
-                                                <div>
-                                                    <p class="text-sm font-medium text-gray-900">Rajesh Kumar</p>
-                                                    <p class="text-xs text-gray-500">Sai Residency</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-sm text-gray-800 font-medium">?50,000</td>
-                                        <td class="text-sm text-purple-600 font-bold">?5,000</td>
-                                        <td class="text-sm text-gray-800">?45,000</td>
-                                        <td>
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                Pending Settlement
-                                            </span>
-                                        </td>
-                                        <td class="text-right">
-                                            <button class="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs font-medium shadow-sm transition-colors">
-                                                Mark Settled
-                                            </button>
-                                        </td>
-                                    </tr>
-
-                                    <!-- Row 2: Settled -->
-                                    <tr>
-                                        <td>
-                                            <div class="flex items-center">
-                                                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold text-xs mr-3">SR</div>
-                                                <div>
-                                                    <p class="text-sm font-medium text-gray-900">Suresh Reddy</p>
-                                                    <p class="text-xs text-gray-500">Green View PG</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-sm text-gray-800 font-medium">?80,000</td>
-                                        <td class="text-sm text-purple-600 font-bold">?8,000</td>
-                                        <td class="text-sm text-gray-800">?72,000</td>
-                                        <td>
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                Settled
-                                            </span>
-                                        </td>
-                                        <td class="text-right">
-                                            <button class="text-gray-400 hover:text-gray-600 mx-1" title="Download Receipt"><i data-lucide="file-text" class="w-4 h-4"></i></button>
-                                        </td>
-                                    </tr>
+                                <tbody id="commissionTableBody">
+                                    <!-- Commission rows will be loaded here -->
                                 </tbody>
                             </table>
                         </div>
@@ -377,6 +333,8 @@
     <script>
         lucide.createIcons();
 
+        let commissionData = [];
+
         // Sidebar Logic
         function toggleSubmenu(id, element) {
             const submenu = document.getElementById(id);
@@ -417,6 +375,237 @@
                 modal.classList.remove('flex');
             }
         }
+
+        // ===== COMMISSION CALCULATION =====
+        // First Month: 10% commission + ₹50 service fee
+        // Subsequent Months: ₹50 service fee only
+
+        function calculateCommission(paidData) {
+            const commissions = {};
+
+            paidData.forEach(payment => {
+                const ownerName = payment.ownerName || payment.owner_name || 'Unknown';
+                const ownerLoginId = payment.ownerLoginId || payment.owner_id || payment.loginId;
+                const rentAmount = payment.rentAmount || payment.rent_amount || 0;
+                const monthKey = payment.month || new Date().toISOString().slice(0, 7);
+                const collectionDate = new Date(payment.createdAt || payment.date || Date.now());
+
+                if (!commissions[ownerLoginId]) {
+                    commissions[ownerLoginId] = {
+                        ownerName: ownerName,
+                        ownerLoginId: ownerLoginId,
+                        totalRentCollected: 0,
+                        totalCommission: 0,
+                        serviceFee: 0,
+                        ownerPayout: 0,
+                        payments: [],
+                        status: 'pending'
+                    };
+                }
+
+                // Determine if this is first month or subsequent month
+                const isFirstMonth = commissions[ownerLoginId].payments.length === 0;
+                
+                let monthlyCommission = 0;
+                let monthlyServiceFee = 50; // Always ₹50 service fee
+
+                if (isFirstMonth) {
+                    // First month: 10% of rent + ₹50 service fee
+                    monthlyCommission = rentAmount * 0.10;
+                } else {
+                    // Subsequent months: only ₹50 service fee
+                    monthlyCommission = 0;
+                }
+
+                const totalDeduction = monthlyCommission + monthlyServiceFee;
+                const ownerReceives = rentAmount - totalDeduction;
+
+                commissions[ownerLoginId].totalRentCollected += rentAmount;
+                commissions[ownerLoginId].totalCommission += monthlyCommission;
+                commissions[ownerLoginId].serviceFee += monthlyServiceFee;
+                commissions[ownerLoginId].ownerPayout = commissions[ownerLoginId].totalRentCollected - 
+                                                       commissions[ownerLoginId].totalCommission - 
+                                                       commissions[ownerLoginId].serviceFee;
+
+                commissions[ownerLoginId].payments.push({
+                    month: monthKey,
+                    rentAmount: rentAmount,
+                    commission: monthlyCommission,
+                    serviceFee: monthlyServiceFee,
+                    ownerReceives: ownerReceives,
+                    isFirstMonth: isFirstMonth,
+                    collectionDate: collectionDate
+                });
+            });
+
+            return Object.values(commissions);
+        }
+
+        // Fetch paid tenant data from MongoDB
+        async function loadPaidData() {
+            try {
+                console.log('📡 Fetching paid tenant data...');
+                const response = await fetch(`${API_URL}/api/rents`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const responseData = await response.json();
+                    // Handle both array and object responses
+                    const paidData = responseData.rents || responseData;
+                    console.log('✅ Paid data received:', paidData);
+                    
+                    // Filter only paid/completed payments
+                    const paidPayments = paidData.filter(p => 
+                        p.paymentStatus === 'completed' || 
+                        p.paymentStatus === 'paid' || 
+                        p.paidAmount > 0
+                    );
+
+                    console.log('✅ Filtered paid payments:', paidPayments.length);
+
+                    // Calculate commissions
+                    commissionData = calculateCommission(paidPayments);
+                    console.log('✅ Commission calculated:', commissionData);
+
+                    renderTable();
+                    updateDashboard();
+                } else {
+                    console.warn('⚠️ API returned:', response.status);
+                    // Use localStorage fallback
+                    loadFromLocalStorage();
+                }
+            } catch (err) {
+                console.warn('⚠️ Fetch failed, using localStorage:', err);
+                loadFromLocalStorage();
+            }
+        }
+
+        // Fallback: Load from localStorage
+        function loadFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem('roomhy_commission_data');
+                if (savedData) {
+                    commissionData = JSON.parse(savedData);
+                    renderTable();
+                    updateDashboard();
+                } else {
+                    console.log('📋 No commission data found');
+                }
+            } catch (err) {
+                console.error('Error loading from localStorage:', err);
+            }
+        }
+
+        // Render commission table
+        function renderTable() {
+            const tbody = document.getElementById('commissionTableBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            if (commissionData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-gray-500">No commission data available</td></tr>';
+                return;
+            }
+
+            commissionData.forEach(item => {
+                const row = `
+                    <tr>
+                        <td>
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs mr-3">
+                                    ${item.ownerName.charAt(0)}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">${item.ownerName}</p>
+                                    <p class="text-xs text-gray-500">${item.ownerLoginId}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-sm text-gray-800 font-medium">₹${item.totalRentCollected.toLocaleString()}</td>
+                        <td class="text-sm text-purple-600 font-bold">₹${item.totalCommission.toLocaleString()}</td>
+                        <td class="text-sm text-blue-600 font-bold">₹${item.serviceFee.toLocaleString()}</td>
+                        <td class="text-sm text-green-600 font-bold">₹${item.ownerPayout.toLocaleString()}</td>
+                        <td>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                item.status === 'settled' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-yellow-100 text-yellow-800'
+                            }">
+                                ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <button class="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs font-medium shadow-sm transition-colors">
+                                Mark Settled
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Update dashboard cards
+        function updateDashboard() {
+            const totalRevenue = commissionData.reduce((sum, item) => sum + item.totalCommission, 0);
+            const totalServiceFee = commissionData.reduce((sum, item) => sum + item.serviceFee, 0);
+            const totalPayout = commissionData.reduce((sum, item) => sum + item.ownerPayout, 0);
+
+            // Update revenue card (1st card)
+            const revenueCards = document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-3 > div h3');
+            if (revenueCards[0]) {
+                revenueCards[0].textContent = `₹${totalRevenue.toLocaleString()}`;
+            }
+
+            // Update payout card (3rd card)
+            if (revenueCards[2]) {
+                revenueCards[2].textContent = `₹${totalPayout.toLocaleString()}`;
+            }
+
+            console.log('📊 Dashboard updated - Revenue: ₹' + totalRevenue.toLocaleString() + ', Payout: ₹' + totalPayout.toLocaleString());
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            console.log('🔄 Initializing platform.html...');
+            lucide.createIcons();
+            loadPaidData();
+        });
+
+        // Search and filter
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.querySelector('input[placeholder*="Search"]');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const searchText = e.target.value.toLowerCase();
+                    const rows = document.querySelectorAll('#commissionTableBody tr');
+                    
+                    rows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(searchText) ? '' : 'none';
+                    });
+                });
+            }
+
+            const statusFilter = document.querySelector('select');
+            if (statusFilter) {
+                statusFilter.addEventListener('change', (e) => {
+                    const status = e.target.value;
+                    const rows = document.querySelectorAll('#commissionTableBody tr');
+                    
+                    rows.forEach(row => {
+                        if (!status || row.textContent.includes(status)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        });
     </script>
 </body>
 </html>

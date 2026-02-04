@@ -24,6 +24,34 @@ router.get('/all', async (req, res) => {
 });
 
 // ============================================================
+// GET: Get public approved properties (for website visitors)
+// ============================================================
+router.get('/public/approved', async (req, res) => {
+    try {
+        const properties = await ApprovedProperty.find({ 
+            status: 'approved',
+            isLiveOnWebsite: true
+        }).sort({ approvedAt: -1 });
+        
+        console.log('📋 [approved-properties/public/approved] Fetched', properties.length, 'live properties');
+        
+        res.json({
+            success: true,
+            count: properties.length,
+            properties: properties,
+            visits: properties  // Alias for compatibility
+        });
+    } catch (error) {
+        console.error('Error fetching public approved properties:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching approved properties',
+            error: error.message
+        });
+    }
+});
+
+// ============================================================
 // GET: Get properties for website (isLiveOnWebsite = true)
 // ============================================================
 router.get('/website/live', async (req, res) => {

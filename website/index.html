@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
     <title>Roomhy - Find Your Student Home</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,10 +15,10 @@
 
     <script>
         // API Configuration - Support both local and production
-        // For local development, use: http://localhost:3000 or http://localhost:10
+        // For local development, use: http://localhost:5001
         // For production, use: https://roomhy-backend-wqwo.onrender.com
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000'
+            ? 'http://localhost:5001'
             : 'https://roomhy-backend-wqwo.onrender.com';
         
         console.log('Using API_URL:', API_URL);
@@ -660,6 +661,10 @@
                         <a href="#faq" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">FAQ</a>
                         <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
                     </nav>
+
+                    <a href="fast-bidding.html" class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-semibold hover:shadow-lg transition-all flex items-center gap-1">
+                        <i data-lucide="zap" class="w-4 h-4"></i> <span class="hidden sm:inline">Fast Bidding</span>
+                    </a>
 
                     <a href="list.html" class="flex-shrink-0 flex items-center justify-center px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors w-10 h-10 sm:w-auto sm:h-auto sm:px-4">
                         <span class="text-3xl font-bold">+</span>

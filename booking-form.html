@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Booking - Roomhy</title>
+    <link rel="stylesheet" href="../css/tailwind.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .form-section { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-label { font-weight: 600; color: #374151; margin-bottom: 8px; font-size: 14px; }
+        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+        .form-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+        .upload-area { border: 2px dashed #e5e7eb; border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { border-color: #6366f1; background: #f0f4ff; }
+        .upload-area.active { border-color: #10b981; background: #f0fdf4; }
+        .btn-primary { background: #6366f1; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary:hover { background: #4f46e5; }
+        .btn-primary:disabled { background: #d1d5db; cursor: not-allowed; }
+        .warning-box { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 6px; margin-bottom: 20px; }
+        .success-screen { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen py-8 px-4">
+        <div class="max-w-2xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-indigo-600 p-2 rounded-lg"><i data-lucide="home" class="w-6 h-6 text-white"></i></div>
+                    <h1 class="text-3xl font-bold text-gray-900">RoomHy</h1>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Complete Your Booking</h2>
+                <p class="text-gray-600">Finalize your property booking with payment and verification</p>
+            </div>
+
+            <!-- Main Form -->
+            <div id="form-container">
+                <!-- Property and Owner Information -->
+                <div class="form-section">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="building-2" class="w-5 h-5"></i> Property Details
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Property Name</label>
+                                <input type="text" id="propertyNameDisplay" class="form-input" placeholder="Property name" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                            </div>
+                            <div>
+                                <label class="form-label">Property ID</label>
+                                <input type="text" id="propertyIdDisplay" class="form-input" placeholder="Property ID" readonly style="background-color: #f3f4f6; cursor: not-allowed; font-weight: 600; color: #3b82f6;">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label">Owner Name</label>
+                            <input type="text" id="ownerNameDisplay" class="form-input" placeholder="Property owner name" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Box -->
+                <div class="warning-box">
+                    <div class="flex gap-3">
+                        <i data-lucide="alert-circle" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                        <div class="text-sm text-amber-800">
+                            <strong>Important:</strong> If you don't like the property after booking confirmation, we will show you alternative properties or process a full refund. No questions asked!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="form-section">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="user" class="w-5 h-5"></i> Personal Information
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="form-label">User ID (Auto-filled) *</label>
+                            <input type="text" id="userId" class="form-input" placeholder="User ID" readonly style="background-color: #f3f4f6; cursor: not-allowed; font-weight: 600; color: #4f46e5;">
+                        </div>
+                        <div>
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" id="fullName" class="form-input" placeholder="Enter your full name" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Phone Number *</label>
+                            <input type="tel" id="phone" class="form-input" placeholder="Enter your phone number" pattern="[0-9]{10}" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" id="email" class="form-input" placeholder="Enter your email address" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Guardian Name *</label>
+                            <input type="text" id="guardianName" class="form-input" placeholder="Parent/Guardian name" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Guardian Phone Number *</label>
+                            <input type="tel" id="guardianPhone" class="form-input" placeholder="Guardian phone number" pattern="[0-9]{10}" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address Information -->
+                <div class="form-section">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="map-pin" class="w-5 h-5"></i> Address
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="form-label">Street Address *</label>
+                            <input type="text" id="streetAddress" class="form-input" placeholder="Enter street address" required>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">City *</label>
+                                <input type="text" id="city" class="form-input" placeholder="City" required>
+                            </div>
+                            <div>
+                                <label class="form-label">State *</label>
+                                <input type="text" id="state" class="form-input" placeholder="State" required>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Postal Code *</label>
+                                <input type="text" id="postalCode" class="form-input" placeholder="Postal code" required>
+                            </div>
+                            <div>
+                                <label class="form-label">Country *</label>
+                                <input type="text" id="country" class="form-input" placeholder="Country" value="India" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Document Upload -->
+                <div class="form-section">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-5 h-5"></i> Document Verification
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="form-label">Upload Address Proof (Aadhar/Utility Bill) *</label>
+                            <div class="upload-area" id="addressProofUpload">
+                                <i data-lucide="cloud-upload" class="w-8 h-8 text-gray-400 mx-auto mb-2"></i>
+                                <p class="text-gray-600 text-sm">Click to upload or drag and drop</p>
+                                <p class="text-gray-400 text-xs mt-1">PDF, JPG, PNG (Max 5MB)</p>
+                            </div>
+                            <input type="file" id="addressProof" accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
+                            <div id="addressProofName" class="text-sm text-green-600 mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Section -->
+                <div class="form-section bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="credit-card" class="w-5 h-5"></i> Payment
+                    </h3>
+                    <div class="bg-white p-4 rounded-lg mb-4">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-600">Monthly Rent:</span>
+                            <span id="rentAmount" class="font-bold text-gray-900">₹0</span>
+                        </div>
+                        <div class="flex justify-between pt-2 border-t">
+                            <span class="font-bold text-gray-900">Total Amount to Pay:</span>
+                            <span id="totalAmount" class="font-bold text-lg text-indigo-600">₹0</span>
+                        </div>
+                    </div>
+                    <button id="paymentBtn" class="btn-primary w-full flex items-center justify-center gap-2">
+                        <i data-lucide="credit-card" class="w-4 h-4"></i>
+                        Proceed to Payment with Razorpay
+                    </button>
+                </div>
+
+                <!-- Terms & Conditions -->
+                <div class="flex items-start gap-3 mb-6">
+                    <input type="checkbox" id="termsCheckbox" class="mt-1">
+                    <label for="termsCheckbox" class="text-sm text-gray-600">
+                        I agree to the terms and conditions and confirm that I have read the refund policy
+                    </label>
+                </div>
+
+                <button id="submitBtn" class="btn-primary w-full" disabled onclick="submitBookingForm()">
+                    Complete Booking
+                </button>
+            </div>
+
+            <!-- Success Screen -->
+            <div id="success-container" class="success-screen">
+                <div class="form-section text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="check-circle" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h3>
+                    <p class="text-gray-600 mb-6">Your login credentials have been generated and sent to your email.</p>
+                    
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6 text-left">
+                        <h4 class="font-bold text-gray-900 mb-3">Your Login Credentials:</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">User ID:</span>
+                                <span id="credentialUserId" class="font-mono font-bold text-gray-900">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Password:</span>
+                                <span id="credentialPassword" class="font-mono font-bold text-gray-900">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Login URL:</span>
+                                <a href="login.html" class="text-indigo-600 hover:underline">login.html</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <button onclick="window.location.href='../website/index.html'" class="btn-primary w-full">
+                            Go to Home
+                        </button>
+                        <div id="refundSection" class="mt-6 pt-6 border-t">
+                            <p class="text-gray-600 mb-4">Having second thoughts?</p>
+                            <div class="space-y-2">
+                                <button id="refundBtn" class="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">
+                                    Request Refund / Alternative Property
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Refund Modal -->
+            <div id="refundModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-lg max-w-2xl w-full p-8 max-h-90vh overflow-y-auto">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900">Refund / Alternative Property Request</h3>
+                        <button onclick="closeRefundModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Request Type Selection -->
+                        <div>
+                            <label class="form-label block mb-3">Select Your Preference *</label>
+                            <div class="space-y-3">
+                                <label class="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" onclick="selectRefundType('refund')">
+                                    <input type="radio" id="refundTypeRefund" name="refundType" value="refund" class="mt-2">
+                                    <div>
+                                        <div class="font-bold text-gray-900">Request Full Refund</div>
+                                        <div class="text-sm text-gray-600">₹500 will be refunded to your selected payment method</div>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" onclick="selectRefundType('alternative_property')">
+                                    <input type="radio" id="refundTypeAlternative" name="refundType" value="alternative_property" class="mt-2">
+                                    <div>
+                                        <div class="font-bold text-gray-900">Show Alternative Properties</div>
+                                        <div class="text-sm text-gray-600">We'll find you better options in your preferred area</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Refund Payment Details Section -->
+                        <div id="refundDetailsSection" style="display: none;" class="border-t pt-6">
+                            <h4 class="font-bold text-gray-900 mb-4">How would you like to receive your refund?</h4>
+                            
+                            <div class="space-y-4">
+                                <!-- UPI Option -->
+                                <label class="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" onclick="selectRefundMethod('upi')">
+                                    <input type="radio" id="refundMethodUpi" name="refundMethod" value="upi" class="mt-2">
+                                    <div class="flex-1">
+                                        <div class="font-bold text-gray-900">UPI</div>
+                                        <div class="text-sm text-gray-600">Fast and secure transfer via UPI</div>
+                                    </div>
+                                </label>
+
+                                <div id="upiDetailsDiv" style="display: none;" class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <label class="form-label">UPI ID *</label>
+                                    <input type="text" id="upiId" class="form-input" placeholder="yourname@upi" required>
+                                    <p class="text-xs text-gray-600 mt-2">Example: yourname@paytm, yourname@okaxis, yourname@ibl</p>
+                                </div>
+
+                                <!-- Bank Transfer Option -->
+                                <label class="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" onclick="selectRefundMethod('bank')">
+                                    <input type="radio" id="refundMethodBank" name="refundMethod" value="bank" class="mt-2">
+                                    <div class="flex-1">
+                                        <div class="font-bold text-gray-900">Bank Transfer</div>
+                                        <div class="text-sm text-gray-600">Transfer to your bank account</div>
+                                    </div>
+                                </label>
+
+                                <div id="bankDetailsDiv" style="display: none;" class="bg-green-50 p-4 rounded-lg border border-green-200 space-y-3">
+                                    <div>
+                                        <label class="form-label">Account Holder Name *</label>
+                                        <input type="text" id="bankAccountHolder" class="form-input" placeholder="Your name as per bank records">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Bank Account Number *</label>
+                                        <input type="text" id="bankAccountNumber" class="form-input" placeholder="Enter bank account number">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">IFSC Code *</label>
+                                        <input type="text" id="bankIfscCode" class="form-input" placeholder="Enter IFSC code (e.g., SBIN0001234)">
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Bank Name</label>
+                                        <input type="text" id="bankName" class="form-input" placeholder="Your bank name">
+                                    </div>
+                                </div>
+
+                                <!-- Other Option -->
+                                <label class="flex items-start gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" onclick="selectRefundMethod('other')">
+                                    <input type="radio" id="refundMethodOther" name="refundMethod" value="other" class="mt-2">
+                                    <div class="flex-1">
+                                        <div class="font-bold text-gray-900">Other Method</div>
+                                        <div class="text-sm text-gray-600">Tell us your preferred payment method</div>
+                                    </div>
+                                </label>
+
+                                <div id="otherDetailsDiv" style="display: none;" class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                    <label class="form-label">Please specify your payment method *</label>
+                                    <textarea id="otherDetails" class="form-input" rows="3" placeholder="Describe your preferred payment method..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alternative Property Section -->
+                        <div id="alternativePropertySection" style="display: none;" class="border-t pt-6">
+                            <h4 class="font-bold text-gray-900 mb-4">Tell us your preferences</h4>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="form-label">Preferred Area</label>
+                                    <input type="text" id="preferredArea" class="form-input" placeholder="Which area would you prefer?">
+                                </div>
+                                <div>
+                                    <label class="form-label">Property Requirements</label>
+                                    <textarea id="propertyRequirements" class="form-input" rows="3" placeholder="Tell us what you're looking for (AC, Wifi, etc.)"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3 mt-8 pt-6 border-t">
+                        <button onclick="closeRefundModal()" class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+                            Cancel
+                        </button>
+                        <button onclick="submitRefundRequest()" class="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
+                            Submit Request
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5001'; // Backend API on port 5001
+        let paymentId = null;
+        let paymentMethod = null;
+        let paymentAmount = null;
+        let bookingDetails = null;
+
+        // Verify user exists in new_signups.html data OR user session
+        function verifyUserFromSignups(userId) {
+            try {
+                // Check if userId looks like a MongoDB ObjectId (24 hex chars) - if so, it's actually a bookingId
+                const isMongoId = /^[a-f0-9]{24}$/i.test(userId);
+                if (isMongoId) {
+                    console.warn('⚠️ Parameter userId is a MongoDB ObjectId - treating as bookingId');
+                    // Return null so getBookingDetails can handle the bookingId
+                    return null;
+                }
+                
+                // First check localStorage for signup data
+                const signupData = localStorage.getItem('roomhy_kyc_verification');
+                if (signupData) {
+                    const signups = JSON.parse(signupData);
+                    const user = signups.find(u => u.userData?.id === userId || u.id === userId);
+                    
+                    if (user) {
+                        console.log('✅ User verified from new_signups.html:', userId);
+                        console.log('📧 User email:', user.userData?.email);
+                        return user;
+                    }
+                }
+                
+                // Also check for user session/login data
+                const userSession = localStorage.getItem('roomhy_user_session') || localStorage.getItem('tenantSession') || localStorage.getItem('areaAdminSession');
+                if (userSession) {
+                    const session = JSON.parse(userSession);
+                    if (session.id === userId || session.userId === userId || session.tenantId === userId) {
+                        console.log('✅ User verified from session:', userId);
+                        return session;
+                    }
+                }
+                
+                console.warn('⚠️ No signup or session data found for userId:', userId);
+                return null;
+            } catch (err) {
+                console.error('Error verifying user from signups:', err);
+                return null;
+            }
+        }
+
+        // Extract userId from signup data using email or other identifiers
+        function extractUserIdFromSignups(email, bookingId) {
+            try {
+                const signupData = localStorage.getItem('roomhy_kyc_verification');
+                if (!signupData) return null;
+                
+                const signups = JSON.parse(signupData);
+                
+                // Try to find user by email first
+                if (email) {
+                    const userByEmail = signups.find(u => u.email === email || u.userData?.email === email);
+                    if (userByEmail) {
+                        const userId = userByEmail.userData?.id || userByEmail.id;
+                        if (userId) {
+                            console.log('✅ Found userId from email:', userId);
+                            return userId;
+                        }
+                    }
+                }
+                
+                // If no email match, get the first registered user (fallback)
+                if (signups.length > 0) {
+                    const userId = signups[0].userData?.id || signups[0].id;
+                    if (userId) {
+                        console.log('✅ Using first registered user ID (fallback):', userId);
+                        return userId;
+                    }
+                }
+                
+                return null;
+            } catch (err) {
+                console.error('Error extracting userId from signups:', err);
+                return null;
+            }
+        }
+
+        // Get booking details from URL or generate new user ID
+        function getBookingDetails() {
+            const params = new URLSearchParams(window.location.search);
+            let paramUserId = params.get('userId') || params.get('user');
+            const paramBookingId = params.get('bookingId') || params.get('booking');
+
+            console.log('URL Parameters:', window.location.search);
+            console.log('Raw paramUserId:', paramUserId);
+            console.log('Raw paramBookingId:', paramBookingId);
+
+            // Check if paramUserId is actually a MongoDB ObjectId (24 hex chars)
+            // If so, treat it as bookingId instead
+            const isMongoId = paramUserId && /^[a-f0-9]{24}$/i.test(paramUserId);
+            if (isMongoId) {
+                console.warn('⚠️ paramUserId is MongoDB ObjectId - treating as bookingId');
+                window.bookingIdForFetch = paramUserId;
+                paramUserId = null; // Clear the userId so we can extract it from signups
+            }
+
+            // Store bookingId for fetching if available - THIS IS PRIORITY
+            if (paramBookingId) {
+                window.bookingIdForFetch = paramBookingId;
+                console.log('✅ Will fetch booking by ID:', paramBookingId);
+            }
+
+            // If paramUserId provided, verify it's from new_signups.html or session
+            if (paramUserId) {
+                const verifiedUser = verifyUserFromSignups(paramUserId);
+                if (verifiedUser) {
+                    userId = paramUserId;
+                    console.log('✅ Using verified userId from new_signups:', userId);
+                } else {
+                    console.warn('⚠️ User not found in new_signups, but will proceed with booking form');
+                    userId = paramUserId; // Allow form to load even if user not verified
+                }
+            } else {
+                // Try to get userId from session data
+                const userSession = localStorage.getItem('roomhy_user_session') || localStorage.getItem('tenantSession');
+                if (userSession) {
+                    const session = JSON.parse(userSession);
+                    userId = session.id || session.userId || session.tenantId;
+                    console.log('✅ Retrieved userId from session:', userId);
+                } else {
+                    // If no userId and no session, try to extract from signup data
+                    const extractedUserId = extractUserIdFromSignups(null, window.bookingIdForFetch);
+                    if (extractedUserId) {
+                        userId = extractedUserId;
+                        console.log('✅ Extracted userId from signup data:', userId);
+                    } else {
+                        console.warn('⚠️ No userId provided or found in session. Redirecting to new_signups.html');
+                        alert('Please sign up first or log in to access the booking form.');
+                        window.location.href = '../superadmin/new_signups.html';
+                        return;
+                    }
+                }
+            }
+
+            fetchBookingDetails();
+        }
+
+        // Function to populate userId in form
+        function populateUserIdField() {
+            const userIdField = document.getElementById('userId');
+            if (userIdField && userId) {
+                userIdField.value = userId;
+                console.log('✅ UserId field populated:', userId);
+            }
+        }
+
+        // Call this after userId is set
+        function initializeForm() {
+            populateUserIdField();
+            fetchBookingDetails();
+        }
+
+        // Fetch booking details using bookingId (priority) or userId
+        async function fetchBookingDetails() {
+            // PRIORITY 1: If bookingId available, fetch by bookingId directly
+            if (window.bookingIdForFetch) {
+                console.log('🔍 Priority 1: Fetching booking by bookingId:', window.bookingIdForFetch);
+                try {
+                    const response = await fetch(`${API_URL}/api/booking/requests/${window.bookingIdForFetch}`);
+                    console.log('📌 Booking fetch status:', response.status);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const booking = data.data || data;
+                        bookingDetails = booking;
+                        populateRentAmount();
+                        console.log('✅ Booking loaded by bookingId:', window.bookingIdForFetch);
+                        console.log('📊 Booking - Property:', booking.property_name, 'Owner:', booking.owner_name);
+                        return;
+                    } else {
+                        console.warn('❌ Booking fetch returned status:', response.status);
+                    }
+                } catch (err) {
+                    console.warn('❌ Failed to fetch booking by ID:', err);
+                }
+            }
+
+            // PRIORITY 2: Fetch bookings for userId (if userId looks like it's not a generated one)
+            if (userId && !userId.match(/^roomhyweb\d{6}$/i)) {
+                console.log('🔍 Priority 2: Fetching bookings for userId:', userId);
+                try {
+                    const response = await fetch(`${API_URL}/api/booking/requests?user_id=${userId}`);
+                    console.log('📌 User bookings fetch status:', response.status);
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('📦 User bookings data:', data);
+                        if (data.data && data.data.length > 0) {
+                            // Get the most recent booking for this user
+                            bookingDetails = data.data[0];
+                            populateRentAmount();
+                            console.log('✅ Booking loaded for user:', userId);
+                            console.log('📊 Booking - Property:', bookingDetails.property_name, 'Owner:', bookingDetails.owner_name);
+                            return;
+                        } else {
+                            console.warn('❌ No bookings found for user:', userId);
+                        }
+                    } else {
+                        console.warn('❌ Failed to fetch bookings, status:', response.status);
+                    }
+                } catch (err) {
+                    console.warn('❌ Backend booking fetch failed:', err);
+                }
+            }
+
+            // If booking not found, continue with empty details (allow form submission without booking)
+            console.warn('⚠️ Could not load booking details, continuing with empty form');
+            console.log('ℹ️ Booking is optional - user can enter property/owner details directly');
+            bookingDetails = { property_name: 'Property Not Loaded', owner_name: 'Owner Not Loaded', rent_amount: 0 };
+            populateRentAmount();
+        }
+
+        // Populate rent amount (Fixed 500) and property details
+        function populateRentAmount() {
+            // Fixed payment amount
+            const paymentAmount = 500;
+            document.getElementById('rentAmount').textContent = `₹${paymentAmount.toLocaleString()}`;
+            document.getElementById('totalAmount').textContent = `₹${paymentAmount.toLocaleString()}`;
+            
+            // Auto-populate property and owner information from booking request (if available)
+            const propertyName = bookingDetails?.property_name || 'Property Information Unavailable';
+            const propertyId = bookingDetails?.property_id || bookingDetails?._id || 'N/A';
+            const ownerName = bookingDetails?.owner_name || 'Owner Information Unavailable';
+            
+            document.getElementById('propertyNameDisplay').value = propertyName;
+            document.getElementById('propertyIdDisplay').value = propertyId;
+            document.getElementById('ownerNameDisplay').value = ownerName;
+            
+            console.log('📋 Booking Details:', {
+                property: propertyName,
+                propertyId: propertyId,
+                owner: ownerName,
+                status: bookingDetails?.status
+            });
+        }
+
+        // File upload handlers
+        document.getElementById('addressProofUpload').addEventListener('click', () => {
+            document.getElementById('addressProof').click();
+        });
+
+        document.getElementById('addressProof').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const validTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Please upload a valid file (PDF, JPG, PNG)');
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size must be less than 5MB');
+                    return;
+                }
+                document.getElementById('addressProofUpload').classList.add('active');
+                document.getElementById('addressProofName').textContent = `✓ ${file.name} uploaded`;
+            }
+        });
+
+        // Enable submit button when terms accepted
+        document.getElementById('termsCheckbox').addEventListener('change', (e) => {
+            document.getElementById('submitBtn').disabled = !e.target.checked;
+        });
+
+        // Payment with Razorpay - Fixed 500 amount
+        document.getElementById('paymentBtn').addEventListener('click', async () => {
+            if (!validateForm()) {
+                alert('❌ Please fill all required fields before proceeding to payment');
+                return;
+            }
+
+            // Fixed payment amount
+            paymentAmount = 500;
+            const options = {
+                key: "rzp_test_S98wbc6TJMLA4F", // Your actual Razorpay test key
+                amount: paymentAmount * 100, // Amount in paise
+                currency: "INR",
+                name: "RoomHy",
+                description: `Booking fee for ${bookingDetails?.property_name || 'Property'}`,
+                prefill: {
+                    name: document.getElementById('fullName').value,
+                    email: document.getElementById('email')?.value || "user@example.com",
+                    contact: document.getElementById('phone').value
+                },
+                handler: handlePaymentSuccess,
+                method: {
+                    upi: true,
+                    card: true,
+                    netbanking: true,
+                    wallet: true
+                },
+                // Request UPI details explicitly
+                notes: {
+                    booking_type: 'room_booking',
+                    property: bookingDetails?.property_name || 'RoomHy Property',
+                    amount: paymentAmount
+                },
+                modal: {
+                    ondismiss: () => {
+                        console.log('⚠️ Payment cancelled by user - Payment is MANDATORY');
+                        alert('❌ Payment is MANDATORY to complete your booking.\n\nPlease complete the payment to proceed.');
+                    },
+                    confirm_close: true // Show close button confirmation
+                },
+                theme: {
+                    color: "#6366f1"
+                }
+            };
+
+            try {
+                const razorpay = new Razorpay(options);
+                razorpay.open();
+            } catch (err) {
+                console.error('❌ Failed to open Razorpay:', err);
+                alert('Failed to open payment gateway. Please try again.');
+            }
+        });
+
+        function handlePaymentSuccess(response) {
+            if (!response || !response.razorpay_payment_id) {
+                alert('⚠️ Payment verification failed. Please contact support.');
+                return;
+            }
+            console.log('✅ Payment successful:', response.razorpay_payment_id);
+            console.log('✅ Payment response:', response);
+            paymentId = response.razorpay_payment_id;
+            
+            // Capture payment method from Razorpay response
+            // Note: Razorpay's basic response doesn't include payment method, but we can infer from payment intent
+            // For production, you'd fetch details from Razorpay API using payment_id
+            // For now, we'll store the payment ID and set a generic method
+            paymentMethod = 'razorpay'; // Will be fetched from Razorpay API in production
+            
+            submitBookingForm();
+        }
+
+        // Form validation
+        function validateForm() {
+            const required = ['fullName', 'phone', 'email', 'guardianName', 'guardianPhone', 'streetAddress', 'city', 'state', 'postalCode', 'country'];
+            for (let field of required) {
+                if (!document.getElementById(field).value.trim()) {
+                    alert(`Please fill in ${field}`);
+                    return false;
+                }
+            }
+            if (!document.getElementById('addressProof').files.length) {
+                alert('Please upload address proof');
+                return false;
+            }
+            return true;
+        }
+
+        // Submit booking form
+        async function submitBookingForm() {
+            try {
+                // Get email value - handle missing field gracefully
+                const emailField = document.getElementById('email');
+                const emailValue = emailField?.value || '';
+                
+                if (!emailValue) {
+                    alert('Please enter your email address');
+                    return;
+                }
+
+                // Prepare form data matching BookingRequest schema requirements
+                const formData = {
+                    userId: userId,
+                    user_id: userId, // Required field in snake_case
+                    paymentId: paymentId,
+                    bookingStatus: 'confirmed',
+                    paymentAmount: paymentAmount || 500,
+                    
+                    // Tenant information - mapped to BookingRequest fields
+                    fullName: document.getElementById('fullName').value,
+                    name: document.getElementById('fullName').value, // Required field
+                    phone: document.getElementById('phone').value,
+                    email: emailValue, // Required field
+                    guardianName: document.getElementById('guardianName').value,
+                    guardianPhone: document.getElementById('guardianPhone').value,
+                    
+                    // Address information
+                    address: {
+                        street: document.getElementById('streetAddress').value,
+                        city: document.getElementById('city').value,
+                        state: document.getElementById('state').value,
+                        postalCode: document.getElementById('postalCode').value,
+                        country: document.getElementById('country').value
+                    },
+                    
+                    // Property information - use bookingDetails or get from form/localStorage
+                    propertyId: bookingDetails?.property_id || bookingDetails?._id || localStorage.getItem('property_id'),
+                    property_id: bookingDetails?.property_id || bookingDetails?._id || localStorage.getItem('property_id'), // Required field
+                    propertyName: bookingDetails?.property_name || document.getElementById('propertyName')?.value,
+                    property_name: bookingDetails?.property_name || document.getElementById('propertyName')?.value, // Required field
+                    ownerName: bookingDetails?.owner_name || bookingDetails?.owner,
+                    owner_name: bookingDetails?.owner_name || bookingDetails?.owner,
+                    ownerId: bookingDetails?.owner_id || localStorage.getItem('owner_id'),
+                    owner_id: bookingDetails?.owner_id || localStorage.getItem('owner_id'), // Required field
+                    
+                    // Booking details
+                    rentAmount: bookingDetails?.rent_amount,
+                    rent_amount: bookingDetails?.rent_amount,
+                    area: bookingDetails?.area || document.getElementById('area')?.value || localStorage.getItem('area'), // Required field
+                    propertyType: bookingDetails?.property_type,
+                    property_type: bookingDetails?.property_type,
+                    request_type: 'request', // Set to 'request' or 'bid' based on booking context
+                    
+                    // Payment information
+                    payment_id: paymentId,
+                    payment_amount: paymentAmount,
+                    payment_status: 'completed',
+                    payment_method: paymentMethod || 'razorpay',
+                    payment_details: paymentId || 'Not captured',
+                    
+                    // Guardian information
+                    guardian_name: document.getElementById('guardianName')?.value,
+                    guardian_phone: document.getElementById('guardianPhone')?.value,
+                    
+                    // Address information  
+                    address_street: document.getElementById('streetAddress')?.value,
+                    address_city: document.getElementById('city')?.value,
+                    address_state: document.getElementById('state')?.value,
+                    address_postal_code: document.getElementById('postalCode')?.value,
+                    address_country: document.getElementById('country')?.value,
+                    
+                    // Timestamps and status
+                    created_at: new Date().toISOString(),
+                    confirmed_at: new Date().toISOString(),
+                    status: 'confirmed'
+                };
+
+                console.log('Submitting booking data:', formData);
+
+                // Validate required fields before sending
+                const requiredFields = ['property_id', 'property_name', 'area', 'user_id', 'name', 'email', 'owner_id', 'request_type'];
+                const missingFields = requiredFields.filter(field => !formData[field]);
+                if (missingFields.length > 0) {
+                    alert(`Missing required information: ${missingFields.join(', ')}\n\nPlease ensure you have booking details or enter them manually.`);
+                    return;
+                }
+
+                // Submit to backend
+                const response = await fetch(`${API_URL}/api/bookings/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to confirm booking');
+                }
+                const result = await response.json();
+                console.log('✅ Booking confirmed:', result);
+
+                // Generate credentials
+                const credentials = generateCredentials(formData.fullName);
+                
+                // Display success screen
+                displaySuccessScreen(credentials);
+
+                // Send email with credentials
+                await sendCredentialsEmail(formData.fullName, credentials, formData.email);
+
+            } catch (err) {
+                console.error('Error submitting booking:', err);
+                alert(`Failed to complete booking: ${err.message}\n\nPlease try again or contact support.`);
+            }
+        }
+
+        // Generate credentials - use existing userId if available, or generate new one
+        function generateCredentials(name) {
+            // If we already have a userId from URL/signup, use it
+            // Otherwise generate a new one
+            let credentialsUserId = userId;
+            
+            if (!credentialsUserId || credentialsUserId.match(/^ROOMHY\d+$/i)) {
+                // If userId is ROOMHY format (temporary) or not set, generate new signup ID
+                const prefix = 'roomhyweb';
+                const counter = parseInt(localStorage.getItem('userIdCounter') || '0') + 1;
+                localStorage.setItem('userIdCounter', counter.toString());
+                credentialsUserId = prefix + String(counter).padStart(6, '0');
+                console.log(`Generated new credentials userId: ${credentialsUserId}`);
+            } else {
+                console.log(`Using existing userId for credentials: ${credentialsUserId}`);
+            }
+
+            const password = generatePassword();
+            return { userId: credentialsUserId, password };
+        }
+
+        function generatePassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%';
+            let password = '';
+            for (let i = 0; i < 10; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
+
+        // Display success screen
+        function displaySuccessScreen(credentials) {
+            document.getElementById('form-container').style.display = 'none';
+            document.getElementById('success-container').classList.remove('success-screen');
+            document.getElementById('credentialUserId').textContent = credentials.userId;
+            document.getElementById('credentialPassword').textContent = credentials.password;
+            
+            // Save booking confirmation data
+            const bookingConfirmation = {
+                bookingId: window.bookingIdForFetch || bookingDetails.booking_id || bookingDetails._id,
+                userId: userId,
+                propertyName: bookingDetails?.property_name,
+                propertyId: bookingDetails?.property_id || bookingDetails?._id,
+                propertyImage: bookingDetails?.propertyImage || bookingDetails?.property_image || bookingDetails?.image || null,
+                propertyPhotos: bookingDetails?.propertyPhotos || bookingDetails?.property_photos || bookingDetails?.photos || [],
+                ownerName: bookingDetails?.owner_name,
+                rentAmount: bookingDetails?.rent_amount,
+                area: bookingDetails?.area,
+                bookingDate: new Date().toISOString(),
+                paymentId: paymentId,
+                paymentStatus: 'completed',
+                status: 'confirmed'
+            };
+            
+            // Save to sessionStorage (for immediate display)
+            sessionStorage.setItem('bookingConfirmation', JSON.stringify(bookingConfirmation));
+            
+            // Also save to localStorage as backup
+            localStorage.setItem('lastBooking', JSON.stringify(bookingConfirmation));
+            
+            console.log('✅ Booking confirmation saved:', bookingConfirmation);
+            
+            // Add button to view MyStays after 3 seconds
+            setTimeout(() => {
+                const mystaysBtn = document.createElement('button');
+                mystaysBtn.innerHTML = '✅ View My Bookings on MyStays';
+                mystaysBtn.className = 'btn-primary';
+                mystaysBtn.style.marginTop = '20px';
+                mystaysBtn.onclick = () => {
+                    window.location.href = `/website/mystays.html?userId=${userId}`;
+                };
+                
+                const successContainer = document.getElementById('success-container');
+                if (successContainer) {
+                    successContainer.appendChild(mystaysBtn);
+                }
+            }, 1000);
+        }
+
+        // ===== REFUND REQUEST HANDLERS =====
+        let selectedRefundType = null;
+        let selectedRefundMethod = null;
+
+        // Select refund type
+        function selectRefundType(type) {
+            selectedRefundType = type;
+            document.getElementById('refundTypeRefund').checked = (type === 'refund');
+            document.getElementById('refundTypeAlternative').checked = (type === 'alternative_property');
+            
+            // Show/hide relevant sections
+            document.getElementById('refundDetailsSection').style.display = (type === 'refund') ? 'block' : 'none';
+            document.getElementById('alternativePropertySection').style.display = (type === 'alternative_property') ? 'block' : 'none';
+            
+            // Reset method selection when changing type
+            selectedRefundMethod = null;
+            document.querySelectorAll('input[name="refundMethod"]').forEach(radio => radio.checked = false);
+            document.getElementById('upiDetailsDiv').style.display = 'none';
+            document.getElementById('bankDetailsDiv').style.display = 'none';
+            document.getElementById('otherDetailsDiv').style.display = 'none';
+        }
+
+        // Select refund payment method
+        function selectRefundMethod(method) {
+            selectedRefundMethod = method;
+            document.getElementById('refundMethodUpi').checked = (method === 'upi');
+            document.getElementById('refundMethodBank').checked = (method === 'bank');
+            document.getElementById('refundMethodOther').checked = (method === 'other');
+            
+            // Show/hide payment details based on method
+            document.getElementById('upiDetailsDiv').style.display = (method === 'upi') ? 'block' : 'none';
+            document.getElementById('bankDetailsDiv').style.display = (method === 'bank') ? 'block' : 'none';
+            document.getElementById('otherDetailsDiv').style.display = (method === 'other') ? 'block' : 'none';
+        }
+
+        // Open refund modal
+        document.getElementById('refundBtn').addEventListener('click', () => {
+            // Reset form
+            selectedRefundType = null;
+            selectedRefundMethod = null;
+            document.querySelectorAll('input[name="refundType"]').forEach(radio => radio.checked = false);
+            document.querySelectorAll('input[name="refundMethod"]').forEach(radio => radio.checked = false);
+            document.getElementById('refundDetailsSection').style.display = 'none';
+            document.getElementById('alternativePropertySection').style.display = 'none';
+            document.getElementById('upiDetailsDiv').style.display = 'none';
+            document.getElementById('bankDetailsDiv').style.display = 'none';
+            document.getElementById('otherDetailsDiv').style.display = 'none';
+            
+            // Clear form fields
+            document.getElementById('upiId').value = '';
+            document.getElementById('bankAccountHolder').value = '';
+            document.getElementById('bankAccountNumber').value = '';
+            document.getElementById('bankIfscCode').value = '';
+            document.getElementById('bankName').value = '';
+            document.getElementById('otherDetails').value = '';
+            document.getElementById('preferredArea').value = '';
+            document.getElementById('propertyRequirements').value = '';
+            
+            document.getElementById('refundModal').style.display = 'flex';
+        });
+
+        // Close refund modal
+        function closeRefundModal() {
+            document.getElementById('refundModal').style.display = 'none';
+        }
+
+        // Submit refund request
+        async function submitRefundRequest() {
+            // Validation
+            if (!selectedRefundType) {
+                alert('Please select either "Request Refund" or "Show Alternative Properties"');
+                return;
+            }
+
+            // Get form data - use captured booking_id and payment_id
+            const formData = {
+                booking_id: window.bookingIdForFetch || bookingDetails.booking_id || bookingDetails._id,
+                user_id: userId || bookingDetails.user_id,
+                payment_id: paymentId,
+                user_name: document.getElementById('fullName').value,
+                user_phone: document.getElementById('phone').value,
+                user_email: document.getElementById('email').value,
+                request_type: selectedRefundType
+            };
+
+            // If refund request, add payment details
+            if (selectedRefundType === 'refund') {
+                if (!selectedRefundMethod) {
+                    alert('Please select a refund payment method');
+                    return;
+                }
+
+                formData.refund_method = selectedRefundMethod;
+
+                if (selectedRefundMethod === 'upi') {
+                    formData.upi_id = document.getElementById('upiId').value;
+                    if (!formData.upi_id) {
+                        alert('Please enter your UPI ID');
+                        return;
+                    }
+                } else if (selectedRefundMethod === 'bank') {
+                    formData.bank_account_holder = document.getElementById('bankAccountHolder').value;
+                    formData.bank_account_number = document.getElementById('bankAccountNumber').value;
+                    formData.bank_ifsc_code = document.getElementById('bankIfscCode').value;
+                    formData.bank_name = document.getElementById('bankName').value;
+
+                    if (!formData.bank_account_holder || !formData.bank_account_number || !formData.bank_ifsc_code) {
+                        alert('Please fill all required bank details');
+                        return;
+                    }
+                } else if (selectedRefundMethod === 'other') {
+                    formData.other_details = document.getElementById('otherDetails').value;
+                    if (!formData.other_details) {
+                        alert('Please describe your preferred payment method');
+                        return;
+                    }
+                }
+            }
+
+            // If alternative property request, add preferences
+            if (selectedRefundType === 'alternative_property') {
+                formData.preferred_area = document.getElementById('preferredArea').value;
+                formData.property_requirements = document.getElementById('propertyRequirements').value;
+            }
+
+            try {
+                console.log('📤 Submitting refund request:', formData);
+                
+                const response = await fetch(`${API_URL}/api/booking/refund-request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to submit refund request');
+                }
+
+                const result = await response.json();
+                console.log('✅ Refund request submitted:', result);
+
+                const requestType = selectedRefundType === 'refund' ? 'Refund' : 'Alternative Property';
+                alert(`${requestType} request submitted successfully!\n\nOur team will review your request and contact you soon.`);
+                
+                closeRefundModal();
+
+            } catch (err) {
+                console.error('Error submitting refund request:', err);
+                alert(`Failed to submit request: ${err.message}\n\nPlease try again or contact support.`);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('refundModal').addEventListener('click', (e) => {
+            if (e.target.id === 'refundModal') {
+                closeRefundModal();
+            }
+        });
+
+        async function sendCredentialsEmail(name, credentials) {
+            try {
+                await fetch(`${API_URL}/api/notifications/send-credentials`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: "user@example.com",
+                        name: name,
+                        userId: credentials.userId,
+                        password: credentials.password,
+                        bookingId: bookingDetails.booking_id
+                    })
+                });
+            } catch (err) {
+                console.error('Error sending credentials email:', err);
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            getBookingDetails();
+            populateUserIdField();
+        });
+    </script>
+</body>
+</html>
+
