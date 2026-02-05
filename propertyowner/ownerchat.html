@@ -724,7 +724,8 @@
                     // If owner liked, send booking form link to chat
                     if (decision === 'like' && userType === 'owner') {
                         // Create booking form link with bookingId and userId
-                        const bookingFormLink = `${window.location.origin}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                        const repoPath = '/roomhy'; // Repository name
+                        const bookingFormLink = `${window.location.origin}${repoPath}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
                         const ownerId = currentOwner.loginId || currentOwner.ownerId;
                         const messagesRef = window.collection(window.db, 'chats', bookingId, 'messages');
 
