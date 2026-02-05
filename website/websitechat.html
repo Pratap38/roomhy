@@ -522,45 +522,22 @@
     </div>
 
     <!-- Main Chat Interface -->
-    <main class="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8 mb-16 sm:mb-20 flex-1 w-full">
-        <div class="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl overflow-hidden flex flex-col h-[calc(100vh-140px)] sm:h-[600px] md:h-[700px]">
-            
-            <!-- Mobile Chat List Toggle -->
-            <button id="mobile-chat-toggle" class="md:hidden flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200 text-left">
-                <i data-lucide="message-circle" class="w-5 h-5 text-indigo-600"></i>
-                <span class="font-semibold text-slate-800">My Chats</span>
-                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 ml-auto"></i>
-            </button>
-            
+    <main class="max-w-7xl mx-auto px-2 sm:px-4 py-8 mb-20 flex-1 w-full">
+        <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex h-[500px] sm:h-[600px] md:h-[700px] border border-slate-100">
             <!-- Sidebar: Conversations -->
-            <div id="contacts-panel" class="hidden md:flex w-full md:w-80 bg-slate-50 border-r border-slate-200 flex-col">
-                <div class="p-4 sm:p-6 border-b border-slate-200 bg-white">
+            <div class="hidden md:flex w-full md:w-80 bg-slate-50 border-r border-slate-200 flex-col" id="contacts-panel">
+                <div class="p-6 border-b border-slate-200 bg-white">
                     <h3 class="font-bold text-slate-800 text-lg">My Chats</h3>
-                    <div class="relative mt-3 sm:mt-4">
-                        <input type="text" placeholder="Search..." class="w-full pl-9 pr-4 py-2 text-sm bg-slate-100 rounded-xl border-none focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+                    <div class="relative mt-2 sm:mt-4">
+                        <input type="text" placeholder="Search..." class="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 text-xs sm:text-sm bg-slate-100 rounded-lg sm:rounded-xl text-sm border-none focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <i data-lucide="search" class="w-3 sm:w-4 h-3 sm:h-4 absolute left-2.5 sm:left-3 top-2.5 text-slate-400"></i>
                     </div>
                 </div>
                 <div id="chat-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3 space-y-1 sm:space-y-2">
                     <!-- Conversations loaded dynamically -->
                     <div class="animate-pulse flex flex-col gap-3 sm:gap-4 p-2 sm:p-4">
-                        <div class="h-12 sm:h-14 bg-slate-200 rounded-xl w-full"></div>
-                        <div class="h-12 sm:h-14 bg-slate-200 rounded-xl w-full"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mobile Chat List Drawer -->
-            <div id="mobile-chat-drawer" class="fixed inset-0 bg-white z-50 transform translate-x-full transition-transform duration-300 md:hidden">
-                <div class="flex flex-col h-full">
-                    <div class="p-4 border-b border-slate-200 flex items-center gap-3 bg-white">
-                        <button id="close-mobile-chat" class="p-2 hover:bg-slate-100 rounded-lg">
-                            <i data-lucide="x" class="w-5 h-5 text-slate-600"></i>
-                        </button>
-                        <h3 class="font-bold text-slate-800">My Chats</h3>
-                    </div>
-                    <div id="mobile-chat-list" class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
-                        <!-- Mobile chat list loaded dynamically -->
+                        <div class="h-10 sm:h-12 bg-slate-200 rounded-lg sm:rounded-xl w-full"></div>
+                        <div class="h-10 sm:h-12 bg-slate-200 rounded-lg sm:rounded-xl w-full"></div>
                     </div>
                 </div>
             </div>
@@ -733,21 +710,6 @@
 
             mobileMenu.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', closeMenu);
-            });
-        }
-
-        // Mobile chat drawer functionality
-        const mobileChatToggle = document.getElementById('mobile-chat-toggle');
-        const mobileChatDrawer = document.getElementById('mobile-chat-drawer');
-        const closeMobileChat = document.getElementById('close-mobile-chat');
-
-        if (mobileChatToggle && mobileChatDrawer && closeMobileChat) {
-            mobileChatToggle.addEventListener('click', () => {
-                mobileChatDrawer.classList.remove('translate-x-full');
-            });
-
-            closeMobileChat.addEventListener('click', () => {
-                mobileChatDrawer.classList.add('translate-x-full');
             });
         }
 
