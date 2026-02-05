@@ -22,12 +22,20 @@
     </style>
 </head>
 <body class="bg-gray-50">
+    <!-- Mobile Overlay -->
+    <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+    
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <div class="sidebar w-64 border-r border-gray-200 flex flex-col">
-            <div class="p-6 border-b border-gray-700">
-                <h1 class="text-xl font-bold text-purple-400">RoomHy</h1>
-                <p class="text-xs text-gray-400 mt-1">SUPER ADMIN</p>
+        <div id="mobile-sidebar" class="sidebar w-64 border-r border-gray-200 flex flex-col fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 md:z-0">
+            <div class="p-6 border-b border-gray-700 flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-bold text-purple-400">RoomHy</h1>
+                    <p class="text-xs text-gray-400 mt-1">SUPER ADMIN</p>
+                </div>
+                <button id="mobile-sidebar-close" class="md:hidden p-2 text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
             <nav class="flex-1 overflow-y-auto">
                 <div class="sidebar-link" onclick="navigateTo('dashboard')"><i data-lucide="home" class="w-4 h-4 mr-3"></i> Dashboard</div>
@@ -43,6 +51,13 @@
 
         <!-- Main Content -->
         <div class="flex-1 overflow-auto">
+            <!-- Mobile Header -->
+            <div class="md:hidden bg-white p-4 shadow-sm flex items-center">
+                <button id="mobile-menu-open" class="mr-4 text-slate-500">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+                <h2 class="text-lg font-bold text-slate-900">Rent Collection</h2>
+            </div>
             <div class="p-8">
                 <!-- Header -->
                 <div class="mb-8">
@@ -181,6 +196,38 @@
             console.log('📡 Custom payment update event received');
             loadData();
         });
+
+        // Mobile sidebar toggle
+        const mobileMenuOpen = document.getElementById('mobile-menu-open');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+        const mobileSidebarClose = document.getElementById('mobile-sidebar-close');
+
+        if (mobileMenuOpen && mobileSidebar && mobileSidebarOverlay && mobileSidebarClose) {
+            const openSidebar = () => {
+                mobileSidebar.classList.remove('hidden');
+                mobileSidebarOverlay.classList.remove('hidden');
+                setTimeout(() => {
+                    mobileSidebar.classList.remove('-translate-x-full');
+                }, 10);
+            };
+
+            const closeSidebar = () => {
+                mobileSidebar.classList.add('-translate-x-full');
+                mobileSidebarOverlay.classList.add('hidden');
+                setTimeout(() => {
+                    mobileSidebar.classList.add('hidden');
+                }, 300);
+            };
+
+            mobileMenuOpen.addEventListener('click', openSidebar);
+            mobileSidebarClose.addEventListener('click', closeSidebar);
+            mobileSidebarOverlay.addEventListener('click', closeSidebar);
+
+            mobileSidebar.querySelectorAll('.sidebar-link').forEach(link => {
+                link.addEventListener('click', closeSidebar);
+            });
+        }
 
         // Auto-refresh every 30 seconds to show updated payment status
         function startAutoRefresh() {

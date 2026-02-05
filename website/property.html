@@ -18,6 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -109,6 +110,137 @@
                 top: 100px; /* Header height (h-20 = 80px) + space */
             }
          }
+
+        /* === Footer Styling === */
+        .footer {
+          font-family: 'Inter', sans-serif;
+          color: #e5e7eb; /* Light gray text */
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .footer a {
+          color: #cbd5e1; /* Lighter links */
+          text-decoration: none;
+          transition: color 0.2s ease;
+        }
+
+        .footer a:hover {
+          color: #60a5fa; /* Blue hover color */
+        }
+
+        .footer-main {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+          gap: 2rem;
+          padding: 3rem 2rem;
+          align-items: start;
+        }
+        
+        .footer-logo {
+            grid-column: span 1;
+        }
+
+        .footer-logo img {
+          width: 140px;
+          margin-bottom: 0.5rem;
+        }
+
+        .footer-logo p {
+          color: #9ca3af;
+          font-size: 0.9rem;
+        }
+
+        .footer-links h4,
+        .footer-legal h4,
+        .footer-contact h4 {
+          font-weight: 700;
+          color: #ffffff; /* White heading color */
+          margin-bottom: 1rem;
+          position: relative;
+        }
+
+        /* Added back blue underline for dark footer for contrast */
+        .footer-links h4::after,
+        .footer-legal h4::after,
+        .footer-contact h4::after {
+          content: '';
+          position: absolute;
+          bottom: -0.4rem;
+          left: 0;
+          width: 40px;
+          height: 2px;
+          background: #60a5fa;
+          border-radius: 2px;
+        }
+
+        .footer-links ul,
+        .footer-legal ul {
+          list-style: none;
+          padding: 0;
+        }
+
+        .footer-links li,
+        .footer-legal li {
+          margin-bottom: 0.6rem;
+        }
+
+        .footer-contact p {
+          color: #d1d5db;
+          margin: 0.6rem 0;
+          font-size: 0.9rem;
+        }
+
+        .footer-contact i {
+          color: #60a5fa; /* Light blue icon color */
+          margin-right: 0.6rem;
+        }
+
+        .footer-social {
+          margin-top: 1.5rem;
+        }
+
+        .footer-social a {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.08); /* Dark background */
+          color: #ffffff;
+          width: 35px;
+          height: 35px;
+          border-radius: 9999px;
+          margin-right: 0.8rem;
+          transition: all 0.3s ease;
+        }
+
+        .footer-social a:hover {
+          background: #60a5fa;
+          color: #0f172a; /* Dark background on hover */
+          transform: translateY(-2px);
+        }
+
+        .footer-bottom {
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          text-align: center;
+          padding: 1rem;
+          font-size: 0.85rem;
+          color: #9ca3af;
+          background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+          .footer-main {
+            grid-template-columns: 1fr;
+            text-align: left;
+          }
+          .footer-logo {
+            grid-column: span 1;
+            margin-bottom: 1.5rem;
+          }
+        }
+        /* END: Footer Styling */
     </style>
 </head>
 <body class="text-gray-800">
@@ -464,7 +596,7 @@
                 <div class="light-card p-8 rounded-2xl sticky sticky-booking-card border-l-4 border-teal-500">
                     <!-- Pricing Header -->
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Monthly Budget</p>
-                    <p id="property-budget" class="text-4xl font-bold text-gray-900 mb-8">â‚¹10,000 <span class="text-lg font-normal text-gray-500">/ month</span></p>
+                    <p id="property-budget" class="text-4xl font-bold text-gray-900 mb-8">₹10,000 <span class="text-lg font-normal text-gray-500">/ month</span></p>
                     
                     <!-- Tab Navigation -->
                     <div class="flex gap-3 mb-6 border-b border-gray-200">
@@ -523,7 +655,7 @@
                                 <p class="text-sm text-gray-500">Co-Living</p>
                                 <h3 class="font-bold text-lg mt-1 truncate">The Hive</h3>
                                 <p class="text-gray-500 text-sm mt-1 truncate">Koramangala, BLR</p>
-                                <p class="font-bold mt-2">â‚¹18,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                                <p class="font-bold mt-2">₹18,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
                             </div>
                         </div>
                     </a>
@@ -534,7 +666,7 @@
                                 <p class="text-sm text-gray-500">Private Studio</p>
                                 <h3 class="font-bold text-lg mt-1 truncate">Campus Corner</h3>
                                 <p class="text-gray-500 text-sm mt-1 truncate">North Campus, Delhi</p>
-                                <p class="font-bold mt-2">â‚¹13,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                                <p class="font-bold mt-2">₹13,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
                             </div>
                         </div>
                     </a>
@@ -545,7 +677,7 @@
                                 <p class="text-sm text-gray-500">Co-Living</p>
                                 <h3 class="font-bold text-lg mt-1 truncate">Prime Student Living</h3>
                                 <p class="text-gray-500 text-sm mt-1 truncate">Saket Nagar, Indore</p>
-                                <p class="font-bold mt-2">â‚¹11,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                                <p class="font-bold mt-2">₹11,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
                             </div>
                         </div>
                     </a>
@@ -556,7 +688,7 @@
                                 <p class="text-sm text-gray-500">Apartment</p>
                                 <h3 class="font-bold text-lg mt-1 truncate">Modern Loft</h3>
                                 <p class="text-gray-500 text-sm mt-1 truncate">Powai, Mumbai</p>
-                                <p class="font-bold mt-2">â‚¹22,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                                <p class="font-bold mt-2">₹22,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
                             </div>
                         </div>
                     </a>
@@ -568,15 +700,64 @@
     </main>
             
 
+    <!-- START: UPDATED FOOTER -->
+    <footer class="footer container mx-auto px-4 sm:px-6 mt-16">
+        <div class="footer-main">
+            <!-- Logo & Description -->
+            <div class="footer-logo">
+                <!-- Changed logo placeholder to white text for dark background -->
+                <img src="https://placehold.co/180x40/0f172a/ffffff?text=Roomhy+Logo" alt="Roomhy Logo">
+                <p class="mt-4">Discover Your Next Home, Together. Zero Brokerage, Student-First Approach.</p>
+            </div>
 
-    </main>
+            <!-- Quick Links -->
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="about.html">About Us</a></li>
+                    <li><a href="#featured">Featured Stays</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="contact.html">Contact Us</a></li>
+                </ul>
+            </div>
 
-    <a href="contact.html" class="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white p-4 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 hover:-translate-y-1 group">
-        <i data-lucide="message-circle" class="w-8 h-8 group-hover:rotate-12 transition-transform duration-300"></i>
-        <span class="absolute bottom-16 right-0 bg-gray-900 text-white px-3 py-2 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">Need help? Chat with us</span>
-    </a>
+            <!-- Locations (Updated to Kota, Sikkar, Indore) -->
+            <div class="footer-links">
+                <h4>Top Cities</h4>
+                <ul>
+                    <li><a href="ourproperty.html?city=kota">Kota</a></li>
+                    <li><a href="ourproperty.html?city=sikar">Sikar</a></li>
+                    <li><a href="ourproperty.html?city=indore">Indore</a></li>
+                </ul>
+            </div>
 
-    <footer class="bg-gradient-to-b from-gray-900 to-black text-gray-300 flex-shrink-0 mt-auto border-t border-gray-800"> 
+            <!-- Legal & Contact -->
+            <div class="footer-contact">
+                <h4>Support & Legal</h4>
+                <div class="space-y-2">
+                    <p><i class="fas fa-phone"></i> +91 99830 05030</p>
+                    <p><i class="fas fa-envelope"></i> hello@roomhy.com</p>
+                </div>
+                <ul class="mt-4 space-y-1 text-sm">
+                    <li><a href="terms.html">Terms & Conditions</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                </ul>
+            </div>
+            
+            <!-- Social -->
+            <div class="footer-social lg:col-span-1">
+                <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" title="X"><i class="fab fa-x-twitter"></i></a>
+                <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 <strong>Roomhy</strong>. All Rights Reserved. Made for students, with love.</p>
+        </div>
+    </footer>
+    <!-- END: UPDATED FOOTER --> 
         <div class="container mx-auto px-6 py-16">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 mb-12">
                 <div class="md:col-span-1">
@@ -727,7 +908,7 @@
                     <div class="space-y-2 text-sm text-gray-600">
                         <div class="flex justify-between">
                             <span>Budget</span>
-                            <span id="payment-budget" class="font-semibold text-gray-900">â‚¹0</span>
+                            <span id="payment-budget" class="font-semibold text-gray-900">₹0</span>
                         </div>
                         <div class="flex justify-between">
                             <span>Bid Type</span>
@@ -740,11 +921,11 @@
                 <div class="space-y-3 border-b border-gray-200 pb-4">
                     <div class="flex justify-between items-center text-sm">
                         <label class="text-gray-600">Bid Amount <span class="text-xs text-gray-500">(Refundable)</span></label>
-                        <span class="font-semibold text-gray-900">â‚¹500</span>
+                        <span class="font-semibold text-gray-900">₹500</span>
                     </div>
                     <div class="flex justify-between items-center text-sm">
                         <label class="text-gray-600">Processing Fee</label>
-                        <span class="font-semibold text-gray-900">â‚¹0</span>
+                        <span class="font-semibold text-gray-900">₹0</span>
                     </div>
                 </div>
 
@@ -752,7 +933,7 @@
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <div class="flex justify-between items-center">
                         <span class="text-lg font-semibold text-gray-900">Total Amount</span>
-                        <span id="payment-total" class="text-2xl font-bold text-yellow-700">â‚¹500</span>
+                        <span id="payment-total" class="text-2xl font-bold text-yellow-700">₹500</span>
                     </div>
                     <p class="text-xs text-gray-600 mt-2">Ã¢Å“â€œ Fully refundable bid amount. If you don't like the place after visits, full refund will be processed.</p>
                 </div>
@@ -878,6 +1059,14 @@
                 if (titleEl) titleEl.textContent = title;
                 if (locEl) locEl.innerHTML = '<i data-lucide="map-pin" class="w-4 h-4 mr-2"></i>' + locationText;
                 if (badgeEl) badgeEl.textContent = badge;
+                
+                // Set monthly budget from visit data
+                const budgetEl = document.getElementById('property-budget');
+                if (budgetEl) {
+                    const monthlyRent = v.monthlyRent || v.rent || v.price || prop.monthlyRent || prop.rent || '0';
+                    budgetEl.textContent = '₹' + monthlyRent + ' / month';
+                }
+                
                 function safeSetImg(el, src){
                     if(!el) return;
                     try{ el.src = src || el.src || 'https://images.unsplash.com/photo-1567016432779-1fee749a1532?q=80&w=1974&auto=format&fit=crop'; }catch(e){}
@@ -915,7 +1104,7 @@
                     const commentEl = document.getElementById(commentId);
                     
                     if (!rating || rating === '-' || rating === 0) {
-                        if (starsEl) starsEl.innerHTML = '<span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜†</span>';
+                        if (starsEl) starsEl.innerHTML = '<span>★</span><span>★</span><span>★</span><span>★</span><span>☆</span>';
                         if (ratingEl) ratingEl.textContent = '-';
                         if (commentEl) commentEl.textContent = isStudent ? 'No student reviews available yet' : 'No employee rating available yet';
                         return;
@@ -925,8 +1114,8 @@
                     const fullStars = Math.floor(ratingValue);
                     const emptyStars = 5 - fullStars;
                     let starsHtml = '';
-                    for (let i = 0; i < fullStars; i++) starsHtml += '<span>â˜…</span>';
-                    for (let i = 0; i < emptyStars; i++) starsHtml += '<span>â˜†</span>';
+                    for (let i = 0; i < fullStars; i++) starsHtml += '<span>★</span>';
+                    for (let i = 0; i < emptyStars; i++) starsHtml += '<span>☆</span>';
                     
                     if (starsEl) starsEl.innerHTML = starsHtml;
                     if (ratingEl) ratingEl.textContent = ratingValue.toFixed(1);
@@ -971,8 +1160,8 @@
                     if (v.furnishing) facts.push({k:'Furnishing', v: v.furnishing});
                     if (v.ventilation) facts.push({k:'Ventilation', v: v.ventilation});
                     if (v.minStay) facts.push({k:'Min Stay (months)', v: v.minStay});
-                    if (v.monthlyRent) facts.push({k:'Rent', v: 'â‚¹' + v.monthlyRent});
-                    if (v.deposit) facts.push({k:'Deposit', v: 'â‚¹' + v.deposit});
+                    if (v.monthlyRent) facts.push({k:'Rent', v: '₹' + v.monthlyRent});
+                    if (v.deposit) facts.push({k:'Deposit', v: '₹' + v.deposit});
 
                     if (facts.length === 0) {
                         quickFactsGrid.innerHTML = '<div class="text-sm text-gray-500 col-span-2 md:col-span-3">No quick facts available.</div>';
@@ -1216,7 +1405,7 @@
                 const priceCard = document.querySelector('.sticky-booking-card p.text-3xl');
                 if (priceCard) {
                     const rent = v.monthlyRent || v.rent || v.price || prop.monthlyRent || prop.rent || 0;
-                    priceCard.innerHTML = `â‚¹${rent} <span class="text-base font-normal text-gray-500">/ bed</span>`;
+                    priceCard.innerHTML = `₹${rent} <span class="text-base font-normal text-gray-500">/ bed</span>`;
                 }
 
                 document.title = `${title} - Roomhy`;
@@ -1411,7 +1600,7 @@
                             const title = p.name || p.title || r.title || 'Property';
                             const loc = p.area || p.locality || r.city || '';
                             const price = r.monthlyRent || r.rent || p.monthlyRent || p.rent || 'N/A';
-                            return `<a href="property.html?id=${r._id||r.id||''}" class="group block flex-shrink-0 snap-start w-80"><div class="light-card rounded-xl overflow-hidden h-full"><img src="${img}" alt="Recommended Property" class="w-full h-48 object-cover"><div class="p-4"><h3 class="font-bold text-lg mt-1 truncate">${title}</h3><p class="text-gray-500 text-sm mt-1 truncate">${loc}</p><p class="font-bold mt-2">â‚¹${price} <span class=\"text-sm font-normal text-gray-500\">/ mo</span></p></div></div></a>`;
+                            return `<a href="property.html?id=${r._id||r.id||''}" class="group block flex-shrink-0 snap-start w-80"><div class="light-card rounded-xl overflow-hidden h-full"><img src="${img}" alt="Recommended Property" class="w-full h-48 object-cover"><div class="p-4"><h3 class="font-bold text-lg mt-1 truncate">${title}</h3><p class="text-gray-500 text-sm mt-1 truncate">${loc}</p><p class="font-bold mt-2">₹${price} <span class=\"text-sm font-normal text-gray-500\">/ mo</span></p></div></div></a>`;
                         }).join('');
                     }
                     // Render Similar Properties (only professional photos)

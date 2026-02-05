@@ -136,6 +136,7 @@
                 
                 <div class="flex items-center gap-3 sm:gap-6">
                     <nav class="hidden lg:flex items-center space-x-6">
+                        <a href="index.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Home</a>
                         <a href="about.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">About Us</a>
                         <a href="#faq" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">FAQ</a>
                         <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
@@ -183,26 +184,28 @@
 
         <div class="flex justify-between items-center px-6 py-2">
             <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                    <i data-lucide="users" class="w-6 h-6 text-gray-600"></i>
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
+                    <i data-lucide="user" class="w-6 h-6 text-white"></i>
                 </div>
-                <span class="text-lg font-semibold text-gray-800">Hi ,welcome??</span>
+                <div>
+                    <span class="text-lg font-semibold text-gray-800" id="welcomeUserName">Hi,welcome</span>
+                    <p class="text-xs text-gray-500" id="userIdDisplay"></p>
+                </div>
             </div>
             <a href="profile.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
         </div>
 
         <div class="px-6 py-4">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 relative overflow-hidden">
-                <img src="https://res.cloudinary.com/dpwgvcibj/raw/upload/v1768990265/roomhy/website/post-property-bg" alt="Illustartion of people with house" class="absolute right-0 bottom-0 opacity-80 w-32 h-auto" style="pointer-events: none;">
+            <div class="border border-blue-200 rounded-lg p-4 relative overflow-hidden">
                 <p class="font-semibold text-gray-800 mb-3 relative z-10">Looking to Sell/Rent your Property?</p>
-                <a href="list.html" class="block text-center w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors relative z-10">
+                <a href="list.html" class="block text-center w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors relative z-10">
                     Post Property for Free
                 </a>
             </div>
         </div>
 
         <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
-            <a href="stays.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+            <a href="ourproperty.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
                 <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                     <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
                 </div>
@@ -232,10 +235,16 @@
                 </div>
                 <span>Contact Us</span>
             </a>
+            <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
+                </div>
+                <span>Chat</span>
+            </a>
         </nav>
         
         <div class="p-4 border-t flex-shrink-0">
-            <a href="logout.html" class="flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
+            <a href="#" class="flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
                 <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                     <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
                 </div>
@@ -272,210 +281,236 @@
         <div id="filter-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
 
         <!-- Mobile Filter Drawer (Enhanced FilterSection.tsx) -->
-        <div id="mobile-filter-drawer" class="fixed top-0 right-0 w-full max-w-full h-full bg-gradient-to-b from-blue-50 to-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out lg:hidden">
-            <div class="p-4 border-b-2 border-blue-200 flex justify-between items-center shadow-md bg-white sticky top-0">
-                <div>
-                    <h3 class="text-xl font-bold text-gray-900">Find Your Stay</h3>
-                    <p class="text-xs text-gray-500">Filter & Bid on Properties</p>
+        <div id="mobile-filter-drawer" class="fixed top-0 right-0 w-full max-w-full h-full bg-gradient-to-b from-slate-50 to-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out lg:hidden overflow-hidden">
+            <!-- Header with glass effect -->
+            <div class="p-4 border-b border-slate-200 flex justify-between items-center shadow-sm bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl shadow-lg shadow-blue-200">
+                        <i data-lucide="filter" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">Find Your Stay</h3>
+                        <p class="text-xs text-gray-500">Filter & Bid on Properties</p>
+                    </div>
                 </div>
-                <button id="close-filter-mobile" class="p-2 text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100">
+                <button id="close-filter-mobile" class="p-2.5 bg-slate-100 hover:bg-slate-200 text-gray-600 hover:text-gray-800 rounded-xl transition-all">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
             
-            <div class="p-6 h-full overflow-y-auto pb-24">
-                <div class='space-y-5'>
+            <div class="p-5 h-full overflow-y-auto pb-28 space-y-6">
+                
+                <!-- Location Section -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="map-pin" class="w-5 h-5 text-blue-600"></i>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Location</h4>
+                    </div>
                     
-                    <!-- City Dropdown (Simulated SearchableSelect) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Select City</label>
-                        <select id="mobile-select-city" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
-                            <option value="">Select a city</option>
-                            <option value="kota">Kota, Rajasthan</option>
-                            <option value="indore">Indore, Madhya Pradesh</option>
-                            <option value="sikar">Sikar, Rajasthan</option>
-                        </select>
-                    </div>
-
-                    <!-- Area Dropdown (Simulated SearchableSelect) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Select Area</label>
-                        <select id="mobile-select-area" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
-                            <option value="">First select a city</option>
-                            <option value="north-campus" disabled>North Campus (Requires City)</option>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">Simulated: Select a city first to see areas.</p>
-                    </div>
-
-                    <!-- Price Range (Simulated Selects) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Price Range</label>
-                        <div class='flex gap-2'>
-                            <select id="mobile-min-price" class='form-select w-1/2 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4'>
-                                <option value="">Min Price</option>
-                                <option value="1500">?1500</option>
-                                <option value="4000">?4000</option>
-                                <option value="8000">?8000</option>
+                    <div class="space-y-4">
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Select City</label>
+                            <select id="mobile-select-city" class="form-select w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">Select a city</option>
+                                <option value="kota">Kota, Rajasthan</option>
+                                <option value="indore">Indore, Madhya Pradesh</option>
+                                <option value="sikar">Sikar, Rajasthan</option>
                             </select>
-                            <select id="mobile-max-price" class='form-select w-1/2 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4'>
-                                <option value="50000_plus">Max Price</option>
-                                <option value="15000">?15000</option>
-                                <option value="25000">?25000</option>
-                            <option value="50000_plus">?50000+</option>
+                        </div>
+
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Select Area</label>
+                            <select id="mobile-select-area" class="form-select w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">First select a city</option>
+                                <option value="north-campus" disabled>North Campus (Requires City)</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Simulated: Select a city first to see areas.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget Section -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="wallet" class="w-5 h-5 text-emerald-600"></i>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Budget Range</h4>
+                    </div>
+                    
+                    <div class='flex gap-3'>
+                        <select id="mobile-min-price" class='form-select w-1/2 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 py-3 px-4 bg-slate-50 transition-all'>
+                            <option value="">Min Price</option>
+                            <option value="1500">₹1500</option>
+                            <option value="4000">₹4000</option>
+                            <option value="8000">₹8000</option>
+                        </select>
+                        <select id="mobile-max-price" class='form-select w-1/2 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 py-3 px-4 bg-slate-50 transition-all'>
+                            <option value="50000_plus">Max Price</option>
+                            <option value="15000">₹15000</option>
+                            <option value="25000">₹25000</option>
+                            <option value="50000_plus">₹50000+</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Property Details Section -->
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="home" class="w-5 h-5 text-purple-600"></i>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Property Details</h4>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Gender</label>
+                            <select id="mobile-gender" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">Select Gender</option>
+                                <option value="boys">Boys</option>
+                                <option value="girls">Girls</option>
+                                <option value="co-ed">Co-ed</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Property Type</label>
+                            <select id="mobile-property-type" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">Select Property Type</option>
+                                <option value="pg">PG / Co-Living</option>
+                                <option value="hostel">Hostel</option>
+                                <option value="flat">Flat / Studio</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Room Sharing</label>
+                            <select id="mobile-occupancy" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">Select Occupancy</option>
+                                <option value="single">Single Room</option>
+                                <option value="double">Double Sharing</option>
+                                <option value="triple">Triple Sharing</option>
+                                <option value="multi">Multi Sharing</option>
                             </select>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Gender Selection (Dropdown) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Gender</label>
-                        <select id="mobile-gender" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
-                            <option value="">Select Gender</option>
-                            <option value="boys">Boys</option>
-                            <option value="girls">Girls</option>
-                            <option value="co-ed">Co-ed</option>
-                        </select>
+                <!-- Bidding Section -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Bidding Details</h4>
                     </div>
-
-                    <!-- Property Type Selection (Dropdown) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Property Type</label>
-                        <select id="mobile-property-type" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
-                            <option value="">Select Property Type</option>
-                            <option value="pg">PG / Co-Living</option>
-                            <option value="hostel">Hostel</option>
-                            <option value="flat">Flat / Studio</option>
-                        </select>
-                    </div>
-
-                    <!-- Occupancy (Dropdown) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Occupancy</label>
-                        <select id="mobile-occupancy" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
-                            <option value="">Select Occupancy</option>
-                            <option value="single">Single Room</option>
-                            <option value="double">Double Sharing</option>
-                            <option value="triple">Triple Sharing</option>
-                            <option value="multi">Multi Sharing</option>
-                        </select>
-                    </div>
-
-                    <!-- Bidding Fields -->
-                    <div class='space-y-4 pt-4 border-t border-gray-200'>
-                        <h4 class='text-sm font-semibold text-gray-800'>Bidding Details</h4>
-
+                    
+                    <div class="space-y-4">
                         <div>
-                            <label class='block text-sm font-semibold text-gray-800 mb-2'>Bid Amount (₹)</label>
-                            <div class='flex gap-2'>
-                                <input type="number" id="mobile-bid-min" placeholder="Min Amount" class="form-input w-1/2 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4" min="1000" max="100000">
-                                <input type="number" id="mobile-bid-max" placeholder="Max Amount" class="form-input w-1/2 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4" min="1000" max="100000">
+                            <label class='block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide'>Bid Amount Range</label>
+                            <div class='flex gap-3'>
+                                <input type="number" id="mobile-bid-min" placeholder="Min" class="form-input w-1/2 rounded-xl border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 py-3 px-4 bg-white transition-all" min="1000" max="100000">
+                                <input type="number" id="mobile-bid-max" placeholder="Max" class="form-input w-1/2 rounded-xl border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 py-3 px-4 bg-white transition-all" min="1000" max="100000">
                             </div>
                             <p class="text-xs text-gray-500 mt-1">Set your bidding range</p>
                         </div>
 
                         <div>
-                            <label class='block text-sm font-semibold text-gray-800 mb-2'>Message</label>
-                            <textarea id="mobile-bid-message" placeholder="Describe your requirements..." class="form-input w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4 h-20 resize-none" maxlength="500"></textarea>
+                            <label class='block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide'>Additional Notes</label>
+                            <textarea id="mobile-bid-message" placeholder="Share your requirements..." class="form-input w-full rounded-xl border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 py-3 px-4 h-20 resize-none bg-white transition-all" maxlength="500"></textarea>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Apply & Clear Filters (Simulated Buttons) -->
-                    <div class='flex flex-col gap-3 mt-6'>
-                        <button id="mobile-apply-filters" class='w-full bg-backgroundColor hover:bg-backgroundColorHover text-white font-bold py-3 rounded-xl transition-colors shadow-md glow-button'>
-                            Apply Filters
-                        </button>
-                        <button class='w-full border border-backgroundColor text-backgroundColor hover:bg-blue-50 bg-transparent font-bold py-3 rounded-xl transition-colors shadow-sm glow-button'>
-                            Clear Filters
-                        </button>
-                        <button id="mobile-request-all" class='w-full border-2 border-green-600 text-green-600 hover:bg-green-50 bg-transparent font-bold py-3 rounded-xl transition-colors shadow-md glow-button'>
-                            Bid to all
-                        </button>
-                    </div>
+                <!-- Apply & Clear Filters -->
+                <div class='flex flex-col gap-3 pt-2'>
+                    <button id="mobile-apply-filters" class='w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2'>
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        Apply Filters
+                    </button>
+                    <button class='w-full bg-white border-2 border-slate-200 text-gray-700 hover:border-slate-300 hover:bg-slate-50 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2'>
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                        Clear Filters
+                    </button>
                 </div>
             </div>
         </div>
 
 
-        <div class="lg:grid lg:grid-cols-4 lg:gap-8">
+        <div class="lg:grid lg:grid-cols-5 lg:gap-12">
             
             <!-- Desktop Filter Sidebar (Enhanced FilterSection.tsx) -->
-            <aside id="filter-sidebar" class="lg:col-span-1 lg:sticky h-fit mb-8 lg:mb-0 hidden lg:block lg:w-80 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl transition-all duration-300 top-[150px] border-2 border-blue-100 shadow-lg">
+            <aside id="filter-sidebar" class="lg:col-span-1 lg:sticky h-fit mb-8 lg:mb-0 hidden lg:block p-6 bg-white rounded-3xl transition-all duration-300 top-[150px] border border-slate-200 shadow-lg hover:shadow-xl">
                 <!-- Header -->
-                <div class='mb-6 text-2xl font-bold flex items-center justify-start border-b-2 border-blue-200 pb-4'>
-                    <span class="text-gray-900 flex items-center gap-2">
-                         <i data-lucide="filter" class="w-6 h-6 text-blue-600"></i>
-                        Find Your Property
-                    </span>
+                <div class='mb-6 pb-4 border-b border-slate-200'>
+                    <div class='flex items-center gap-3 mb-2'>
+                        <div class='p-2.5 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl shadow-lg shadow-blue-200'>
+                            <i data-lucide="filter" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class='text-xl font-bold text-gray-900'>Filter & Search</h3>
+                            <p class='text-xs text-gray-500 mt-0.5'>Refine your property search</p>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class='space-y-5'>
                     
-                    <!-- City Dropdown (Simulated SearchableSelect) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Select City</label>
-                        <select id="desktop-select-city" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
+                    <!-- Location Card -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                        <label class='block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2'>
+                            <i data-lucide="map-pin" class="w-4 h-4 text-blue-600"></i>
+                            Location
+                        </label>
+                        <select id="desktop-select-city" class="form-select w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 py-3 px-4 bg-slate-50 transition-all text-sm">
                             <option value="">Select a city</option>
                             <option value="kota">Kota, Rajasthan</option>
                             <option value="indore">Indore, Madhya Pradesh</option>
                             <option value="sikar">Sikar, Rajasthan</option>
                         </select>
-                    </div>
-
-                    <!-- Area Dropdown (Simulated SearchableSelect) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Select Area</label>
-                        <select id="desktop-select-area" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
+                        <select id="desktop-select-area" class="form-select w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 py-3 px-4 bg-slate-50 transition-all text-sm mt-3">
                             <option value="">First select a city</option>
                             <option value="north-campus" disabled>North Campus (Requires City)</option>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">Simulated: Select a city first to see areas.</p>
+                        <p class="text-xs text-gray-500 mt-2">Simulated: Select a city first to see areas.</p>
                     </div>
-                    
-                    <!-- Price Range (Simulated Selects) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Price Range</label>
-                        <div class='flex gap-2'>
-                            <select id="desktop-min-price" class='form-select w-1/2 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4'>
+
+                    <!-- Budget Card -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                        <label class='block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2'>
+                            <i data-lucide="wallet" class="w-4 h-4 text-emerald-600"></i>
+                            Budget Range
+                        </label>
+                        <div class='flex gap-3'>
+                            <select id="desktop-min-price" class='form-select w-1/2 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 py-3 px-4 bg-slate-50 transition-all text-sm'>
                                 <option value="">Min Price</option>
-                                <option value="1500">?1500</option>
-                                <option value="4000">?4000</option>
-                                <option value="8000">?8000</option>
+                                <option value="1500">₹1500</option>
+                                <option value="4000">₹4000</option>
+                                <option value="8000">₹8000</option>
                             </select>
-                            <select id="desktop-max-price" class='form-select w-1/2 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4'>
+                            <select id="desktop-max-price" class='form-select w-1/2 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 py-3 px-4 bg-slate-50 transition-all text-sm'>
                                 <option value="50000_plus">Max Price</option>
-                                <option value="15000">?15000</option>
-                                <option value="25000">?25000</option>
-                                <option value="50000_plus">?50000+</option>
+                                <option value="15000">₹15000</option>
+                                <option value="25000">₹25000</option>
+                                <option value="50000_plus">₹50000+</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Gender Selection (Dropdown) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Gender</label>
-                        <select id="desktop-gender" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
+                    <!-- Property Details Card -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                        <label class='block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2'>
+                            <i data-lucide="home" class="w-4 h-4 text-purple-600"></i>
+                            Property Details
+                        </label>
+                        <select id="desktop-gender" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all text-sm mb-3">
                             <option value="">Select Gender</option>
                             <option value="boys">Boys</option>
                             <option value="girls">Girls</option>
                             <option value="co-ed">Co-ed</option>
                         </select>
-                    </div>
-
-                    <!-- Property Type Selection (Dropdown) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Property Type</label>
-                        <select id="desktop-property-type" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
+                        <select id="desktop-property-type" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all text-sm mb-3">
                             <option value="">Select Property Type</option>
                             <option value="pg">PG / Co-Living</option>
                             <option value="hostel">Hostel</option>
                             <option value="flat">Flat / Studio</option>
                         </select>
-                    </div>
-
-                    <!-- Occupancy (Dropdown) -->
-                    <div>
-                        <label class='block text-sm font-semibold text-gray-800 mb-2'>Occupancy</label>
-                        <select id="desktop-occupancy" class="form-select w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4">
+                        <select id="desktop-occupancy" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all text-sm">
                             <option value="">Select Occupancy</option>
                             <option value="single">Single Room</option>
                             <option value="double">Double Sharing</option>
@@ -485,40 +520,42 @@
                     </div>
 
                     <!-- Bidding Fields -->
-                    <div class='space-y-4 pt-4 border-t border-gray-200'>
-                        <h4 class='text-sm font-semibold text-gray-800'>Bidding Details</h4>
+                    <div class='space-y-4 pt-6 border-t border-blue-200 mt-6'>
+                        <h4 class='text-sm font-semibold text-gray-900 flex items-center gap-2'>
+                            <i data-lucide="trending-up" class="w-4 h-4 text-green-600"></i>
+                            Bidding Details
+                        </h4>
 
                         <div>
-                            <label class='block text-sm font-semibold text-gray-800 mb-2'>Bid Amount (₹)</label>
-                            <div class='flex gap-2'>
-                                <input type="number" id="desktop-bid-min" placeholder="Min Amount" class="form-input w-1/2 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4" min="1000" max="100000">
-                                <input type="number" id="desktop-bid-max" placeholder="Max Amount" class="form-input w-1/2 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4" min="1000" max="100000">
+                            <label class='block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide'>Bid Amount Range</label>
+                            <div class='flex gap-3'>
+                                <input type="number" id="desktop-bid-min" placeholder="Min" class="form-input w-1/2 rounded-lg border border-gray-300 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/50 py-3 px-4 text-sm font-medium transition-all" min="1000" max="100000">
+                                <input type="number" id="desktop-bid-max" placeholder="Max" class="form-input w-1/2 rounded-lg border border-gray-300 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/50 py-3 px-4 text-sm font-medium transition-all" min="1000" max="100000">
                             </div>
                             <p class="text-xs text-gray-500 mt-1">Set your bidding range</p>
                         </div>
 
                         <div>
-                            <label class='block text-sm font-semibold text-gray-800 mb-2'>Message</label>
-                            <textarea id="desktop-bid-message" placeholder="Describe your requirements..." class="form-input w-full rounded-xl border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 py-3 px-4 h-20 resize-none" maxlength="500"></textarea>
+                            <label class='block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide'>Additional Notes</label>
+                            <textarea id="desktop-bid-message" placeholder="Share your requirements..." class="form-input w-full rounded-lg border border-gray-300 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/50 py-3 px-4 h-20 resize-none text-sm font-medium transition-all" maxlength="500"></textarea>
                         </div>
                     </div>
 
                     <!-- Apply & Clear Filters (Original Buttons Reinstated) -->
-                    <div class='flex flex-col gap-3 pt-4'>
-                        <button id="desktop-apply-filters" class='w-full bg-backgroundColor hover:bg-backgroundColorHover text-white font-bold py-3 rounded-xl transition-colors shadow-lg glow-button'>
+                    <div class='flex flex-col gap-3 pt-6 mt-6 border-t border-blue-200'>
+                        <button id="desktop-apply-filters" class='w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2'>
+                            <i data-lucide="check" class="w-5 h-5"></i>
                             Apply Filters
                         </button>
-                        <button class='w-full border border-backgroundColor text-backgroundColor hover:bg-blue-50 bg-transparent font-bold py-3 rounded-xl transition-colors shadow-sm glow-button'>
+                        <button class='w-full border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 bg-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2'>
+                            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
                             Clear Filters
-                        </button>
-                        <button id="desktop-request-all" class='w-full border-2 border-green-600 text-green-600 hover:bg-green-50 bg-transparent font-bold py-3 rounded-xl transition-colors shadow-md glow-button'>
-                            Bid to all
                         </button>
                     </div>
                 </div>
             </aside>
 
-            <div id="main-content-area" class="lg:col-span-3"> 
+            <div id="main-content-area" class="lg:col-span-4"> 
                  
                  <div class="hidden lg:flex items-center justify-between mb-6">
                     <div class="flex items-center gap-4">

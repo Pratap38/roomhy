@@ -663,9 +663,26 @@
                         <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
                     </nav>
 
-                    <a href="fast-bidding.html" class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-semibold hover:shadow-lg transition-all flex items-center gap-1">
-                        <i data-lucide="zap" class="w-4 h-4"></i> <span class="hidden sm:inline">Fast Bidding</span>
-                    </a>
+                    <div class="relative">
+                        <a href="fast-bidding.html" id="fastBiddingBtn" class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-semibold hover:shadow-lg transition-all flex items-center gap-1">
+                            <i data-lucide="zap" class="w-4 h-4"></i> <span class="hidden sm:inline">Fast Bidding</span>
+                        </a>
+                        
+                        <!-- Popup/Tooltip -->
+                        <div id="fastBiddingPopup" class="absolute top-full mt-3 left-1/2 -translate-x-1/2 w-56 bg-white rounded-xl shadow-2xl border border-blue-100 p-4 opacity-0 invisible transition-all duration-300 z-50 pointer-events-none">
+                            <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-t border-l border-blue-100 rounded-sm transform rotate-45"></div>
+                            <div class="text-center">
+                                <div class="flex items-center justify-center mb-3">
+                                    <div class="p-2 bg-blue-100 rounded-full">
+                                        <i data-lucide="zap" class="w-6 h-6 text-blue-600"></i>
+                                    </div>
+                                </div>
+                                <h3 class="font-bold text-gray-900 text-sm mb-1">Fast Bidding</h3>
+                                <p class="text-gray-600 text-xs leading-relaxed">Find and bid property based on your budget</p>
+                                <p class="text-blue-600 text-xs font-semibold mt-3">Click to explore →</p>
+                            </div>
+                        </div>
+                    </div>
 
                     <a href="list.html" class="flex-shrink-0 flex items-center justify-center px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors w-10 h-10 sm:w-auto sm:h-auto sm:px-4">
                         <span class="text-3xl font-bold">+</span>
@@ -2842,6 +2859,38 @@
             }
         });
 
+        // ======================================================
+        // FAST BIDDING POPUP
+        // ======================================================
+        const fastBiddingBtn = document.getElementById('fastBiddingBtn');
+        const fastBiddingPopup = document.getElementById('fastBiddingPopup');
+
+        if (fastBiddingBtn && fastBiddingPopup) {
+            fastBiddingBtn.addEventListener('mouseenter', () => {
+                fastBiddingPopup.classList.remove('opacity-0', 'invisible');
+                fastBiddingPopup.classList.add('opacity-100', 'visible');
+                fastBiddingPopup.style.pointerEvents = 'auto';
+            });
+
+            fastBiddingBtn.addEventListener('mouseleave', () => {
+                fastBiddingPopup.classList.add('opacity-0', 'invisible');
+                fastBiddingPopup.classList.remove('opacity-100', 'visible');
+                fastBiddingPopup.style.pointerEvents = 'none';
+            });
+
+            fastBiddingPopup.addEventListener('mouseenter', () => {
+                fastBiddingPopup.classList.remove('opacity-0', 'invisible');
+                fastBiddingPopup.classList.add('opacity-100', 'visible');
+                fastBiddingPopup.style.pointerEvents = 'auto';
+            });
+
+            fastBiddingPopup.addEventListener('mouseleave', () => {
+                fastBiddingPopup.classList.add('opacity-0', 'invisible');
+                fastBiddingPopup.classList.remove('opacity-100', 'visible');
+                fastBiddingPopup.style.pointerEvents = 'none';
+            });
+        }
+        
         // ======================================================
         const menuToggle = document.getElementById('menu-toggle');
         const menuClose = document.getElementById('menu-close');

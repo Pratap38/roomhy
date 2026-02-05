@@ -1,15 +1,211 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
     <title>Chat - Roomhy</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="js/auth-utils.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
+    <script>
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend-wqwo.onrender.com';
+        
+        console.log('Using API_URL:', API_URL);
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    keyframes: {
+                        kenburns: {
+                            '0%': { transform: 'scale(1) translate(0, 0)' },
+                            '100%': { transform: 'scale(1.1) translate(-2%, 2%)' },
+                        },
+                    },
+                    animation: {
+                        kenburns: 'kenburns 30s ease-in-out infinite alternate',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f2f6; 
+            color: #1F2937;
+        }
+
+        .light-card {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .light-card:hover {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            transform: translateY(-4px);
+        }
+        
+        .glow-button {
+            transition: all 0.3s ease;
+        }
+        .glow-button:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Footer Styling */
+        .footer {
+          font-family: 'Inter', sans-serif;
+          color: #e5e7eb;
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .footer a {
+          color: #cbd5e1;
+          text-decoration: none;
+          transition: color 0.2s ease;
+        }
+
+        .footer a:hover {
+          color: #60a5fa;
+        }
+
+        .footer-main {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+          gap: 2rem;
+          padding: 3rem 2rem;
+          align-items: start;
+        }
+        
+        .footer-logo {
+            grid-column: span 1;
+        }
+
+        .footer-logo img {
+          width: 140px;
+          margin-bottom: 0.5rem;
+        }
+
+        .footer-logo p {
+          color: #9ca3af;
+          font-size: 0.9rem;
+        }
+
+        .footer-links h4,
+        .footer-legal h4,
+        .footer-contact h4 {
+          font-weight: 700;
+          color: #ffffff;
+          margin-bottom: 1rem;
+          position: relative;
+        }
+
+        .footer-links h4::after,
+        .footer-legal h4::after,
+        .footer-contact h4::after {
+          content: '';
+          position: absolute;
+          bottom: -0.4rem;
+          left: 0;
+          width: 40px;
+          height: 2px;
+          background: #60a5fa;
+          border-radius: 2px;
+        }
+
+        .footer-links ul,
+        .footer-legal ul {
+          list-style: none;
+          padding: 0;
+        }
+
+        .footer-links li,
+        .footer-legal li {
+          margin-bottom: 0.6rem;
+        }
+
+        .footer-contact p {
+          color: #d1d5db;
+          margin: 0.6rem 0;
+          font-size: 0.9rem;
+        }
+
+        .footer-contact i {
+          color: #60a5fa;
+          margin-right: 0.6rem;
+        }
+
+        .footer-social {
+          margin-top: 1.5rem;
+        }
+
+        .footer-social a {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
+          width: 35px;
+          height: 35px;
+          border-radius: 9999px;
+          margin-right: 0.8rem;
+          transition: all 0.3s ease;
+        }
+
+        .footer-social a:hover {
+          background: #60a5fa;
+          color: #0f172a;
+          transform: translateY(-2px);
+        }
+
+        .footer-bottom {
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          text-align: center;
+          padding: 1rem;
+          font-size: 0.85rem;
+          color: #9ca3af;
+          background: rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+          .footer-main {
+            grid-template-columns: 1fr;
+            text-align: left;
+          }
+          .footer-logo {
+            grid-column: span 1;
+            margin-bottom: 1.5rem;
+          }
+        }
+
+        .horizontal-slider::-webkit-scrollbar {
+            display: none;
+        }
+        .horizontal-slider {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
         import { getFirestore, collection, doc, addDoc, onSnapshot, query, orderBy, where, getDocs, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
@@ -63,20 +259,127 @@
         .message-container:hover .message-options { opacity: 1; }
 
         .reaction-badge { position: absolute; bottom: -8px; right: 8px; background: white; border-radius: 12px; padding: 2px 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid #f1f5f9; }
+
+        /* Popup Modal Styles */
+        .popup-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .popup-modal.active {
+            display: flex;
+        }
+
+        .popup-content {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(40px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .popup-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 32px;
+        }
+
+        .popup-icon.success {
+            background: #ecfdf5;
+        }
+
+        .popup-icon.danger {
+            background: #fef2f2;
+        }
+
+        .popup-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+
+        .popup-message {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
+
+        .popup-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .popup-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .popup-btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .popup-btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(79, 70, 229, 0.3);
+        }
+
+        .popup-btn-secondary {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .popup-btn-secondary:hover {
+            background: #e5e7eb;
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-slate-800 flex flex-col min-h-screen">
+<body class="bg-gray-50 text-slate-800">
 
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+    <header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-sm shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6">
+            <div class="flex h-20 items-center justify-between">
+                
                 <div class="flex items-center">
-                    <a href="#" class="flex-shrink-0">
+                    <a href="index.html" class="flex-shrink-0">
                         <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25">
                     </a>
                 </div>
-
+                
                 <div class="flex items-center gap-3 sm:gap-6">
                     <nav class="hidden lg:flex items-center space-x-6">
                         <a href="about.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">About Us</a>
@@ -84,10 +387,14 @@
                         <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
                     </nav>
 
+                    <a href="fast-bidding.html" class="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-semibold hover:shadow-lg transition-all flex items-center gap-1">
+                        <i data-lucide="zap" class="w-4 h-4"></i> <span class="hidden sm:inline">Fast Bidding</span>
+                    </a>
+
                     <a href="list.html" class="flex-shrink-0 flex items-center justify-center px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors w-10 h-10 sm:w-auto sm:h-auto sm:px-4">
                         <span class="text-3xl font-bold">+</span>
                     </a>
-
+                    
                     <button id="menu-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
                         <i data-lucide="menu" class="w-7 h-7 text-gray-800"></i>
                     </button>
@@ -96,6 +403,37 @@
             </div>
         </div>
     </header>
+
+    <section class="relative py-20 md:py-28 text-white">
+        <div id="hero-image-wrapper" class="absolute inset-0 w-full h-full overflow-hidden">
+            
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1980&auto:format&fit=crop" 
+                 alt="Hero background 1" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-100">
+            
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto:format&fit=crop" 
+                 alt="Hero background 2" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+            
+            <img src="https://images.unsplash.com/photo-1494203484021-3c454daf695d?q=80&w=2070&auto:format&fit=crop" 
+                 alt="Hero background 3" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+
+            <div class="absolute inset-0 w-full h-full bg-black/60"></div> 
+        </div>
+
+        <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
+            <h1 class="text-1l md:text-4xl font-bold text-shadow mb-6" style="color: #fffcf2;">
+                SEARCH.CONNECT.SUCCEED
+            </h1>
+            <div class="relative w-full max-w-2xl mx-auto">
+                <input type="text" id="hero-search-input" placeholder="Search for 'PG near me' or 'Hostel in Kota'" class="w-full p-4 pl-5 pr-14 rounded-lg bg-white text-gray-900 border-transparent focus:ring-4 focus:ring-cyan-300/50 focus:outline-none placeholder-gray-500 shadow-lg">
+                <button type="submit" id="hero-search-btn" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    <i data-lucide="search" class="w-5 h-5 text-white"></i>
+                </button>
+            </div>
+        </div>
+    </section>
 
     <div id="menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
 
@@ -112,7 +450,7 @@
                     <i data-lucide="users" class="w-6 h-6 text-gray-600"></i>
                 </div>
                 <div>
-                    <span class="text-lg font-semibold text-gray-800" id="welcomeUserName">Hi,welcome</span>
+                    <span class="text-lg font-semibold text-gray-800" id="welcomeUserName">Hi, welcome</span>
                     <p class="text-xs text-gray-500" id="userIdDisplay"></p>
                 </div>
             </div>
@@ -129,9 +467,15 @@
         </div>
 
         <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
-            <a href="ourproperty.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+            <a href="index.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
                 <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                     <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
+                </div>
+                <span>Home</span>
+            </a>
+            <a href="ourproperty.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="home" class="w-5 h-5 text-orange-600"></i>
                 </div>
                 <span>Our Properties</span>
             </a>
@@ -159,7 +503,7 @@
                 </div>
                 <span>Contact Us</span>
             </a>
-            <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+            <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 bg-blue-50">
                 <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                     <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
                 </div>
@@ -168,7 +512,7 @@
         </nav>
 
         <div class="p-4 border-t flex-shrink-0">
-            <a href="#" class="flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
+            <a href="#" onclick="logout()" class="flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
                 <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                     <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
                 </div>
@@ -177,31 +521,46 @@
         </div>
     </div>
 
-    <!-- Hero Section Content -->
-    <section class="chat-hero pt-12 pb-24 text-white">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <h1 class="text-4xl md:text-5xl font-extrabold mb-4">Messenger</h1>
-            <p class="text-indigo-100 text-lg max-w-2xl mx-auto opacity-90">Chat directly with property owners, manage your stays, and get instant updates.</p>
-        </div>
-    </section>
-
     <!-- Main Chat Interface -->
-    <main class="max-w-7xl mx-auto px-2 sm:px-4 -mt-16 mb-20 flex-1 w-full">
-        <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex h-[500px] sm:h-[600px] md:h-[700px] border border-slate-100">
+    <main class="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-8 mb-16 sm:mb-20 flex-1 w-full">
+        <div class="bg-white rounded-xl sm:rounded-2xl shadow-xl sm:shadow-2xl overflow-hidden flex flex-col h-[calc(100vh-140px)] sm:h-[600px] md:h-[700px]">
+            
+            <!-- Mobile Chat List Toggle -->
+            <button id="mobile-chat-toggle" class="md:hidden flex items-center gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200 text-left">
+                <i data-lucide="message-circle" class="w-5 h-5 text-indigo-600"></i>
+                <span class="font-semibold text-slate-800">My Chats</span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 ml-auto"></i>
+            </button>
+            
             <!-- Sidebar: Conversations -->
-            <div class="hidden md:flex w-full md:w-80 bg-slate-50 border-r border-slate-200 flex-col" id="contacts-panel">
-                <div class="p-6 border-b border-slate-200 bg-white">
+            <div id="contacts-panel" class="hidden md:flex w-full md:w-80 bg-slate-50 border-r border-slate-200 flex-col">
+                <div class="p-4 sm:p-6 border-b border-slate-200 bg-white">
                     <h3 class="font-bold text-slate-800 text-lg">My Chats</h3>
-                    <div class="relative mt-2 sm:mt-4">
-                        <input type="text" placeholder="Search..." class="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-2 text-xs sm:text-sm bg-slate-100 rounded-lg sm:rounded-xl text-sm border-none focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <i data-lucide="search" class="w-3 sm:w-4 h-3 sm:h-4 absolute left-2.5 sm:left-3 top-2.5 text-slate-400"></i>
+                    <div class="relative mt-3 sm:mt-4">
+                        <input type="text" placeholder="Search..." class="w-full pl-9 pr-4 py-2 text-sm bg-slate-100 rounded-xl border-none focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
                     </div>
                 </div>
                 <div id="chat-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3 space-y-1 sm:space-y-2">
                     <!-- Conversations loaded dynamically -->
                     <div class="animate-pulse flex flex-col gap-3 sm:gap-4 p-2 sm:p-4">
-                        <div class="h-10 sm:h-12 bg-slate-200 rounded-lg sm:rounded-xl w-full"></div>
-                        <div class="h-10 sm:h-12 bg-slate-200 rounded-lg sm:rounded-xl w-full"></div>
+                        <div class="h-12 sm:h-14 bg-slate-200 rounded-xl w-full"></div>
+                        <div class="h-12 sm:h-14 bg-slate-200 rounded-xl w-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Chat List Drawer -->
+            <div id="mobile-chat-drawer" class="fixed inset-0 bg-white z-50 transform translate-x-full transition-transform duration-300 md:hidden">
+                <div class="flex flex-col h-full">
+                    <div class="p-4 border-b border-slate-200 flex items-center gap-3 bg-white">
+                        <button id="close-mobile-chat" class="p-2 hover:bg-slate-100 rounded-lg">
+                            <i data-lucide="x" class="w-5 h-5 text-slate-600"></i>
+                        </button>
+                        <h3 class="font-bold text-slate-800">My Chats</h3>
+                    </div>
+                    <div id="mobile-chat-list" class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                        <!-- Mobile chat list loaded dynamically -->
                     </div>
                 </div>
             </div>
@@ -244,10 +603,10 @@
                     <div class="p-3 sm:p-6 border-t border-slate-100">
                         <div class="flex flex-col gap-2 max-w-4xl mx-auto">
                             <div class="hidden sm:flex items-center gap-1.5">
-                                <button onclick="sendReaction('like')" class="flex items-center gap-0.5 px-2 sm:px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[9px] sm:text-[11px] font-bold border border-indigo-100 hover:bg-indigo-100 transition-all">
+                                <button onclick="showLikePopup()" class="flex items-center gap-0.5 px-2 sm:px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[9px] sm:text-[11px] font-bold border border-indigo-100 hover:bg-indigo-100 transition-all">
                                     <i data-lucide="thumbs-up" class="w-3 h-3"></i> LIKE
                                 </button>
-                                <button onclick="sendReaction('dislike')" class="flex items-center gap-0.5 px-2 sm:px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-[9px] sm:text-[11px] font-bold border border-rose-100 hover:bg-rose-100 transition-all">
+                                <button onclick="showDislikePopup()" class="flex items-center gap-0.5 px-2 sm:px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-[9px] sm:text-[11px] font-bold border border-rose-100 hover:bg-rose-100 transition-all">
                                     <i data-lucide="thumbs-down" class="w-3 h-3"></i> DISLIKE
                                 </button>
                             </div>
@@ -264,64 +623,86 @@
         </div>
     </main>
 
-    <!-- Footer (Matching index.html) -->
-    <footer class="bg-slate-900 text-slate-300 pt-20 pb-10">
-        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:col-4 gap-12 mb-16">
-            <div class="col-span-1 md:col-span-1">
-                <div class="flex items-center gap-2 mb-6">
-                    <div class="bg-indigo-600 p-2 rounded-lg"><i data-lucide="home" class="w-5 h-5 text-white"></i></div>
-                    <span class="text-2xl font-bold text-white">Roomhy</span>
-                </div>
-                <p class="text-sm leading-relaxed mb-6 opacity-70">Roomhy is India's most trusted student accommodation platform, helping students find safe and comfortable homes near top educational hubs.</p>
-                <div class="flex gap-4">
-                    <a href="#" class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"><i class="fa-brands fa-facebook-f"></i></a>
-                    <a href="#" class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="#" class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all"><i class="fa-brands fa-x-twitter"></i></a>
-                </div>
-            </div>
-            
-            <div>
-                <h4 class="text-white font-bold mb-6">Quick Links</h4>
-                <ul class="space-y-4 text-sm">
-                    <li><a href="index.html" class="hover:text-indigo-400 transition-colors">Find a Room</a></li>
-                    <li><a href="about.html" class="hover:text-indigo-400 transition-colors">Our Story</a></li>
-                    <li><a href="contact.html" class="hover:text-indigo-400 transition-colors">Contact Support</a></li>
-                    <li><a href="terms.html" class="hover:text-indigo-400 transition-colors">Terms and Conditions</a></li>
-                    <li><a href="privacy.html" class="hover:text-indigo-400 transition-colors">Privacy Policy</a></li>
-                    <li><a href="cancellation.html" class="hover:text-indigo-400 transition-colors">Cancellation Policy</a></li>
-                </ul>
-            </div>
-
-            <div>
-                <h4 class="text-white font-bold mb-6">Explore Cities</h4>
-                <ul class="space-y-4 text-sm">
-                    <li><a href="#" class="hover:text-indigo-400 transition-colors">Kota</a></li>
-                    <li><a href="#" class="hover:text-indigo-400 transition-colors">Pune</a></li>
-                    <li><a href="#" class="hover:text-indigo-400 transition-colors">Bangalore</a></li>
-                    <li><a href="#" class="hover:text-indigo-400 transition-colors">Delhi</a></li>
-                </ul>
-            </div>
-
-            <div>
-                <h4 class="text-white font-bold mb-6">Contact Us</h4>
-                <div class="space-y-4 text-sm">
-                    <div class="flex items-start gap-3">
-                        <i data-lucide="map-pin" class="w-5 h-5 text-indigo-500 shrink-0"></i>
-                        <span>123 Knowledge Hub, Landmark Area, Kota, Rajasthan</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="phone" class="w-5 h-5 text-indigo-500 shrink-0"></i>
-                        <span>+91 98765 43210</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="mail" class="w-5 h-5 text-indigo-500 shrink-0"></i>
-                        <span>support@roomhy.com</span>
-                    </div>
-                </div>
+    <!-- Like Popup Modal -->
+    <div id="like-popup" class="popup-modal">
+        <div class="popup-content">
+            <div class="popup-icon success">👍</div>
+            <div class="popup-title">Book Property?</div>
+            <div class="popup-message">Click LIKE to confirm your interest in this property and receive the booking form.</div>
+            <div class="popup-buttons">
+                <button class="popup-btn popup-btn-secondary" onclick="closeLikePopup()">Cancel</button>
+                <button class="popup-btn popup-btn-primary" onclick="confirmLike()">Yes, Like</button>
             </div>
         </div>
-        <div class="max-w-7xl mx-auto px-4 pt-8 border-t border-slate-800 text-center text-xs opacity-50">
-            <p>&copy; 2025 Roomhy Technologies Pvt. Ltd. All Rights Reserved.</p>
+    </div>
+
+    <!-- Dislike Popup Modal -->
+    <div id="dislike-popup" class="popup-modal">
+        <div class="popup-content">
+            <div class="popup-icon danger">👎</div>
+            <div class="popup-title">End Chat?</div>
+            <div class="popup-message">Click DISLIKE to reject this property and close the chat permanently.</div>
+            <div class="popup-buttons">
+                <button class="popup-btn popup-btn-secondary" onclick="closeDislikePopup()">Cancel</button>
+                <button class="popup-btn popup-btn-primary" style="background: #dc2626; color: white;" onclick="confirmDislike()">Yes, Dislike</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer (Matching index.html) -->
+    <footer class="footer container mx-auto px-4 sm:px-6 mt-16">
+        <div class="footer-main">
+            <!-- Logo & Description -->
+            <div class="footer-logo">
+                <img src="https://placehold.co/180x40/0f172a/ffffff?text=Roomhy+Logo" alt="Roomhy Logo">
+                <p class="mt-4">Discover Your Next Home, Together. Zero Brokerage, Student-First Approach.</p>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="about.html">About Us</a></li>
+                    <li><a href="ourproperty.html">Properties</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="contact.html">Contact Us</a></li>
+                </ul>
+            </div>
+
+            <!-- Locations -->
+            <div class="footer-links">
+                <h4>Top Cities</h4>
+                <ul>
+                    <li><a href="ourproperty.html?city=kota">Kota</a></li>
+                    <li><a href="ourproperty.html?city=sikar">Sikar</a></li>
+                    <li><a href="ourproperty.html?city=indore">Indore</a></li>
+                </ul>
+            </div>
+
+            <!-- Legal & Contact -->
+            <div class="footer-contact">
+                <h4>Support & Legal</h4>
+                <div class="space-y-2">
+                    <p><i class="fas fa-phone"></i> +91 99830 05030</p>
+                    <p><i class="fas fa-envelope"></i> hello@roomhy.com</p>
+                </div>
+                <ul class="mt-4 space-y-1 text-sm">
+                    <li><a href="terms.html">Terms & Conditions</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                </ul>
+            </div>
+            
+            <!-- Social -->
+            <div class="footer-social lg:col-span-1">
+                <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" title="X"><i class="fab fa-x-twitter"></i></a>
+                <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>© 2025 <strong>Roomhy</strong>. All Rights Reserved. Made for students, with love.</p>
         </div>
     </footer>
 
@@ -352,6 +733,21 @@
 
             mobileMenu.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', closeMenu);
+            });
+        }
+
+        // Mobile chat drawer functionality
+        const mobileChatToggle = document.getElementById('mobile-chat-toggle');
+        const mobileChatDrawer = document.getElementById('mobile-chat-drawer');
+        const closeMobileChat = document.getElementById('close-mobile-chat');
+
+        if (mobileChatToggle && mobileChatDrawer && closeMobileChat) {
+            mobileChatToggle.addEventListener('click', () => {
+                mobileChatDrawer.classList.remove('translate-x-full');
+            });
+
+            closeMobileChat.addEventListener('click', () => {
+                mobileChatDrawer.classList.add('translate-x-full');
             });
         }
 
@@ -998,6 +1394,42 @@
             }
         };
 
+        // Popup Functions
+        function showLikePopup() {
+            document.getElementById('like-popup').classList.add('active');
+        }
+
+        function closeLikePopup() {
+            document.getElementById('like-popup').classList.remove('active');
+        }
+
+        function confirmLike() {
+            closeLikePopup();
+            sendReaction('like');
+        }
+
+        function showDislikePopup() {
+            document.getElementById('dislike-popup').classList.add('active');
+        }
+
+        function closeDislikePopup() {
+            document.getElementById('dislike-popup').classList.remove('active');
+        }
+
+        function confirmDislike() {
+            closeDislikePopup();
+            sendReaction('dislike');
+        }
+
+        // Close popups on background click
+        document.getElementById('like-popup').onclick = function(e) {
+            if (e.target === this) closeLikePopup();
+        };
+
+        document.getElementById('dislike-popup').onclick = function(e) {
+            if (e.target === this) closeDislikePopup();
+        };
+
         // Textarea height
         const tx = document.getElementById('message-text');
         tx.oninput = function() {
@@ -1021,6 +1453,14 @@
                     userIdDisplay.textContent = `ID: ${userId}`;
                 }
             }
+        }
+        
+        // Logout function
+        function logout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            sessionStorage.clear();
+            window.location.href = 'tenantlogin.html';
         }
         
         // Call on page load
