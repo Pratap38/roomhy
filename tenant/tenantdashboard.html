@@ -106,6 +106,19 @@
                 </div>
             </div>
 
+            <!-- User Info Section -->
+            <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm" id="sidebar-avatar">
+                        T
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-white truncate" id="sidebar-user-name">Tenant</p>
+                        <p class="text-xs text-slate-400 truncate font-mono" id="sidebar-user-id" style="display: none;"></p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Navigation with New Content -->
             <nav class="flex-1 py-2 overflow-y-auto custom-scrollbar">
                 
@@ -404,6 +417,7 @@
         </div>
     </div>
 
+    <script src="../website/js/auth-utils.js"></script>
     <script>
         lucide.createIcons();
 
@@ -416,6 +430,14 @@
                 document.getElementById('sessionModal').classList.add('flex');
                 return;
             }
+
+            // Update sidebar with user info
+            updateSidebarUserInfo({
+                userIdElementId: 'sidebar-user-id',
+                userNameElementId: 'sidebar-user-name',
+                avatarElementId: 'sidebar-avatar',
+                showUserId: true
+            });
 
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
             const tenantRecord = tenants.find(t => t.loginId === user.loginId);
@@ -438,8 +460,11 @@
                 
                 document.getElementById('prop-name').innerText = propName;
                 document.getElementById('room-info').innerText = roomInfo;
-                document.getElementById('login-id').innerText = tenantRecord.loginId;
+                document.getElementById('login-id').innerText = tenantRecord.loginId || getUserId();
                 document.getElementById('move-in-date').innerText = tenantRecord.moveInDate ? new Date(tenantRecord.moveInDate).toLocaleDateString('en-IN') : '-';
+            } else {
+                // If no tenant record found, still show user ID
+                document.getElementById('login-id').innerText = getUserId();
             }
         });
 

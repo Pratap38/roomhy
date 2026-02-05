@@ -243,7 +243,7 @@
             // ===== NEW: Load commission data for "To Be Paid" column =====
             let commissionMap = {};
             try {
-                const commissionResponse = await fetch('/api/rents');
+                const commissionResponse = await fetch(`${API_URL}/api/rents`);
                 if (commissionResponse.ok) {
                     const responseData = await commissionResponse.json();
                     // Handle both array and object responses

@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="js/auth-utils.js"></script>
     <!-- Add Font Awesome for Footer Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
@@ -2870,15 +2871,29 @@
         // UPDATE WELCOME MESSAGE WITH USER ID
         // ======================================================
         function updateWelcomeMessage() {
-            const user = JSON.parse(localStorage.getItem('user') || 'null');
-            if (user && user.id) {
+            // Use AuthUtils for consistency
+            if (typeof AuthUtils !== 'undefined' && AuthUtils.isLoggedIn()) {
+                const userId = AuthUtils.getUserId();
+                const userName = AuthUtils.getUserName();
+                
+                const welcomeName = document.getElementById('welcomeUserName');
+                const userIdDisplay = document.getElementById('userIdDisplay');
+                
+                if (welcomeName) {
+                    welcomeName.textContent = `Hi, ${userName}`;
+                }
+                if (userIdDisplay) {
+                    userIdDisplay.textContent = `ID: ${userId}`;
+                }
+            } else {
+                // Fallback for logged out users
                 const welcomeName = document.getElementById('welcomeUserName');
                 const userIdDisplay = document.getElementById('userIdDisplay');
                 if (welcomeName) {
-                    welcomeName.textContent = `Hi, Welcome ${user.id}`;
+                    welcomeName.textContent = 'Hi, welcome';
                 }
                 if (userIdDisplay) {
-                    userIdDisplay.textContent = user.name || user.email || '';
+                    userIdDisplay.textContent = '';
                 }
             }
         }

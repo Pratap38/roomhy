@@ -12,7 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-
+    <script src="js/auth-utils.js"></script>
+    
+    <script>
     <script>
         tailwind.config = {
             theme: {
@@ -514,7 +516,10 @@
                 <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
                     <i data-lucide="users" class="w-6 h-6 text-gray-600"></i>
                 </div>
-                <span class="text-lg font-semibold text-gray-800">Hi,welcome ??</span>
+                <div>
+                    <span class="text-lg font-semibold text-gray-800" id="welcomeUserName">Hi,welcome</span>
+                    <p class="text-xs text-gray-500" id="userIdDisplay"></p>
+                </div>
             </div>
             <a href="profile-settings.html" class="text-sm font-bold text-blue-600 hover:underline">Profile</a>
         </div>
@@ -855,6 +860,27 @@
                 }, 5000);
             }
         }
+
+        // UPDATE WELCOME MESSAGE WITH USER ID
+        function updateWelcomeMessage() {
+            if (typeof AuthUtils !== 'undefined' && AuthUtils.isLoggedIn()) {
+                const userId = AuthUtils.getUserId();
+                const userName = AuthUtils.getUserName();
+                
+                const welcomeName = document.getElementById('welcomeUserName');
+                const userIdDisplay = document.getElementById('userIdDisplay');
+                
+                if (welcomeName) {
+                    welcomeName.textContent = `Hi, ${userName}`;
+                }
+                if (userIdDisplay) {
+                    userIdDisplay.textContent = `ID: ${userId}`;
+                }
+            }
+        }
+        
+        // Call on page load
+        updateWelcomeMessage();
     </script>
     </body>
 </html>

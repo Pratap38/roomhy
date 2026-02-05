@@ -283,11 +283,16 @@ exports.createBulkBookingRequest = async (req, res) => {
  */
 exports.getBookingRequests = async (req, res) => {
     try {
-        const { area, manager_id, owner_id, user_id, type, status } = req.query;
+        const { area, manager_id, owner_id, user_id, email, type, status } = req.query;
         let query = {};
 
+        // ✅ NEW: Support email query param for website users
+        if (email) {
+            console.log(`🔍 Fetching bookings for email: ${email}`);
+            query.email = email;
+        } 
         // ✅ NEW: Support owner_id query param for property owner panel
-        if (owner_id) {
+        else if (owner_id) {
             console.log(`🔍 Fetching bookings for owner_id: ${owner_id}`);
             // For bulk requests, check if owner_id is in the owner_ids array
             query.$or = [
@@ -403,7 +408,17 @@ exports.getUserBookings = async (req, res) => {
  */
 exports.updateBookingStatus = async (req, res) => {
     try {
-        const { status, visit_type, visit_date, visit_time_slot, visit_status } = req.body;
+        const { status, visit_type, visit_date, visit_time_slot, visit_status, bookingId } = req.body;
+        
+        // Support both /requests/:id/status (id in params) and /update (id in body as bookingId)
+        const id = req.params.id || bookingId;
+        
+        if (!id) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Booking ID is required' 
+            });
+        }
 
         const updateData = {
             status,
@@ -417,7 +432,7 @@ exports.updateBookingStatus = async (req, res) => {
         if (visit_status) updateData.visit_status = visit_status;
 
         const request = await BookingRequest.findByIdAndUpdate(
-            req.params.id, 
+            id, 
             updateData, 
             { new: true }
         );

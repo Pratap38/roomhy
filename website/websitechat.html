@@ -6,6 +6,7 @@
     <title>Chat - Roomhy</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="js/auth-utils.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
@@ -110,7 +111,10 @@
                 <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
                     <i data-lucide="users" class="w-6 h-6 text-gray-600"></i>
                 </div>
-                <span class="text-lg font-semibold text-gray-800">Hi,welcome</span>
+                <div>
+                    <span class="text-lg font-semibold text-gray-800" id="welcomeUserName">Hi,welcome</span>
+                    <p class="text-xs text-gray-500" id="userIdDisplay"></p>
+                </div>
             </div>
             <a href="profile.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
         </div>
@@ -222,11 +226,7 @@
                             <div class="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-sm sm:text-base" id="active-chat-avatar">O</div>
                             <div class="min-w-0">
                                 <h3 class="font-bold text-slate-800 text-sm sm:text-base leading-tight truncate" id="active-chat-name">Owner Name</h3>
-                                <p class="text-[9px] sm:text-[10px] text-slate-400 truncate" id="active-chat-id">ID: ...</p>
-                                <div class="flex items-center gap-1 mt-0.5">
-                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                                    <span class="text-[8px] sm:text-[10px] text-green-600 font-bold uppercase tracking-wider">Active</span>
-                                </div>
+                                <p class="text-[9px] sm:text-[10px] text-indigo-600 font-mono truncate" id="active-chat-id">ID: ...</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-1 sm:gap-2">
@@ -361,9 +361,41 @@
 
         // Load Session User
         async function loadUser() {
-            const user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || 'null');
+            let user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || 'null');
+            
+            // If not logged in, try to get user from email stored in localStorage
+            if (!user) {
+                const email = localStorage.getItem('user_email');
+                if (email) {
+                    // Try to fetch user from KYC API
+                    const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+                        ? 'http://localhost:5001' 
+                        : 'https://roomhy-backend-wqwo.onrender.com';
+                    
+                    try {
+                        const response = await fetch(`${API_URL}/api/kyc`);
+                        const result = await response.json();
+                        const kycUsers = result.data || [];
+                        const kycUser = kycUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+                        
+                        if (kycUser) {
+                            user = {
+                                loginId: kycUser.loginId || kycUser.id || kycUser._id,
+                                email: kycUser.email,
+                                name: kycUser.name || 'User',
+                                firstName: kycUser.firstName || 'User'
+                            };
+                            console.log('✅ Loaded user from KYC:', user.loginId);
+                        }
+                    } catch (e) {
+                        console.warn('Could not fetch KYC data:', e.message);
+                    }
+                }
+            }
+            
             if (user) {
                 currentUser = user;
+                console.log('✅ User loaded:', currentUser.loginId);
                 loadChats();
             } else {
                 alert('Please login to continue');
@@ -371,23 +403,106 @@
             }
         }
 
-        // Fetch user's confirmed bookings to build chat list
+        // Fetch owner name by owner ID
+        async function fetchOwnerName(ownerId) {
+            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+                ? 'http://localhost:5001' 
+                : 'https://roomhy-backend-wqwo.onrender.com';
+            
+            // Try multiple endpoints to get owner name
+            const endpoints = [
+                `${API_URL}/api/owners/${ownerId}`,
+                `${API_URL}/api/owner/${ownerId}`,
+                `${API_URL}/api/owners/login/${ownerId}`
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`🔍 Trying endpoint: ${endpoint}`);
+                    const response = await fetch(endpoint);
+                    if (response.ok) {
+                        const ownerData = await response.json();
+                        // Owner model has fields like 'owner_name', 'firstName', 'name', 'email'
+                        const name = ownerData.owner_name || ownerData.ownerName || ownerData.firstName || ownerData.name || ownerData.email;
+                        if (name && name !== ownerId) {
+                            console.log(`✅ Fetched owner name for ${ownerId}:`, name);
+                            return name;
+                        }
+                    }
+                } catch (e) {
+                    console.log(`Endpoint ${endpoint} failed:`, e.message);
+                }
+            }
+            
+            // Also try to get from roomhy_owners_db in localStorage
+            try {
+                const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
+                if (db[ownerId] && db[ownerId].profile) {
+                    const name = db[ownerId].profile.name || db[ownerId].profile.ownerName || db[ownerId].profile.firstName;
+                    if (name) {
+                        console.log(`✅ Found owner name in localStorage for ${ownerId}:`, name);
+                        return name;
+                    }
+                }
+            } catch (e) {
+                console.log('localStorage lookup failed:', e.message);
+            }
+            
+            console.warn(`⚠️ Could not fetch owner name for ${ownerId}, using ID as fallback`);
+            return ownerId; // Fallback to owner ID if name not found
+        }
+
+        // Fetch user's ACCEPTED bookings to build chat list
         async function loadChats() {
             if (!currentUser) return;
-            const loginId = currentUser.loginId;
+            const loginId = currentUser.loginId || localStorage.getItem('user_id');
             const userId = localStorage.getItem('user_id');
             const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
                 ? 'http://localhost:5001' 
                 : 'https://roomhy-backend-wqwo.onrender.com';
 
             try {
-                // Fetch from backend API
-                const response = await fetch(`${API_URL}/api/booking/requests?user_id=${loginId}`);
+                // Fetch bookings - try multiple identifiers
+                let url = `${API_URL}/api/booking/requests`;
+                
+                // Try by user_id first, then loginId, then email
+                const identifiers = [];
+                if (userId) identifiers.push({ key: 'user_id', value: userId });
+                if (loginId) identifiers.push({ key: 'user_id', value: loginId });
+                identifiers.push({ key: 'email', value: loginId || userId || '' });
+                
+                // Build URL with all identifiers
+                const idParams = identifiers.map(i => `${i.key}=${encodeURIComponent(i.value)}`).join('&');
+                url += `?${idParams}`;
+                
+                console.log('📍 Fetching chats from URL:', url);
+                const response = await fetch(url);
                 const result = await response.json();
                 const allBookings = result.data || [];
                 
-                // Filter out rejected bookings
-                const bookings = allBookings.filter(b => b.status !== 'rejected');
+                // Filter to show ACCEPTED/CONFIRMED bookings - more flexible filter
+                const bookings = allBookings.filter(b => {
+                    const status = b.status || b.booking_status || b.request_status || '';
+                    const acceptedStatuses = ['accepted', 'confirm', 'confirmed', 'accepted_by_owner', 'owner_accepted'];
+                    return acceptedStatuses.includes(status.toLowerCase()) || b.isAccepted === true;
+                });
+                
+                console.log('📊 Total bookings from API:', allBookings.length);
+                console.log('✅ Accepted bookings:', bookings.length);
+                console.log('Accepted booking details:', bookings);
+
+                // Also fetch chat rooms from backend API
+                const backendChats = [];
+                try {
+                    const chatsResponse = await fetch(`${API_URL}/api/chat/rooms?user_email=${loginId || userId}`);
+                    if (chatsResponse.ok) {
+                        const chatsResult = await chatsResponse.json();
+                        backendChats.push(...(chatsResult.data || chatsResult || []));
+                        console.log('✅ Loaded', backendChats.length, 'chats from backend');
+                    }
+                } catch (e) {
+                    console.log('Chat rooms endpoint not available on backend');
+                }
 
                 // Also load chats from localStorage (created by booking.html)
                 const localStorageChats = [];
@@ -399,42 +514,65 @@
                     console.log('No chats in localStorage yet');
                 }
 
-                // Merge backend and localStorage chats
-                const mergedChats = [...bookings, ...localStorageChats];
+                // Merge all sources: backend, bookings, and localStorage
+                const mergedChats = [...bookings, ...backendChats, ...localStorageChats];
 
                 const chatList = document.getElementById('chat-list');
                 chatList.innerHTML = '';
 
                 if (mergedChats.length === 0) {
-                    chatList.innerHTML = '<div class="p-8 text-center text-xs text-slate-400">No active bookings found.<br/>Start by requesting a property on Our Properties page.</div>';
+                    chatList.innerHTML = '<div class="p-8 text-center text-xs text-slate-400">No accepted bookings found.<br/>Start by requesting a property and wait for owner to accept.</div>';
                     return;
                 }
 
                 // Deduplicate by owner ID
                 const uniqueOwners = [];
                 const seenOwners = new Set();
-                mergedChats.forEach(b => {
-                    const ownerId = b.owner_id || b.ownerLoginId;
+                
+                // Process bookings and fetch owner names
+                for (const b of mergedChats) {
+                    const ownerId = b.owner_id || b.ownerLoginId || b.owner;
                     if (ownerId && !seenOwners.has(ownerId)) {
                         seenOwners.add(ownerId);
+                        
+                        // Fetch owner name from API if not in booking data
+                        let ownerName = b.owner_name || b.ownerName || b.owner || b.ownerInfo?.name;
+                        
+                        // If no owner name in booking, fetch it
+                        if (!ownerName || ownerName === ownerId) {
+                            try {
+                                ownerName = await fetchOwnerName(ownerId);
+                            } catch (e) {
+                                console.warn('Error fetching owner name:', e);
+                                ownerName = ownerId;
+                            }
+                        }
+                        
                         // Ensure chat object has all necessary properties, including bookingId
                         const chat = {
-                            _id: b._id || b.id || b.bookingId,  // Preserve booking ID from original
+                            _id: b._id || b.id || b.bookingId,
                             id: b._id || b.id || b.bookingId,
                             bookingId: b._id || b.id || b.bookingId,
-                            owner_name: b.owner_name || b.ownerName || 'Property Owner',
+                            owner_name: ownerName || 'Property Owner',
                             owner_id: ownerId,
                             ownerLoginId: b.ownerLoginId || ownerId,
-                            property_name: b.property_name || 'Roomhy Partner',
+                            property_name: b.property_name || b.property?.title || 'Roomhy Partner',
                             status: b.status || 'pending',
                             chatRoomId: b._id || b.id || b.bookingId || `${userId}_${ownerId}`,
                             timestamp: b.timestamp || new Date().toISOString()
                         };
-                        console.log('Chat object created with booking ID:', chat._id);
+                        
+                        console.log('✅ Chat created with owner:', chat.owner_name, 'ID:', chat.owner_id);
                         uniqueOwners.push(chat);
                     }
-                });
-
+                }
+                
+                // Render chat list
+                if (uniqueOwners.length === 0) {
+                    chatList.innerHTML = '<div class="p-8 text-center text-xs text-slate-400">No accepted bookings found.<br/>Start by requesting a property and wait for owner to accept.</div>';
+                    return;
+                }
+                
                 uniqueOwners.forEach(chat => {
                     const item = document.createElement('div');
                     item.className = 'flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg sm:rounded-2xl cursor-pointer hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-slate-100 group';
@@ -462,7 +600,7 @@
                     chatList.appendChild(item);
                 });
                 
-                console.log('✅ Chat list loaded with', uniqueOwners.length, 'unique owners');
+                console.log('✅ Chat list loaded with', uniqueOwners.length, 'owners');
             } catch (err) {
                 console.error("Error loading chats", err);
             }
@@ -867,6 +1005,26 @@
             this.style.height = (this.scrollHeight) + "px";
         };
 
+        // UPDATE WELCOME MESSAGE WITH USER ID
+        function updateWelcomeMessage() {
+            if (typeof AuthUtils !== 'undefined' && AuthUtils.isLoggedIn()) {
+                const userId = AuthUtils.getUserId();
+                const userName = AuthUtils.getUserName();
+                
+                const welcomeName = document.getElementById('welcomeUserName');
+                const userIdDisplay = document.getElementById('userIdDisplay');
+                
+                if (welcomeName) {
+                    welcomeName.textContent = `Hi, ${userName}`;
+                }
+                if (userIdDisplay) {
+                    userIdDisplay.textContent = `ID: ${userId}`;
+                }
+            }
+        }
+        
+        // Call on page load
+        updateWelcomeMessage();
         loadUser();
     </script>
 </body>

@@ -8,12 +8,13 @@ const KYCVerification = require('../models/KYCVerification');
 // Get all booking requests
 router.get('/booking-requests', async (req, res) => {
     try {
-        const { area, status, user_id, area_manager_id } = req.query;
+        const { area, status, user_id, email, area_manager_id } = req.query;
         
         let filter = {};
         if (area) filter.area = area;
         if (status) filter.status = status;
         if (user_id) filter.user_id = user_id;
+        if (email) filter.email = email;
         if (area_manager_id) filter.area_manager_id = area_manager_id;
         
         const requests = await BookingRequest.find(filter)

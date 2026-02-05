@@ -53,6 +53,9 @@ router.get('/hold/:property_id', bookingController.checkPropertyHold);
 // Release property hold
 router.put('/hold/:property_id/release', bookingController.releasePropertyHold);
 
+// Generic booking update endpoint (for frontend compatibility)
+router.put('/update', bookingController.updateBookingStatus);
+
 // Get booking request by ID (supports both /bookings/:id and /booking/requests/:id paths) - MUST BE LAST
 router.get('/:id', bookingController.getBookingRequestById);
 router.get('/requests/:id', bookingController.getBookingRequestById);

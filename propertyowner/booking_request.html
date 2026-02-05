@@ -897,17 +897,31 @@
         // Send bid acceptance email
         async function sendBidAcceptanceEmail(bid) {
             try {
-                await fetch(`${API_URL}/api/send-email`, {
+                const emailTo = bid.email || bid.contactEmail;
+                const emailName = bid.name || bid.contactName;
+                
+                if (!emailTo) {
+                    console.log('No email address available for bid');
+                    return;
+                }
+                
+                const response = await fetch(`${API_URL}/api/email/send`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        to: bid.contactEmail,
+                        to: emailTo,
                         subject: 'Your Bidding Request Has Been Accepted',
-                        html: `<h2>Dear ${bid.contactName},</h2><p>Your bidding request has been accepted!</p><p>We will contact you shortly with property options matching your requirements.</p>`
+                        html: `<h2>Dear ${emailName},</h2><p>Your bidding request has been accepted!</p><p>We will contact you shortly with property options matching your requirements.</p>`
                     })
-                }).catch(e => console.log('Email notification not available'));
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Acceptance email sent');
+                } else {
+                    console.warn('⚠️ Email send returned:', response.status);
+                }
             } catch (error) {
-                console.log('Could not send email notification');
+                console.log('Could not send email notification:', error.message);
             }
         }
 

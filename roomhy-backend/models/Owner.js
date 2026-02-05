@@ -16,8 +16,11 @@ const ownerSchema = new mongoose.Schema({
         phone: String,
         address: String,
         locationCode: String,
-        bankAccount: String,
-        updatedAt: Date
+        bankName: String,
+        accountNumber: String,
+        ifscCode: String,
+        branchName: String,
+        updatedAt: Date 
     },
     credentials: {
         password: String,
