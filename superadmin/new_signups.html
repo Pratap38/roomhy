@@ -624,7 +624,11 @@
                 const response = await fetch(`${API_URL}/api/kyc`);
                 if (response.ok) {
                     const result = await response.json();
-                    const signupUsers = result.data || result || [];
+                    let signupUsers = Array.isArray(result) ? result : (result.data || result.users || []);
+                    // Ensure it's always an array
+                    if (!Array.isArray(signupUsers)) {
+                        signupUsers = [];
+                    }
                     console.log(`✓ Loaded ${signupUsers.length} signup records from MongoDB API`);
                     // Store in localStorage as backup
                     localStorage.setItem('roomhy_kyc_verification', JSON.stringify(signupUsers));
