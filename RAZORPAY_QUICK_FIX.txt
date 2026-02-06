@@ -1,0 +1,57 @@
+# QUICK FIX - Razorpay 401 Error
+
+## The Problem
+Razorpay checkout fails with **401 Unauthorized** error.
+
+## The Root Cause
+Your `.env` file doesn't have a valid `RAZORPAY_KEY_ID` set.
+
+## 3-Minute Fix
+
+### Step 1: Get Your Razorpay Key (1 min)
+1. Go to https://dashboard.razorpay.com/app/keys
+2. Copy your **Key ID** (starts with `rzp_test_` or `rzp_live_`)
+3. Copy your **Key Secret**
+
+### Step 2: Update .env File (1 min)
+1. Open or create: `roomhy-backend/.env`
+2. Add these lines:
+```
+RAZORPAY_KEY_ID=rzp_test_YOUR_KEY_HERE
+RAZORPAY_KEY_SECRET=YOUR_SECRET_HERE
+```
+3. Replace `YOUR_KEY_HERE` and `YOUR_SECRET_HERE` with actual values from Step 1
+4. Save the file
+
+### Step 3: Restart Backend (1 min)
+```powershell
+# Stop current process
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+
+# Restart
+cd roomhy-backend
+npm start
+```
+
+## Done!
+
+Open the booking form and try payment again. You should NOT see 401 errors anymore.
+
+---
+
+## What to Expect
+
+### ✅ After Fix
+- Razorpay checkout opens successfully
+- Console shows: `✅ Razorpay key loaded successfully`
+- Payment goes through
+
+### ❌ If Still Broken
+- Clear browser cache: Ctrl+Shift+R + F12 → Application → Clear All
+- Verify key is correct in `.env` file
+- Check server logs for: `✅ Razorpay key configured`
+
+---
+
+## Need Help?
+See `RAZORPAY_SETUP_FIX.md` for detailed troubleshooting.

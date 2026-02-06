@@ -452,12 +452,13 @@
                 if (response.ok) {
                     const result = await response.json();
                     console.log('📦 API Response:', result);
-                    if (result.razorpayKey) {
+                    if (result.razorpayKey && result.razorpayKey !== 'rzp_test_default') {
                         bookingData.razorpayKey = result.razorpayKey;
                         console.log('✅ Razorpay key loaded successfully');
-                        console.log('🔑 Using key:', bookingData.razorpayKey);
+                        console.log('🔑 Using key:', bookingData.razorpayKey.substring(0, 10) + '...');
                     } else {
-                        console.warn('⚠️ API response missing razorpayKey field');
+                        console.warn('⚠️ Razorpay key is not configured properly in the backend (.env file)');
+                        console.warn('⚠️ RAZORPAY_KEY_ID environment variable needs to be set to a valid Test/Live key');
                     }
                 } else {
                     console.warn('⚠️ API returned status:', response.status, response.statusText);
@@ -466,7 +467,7 @@
                 }
             } catch (error) {
                 console.warn('⚠️ Failed to fetch Razorpay key:', error);
-                console.warn('⚠️ Using test key:', bookingData.razorpayKey);
+                console.warn('⚠️ Check backend connection and .env configuration');
             }
         }
 
@@ -698,49 +699,98 @@
                 if (el) bookingData[field] = el.value.trim();
             });
 
-            // Initialize Razorpay payment
-            console.log('💳 Opening Razorpay with key:', bookingData.razorpayKey);
-            console.log('💰 Amount:', bookingData.totalAmount);
-            
-            const options = {
-                key: bookingData.razorpayKey,
-                amount: bookingData.totalAmount * 100,
-                currency: 'INR',
-                name: 'RoomHy',
-                description: 'Booking Payment for ' + bookingData.propertyName,
-                handler: function(response) {
-                    bookingData.razorpayPaymentId = response.razorpay_payment_id;
-                    
-                    // Show payment success and submit button
-                    document.getElementById('paymentBtn').style.display = 'none';
-                    document.getElementById('submitBtn').style.display = 'flex';
-                    document.getElementById('submitBtn').disabled = false;
-                    alert('Payment successful! Please click "Complete Booking" to finish.');
-                },
-                prefill: {
-                    name: bookingData.fullName,
-                    email: bookingData.email,
-                    contact: bookingData.phone
-                },
-                theme: {
-                    color: '#3b82f6'
-                }
-            };
-
+            // Create Razorpay order on backend
             try {
-                // Check if Razorpay is loaded
-                if (typeof Razorpay === 'undefined') {
-                    alert('Payment system is loading. Please wait a moment and try again, or refresh the page.');
-                    console.error('Razorpay not loaded');
+                console.log('🔄 Creating Razorpay order on backend...');
+                const orderResponse = await fetch(`${API_URL}/api/booking/create-order`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: bookingData.totalAmount,
+                        currency: 'INR',
+                        receipt: `booking_${bookingData.userId}_${Date.now()}`,
+                        notes: {
+                            userId: bookingData.userId,
+                            propertyId: bookingData.propertyId,
+                            propertyName: bookingData.propertyName
+                        }
+                    })
+                });
+
+                if (!orderResponse.ok) {
+                    const errorData = await orderResponse.text();
+                    console.error('❌ Order creation failed:', errorData);
+                    alert('Failed to initiate payment. Please try again.');
                     return;
                 }
-                
-                const razorpay = new Razorpay(options);
-                razorpay.open();
-                console.log('✅ Razorpay checkout opened');
+
+                const orderData = await orderResponse.json();
+                console.log('✅ Razorpay order created:', orderData.orderId);
+
+                // Initialize Razorpay payment with order ID
+                const options = {
+                    key: bookingData.razorpayKey,
+                    order_id: orderData.orderId,
+                    amount: bookingData.totalAmount * 100,
+                    currency: 'INR',
+                    name: 'RoomHy',
+                    description: 'Booking Payment for ' + bookingData.propertyName,
+                    handler: function(response) {
+                        console.log('✅ Payment successful!');
+                        console.log('💳 Payment ID:', response.razorpay_payment_id);
+                        console.log('📋 Order ID:', response.razorpay_order_id);
+                        console.log('🔐 Signature:', response.razorpay_signature);
+                        
+                        bookingData.razorpayPaymentId = response.razorpay_payment_id;
+                        bookingData.razorpayOrderId = response.razorpay_order_id;
+                        bookingData.razorpaySignature = response.razorpay_signature;
+                        
+                        // Show payment success and submit button
+                        document.getElementById('paymentBtn').style.display = 'none';
+                        document.getElementById('submitBtn').style.display = 'flex';
+                        document.getElementById('submitBtn').disabled = false;
+                        alert('✅ Payment successful! Please click "Complete Booking" to finish.');
+                    },
+                    prefill: {
+                        name: bookingData.fullName,
+                        email: bookingData.email,
+                        contact: bookingData.phone
+                    },
+                    theme: {
+                        color: '#3b82f6'
+                    }
+                };
+
+                try {
+                    // Check if Razorpay is loaded
+                    if (typeof Razorpay === 'undefined') {
+                        alert('Payment system is loading. Please wait a moment and try again, or refresh the page.');
+                        console.error('Razorpay not loaded');
+                        return;
+                    }
+                    
+                    // Warn if key is still default
+                    if (bookingData.razorpayKey === 'rzp_test_default' || bookingData.razorpayKey === 'rzp_test_your_key_here') {
+                        console.error('❌ CONFIGURATION ERROR: Razorpay key is not properly configured');
+                        alert('⚠️ Payment system is not properly configured.\n\nPlease ensure RAZORPAY_KEY_ID is set in the backend .env file with a valid Razorpay test/live key.\n\nContact administrator if this persists.');
+                        return;
+                    }
+                    
+                    const razorpay = new Razorpay(options);
+                    razorpay.open();
+                    console.log('✅ Razorpay checkout opened');
+                } catch (error) {
+                    console.error('❌ Razorpay error:', error);
+                    // Check if it's an auth error from Razorpay
+                    if (error.message && error.message.includes('401')) {
+                        alert('❌ Payment authentication failed.\n\nThis usually means:\n1. The Razorpay key is invalid or expired\n2. The key has been revoked\n\nPlease contact support or check your Razorpay account.');
+                    } else {
+                        alert('Payment initialization failed: ' + error.message + '. Please refresh the page and try again.');
+                    }
+                }
             } catch (error) {
-                console.error('❌ Razorpay error:', error);
-                alert('Payment initialization failed: ' + error.message + '. Please refresh the page and try again.');
+                console.error('❌ Error creating order:', error);
+                alert('Failed to initiate payment. Please try again.');
             }
         });
 

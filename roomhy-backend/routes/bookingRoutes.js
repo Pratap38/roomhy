@@ -7,14 +7,81 @@ const bookingController = require('../controllers/bookingController');
 // Get Razorpay Key (public endpoint for frontend payment initialization)
 router.get('/config/razorpay-key', (req, res) => {
     try {
-        const key = process.env.RAZORPAY_KEY_ID || 'rzp_test_default';
+        const key = process.env.RAZORPAY_KEY_ID;
+        
+        if (!key || key === 'rzp_test_default' || !key.startsWith('rzp_')) {
+            console.warn('⚠️  RAZORPAY_KEY_ID not configured properly');
+            console.warn('⚠️  Current value:', key || 'UNDEFINED');
+            console.warn('⚠️  Please set RAZORPAY_KEY_ID in .env file with a valid Razorpay key');
+            console.warn('⚠️  Keys should start with: rzp_test_ (test) or rzp_live_ (production)');
+        } else {
+            console.log('✅ Razorpay key configured:', key.substring(0, 15) + '...');
+        }
+        
         res.json({ 
             success: true,
-            razorpayKey: key
+            razorpayKey: key || 'rzp_test_default'
         });
     } catch (error) {
-        console.error('Error fetching Razorpay key:', error);
-        res.status(500).json({ success: false, error: error.message });
+        console.error('❌ Error fetching Razorpay key:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            hint: 'Check RAZORPAY_KEY_ID in .env file'
+        });
+    }
+});
+
+// Create Razorpay order for booking payment
+router.post('/create-order', (req, res) => {
+    try {
+        const Razorpay = require('razorpay');
+        const { amount, currency = 'INR', receipt, notes } = req.body;
+
+        if (!amount) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Amount is required' 
+            });
+        }
+
+        const razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET
+        });
+
+        const options = {
+            amount: Math.round(amount * 100), // Convert to paise
+            currency: currency,
+            receipt: receipt || `receipt_${Date.now()}`,
+            notes: notes || {}
+        };
+
+        razorpay.orders.create(options, (err, order) => {
+            if (err) {
+                console.error('❌ Razorpay order creation error:', err);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Failed to create order',
+                    error: err.message 
+                });
+            }
+            
+            console.log('✅ Razorpay order created:', order.id);
+            res.json({ 
+                success: true, 
+                orderId: order.id,
+                amount: order.amount,
+                currency: order.currency
+            });
+        });
+    } catch (error) {
+        console.error('❌ Error creating Razorpay order:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error',
+            error: error.message 
+        });
     }
 });
 
