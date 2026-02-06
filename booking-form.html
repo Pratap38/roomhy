@@ -814,45 +814,36 @@
             lucide.createIcons();
 
             try {
-                const formData = new FormData();
-                
                 // Convert camelCase to snake_case for backend API
                 const apiPayload = {
+                    user_id: bookingData.userId,
                     property_id: bookingData.propertyId,
                     property_name: bookingData.propertyName,
+                    owner_id: bookingData.ownerId,
                     owner_name: bookingData.ownerName,
-                    tenant_name: bookingData.tenantName || bookingData.fullName,
-                    tenant_email: bookingData.tenantEmail || bookingData.email,
-                    user_id: bookingData.userId,
-                    full_name: bookingData.fullName,
+                    name: bookingData.fullName,
                     phone: bookingData.phone,
                     email: bookingData.email,
                     guardian_name: bookingData.guardianName,
                     guardian_phone: bookingData.guardianPhone,
-                    street_address: bookingData.streetAddress,
-                    city: bookingData.city,
-                    state: bookingData.state,
-                    postal_code: bookingData.postalCode,
-                    country: bookingData.country,
-                    razorpay_payment_id: bookingData.razorpayPaymentId,
-                    razorpay_order_id: bookingData.razorpayOrderId,
-                    razorpay_signature: bookingData.razorpaySignature
+                    address_street: bookingData.streetAddress,
+                    address_city: bookingData.city,
+                    address_state: bookingData.state,
+                    address_postal_code: bookingData.postalCode,
+                    address_country: bookingData.country,
+                    payment_id: bookingData.razorpayPaymentId,
+                    payment_status: 'completed',
+                    payment_method: 'razorpay',
+                    status: 'confirmed'
                 };
-                
-                // Add all fields to FormData
-                Object.keys(apiPayload).forEach(key => {
-                    formData.append(key, apiPayload[key]);
-                });
-                
-                // Add file if exists
-                if (bookingData.addressProof) {
-                    formData.append('address_proof', bookingData.addressProof);
-                }
 
-                console.log('📤 Submitting booking to:', `${API_URL}/api/bookings/create`);
-                const response = await fetch(`${API_URL}/api/bookings/create`, {
+                console.log('📤 Submitting booking to:', `${API_URL}/api/bookings/confirm`);
+                const response = await fetch(`${API_URL}/api/bookings/confirm`, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(apiPayload)
                 });
 
                 const result = await response.json();
