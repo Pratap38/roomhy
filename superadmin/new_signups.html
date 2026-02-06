@@ -620,8 +620,12 @@
          */
         async function loadSignupRecordsFromKYC() {
             try {
+                console.log('📥 Fetching signup records from API:', `${API_URL}/api/kyc`);
                 // Try to fetch from MongoDB API first
                 const response = await fetch(`${API_URL}/api/kyc`);
+                
+                console.log('📊 API Response Status:', response.status);
+                
                 if (response.ok) {
                     const result = await response.json();
                     let signupUsers = Array.isArray(result) ? result : (result.data || result.users || []);
@@ -629,25 +633,30 @@
                     if (!Array.isArray(signupUsers)) {
                         signupUsers = [];
                     }
-                    console.log(`✓ Loaded ${signupUsers.length} signup records from MongoDB API`);
+                    console.log(`✅ Loaded ${signupUsers.length} signup records from MongoDB API`);
+                    console.log('📋 Signup records:', signupUsers);
                     // Store in localStorage as backup
                     localStorage.setItem('roomhy_kyc_verification', JSON.stringify(signupUsers));
                     displayAllSignups(signupUsers);
                 } else {
-                    throw new Error('API failed');
+                    console.error('❌ API returned status:', response.status);
+                    throw new Error(`API failed with status ${response.status}`);
                 }
             } catch (e) {
-                console.warn('Failed to load from API, falling back to localStorage:', e);
+                console.warn('⚠️ Failed to load from API, falling back to localStorage:', e.message);
                 const kycTableKey = 'roomhy_kyc_verification'; // Central New Signups table
                 const signupUsers = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
-                console.log(`✓ Loaded ${signupUsers.length} signup records from localStorage`);
+                console.log(`📦 Loaded ${signupUsers.length} signup records from localStorage`);
+                if (signupUsers.length === 0) {
+                    console.warn('⚠️ No signup records found in localStorage either. API URL:', API_URL);
+                }
                 displayAllSignups(signupUsers);
             }
         }
 
         /**
          * APPROVE SIGNUP - VERIFY USER
-         * Updates New Signups table
+         * Updates New Signups table and backend
          */
         function approveSignup(email) {
             if (!confirm(`Verify account for ${email}?`)) return;
@@ -671,6 +680,21 @@
                 signupUsers[userIndex].kycStatus = 'verified';
 
                 localStorage.setItem(kycTableKey, JSON.stringify(signupUsers));
+                
+                // Also update backend MongoDB via API
+                fetch(`${API_URL}/api/kyc/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        status: 'verified',
+                        kycStatus: 'verified'
+                    })
+                }).then(res => {
+                    console.log('✅ Backend updated with verification status');
+                }).catch(err => {
+                    console.warn('⚠️ Could not update backend:', err);
+                });
                 
                 // Also update tenant table for backward compatibility
                 const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');

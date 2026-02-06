@@ -118,6 +118,65 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// Verify signup by email
+router.put('/verify-by-email/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        const { status, kycStatus, verifiedAt } = req.body;
+
+        const signup = await KYCVerification.findOneAndUpdate(
+            { email: email },
+            {
+                status: status || 'verified',
+                kycStatus: kycStatus || 'verified',
+                verifiedAt: verifiedAt || new Date()
+            },
+            { new: true }
+        ).select('-password');
+
+        if (!signup) {
+            return res.status(404).json({ message: 'Signup not found' });
+        }
+
+        console.log(`✅ Signup verified via email: ${email}`);
+        res.json({ message: 'Signup verified successfully', data: signup });
+    } catch (error) {
+        console.error('Error verifying signup:', error);
+        res.status(500).json({ message: 'Error verifying signup', error: error.message });
+    }
+});
+
+// Alternative verify endpoint (simpler POST)
+router.post('/verify', async (req, res) => {
+    try {
+        const { email, status, kycStatus } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const signup = await KYCVerification.findOneAndUpdate(
+            { email: email },
+            {
+                status: status || 'verified',
+                kycStatus: kycStatus || 'verified',
+                verifiedAt: new Date()
+            },
+            { new: true }
+        ).select('-password');
+
+        if (!signup) {
+            return res.status(404).json({ message: 'Signup not found for email: ' + email });
+        }
+
+        console.log(`✅ Signup verified: ${email}`);
+        res.json({ message: 'Signup verified successfully', data: signup });
+    } catch (error) {
+        console.error('Error verifying signup:', error);
+        res.status(500).json({ message: 'Error verifying signup', error: error.message });
+    }
+});
+
 // Delete signup (Admin only)
 router.delete('/:id', async (req, res) => {
     try {
