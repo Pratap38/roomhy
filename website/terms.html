@@ -13,6 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="./js/auth-utils.js"></script>
 
     <!-- Copied Tailwind Config -->
     <script>
@@ -515,11 +516,11 @@
 
 
     <!-- ====================================================== -->
-    <!-- START: COPIED MOBILE MENU (All links inactive) -->
-    <!-- ====================================================== -->
+    <!-- Mobile Menu Overlay -->
     <div id="menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
     
-    <div id="mobile-menu" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <!-- Mobile Menu - Logged In -->
+    <div id="menu-logged-in" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col hidden">
         <div class="flex justify-end p-4 flex-shrink-0">
             <button id="menu-close" class="p-2">
                 <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
@@ -528,10 +529,13 @@
 
         <div class="flex justify-between items-center px-6 py-2">
             <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                    <i data-lucide="users" class="w-6 h-6 text-gray-600"></i>
+                <div id="userAvatar" class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                    <i data-lucide="user" class="w-6 h-6 text-gray-600"></i>
                 </div>
-                <span class="text-lg font-semibold text-gray-800">Hi,welcome ??</span>
+                <div>
+                    <span id="welcomeUserName" class="text-lg font-semibold text-gray-800 block">Hi, User</span>
+                    <span id="userIdDisplay" class="text-xs text-gray-600"></span>
+                </div>
             </div>
             <a href="profile-settings.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
         </div>
@@ -585,17 +589,47 @@
         </nav>
         
         <div class="p-4 border-t flex-shrink-0">
-            <a href="logout.html" class="flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
+            <button onclick="globalLogout()" class="w-full flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
                 <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                     <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
                 </div>
                 <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Menu - Logged Out -->
+    <div id="menu-logged-out" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="flex justify-end p-4 flex-shrink-0">
+            <button id="menu-close-logout" class="p-2">
+                <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+            </button>
+        </div>
+
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                </div>
+                <span>About Us</span>
+            </a>
+            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                </div>
+                <span>Contact Us</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t flex-shrink-0 space-y-3">
+            <a href="login.html" class="block w-full text-center bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium py-2 px-4 rounded-lg transition-colors">
+                Login
+            </a>
+            <a href="signup.html" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                Sign Up
             </a>
         </div>
     </div>
-    <!-- ====================================================== -->
-    <!-- END: COPIED MOBILE MENU -->
-    <!-- ====================================================== -->
 
 
     <!-- ====================================================== -->
@@ -796,37 +830,113 @@
         
         /*
         ============================================================
-        JavaScript for Mobile Side Menu
+        Mobile Menu & Authentication
         ============================================================
         */
-        const menuToggle = document.getElementById('menu-toggle');
-        const menuClose = document.getElementById('menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const menuOverlay = document.getElementById('menu-overlay');
-
-        if (menuToggle && mobileMenu && menuClose && menuOverlay) {
-            menuToggle.addEventListener('click', () => {
-                mobileMenu.classList.remove('translate-x-full');
-                menuOverlay.classList.remove('hidden');
-            });
-
-            const closeMenu = () => {
-                mobileMenu.classList.add('translate-x-full');
-                menuOverlay.classList.add('hidden');
-            };
-
-            menuClose.addEventListener('click', closeMenu);
-            menuOverlay.addEventListener('click', closeMenu);
-
-            mobileMenu.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    if (link.href.includes('#')) {
-                        setTimeout(closeMenu, 100);
-                    }
-                    closeMenu();
-                });
-            });
+        
+        // Global Logout Function
+        function globalLogout() {
+            if (typeof AuthUtils !== 'undefined') {
+                AuthUtils.logout('login.html');
+            } else {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            }
         }
+
+        // Update Mobile Menu State
+        function updateMobileMenuState() {
+            const menuLoggedIn = document.getElementById('menu-logged-in');
+            const menuLoggedOut = document.getElementById('menu-logged-out');
+            const isLoggedIn = typeof AuthUtils !== 'undefined' ? AuthUtils.isLoggedIn() : false;
+            
+            if (isLoggedIn) {
+                menuLoggedIn?.classList.remove('hidden');
+                menuLoggedOut?.classList.add('hidden');
+            } else {
+                menuLoggedIn?.classList.add('hidden');
+                menuLoggedOut?.classList.remove('hidden');
+            }
+        }
+
+        // Update Welcome Message
+        function updateWelcomeMessage() {
+            const welcomeEl = document.getElementById('welcomeUserName');
+            const userIdEl = document.getElementById('userIdDisplay');
+            
+            if (typeof AuthUtils !== 'undefined') {
+                const user = AuthUtils.getCurrentUser();
+                if (user && welcomeEl) {
+                    welcomeEl.textContent = `Hi, ${user.fullName || 'User'}`;
+                    if (userIdEl && user.userId) {
+                        userIdEl.textContent = `ID: ${user.userId}`;
+                    }
+                }
+            }
+        }
+
+        // Menu Toggle & Close Handlers
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuLoggedIn = document.getElementById('menu-logged-in');
+        const menuLoggedOut = document.getElementById('menu-logged-out');
+        const menuClose = document.getElementById('menu-close');
+        const menuCloseLogout = document.getElementById('menu-close-logout');
+
+        const closeMenu = () => {
+            menuLoggedIn?.classList.add('translate-x-full');
+            menuLoggedOut?.classList.add('translate-x-full');
+            menuOverlay?.classList.add('hidden');
+        };
+
+        const openMenu = () => {
+            updateMobileMenuState();
+            updateWelcomeMessage();
+            const isLoggedIn = typeof AuthUtils !== 'undefined' ? AuthUtils.isLoggedIn() : false;
+            if (isLoggedIn) {
+                menuLoggedIn?.classList.remove('translate-x-full');
+            } else {
+                menuLoggedOut?.classList.remove('translate-x-full');
+            }
+            menuOverlay?.classList.remove('hidden');
+        };
+
+        if (menuToggle) {
+            menuToggle.addEventListener('click', openMenu);
+        }
+        if (menuClose) {
+            menuClose.addEventListener('click', closeMenu);
+        }
+        if (menuCloseLogout) {
+            menuCloseLogout.addEventListener('click', closeMenu);
+        }
+        if (menuOverlay) {
+            menuOverlay.addEventListener('click', closeMenu);
+        }
+
+        // Close menu on link click
+        [menuLoggedIn, menuLoggedOut].forEach(menu => {
+            if (menu) {
+                menu.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', closeMenu);
+                });
+            }
+        });
+
+        // Page Load Setup
+        document.addEventListener('DOMContentLoaded', () => {
+            updateMobileMenuState();
+            updateWelcomeMessage();
+        });
+
+        // Storage Event Listener for Cross-Tab Logout
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'logout_event' || e.key === 'user' || e.key === 'auth_token') {
+                updateMobileMenuState();
+                updateWelcomeMessage();
+            }
+        });
         
         /*
         ============================================================

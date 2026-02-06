@@ -100,16 +100,20 @@ function requireAuth(loginPage = 'login.html', showModal = false, modalId = null
 
 /**
  * Logout user - clears session and redirects
- * @param {string} redirectPage - URL to redirect after logout
+ * @param {string} redirectPage - URL to redirect after logout (relative to website folder)
  * @param {Function} callback - Optional callback before redirect
  */
 function logout(redirectPage = 'login.html', callback = null) {
-    // Clear all session data
-    localStorage.removeItem(USER_KEY);
+    // Clear all session data from localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('USER_KEY');
     localStorage.removeItem(AUTH_KEY);
     localStorage.removeItem('token');
     localStorage.removeItem('owner_session');
     localStorage.removeItem('tenant_user');
+    localStorage.removeItem('bookingRequestData');
+    
+    // Clear sessionStorage
     sessionStorage.clear();
     
     // Execute callback if provided
@@ -117,7 +121,7 @@ function logout(redirectPage = 'login.html', callback = null) {
         callback();
     }
     
-    // Redirect to login
+    // Redirect to login page
     window.location.href = redirectPage;
 }
 

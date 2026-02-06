@@ -737,74 +737,106 @@
             </button>
         </div>
 
-        <div class="flex justify-between items-center px-6 py-2">
-            <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
-                    <i data-lucide="user" class="w-6 h-6 text-white"></i>
+        <!-- LOGIN STATE: Shows when user IS logged in -->
+        <div id="menu-logged-in" class="hidden">
+            <div class="flex justify-between items-center px-6 py-2">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
+                        <i data-lucide="user" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <span class="text-lg font-semibold text-gray-800" id="welcomeUserName">Hi,welcome</span>
+                        <p class="text-xs text-gray-500" id="userIdDisplay"></p>
+                    </div>
                 </div>
-                <div>
-                    <span class="text-lg font-semibold text-gray-800" id="welcomeUserName">Hi,welcome</span>
-                    <p class="text-xs text-gray-500" id="userIdDisplay"></p>
+                <a href="profile.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
+            </div>
+
+            <div class="px-6 py-4">
+                <div class="border border-blue-200 rounded-lg p-4 relative overflow-hidden">
+                    <p class="font-semibold text-gray-800 mb-3 relative z-10">Looking to Sell/Rent your Property?</p>
+                    <a href="list.html" class="block text-center w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors relative z-10">
+                        Post Property for Free
+                    </a>
                 </div>
             </div>
-            <a href="profile.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
+
+            <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+                <a href="ourproperty.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
+                    </div>
+                    <span>Our Properties</span>
+                </a>
+                <a href="fav.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="heart" class="w-5 h-5 text-red-600"></i>
+                    </div>
+                    <span>Favorites</span>
+                </a>
+                <a href="mystays.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="building" class="w-5 h-5 text-purple-600"></i>
+                    </div>
+                    <span>My Stays</span>
+                </a>
+                <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                    </div>
+                    <span>About Us</span>
+                </a>
+                <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                    </div>
+                    <span>Contact Us</span>
+                </a>
+                <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
+                    </div>
+                    <span>Chat</span>
+                </a>
+            </nav>
+            
+            <div class="p-4 border-t flex-shrink-0">
+                <button onclick="globalLogout()" class="w-full flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
+                    <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
+                    </div>
+                    <span>Logout</span>
+                </button>
+            </div>
         </div>
 
-        <div class="px-6 py-4">
-            <div class="border border-blue-200 rounded-lg p-4 relative overflow-hidden">
-                <p class="font-semibold text-gray-800 mb-3 relative z-10">Looking to Sell/Rent your Property?</p>
-                <a href="list.html" class="block text-center w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors relative z-10">
-                    Post Property for Free
+        <!-- LOGOUT STATE: Shows when user is NOT logged in -->
+        <div id="menu-logged-out" class="flex flex-col h-full">
+            <div class="flex-grow p-4 space-y-1 overflow-y-auto">
+                <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                    </div>
+                    <span>About Us</span>
+                </a>
+                <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                    </div>
+                    <span>Contact Us</span>
                 </a>
             </div>
-        </div>
-
-        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
-            <a href="ourproperty.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
-                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
-                </div>
-                <span>Our Properties</span>
-            </a>
-            <a href="fav.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
-                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="heart" class="w-5 h-5 text-red-600"></i>
-                </div>
-                <span>Favorites</span>
-            </a>
-            <a href="mystays.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
-                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="building" class="w-5 h-5 text-purple-600"></i>
-                </div>
-                <span>My Stays</span>
-            </a>
-            <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
-                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
-                </div>
-                <span>About Us</span>
-            </a>
-            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
-                <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
-                </div>
-                <span>Contact Us</span>
-            </a>
-            <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
-                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
-                </div>
-                <span>Chat</span>
-            </a>
-        </nav>
-        
-        <div class="p-4 border-t flex-shrink-0">
-            <a href="#" class="flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
-                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
-                </div>
-                <span>Logout</span>
-            </a>
+            
+            <div class="p-4 space-y-3 border-t flex-shrink-0">
+                <a href="login.html" class="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i data-lucide="log-in" class="w-4 h-4 inline mr-2"></i>
+                    Login
+                </a>
+                <a href="signup.html" class="block w-full text-center border-2 border-blue-600 text-blue-600 font-medium py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors">
+                    <i data-lucide="user-plus" class="w-4 h-4 inline mr-2"></i>
+                    Sign Up
+                </a>
+            </div>
         </div>
     </div>
 
@@ -2917,6 +2949,45 @@
         }
         
         // ======================================================
+        // GLOBAL LOGOUT FUNCTION - Clears all storage and redirects
+        // ======================================================
+        function globalLogout() {
+            // Use AuthUtils if available, otherwise do it manually
+            if (typeof AuthUtils !== 'undefined' && AuthUtils.logout) {
+                AuthUtils.logout('login.html');
+            } else {
+                // Manual logout
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // ======================================================
+        // UPDATE MOBILE MENU BASED ON LOGIN STATE
+        // ======================================================
+        function updateMobileMenuState() {
+            const menuLoggedIn = document.getElementById('menu-logged-in');
+            const menuLoggedOut = document.getElementById('menu-logged-out');
+            
+            if (typeof AuthUtils !== 'undefined' && AuthUtils.isLoggedIn()) {
+                // Show logged-in menu
+                if (menuLoggedIn) menuLoggedIn.classList.remove('hidden');
+                if (menuLoggedOut) menuLoggedOut.classList.add('hidden');
+            } else {
+                // Show logged-out menu
+                if (menuLoggedIn) menuLoggedIn.classList.add('hidden');
+                if (menuLoggedOut) menuLoggedOut.classList.remove('hidden');
+            }
+        }
+        
+        // Call on page load
+        updateMobileMenuState();
+        
+        // Listen for storage changes (logout from other tabs)
+        window.addEventListener('storage', updateMobileMenuState);
+        
+        // ======================================================
         // UPDATE WELCOME MESSAGE WITH USER ID
         // ======================================================
         function updateWelcomeMessage() {
@@ -2949,7 +3020,6 @@
         
         // Call on page load
         updateWelcomeMessage();
-        // ======================================================
         
         // Intersection Observer for general animations
         const observer = new IntersectionObserver((entries) => {
