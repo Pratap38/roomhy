@@ -509,9 +509,11 @@
             // Auto-fill tenant name and email if available
             if (bookingData.tenantName) {
                 document.getElementById('fullName').value = bookingData.tenantName;
+                bookingData.fullName = bookingData.tenantName;
             }
             if (bookingData.tenantEmail) {
                 document.getElementById('email').value = bookingData.tenantEmail;
+                bookingData.email = bookingData.tenantEmail;
             }
             
             console.log('✨ Form fields populated:', {
@@ -594,10 +596,32 @@
         // Payment button
         document.getElementById('paymentBtn').addEventListener('click', async function() {
             const requiredFields = ['fullName', 'phone', 'email', 'guardianName', 'guardianPhone', 'streetAddress', 'city', 'state', 'postalCode', 'country'];
-            const missingFields = requiredFields.filter(field => !bookingData[field]);
+            
+            // Check actual form input values instead of bookingData object
+            const missingFields = requiredFields.filter(field => {
+                const el = document.getElementById(field);
+                const value = el ? el.value.trim() : '';
+                if (!value) return true;
+                return false;
+            });
             
             if (missingFields.length > 0) {
-                alert('Please fill in all required fields before proceeding to payment.');
+                console.warn('Missing fields:', missingFields);
+                alert(`Please fill in all required fields:\n${missingFields.map(f => {
+                    const labels = {
+                        fullName: 'Full Name',
+                        phone: 'Phone Number',
+                        email: 'Email Address',
+                        guardianName: 'Guardian Name',
+                        guardianPhone: 'Guardian Phone',
+                        streetAddress: 'Street Address',
+                        city: 'City',
+                        state: 'State',
+                        postalCode: 'Postal Code',
+                        country: 'Country'
+                    };
+                    return '• ' + (labels[f] || f);
+                }).join('\n')}`);
                 return;
             }
 
@@ -610,6 +634,12 @@
                 alert('Please agree to the terms and conditions.');
                 return;
             }
+
+            // Sync form values to bookingData before payment
+            requiredFields.forEach(field => {
+                const el = document.getElementById(field);
+                if (el) bookingData[field] = el.value.trim();
+            });
 
             // Initialize Razorpay payment
             const options = {
