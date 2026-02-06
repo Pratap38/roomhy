@@ -439,6 +439,10 @@
                 console.log('No booking request data in sessionStorage');
             }
 
+            // Auto-fill tenant info from URL parameters
+            const tenantNameFromUrl = urlParams.get('tenantName');
+            const tenantEmailFromUrl = urlParams.get('tenantEmail');
+            
             // Handle both booking requests and bidding requests
             if (isBid && bookingRequestData?.is_bid) {
                 console.log('📋 Loading bidding request data...');
@@ -452,11 +456,15 @@
                 bookingData.rentAmount = 500;
                 bookingData.totalAmount = 500;
                 bookingData.bidMessage = bookingRequestData?.message || '';
+                bookingData.tenantName = bookingRequestData?.tenant_name || tenantNameFromUrl || '';
+                bookingData.tenantEmail = bookingRequestData?.tenant_email || tenantEmailFromUrl || '';
                 
                 console.log('🎯 Bid data loaded:', {
                     propertyId: bookingData.propertyId,
                     propertyName: bookingData.propertyName,
                     ownerName: bookingData.ownerName,
+                    tenantName: bookingData.tenantName,
+                    tenantEmail: bookingData.tenantEmail,
                     budgetMin: bookingData.budgetMin,
                     budgetMax: bookingData.budgetMax,
                     fixedAmount: 500
@@ -467,6 +475,8 @@
                 bookingData.propertyId = bookingRequestData?.property_id || urlParams.get('propertyId') || '';
                 bookingData.propertyName = bookingRequestData?.property_name || urlParams.get('propertyName') || '';
                 bookingData.ownerName = bookingRequestData?.owner_name || bookingRequestData?.ownerName || urlParams.get('ownerName') || '';
+                bookingData.tenantName = bookingRequestData?.tenant_name || tenantNameFromUrl || '';
+                bookingData.tenantEmail = bookingRequestData?.tenant_email || tenantEmailFromUrl || '';
                 // Use fixed amount of ₹500
                 bookingData.rentAmount = 500;
                 bookingData.totalAmount = 500;
@@ -475,6 +485,8 @@
                     propertyId: bookingData.propertyId,
                     propertyName: bookingData.propertyName,
                     ownerName: bookingData.ownerName,
+                    tenantName: bookingData.tenantName,
+                    tenantEmail: bookingData.tenantEmail,
                     fixedAmount: 500
                 });
             }
@@ -494,10 +506,20 @@
             document.getElementById('ownerNameDisplay').value = bookingData.ownerName;
             document.getElementById('userId').value = bookingData.userId;
             
+            // Auto-fill tenant name and email if available
+            if (bookingData.tenantName) {
+                document.getElementById('fullName').value = bookingData.tenantName;
+            }
+            if (bookingData.tenantEmail) {
+                document.getElementById('email').value = bookingData.tenantEmail;
+            }
+            
             console.log('✨ Form fields populated:', {
                 propertyName: document.getElementById('propertyNameDisplay').value,
                 propertyId: document.getElementById('propertyIdDisplay').value,
                 ownerName: document.getElementById('ownerNameDisplay').value,
+                fullName: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
                 isBid: isBid
             });
             
@@ -505,10 +527,8 @@
             document.getElementById('rentAmount').textContent = '₹500';
             document.getElementById('totalAmount').textContent = '₹500';
 
-            // Prefill from URL if available
-            if (urlParams.get('prefillName')) document.getElementById('fullName').value = urlParams.get('prefillName');
+            // Prefill from URL if available (additional info)
             if (urlParams.get('prefillPhone')) document.getElementById('phone').value = urlParams.get('prefillPhone');
-            if (urlParams.get('prefillEmail')) document.getElementById('email').value = urlParams.get('prefillEmail');
         });
 
         // Terms checkbox listener - enable payment button only when checked

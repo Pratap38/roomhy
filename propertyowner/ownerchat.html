@@ -288,6 +288,9 @@
                                 <div class="flex-1 flex flex-col gap-2">
                                     <!-- Reaction/Control Bar -->
                                     <div class="flex items-center gap-2 pb-1">
+                                        <button id="book-input-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100 hover:bg-blue-100 transition-all">
+                                            <i data-lucide="bookmark" class="w-3 h-3"></i> BOOK
+                                        </button>
                                         <button id="like-input-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 text-green-600 text-[10px] font-bold border border-green-100 hover:bg-green-100 transition-all">
                                             <i data-lucide="thumbs-up" class="w-3 h-3"></i> LIKE
                                         </button>
@@ -707,6 +710,75 @@
             }
         };
 
+        async function sendBookingLink() {
+            if (!currentChat || !currentOwner) {
+                alert('Please select a chat first');
+                return;
+            }
+
+            console.log('📖 Book button clicked - generating booking link');
+            
+            const bookingId = currentChat._id || currentChat.id;
+            const userId = currentChat.signup_user_id || currentChat.user_id;
+            const propertyName = currentChat.property_name || 'Roomhy Property';
+            const propertyId = currentChat.property_id || bookingId;
+            const ownerId = currentOwner.loginId || currentOwner.ownerId;
+            const ownerName = currentOwner.name || currentOwner.ownerName || 'Owner';
+            const tenantName = currentChat.name || 'Tenant';
+            const tenantEmail = currentChat.email || '';
+            
+            // Generate booking form link
+            const repoPath = '/roomhy';
+            const bookingFormLink = `${window.location.origin}${repoPath}/booking-form.html?bookingId=${bookingId}&userId=${userId}&ownerName=${encodeURIComponent(ownerName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
+            
+            console.log('📋 Booking link data:', {
+                bookingId, userId, propertyName, propertyId, ownerName, tenantName, tenantEmail
+            });
+            
+            // Store booking data in sessionStorage for booking-form.html
+            const bookingData = {
+                booking_id: bookingId,
+                user_id: userId,
+                property_name: propertyName,
+                property_id: propertyId,
+                owner_name: ownerName,
+                owner_id: ownerId,
+                tenant_name: tenantName,
+                tenant_email: tenantEmail
+            };
+            
+            console.log('💾 Booking data:', bookingData);
+            sessionStorage.setItem('bookingRequestData', JSON.stringify(bookingData));
+            
+            // Send booking link as message
+            const bookingLinkMessage = `📋 Here's your booking form: ${bookingFormLink}`;
+            console.log('🔗 Sending booking link message:', bookingLinkMessage);
+            
+            try {
+                // Add message to Firebase
+                const messagesRef = window.collection(window.db, 'chats', bookingId, 'messages');
+                await window.addDoc(messagesRef, {
+                    sender: 'owner',
+                    text: bookingLinkMessage,
+                    timestamp: window.serverTimestamp(),
+                    ownerId: ownerId,
+                    ownerName: ownerName
+                });
+                
+                console.log('✅ Booking link message sent to chat');
+                
+                // Clear message input
+                document.getElementById('message-text').value = '';
+                
+                // Scroll to latest message
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            } catch (error) {
+                console.error('❌ Failed to send booking link:', error);
+                alert('Failed to send booking link');
+            }
+        }
+
         async function updateChatDecision(decision, userType) {
             if (!currentChat) return;
 
@@ -855,6 +927,7 @@
 
         // Event Listeners
         document.getElementById('send-btn').onclick = () => sendMessage();
+        document.getElementById('book-input-btn').onclick = () => sendBookingLink();
         document.getElementById('like-input-btn').onclick = () => showLikePopup();
         document.getElementById('dislike-input-btn').onclick = () => showDislikePopup();
         
