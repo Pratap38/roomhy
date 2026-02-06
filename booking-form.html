@@ -425,30 +425,56 @@
             
             // Try to get booking data from sessionStorage first (passed from booking_request.html)
             let bookingRequestData = null;
+            let isBid = urlParams.get('isBid') === 'true' || false;
+            
             try {
                 const stored = sessionStorage.getItem('bookingRequestData');
                 console.log('📦 SessionStorage bookingRequestData:', stored);
                 if (stored) {
                     bookingRequestData = JSON.parse(stored);
                     console.log('✅ Parsed booking data:', bookingRequestData);
+                    isBid = bookingRequestData?.is_bid || isBid;
                 }
             } catch (e) {
                 console.log('No booking request data in sessionStorage');
             }
 
-            // Use booking request data if available, otherwise use URL parameters
-            bookingData.propertyId = bookingRequestData?.property_id || urlParams.get('propertyId') || '';
-            bookingData.propertyName = bookingRequestData?.property_name || urlParams.get('propertyName') || '';
-            bookingData.ownerName = bookingRequestData?.owner_name || bookingRequestData?.ownerName || urlParams.get('ownerName') || '';
-            bookingData.rentAmount = parseFloat(bookingRequestData?.rent_amount || urlParams.get('rentAmount')) || 0;
-            bookingData.totalAmount = parseFloat(bookingRequestData?.rent_amount || urlParams.get('totalAmount')) || 0;
-            
-            console.log('📋 Booking data loaded:', {
-                propertyId: bookingData.propertyId,
-                propertyName: bookingData.propertyName,
-                ownerName: bookingData.ownerName,
-                rentAmount: bookingData.rentAmount
-            });
+            // Handle both booking requests and bidding requests
+            if (isBid && bookingRequestData?.is_bid) {
+                console.log('📋 Loading bidding request data...');
+                // Bidding request data
+                bookingData.propertyId = bookingRequestData?.property_id || urlParams.get('propertyId') || '';
+                bookingData.propertyName = bookingRequestData?.property_name || urlParams.get('propertyName') || '';
+                bookingData.ownerName = bookingRequestData?.owner_name || bookingRequestData?.ownerName || urlParams.get('ownerName') || '';
+                bookingData.budgetMin = parseFloat(bookingRequestData?.budget_min || 0) || 0;
+                bookingData.budgetMax = parseFloat(bookingRequestData?.budget_max || 0) || 0;
+                bookingData.rentAmount = bookingData.budgetMax; // Use max budget as primary amount
+                bookingData.totalAmount = bookingData.budgetMax;
+                bookingData.bidMessage = bookingRequestData?.message || '';
+                
+                console.log('🎯 Bid data loaded:', {
+                    propertyId: bookingData.propertyId,
+                    propertyName: bookingData.propertyName,
+                    ownerName: bookingData.ownerName,
+                    budgetMin: bookingData.budgetMin,
+                    budgetMax: bookingData.budgetMax
+                });
+            } else {
+                console.log('📋 Loading booking request data...');
+                // Regular booking request data
+                bookingData.propertyId = bookingRequestData?.property_id || urlParams.get('propertyId') || '';
+                bookingData.propertyName = bookingRequestData?.property_name || urlParams.get('propertyName') || '';
+                bookingData.ownerName = bookingRequestData?.owner_name || bookingRequestData?.ownerName || urlParams.get('ownerName') || '';
+                bookingData.rentAmount = parseFloat(bookingRequestData?.rent_amount || urlParams.get('rentAmount')) || 0;
+                bookingData.totalAmount = parseFloat(bookingRequestData?.rent_amount || urlParams.get('totalAmount')) || 0;
+                
+                console.log('📋 Booking data loaded:', {
+                    propertyId: bookingData.propertyId,
+                    propertyName: bookingData.propertyName,
+                    ownerName: bookingData.ownerName,
+                    rentAmount: bookingData.rentAmount
+                });
+            }
             
             // Use userId from URL if provided, otherwise generate new one
             if (urlParams.get('userId')) {
@@ -468,10 +494,16 @@
             console.log('✨ Form fields populated:', {
                 propertyName: document.getElementById('propertyNameDisplay').value,
                 propertyId: document.getElementById('propertyIdDisplay').value,
-                ownerName: document.getElementById('ownerNameDisplay').value
+                ownerName: document.getElementById('ownerNameDisplay').value,
+                isBid: isBid
             });
             
-            document.getElementById('rentAmount').textContent = '₹' + (bookingData.rentAmount > 0 ? bookingData.rentAmount.toLocaleString('en-IN') : '0');
+            // Display amount based on type
+            if (isBid && bookingData.budgetMin && bookingData.budgetMax) {
+                document.getElementById('rentAmount').textContent = '₹' + bookingData.budgetMin.toLocaleString('en-IN') + ' - ₹' + bookingData.budgetMax.toLocaleString('en-IN');
+            } else {
+                document.getElementById('rentAmount').textContent = '₹' + (bookingData.rentAmount > 0 ? bookingData.rentAmount.toLocaleString('en-IN') : '0');
+            }
             document.getElementById('totalAmount').textContent = '₹' + (bookingData.totalAmount > 0 ? bookingData.totalAmount.toLocaleString('en-IN') : '0');
 
             // Prefill from URL if available

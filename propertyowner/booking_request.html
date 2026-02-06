@@ -639,6 +639,28 @@
                     goToBookingForm(reqId, propertyId, propertyName, ownerName, rentAmount, userId);
                 });
             });
+
+            // Add event listeners to bid booking form buttons
+            document.querySelectorAll('.booking-form-btn-bid').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const bidId = this.dataset.bidId;
+                    const propertyId = this.dataset.propertyId;
+                    const propertyName = this.dataset.propertyName;
+                    const ownerName = this.dataset.ownerName;
+                    const budgetMin = this.dataset.budgetMin;
+                    const budgetMax = this.dataset.budgetMax;
+                    const userId = this.dataset.userId;
+                    const bidderName = this.dataset.bidderName;
+                    const bidderEmail = this.dataset.bidderEmail;
+                    const message = this.dataset.message;
+                    
+                    console.log('🎯 Bid Booking Form clicked:', {
+                        bidId, propertyId, propertyName, ownerName, budgetMin, budgetMax, userId, bidderName, bidderEmail
+                    });
+                    
+                    goToBidBookingForm(bidId, propertyId, propertyName, ownerName, budgetMin, budgetMax, userId, bidderName, bidderEmail, message);
+                });
+            });
         }
 
         // Get status badge CSS class
@@ -752,6 +774,19 @@
                                 <button onclick="confirmBid('${bid._id || index}')" class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200">Confirm</button>
                             ` : bid.status === 'accepted' ? `
                                 <button onclick="openChat('${bid._id || index}', '')" class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200 flex items-center gap-1"><i data-lucide="message-circle" class="w-3 h-3"></i>Chat</button>
+                                <button class="booking-form-btn-bid px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200"
+                                  data-bid-id="${bid._id || index}"
+                                  data-property-id="${bid.property_id || ''}"
+                                  data-property-name="${bid.property_name || ''}"
+                                  data-owner-name="${bid.owner_name || bid.ownerName || ''}"
+                                  data-budget-min="${bid.bid_min || bid.budget_min || ''}"
+                                  data-budget-max="${bid.bid_max || bid.budget_max || ''}"
+                                  data-user-id="${bid.user_id || bid.signup_user_id || ''}"
+                                  data-bidder-name="${bid.name || ''}"
+                                  data-bidder-email="${bid.email || ''}"
+                                  data-message="${(bid.message || '').replace(/"/g, '&quot;')}">
+                                  Booking Form
+                                </button>
                             ` : `
                                 <button onclick="contactBidder('${bid._id || index}')" class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200">Contact</button>
                             `}
@@ -771,6 +806,7 @@
                 const bid = allBiddingRequests.find(b => b._id === bidId || allBiddingRequests.indexOf(b) === bidId);
                 if (!bid) return;
 
+                console.log('📋 Bid object:', bid);
                 console.log('Accepting bid:', bidId, 'Name:', bidderName, 'Email:', bidderEmail);
 
                 // Update status
@@ -798,18 +834,38 @@
                 await createChatRoom(bidId, bidderName, bidderEmail, bid);
                 console.log('✅ Chat room created');
 
-                // Try to save to API
+                // Try to save complete bid data to API/Database
                 try {
-                    console.log('Saving to API:', `${API_URL}/api/booking/update`);
+                    const bidPayload = {
+                        bidId: bidId,
+                        _id: bidId,
+                        status: 'accepted',
+                        responseDate: bid.responseDate,
+                        acceptedAt: new Date().toISOString(),
+                        name: bidderName,
+                        email: bidderEmail,
+                        property_type: bid.property_type || '',
+                        area: bid.area || bid.city || '',
+                        budget_min: bid.bid_min || bid.budget_min || '',
+                        budget_max: bid.bid_max || bid.budget_max || '',
+                        message: bid.message || '',
+                        owner_name: bid.owner_name || bid.ownerName || '',
+                        owner_id: bid.owner_id || bid.ownerId || '',
+                        property_id: bid.property_id || '',
+                        property_name: bid.property_name || '',
+                        request_type: 'bid',
+                        user_id: bid.user_id || bid.signup_user_id || ''
+                    };
+                    
+                    console.log('💾 Saving bid to database:', `${API_URL}/api/booking/update`);
+                    console.log('📦 Bid payload:', bidPayload);
+                    
                     const response = await fetch(`${API_URL}/api/booking/update`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            bookingId: bidId, 
-                            status: 'accepted', 
-                            responseDate: bid.responseDate 
-                        })
+                        body: JSON.stringify(bidPayload)
                     });
+                    
                     if (response.ok) {
                         console.log('✅ API update successful');
                     } else {
@@ -946,12 +1002,42 @@
             window.location.href = url;
         }
 
+        function goToBidBookingForm(bidId, propertyId, propertyName, ownerName, budgetMin, budgetMax, userId, bidderName, bidderEmail, message) {
+            console.log('🚀 goToBidBookingForm called with:', {
+                bidId, propertyId, propertyName, ownerName, budgetMin, budgetMax, userId, bidderName, bidderEmail
+            });
+            
+            const bidData = {
+                bid_id: bidId || '',
+                property_id: propertyId || '',
+                property_name: propertyName || '',
+                owner_name: ownerName || '',
+                budget_min: budgetMin || 0,
+                budget_max: budgetMax || 0,
+                user_id: userId || '',
+                bidder_name: bidderName || '',
+                bidder_email: bidderEmail || '',
+                message: message || '',
+                is_bid: true
+            };
+            
+            console.log('💾 Setting sessionStorage with bid data:', bidData);
+            
+            // Store in sessionStorage for access in booking-form.html
+            sessionStorage.setItem('bookingRequestData', JSON.stringify(bidData));
+            console.log('✅ SessionStorage set with bid data');
+            
+            // Navigate to booking form
+            const url = '../booking-form.html?userId=' + encodeURIComponent(userId || '') + '&isBid=true';
+            console.log('🔗 Navigating to:', url);
+            window.location.href = url;
+        }
+
         // Send bid acceptance email
         async function sendBidAcceptanceEmail(bid) {
             try {
                 const emailTo = bid.email || bid.contactEmail;
                 const emailName = bid.name || bid.contactName;
-                
                 if (!emailTo) {
                     console.log('No email address available for bid');
                     return;
