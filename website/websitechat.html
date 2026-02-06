@@ -998,15 +998,24 @@
                     if (chatKey && !seenChats.has(chatKey)) {
                         seenChats.add(chatKey);
                         
-                        // Get owner name from various fields
-                        let ownerName = b.owner_name || b.ownerName || b.owner_contact?.name;
+                        // Get owner name - try multiple field names
+                        let ownerName = b.owner_name 
+                            || b.ownerName 
+                            || b.owner_contact?.name
+                            || b.ownerContactName
+                            || b.contactName;
                         
-                        // Fetch owner name from API if not available
+                        // If still no owner name, try to extract from owner_contact object
+                        if (!ownerName && b.owner_contact && typeof b.owner_contact === 'object') {
+                            ownerName = b.owner_contact.name || b.owner_contact.fullName || b.owner_contact.contactName;
+                        }
+                        
+                        // Fetch owner name from API if still not available
                         if (!ownerName || ownerName === ownerId) {
                             try {
                                 ownerName = await fetchOwnerName(ownerId);
                             } catch (e) {
-                                console.warn('Could not fetch owner name for:', ownerId);
+                                console.warn('Could not fetch owner name for:', ownerId, 'Using ID instead');
                                 ownerName = ownerId || 'Property Owner';
                             }
                         }
@@ -1016,7 +1025,7 @@
                             _id: b._id || b.id || b.bookingId,
                             id: b._id || b.id || b.bookingId,
                             bookingId: b._id || b.id || b.bookingId,
-                            owner_name: ownerName || 'Property Owner',
+                            owner_name: ownerName && ownerName !== 'Property Owner' ? ownerName : 'Property Owner',
                             owner_id: ownerId,
                             ownerLoginId: b.ownerLoginId || ownerId,
                             owner_email: b.owner_email || '',
@@ -1033,6 +1042,7 @@
                         console.log('✅ Chat ready:', {
                             owner: chat.owner_name,
                             property: chat.property_name,
+                            propertyId: chat.property_id,
                             status: chat.status
                         });
                         uniqueChats.push(chat);

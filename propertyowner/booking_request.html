@@ -1063,7 +1063,9 @@
                             email: requestEmail,
                             user_id: request.user_id || '',
                             property_id: request.property_id || '',
-                            property_name: request.property_name || ''
+                            property_name: request.property_name || '',
+                            owner_name: request.owner_name || request.ownerName || '',
+                            owner_id: request.owner_id || request.ownerId || ''
                         })
                     });
                     
