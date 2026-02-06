@@ -592,10 +592,6 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-1 sm:gap-2">
-                            <button id="booking-form-btn" class="px-2 sm:px-3 py-1.5 sm:py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors text-xs sm:text-sm font-medium hover:text-slate-900 flex items-center gap-1">
-                                <i data-lucide="file-text" class="w-4 h-4"></i>
-                                <span class="hidden sm:inline">Booking Form</span>
-                            </button>
                             <button class="p-1.5 sm:p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors"><i data-lucide="phone" class="w-4 sm:w-5 h-4 sm:h-5"></i></button>
                             <button class="p-1.5 sm:p-2 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors"><i data-lucide="more-vertical" class="w-4 sm:w-5 h-4 sm:h-5"></i></button>
                         </div>
@@ -1159,36 +1155,6 @@
             const colors = ['bg-indigo-100', 'bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-pink-100'];
             const colorIndex = ownerInitial.charCodeAt(0) % colors.length;
             avatarEl.className = `w-12 h-12 rounded-full ${colors[colorIndex]} flex items-center justify-center font-bold text-slate-700`;
-
-            // Setup booking form button
-            const bookingFormBtn = document.getElementById('booking-form-btn');
-            bookingFormBtn.onclick = function() {
-                console.log('🎯 Booking Form button clicked from chat');
-                const propertyId = chat.property_id || '';
-                const propertyName = chat.property_name || 'Roomhy Property';
-                const ownerName = chat.owner_name || chat.ownerName || 'Property Owner';
-                const userId = currentUser?.loginId || currentUser?.id || '';
-                
-                console.log('📋 Booking form data from chat:', {
-                    propertyId, propertyName, ownerName, userId
-                });
-                
-                const bookingData = {
-                    property_id: propertyId,
-                    property_name: propertyName,
-                    owner_name: ownerName,
-                    user_id: userId
-                };
-                
-                console.log('💾 Setting sessionStorage with:', bookingData);
-                sessionStorage.setItem('bookingRequestData', JSON.stringify(bookingData));
-                console.log('✅ SessionStorage set from chat');
-                
-                // Navigate to booking form
-                const url = '../booking-form.html?userId=' + encodeURIComponent(userId || '');
-                console.log('🔗 Navigating to:', url);
-                window.location.href = url;
-            };
 
             if (window.innerWidth < 768) {
                 document.getElementById('contacts-panel').classList.add('hidden');

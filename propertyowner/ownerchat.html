@@ -503,37 +503,6 @@
                 bookingIdDisplay.style.display = 'block';
             }
             
-            // Setup booking form button
-            const bookingFormBtn = document.getElementById('booking-form-btn');
-            bookingFormBtn.onclick = function() {
-                console.log('🎯 Booking Form button clicked from owner chat');
-                const propertyId = booking.property_id || '';
-                const propertyName = booking.property_name || booking.propertyName || 'Roomhy Property';
-                const tenantName = booking.name || 'Tenant';
-                const currentOwner = JSON.parse(localStorage.getItem('user') || '{}');
-                const ownerId = currentOwner.ownerId || currentOwner.loginId || '';
-                
-                console.log('📋 Booking form data from owner chat:', {
-                    propertyId, propertyName, tenantName, ownerId
-                });
-                
-                const bookingData = {
-                    property_id: propertyId,
-                    property_name: propertyName,
-                    tenant_name: tenantName,
-                    owner_id: ownerId
-                };
-                
-                console.log('💾 Setting sessionStorage with:', bookingData);
-                sessionStorage.setItem('bookingRequestData', JSON.stringify(bookingData));
-                console.log('✅ SessionStorage set from owner chat');
-                
-                // Navigate to booking form
-                const url = '../booking-form.html?ownerId=' + encodeURIComponent(ownerId || '');
-                console.log('🔗 Navigating to:', url);
-                window.location.href = url;
-            };
-            
             // Mobile toggle
             if (window.innerWidth < 768) {
                 document.getElementById('contacts-panel').classList.add('hidden');
@@ -913,6 +882,41 @@
 
         function confirmLike() {
             closeLikePopup();
+            
+            // Generate booking form link when owner likes
+            if (currentChat && currentOwner) {
+                console.log('🎯 Owner liked - generating booking form link');
+                
+                const bookingId = currentChat._id || currentChat.id;
+                const userId = currentChat.signup_user_id || currentChat.user_id;
+                const propertyName = currentChat.property_name || 'Roomhy Property';
+                const ownerId = currentOwner.loginId || currentOwner.ownerId;
+                const ownerName = currentOwner.name || currentOwner.ownerName || 'Owner';
+                
+                // Generate booking form link
+                const repoPath = '/roomhy'; // Repository name
+                const bookingFormLink = `${window.location.origin}${repoPath}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                
+                console.log('📋 Booking form data:', {
+                    bookingId, userId, propertyName, ownerId, ownerName
+                });
+                
+                // Store in sessionStorage for booking-form.html
+                const bookingData = {
+                    property_id: currentChat.property_id || bookingId,
+                    property_name: propertyName,
+                    owner_name: ownerName,
+                    owner_id: ownerId,
+                    user_id: userId
+                };
+                
+                console.log('💾 Booking data for link:', bookingData);
+                
+                // Send booking form link in chat message
+                const bookingLinkMessage = `📋 Here's your booking form: ${bookingFormLink}`;
+                console.log('🔗 Booking link message:', bookingLinkMessage);
+            }
+            
             sendMessage('like');
         }
 
