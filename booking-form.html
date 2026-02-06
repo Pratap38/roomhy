@@ -428,16 +428,26 @@
         // Fetch Razorpay key from backend
         async function fetchRazorpayKey() {
             try {
+                console.log('🔄 Fetching Razorpay key from:', `${API_URL}/api/booking/config/razorpay-key`);
                 const response = await fetch(`${API_URL}/api/booking/config/razorpay-key`);
                 if (response.ok) {
                     const result = await response.json();
+                    console.log('📦 API Response:', result);
                     if (result.razorpayKey) {
                         bookingData.razorpayKey = result.razorpayKey;
                         console.log('✅ Razorpay key loaded successfully');
+                        console.log('🔑 Using key:', bookingData.razorpayKey);
+                    } else {
+                        console.warn('⚠️ API response missing razorpayKey field');
                     }
+                } else {
+                    console.warn('⚠️ API returned status:', response.status, response.statusText);
+                    const text = await response.text();
+                    console.warn('⚠️ API response body:', text);
                 }
             } catch (error) {
-                console.warn('⚠️ Failed to fetch Razorpay key, using test key:', error);
+                console.warn('⚠️ Failed to fetch Razorpay key:', error);
+                console.warn('⚠️ Using test key:', bookingData.razorpayKey);
             }
         }
 
@@ -670,6 +680,9 @@
             });
 
             // Initialize Razorpay payment
+            console.log('💳 Opening Razorpay with key:', bookingData.razorpayKey);
+            console.log('💰 Amount:', bookingData.totalAmount);
+            
             const options = {
                 key: bookingData.razorpayKey,
                 amount: bookingData.totalAmount * 100,
@@ -695,8 +708,13 @@
                 }
             };
 
-            const razorpay = new Razorpay(options);
-            razorpay.open();
+            try {
+                const razorpay = new Razorpay(options);
+                razorpay.open();
+            } catch (error) {
+                console.error('❌ Razorpay error:', error);
+                alert('Payment initialization failed: ' + error.message);
+            }
         });
 
         // Submit booking form
