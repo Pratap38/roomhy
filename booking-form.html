@@ -815,13 +815,38 @@
 
             try {
                 const formData = new FormData();
-                Object.keys(bookingData).forEach(key => {
-                    if (key !== 'addressProof') {
-                        formData.append(key, bookingData[key]);
-                    }
+                
+                // Convert camelCase to snake_case for backend API
+                const apiPayload = {
+                    property_id: bookingData.propertyId,
+                    property_name: bookingData.propertyName,
+                    owner_name: bookingData.ownerName,
+                    tenant_name: bookingData.tenantName || bookingData.fullName,
+                    tenant_email: bookingData.tenantEmail || bookingData.email,
+                    user_id: bookingData.userId,
+                    full_name: bookingData.fullName,
+                    phone: bookingData.phone,
+                    email: bookingData.email,
+                    guardian_name: bookingData.guardianName,
+                    guardian_phone: bookingData.guardianPhone,
+                    street_address: bookingData.streetAddress,
+                    city: bookingData.city,
+                    state: bookingData.state,
+                    postal_code: bookingData.postalCode,
+                    country: bookingData.country,
+                    razorpay_payment_id: bookingData.razorpayPaymentId,
+                    razorpay_order_id: bookingData.razorpayOrderId,
+                    razorpay_signature: bookingData.razorpaySignature
+                };
+                
+                // Add all fields to FormData
+                Object.keys(apiPayload).forEach(key => {
+                    formData.append(key, apiPayload[key]);
                 });
+                
+                // Add file if exists
                 if (bookingData.addressProof) {
-                    formData.append('addressProof', bookingData.addressProof);
+                    formData.append('address_proof', bookingData.addressProof);
                 }
 
                 console.log('📤 Submitting booking to:', `${API_URL}/api/bookings/create`);
