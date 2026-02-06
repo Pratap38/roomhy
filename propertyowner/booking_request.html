@@ -612,7 +612,7 @@
                         ${req.status === 'pending' ? `
                             <button onclick="acceptRequest('${req._id || req.id}', '${req.name}', '${req.email}')" class="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200">Accept</button>
                             <button onclick="rejectRequest('${req._id || req.id}')" class="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-medium hover:bg-red-200">Reject</button>
-                            <button onclick="goToBookingForm('${req._id || req.id}', '${req.property_id || ''}', '${req.property_name || ''}', '${req.owner_name || req.ownerName || ''}', '${req.rent_amount || 0}', '${req.signup_user_id || req.user_id || ''}')" class="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200">Booking Form</button>
+                            <button class="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200 booking-form-btn" data-req-id="${req._id || req.id}" data-property-id="${req.property_id || ''}" data-property-name="${req.property_name || ''}" data-owner-name="${req.owner_name || req.ownerName || ''}" data-rent-amount="${req.rent_amount || 0}" data-user-id="${req.signup_user_id || req.user_id || ''}">Booking Form</button>
                         ` : req.status === 'accepted' ? `
                             <button onclick="openChat('${req._id || req.id}', '${req.user_id || ''}')" class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200 flex items-center gap-1"><i data-lucide="message-circle" class="w-3 h-3"></i>Chat</button>
                         ` : `<span class="text-xs text-gray-400">${(req.status || 'pending').toUpperCase()}</span>`}
@@ -621,6 +621,24 @@
             `).join('');
 
             lucide.createIcons();
+            
+            // Add event listeners to booking form buttons
+            document.querySelectorAll('.booking-form-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const reqId = this.dataset.reqId;
+                    const propertyId = this.dataset.propertyId;
+                    const propertyName = this.dataset.propertyName;
+                    const ownerName = this.dataset.ownerName;
+                    const rentAmount = this.dataset.rentAmount;
+                    const userId = this.dataset.userId;
+                    
+                    console.log('🎫 Booking Form clicked:', {
+                        reqId, propertyId, propertyName, ownerName, rentAmount, userId
+                    });
+                    
+                    goToBookingForm(reqId, propertyId, propertyName, ownerName, rentAmount, userId);
+                });
+            });
         }
 
         // Get status badge CSS class
@@ -904,6 +922,10 @@
 
         // Navigate to booking form with request data
         function goToBookingForm(requestId, propertyId, propertyName, ownerName, rentAmount, userId) {
+            console.log('🚀 goToBookingForm called with:', {
+                requestId, propertyId, propertyName, ownerName, rentAmount, userId
+            });
+            
             const bookingData = {
                 property_id: propertyId || '',
                 property_name: propertyName || '',
@@ -912,11 +934,16 @@
                 user_id: userId || ''
             };
             
+            console.log('💾 Setting sessionStorage with:', bookingData);
+            
             // Store in sessionStorage for access in booking-form.html
             sessionStorage.setItem('bookingRequestData', JSON.stringify(bookingData));
+            console.log('✅ SessionStorage set successfully');
             
             // Navigate to booking form
-            window.location.href = '../booking-form.html?userId=' + encodeURIComponent(userId || '');
+            const url = '../booking-form.html?userId=' + encodeURIComponent(userId || '');
+            console.log('🔗 Navigating to:', url);
+            window.location.href = url;
         }
 
         // Send bid acceptance email
