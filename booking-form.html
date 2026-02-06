@@ -1,601 +1,398 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Complete Your Booking - Roomhy</title>
-    <link rel="stylesheet" href="css/tailwind.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        
-        * {
+        body {
             font-family: 'Inter', sans-serif;
         }
-        
-        body {
-            background-color: #f8fafc;
-            min-height: 100vh;
-        }
-        
-        .main-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-            border: 1px solid #e2e8f0;
-        }
-        
-        .section-card {
-            background: #fafbfc;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .form-label {
-            font-weight: 600;
-            color: #334155;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 14px;
-            background: white;
-            transition: all 0.2s ease;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-        
-        .form-input::placeholder {
-            color: #9ca3af;
-        }
-        
-        .form-input:disabled {
-            background-color: #f9fafb;
-            cursor: not-allowed;
-        }
-        
-        .upload-area {
-            border: 2px dashed #d1d5db;
-            border-radius: 12px;
-            padding: 32px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background: #fafbfc;
-        }
-        
-        .upload-area:hover {
-            border-color: #4f46e5;
-            background: #f5f3ff;
-        }
-        
-        .upload-area.active {
-            border-color: #10b981;
-            background: #ecfdf5;
-        }
-        
         .btn-primary {
-            background: #4f46e5;
+            background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
             color: white;
-            padding: 14px 28px;
-            border-radius: 10px;
             font-weight: 600;
-            font-size: 15px;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.4);
+        }
+        .btn-primary:disabled {
+            background: linear-gradient(135deg, #9ca3af 0%, #9ca3af 100%);
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.875rem;
             cursor: pointer;
             transition: all 0.2s ease;
             border: none;
         }
-        
-        .btn-primary:hover {
-            background: #4338ca;
+        .btn-secondary:hover {
+            background: #e5e7eb;
         }
-        
-        .btn-primary:disabled {
-            background: #9ca3af;
+        .form-input {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .form-input::placeholder {
+            color: #d1d5db;
+        }
+        .form-input:disabled {
+            background-color: #f3f4f6;
             cursor: not-allowed;
         }
-        
-        .btn-secondary {
-            background: white;
-            color: #4f46e5;
-            padding: 14px 28px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 15px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 2px solid #4f46e5;
-        }
-        
-        .btn-secondary:hover {
-            background: #f5f3ff;
-        }
-        
-        .info-card {
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-            border-radius: 12px;
-            padding: 20px;
-        }
-        
-        .progress-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 14px;
-            background: #f1f5f9;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-        
-        .progress-item.active {
-            background: #eef2ff;
-            border: 1px solid #c7d2fe;
-        }
-        
-        .step-circle {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            color: #64748b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 13px;
-            transition: all 0.2s ease;
-        }
-        
-        .progress-item.active .step-circle {
-            background: #4f46e5;
-            color: white;
-        }
-        
-        .step-circle.completed {
-            background: #10b981;
-            color: white;
-        }
-        
-        .header-badge {
-            background: #f1f5f9;
-            color: #475569;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-        
-        .section-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 20px;
-        }
-        
-        .input-with-icon {
-            position: relative;
-        }
-        
-        .input-with-icon .icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-        }
-        
-        .input-with-icon .form-input {
-            padding-left: 40px;
-        }
-        
-        .divider {
-            height: 1px;
-            background: #e2e8f0;
-            margin: 20px 0;
-        }
-        
-        .success-screen {
-            display: none;
-        }
-        
         .success-icon {
             width: 72px;
             height: 72px;
             border-radius: 50%;
-            background: #ecfdf5;
+            background: #dcfce7;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 20px;
         }
-        
         .success-icon svg {
-            color: #10b981;
+            color: #16a34a;
         }
-        
-        .checkbox-wrapper {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 14px;
-            background: #f8fafc;
-            border-radius: 10px;
-        }
-        
-        .checkbox-wrapper input {
-            margin-top: 2px;
-            width: 18px;
-            height: 18px;
-            accent-color: #4f46e5;
-        }
-        
-        .checkbox-wrapper label {
-            font-size: 14px;
-            color: #64748b;
-            line-height: 1.5;
-        }
-        
-        .checkbox-wrapper a {
-            color: #4f46e5;
-            text-decoration: none;
-        }
-        
-        .checkbox-wrapper a:hover {
-            text-decoration: underline;
-        }
-        
-        .highlight-text {
-            color: #4f46e5;
-        }
-        
-        .text-success {
-            color: #10b981;
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.4s ease forwards;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .modal-overlay {
-            background: rgba(15, 23, 42, 0.6);
-            -webkit-backdrop-filter: blur(4px);
-            backdrop-filter: blur(4px);
+        .success-screen {
+            display: none;
         }
     </style>
 </head>
-<body class="bg-slate-50">
-    <div class="min-h-screen py-6 px-4">
-        <div class="max-w-3xl mx-auto">
-            <!-- Header -->
-            <div class="main-card p-5 mb-5">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <div class="bg-indigo-600 p-2.5 rounded-lg">
-                            <i data-lucide="home" class="w-6 h-6 text-white"></i>
-                        </div>
-                        <div>
-                            <h1 class="text-xl font-bold text-slate-900">RoomHy</h1>
-                            <p class="text-sm text-slate-500">Complete Your Booking</p>
-                        </div>
-                    </div>
-                    <div class="header-badge" id="propertyBadge">Booking</div>
-                </div>
-            </div>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <a href="website/index.html" class="font-bold text-xl text-blue-600 flex items-center gap-2">
+                <i data-lucide="home" class="w-6 h-6"></i> Roomhy Booking
+            </a>
+            <a href="website/index.html" class="text-gray-600 hover:text-blue-600 inline-flex items-center text-sm">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> Back to Home
+            </a>
+        </div>
+    </header>
 
-            <!-- Progress Steps -->
-            <div class="grid grid-cols-3 gap-3 mb-5">
-                <div class="progress-item active" id="step1">
-                    <span class="step-circle">1</span>
-                    <span class="text-sm font-medium text-slate-700">Property</span>
-                </div>
-                <div class="progress-item" id="step2">
-                    <span class="step-circle">2</span>
-                    <span class="text-sm font-medium text-slate-700">Personal</span>
-                </div>
-                <div class="progress-item" id="step3">
-                    <span class="step-circle">3</span>
-                    <span class="text-sm font-medium text-slate-700">Payment</span>
-                </div>
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        <!-- Progress Indicator -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-3xl font-bold text-gray-900">Complete Your Booking</h1>
+                <span class="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Step 1 of 1</span>
             </div>
+            <p class="text-gray-600">Fill in your details and complete the booking process securely</p>
+        </div>
 
-            <!-- Main Form -->
-            <div id="form-container" class="main-card p-6 fade-in">
-                <!-- Property and Owner Information -->
-                <div class="section-card">
-                    <h3 class="section-title flex items-center gap-2">
-                        <i data-lucide="building-2" class="w-5 h-5 highlight-text"></i>
-                        Property Details
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="form-label">Property Name</label>
-                            <input type="text" id="propertyNameDisplay" class="form-input" placeholder="Property name" readonly>
-                        </div>
-                        <div>
-                            <label class="form-label">Property ID</label>
-                            <input type="text" id="propertyIdDisplay" class="form-input" placeholder="Property ID" readonly>
-                        </div>
+        <!-- Main Form -->
+        <div id="form-container" class="bg-white rounded-lg shadow-md p-8 mb-8">
+            <form id="bookingForm">
+                <!-- Property Information Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Property Name *</label>
+                        <input type="text" id="propertyNameDisplay" class="form-input" placeholder="Property name" readonly>
                     </div>
-                    <div class="mt-4">
-                        <label class="form-label">Owner Name</label>
-                        <input type="text" id="ownerNameDisplay" class="form-input" placeholder="Property owner name" readonly>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Property ID *</label>
+                        <input type="text" id="propertyIdDisplay" class="form-input" placeholder="Property ID" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Owner Name *</label>
+                        <input type="text" id="ownerNameDisplay" class="form-input" placeholder="Owner name" readonly>
                     </div>
                 </div>
 
                 <!-- Info Banner -->
-                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5">
+                <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div class="flex gap-3">
                         <i data-lucide="shield-check" class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"></i>
-                        <div class="text-sm text-blue-800">
-                            <strong class="font-semibold">Risk-Free Booking!</strong>
-                            <p class="mt-0.5 text-blue-700">If you don't like the property after booking, we'll show you alternative properties or process a full refund.</p>
+                        <div class="text-sm">
+                            <strong class="text-blue-900">Risk-Free Booking!</strong>
+                            <p class="text-blue-800 mt-0.5">If you don't like the property after booking, we'll show you alternatives or process a full refund.</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Personal Information -->
-                <div class="section-card">
-                    <h3 class="section-title flex items-center gap-2">
-                        <i data-lucide="user" class="w-5 h-5 highlight-text"></i>
-                        Personal Information
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="border-t border-gray-200 pt-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
-                            <label class="form-label">User ID (Auto-filled) *</label>
-                            <input type="text" id="userId" class="form-input" placeholder="User ID" readonly>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Full Name *</label>
+                            <input type="text" id="fullName" class="form-input" placeholder="Enter your full name" required>
                         </div>
                         <div>
-                            <label class="form-label">Full Name *</label>
-                            <div class="input-with-icon">
-                                <i data-lucide="user" class="w-4 h-4 icon"></i>
-                                <input type="text" id="fullName" class="form-input" placeholder="Enter your full name" required>
-                            </div>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Email Address *</label>
+                            <input type="email" id="email" class="form-input" placeholder="your.email@gmail.com" required>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Phone Number *</label>
+                            <input type="tel" id="phone" class="form-input" placeholder="10-digit phone number" pattern="[0-9]{10}" required>
                         </div>
                         <div>
-                            <label class="form-label">Phone Number *</label>
-                            <div class="input-with-icon">
-                                <i data-lucide="phone" class="w-4 h-4 icon"></i>
-                                <input type="tel" id="phone" class="form-input" placeholder="Enter your phone number" pattern="[0-9]{10}" required>
-                            </div>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">User ID *</label>
+                            <input type="text" id="userId" class="form-input" placeholder="Your user ID" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guardian Information -->
+                <div class="border-t border-gray-200 pt-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Guardian/Parent Details</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Guardian Name *</label>
+                            <input type="text" id="guardianName" class="form-input" placeholder="Parent/Guardian name" required>
                         </div>
                         <div>
-                            <label class="form-label">Email Address *</label>
-                            <div class="input-with-icon">
-                                <i data-lucide="mail" class="w-4 h-4 icon"></i>
-                                <input type="email" id="email" class="form-input" placeholder="Enter your email address" required>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="form-label">Guardian Name *</label>
-                            <div class="input-with-icon">
-                                <i data-lucide="users" class="w-4 h-4 icon"></i>
-                                <input type="text" id="guardianName" class="form-input" placeholder="Parent/Guardian name" required>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="form-label">Guardian Phone *</label>
-                            <div class="input-with-icon">
-                                <i data-lucide="phone-call" class="w-4 h-4 icon"></i>
-                                <input type="tel" id="guardianPhone" class="form-input" placeholder="Guardian phone number" pattern="[0-9]{10}" required>
-                            </div>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Guardian Phone *</label>
+                            <input type="tel" id="guardianPhone" class="form-input" placeholder="10-digit phone number" pattern="[0-9]{10}" required>
                         </div>
                     </div>
                 </div>
 
                 <!-- Address Information -->
-                <div class="section-card">
-                    <h3 class="section-title flex items-center gap-2">
-                        <i data-lucide="map-pin" class="w-5 h-5 highlight-text"></i>
-                        Address Details
-                    </h3>
-                    <div class="space-y-4">
+                <div class="border-t border-gray-200 pt-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Address Information</h3>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Street Address *</label>
+                        <input type="text" id="streetAddress" class="form-input" placeholder="Enter your street address" required>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div>
-                            <label class="form-label">Street Address *</label>
-                            <div class="input-with-icon">
-                                <i data-lucide="map-pin" class="w-4 h-4 icon"></i>
-                                <input type="text" id="streetAddress" class="form-input" placeholder="Enter street address" required>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div>
-                                <label class="form-label">City *</label>
-                                <input type="text" id="city" class="form-input" placeholder="City" required>
-                            </div>
-                            <div>
-                                <label class="form-label">State *</label>
-                                <input type="text" id="state" class="form-input" placeholder="State" required>
-                            </div>
-                            <div>
-                                <label class="form-label">Postal Code *</label>
-                                <input type="text" id="postalCode" class="form-input" placeholder="Postal code" required>
-                            </div>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">City *</label>
+                            <input type="text" id="city" class="form-input" placeholder="City" required>
                         </div>
                         <div>
-                            <label class="form-label">Country *</label>
-                            <input type="text" id="country" class="form-input" placeholder="Country" value="India" required>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">State *</label>
+                            <input type="text" id="state" class="form-input" placeholder="State" required>
                         </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Postal Code *</label>
+                            <input type="text" id="postalCode" class="form-input" placeholder="Postal code" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Country *</label>
+                        <input type="text" id="country" class="form-input" placeholder="Country" value="India" required>
                     </div>
                 </div>
 
                 <!-- Document Upload -->
-                <div class="section-card">
-                    <h3 class="section-title flex items-center gap-2">
-                        <i data-lucide="file-text" class="w-5 h-5 highlight-text"></i>
-                        Document Verification
-                    </h3>
-                    <div>
-                        <label class="form-label">Upload Address Proof (Aadhar/Utility Bill) *</label>
-                        <div class="upload-area" id="addressProofUpload">
-                            <i data-lucide="cloud-upload" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
-                            <p class="text-slate-600 font-medium text-sm">Click to upload or drag and drop</p>
-                            <p class="text-slate-400 text-xs mt-1">PDF, JPG, PNG (Max 5MB)</p>
-                        </div>
-                        <input type="file" id="addressProof" accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
-                        <div id="addressProofName" class="text-sm text-success mt-3 flex items-center gap-2" style="display: none;">
-                            <i data-lucide="check-circle" class="w-4 h-4"></i>
-                            <span></span>
-                        </div>
+                <div class="border-t border-gray-200 pt-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Document Verification</h3>
+                    
+                    <label class="block text-sm font-semibold text-gray-800 mb-2">Upload Address Proof (Aadhar/Utility Bill) *</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all" id="addressProofUpload">
+                        <i data-lucide="cloud-upload" class="w-10 h-10 text-gray-400 mx-auto mb-2"></i>
+                        <p class="font-medium text-gray-700">Click to upload or drag and drop</p>
+                        <p class="text-xs text-gray-500 mt-1">PDF, JPG, PNG (Max 5MB)</p>
+                    </div>
+                    <input type="file" id="addressProof" accept=".pdf,.jpg,.jpeg,.png" style="display: none;">
+                    <div id="addressProofName" class="text-sm text-green-600 mt-3 flex items-center gap-2" style="display: none;">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                        <span></span>
                     </div>
                 </div>
 
-                <!-- Payment Section -->
-                <div class="section-card">
-                    <h3 class="section-title flex items-center gap-2">
-                        <i data-lucide="credit-card" class="w-5 h-5 highlight-text"></i>
-                        Payment
-                    </h3>
-                    <div class="info-card mb-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-slate-300">Monthly Rent</span>
-                            <span id="rentAmount" class="font-semibold">₹0</span>
+                <!-- Payment Summary -->
+                <div class="border-t border-gray-200 pt-6 mb-6 bg-gray-50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Payment Summary</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-gray-600">
+                            <span>Monthly Rent</span>
+                            <span class="font-semibold" id="rentAmount">₹0</span>
                         </div>
-                        <div class="flex justify-between items-center pt-3 border-t border-slate-600">
-                            <span class="font-semibold text-white">Total Amount to Pay</span>
-                            <span id="totalAmount" class="font-bold text-xl text-white">₹0</span>
+                        <div class="border-t border-gray-200 pt-3 flex justify-between text-gray-900">
+                            <span class="font-semibold">Total Amount to Pay</span>
+                            <span class="font-bold text-lg" id="totalAmount">₹0</span>
                         </div>
                     </div>
-                    <button id="paymentBtn" class="btn-primary w-full flex items-center justify-center gap-2">
-                        <i data-lucide="credit-card" class="w-4 h-4"></i>
-                        Proceed to Payment with Razorpay
-                    </button>
                 </div>
 
                 <!-- Terms & Conditions -->
-                <div class="checkbox-wrapper mb-5">
-                    <input type="checkbox" id="termsCheckbox">
-                    <label for="termsCheckbox">
-                        I agree to the <a href="#" class="font-medium">terms and conditions</a> and confirm that I have read the <a href="#" class="font-medium">refund policy</a>
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" id="termsCheckbox" class="mt-1" required>
+                        <span class="text-sm text-gray-700">I agree to the <a href="#" class="text-blue-600 hover:underline">terms and conditions</a> and confirm that I have read the <a href="#" class="text-blue-600 hover:underline">refund policy</a></span>
                     </label>
                 </div>
 
-                <button id="submitBtn" class="btn-primary w-full flex items-center justify-center gap-2" disabled onclick="submitBookingForm()">
-                    <i data-lucide="check-circle" class="w-4 h-4"></i>
-                    Complete Booking
-                </button>
-            </div>
+                <!-- Payment and Submit Buttons -->
+                <div class="border-t border-gray-200 pt-6 flex gap-3">
+                    <button type="reset" class="flex-1 btn-secondary py-3 rounded-lg">
+                        Clear Form
+                    </button>
+                    <button id="paymentBtn" type="button" class="flex-1 btn-primary py-3 rounded-lg flex items-center justify-center gap-2" disabled>
+                        <i data-lucide="credit-card" class="w-5 h-5"></i>
+                        Proceed to Payment
+                    </button>
+                    <button id="submitBtn" type="button" class="flex-1 btn-primary py-3 rounded-lg flex items-center justify-center gap-2" disabled style="display: none;">
+                        <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        Complete Booking
+                    </button>
+                </div>
+            </form>
+        </div>
 
-            <!-- Success Screen -->
-            <div id="success-container" class="success-screen">
-                <div class="main-card p-8 text-center">
-                    <div class="success-icon">
-                        <i data-lucide="check" class="w-8 h-8"></i>
-                    </div>
-                    <h3 class="text-2xl font-bold text-slate-900 mb-2">Booking Confirmed!</h3>
-                    <p class="text-slate-500 mb-6">Your login credentials have been generated and sent to your email.</p>
-                    
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6 text-left">
-                        <h4 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                            <i data-lucide="key" class="w-5 h-5 highlight-text"></i>
-                            Your Login Credentials
-                        </h4>
-                        <div class="space-y-3 text-sm">
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-600">User ID:</span>
-                                <span id="credentialUserId" class="font-mono font-semibold text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-slate-200">-</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-600">Password:</span>
-                                <span id="credentialPassword" class="font-mono font-semibold text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-slate-200">-</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-600">Login URL:</span>
-                                <a href="website/login.html" class="highlight-text hover:underline font-medium">Login Page →</a>
-                            </div>
+        <!-- Success Screen -->
+        <div id="success-container" class="success-screen">
+            <div class="bg-white rounded-lg shadow-md p-8 text-center">
+                <div class="success-icon">
+                    <i data-lucide="check" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
+                <p class="text-gray-600 mb-6">Your login credentials have been sent to your email</p>
+
+                <div class="bg-gray-50 rounded-lg p-6 mb-6 text-left border border-gray-200">
+                    <h4 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="key" class="w-5 h-5 text-blue-600"></i>
+                        Your Login Credentials
+                    </h4>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">User ID:</span>
+                            <span id="credentialUserId" class="font-mono font-semibold text-gray-900 bg-white px-3 py-2 rounded border border-gray-200">-</span>
                         </div>
-                    </div>
-
-                    <div class="space-y-3">
-                        <button onclick="window.location.href='website/index.html'" class="btn-primary w-full flex items-center justify-center gap-2">
-                            <i data-lucide="home" class="w-4 h-4"></i>
-                            Go to Home
-                        </button>
-                        <div id="refundSection" class="mt-5 pt-5 border-t border-slate-200">
-                            <p class="text-slate-500 mb-3 text-sm">Having second thoughts?</p>
-                            <button id="refundBtn" class="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-xl hover:bg-red-50 font-medium transition-all text-sm">
-                                <i data-lucide="rotate-ccw" class="w-4 h-4 inline mr-2"></i>
-                                Request Refund / Alternative Property
-                            </button>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Password:</span>
+                            <span id="credentialPassword" class="font-mono font-semibold text-gray-900 bg-white px-3 py-2 rounded border border-gray-200">-</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Login URL:</span>
+                            <a href="website/login.html" class="text-blue-600 hover:underline font-medium">Login Page →</a>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Refund Modal -->
-            <div id="refundModal" style="display: none;" class="fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-                <div class="main-card rounded-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-xl font-bold text-slate-900">Request Refund / Alternative Property</h3>
-                        <button onclick="closeRefundModal()" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                            <i data-lucide="x" class="w-5 h-5 text-slate-500"></i>
-                        </button>
+                <button onclick="window.location.href='website/index.html'" class="w-full btn-primary py-3 rounded-lg flex items-center justify-center gap-2 mb-3">
+                    <i data-lucide="home" class="w-5 h-5"></i>
+                    Go to Home
+                </button>
+                
+                <div class="mt-5 pt-5 border-t border-gray-200">
+                    <p class="text-gray-600 mb-3 text-sm">Having second thoughts?</p>
+                    <button id="refundBtn" class="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-all text-sm">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4 inline mr-2"></i>
+                        Request Refund / Alternative Property
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div class="flex gap-3">
+                    <i data-lucide="info" class="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5"></i>
+                    <div>
+                        <h4 class="font-semibold text-blue-900 mb-1">Secure & Safe</h4>
+                        <p class="text-sm text-blue-800">Your information is encrypted and secure. We follow all data protection guidelines.</p>
                     </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="form-label">Reason for Refund/Change *</label>
-                            <select id="refundReason" class="form-input" required>
-                                <option value="">Select a reason</option>
-                                <option value="did_not_like_property">Didn't like the property</option>
-                                <option value="found_better">Found a better property elsewhere</option>
-                                <option value="personal_emergency">Personal emergency</option>
-                                <option value="change_plans">Changed my plans</option>
-                                <option value="financial_issues">Financial issues</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">Additional Details *</label>
-                            <textarea id="refundDetails" class="form-input" rows="4" placeholder="Please provide more details about your request..." required></textarea>
-                        </div>
-                        
-                        <div>
-                            <label class="form-label">Would you like to see alternative properties?</label>
-                            <div class="flex gap-4 mt-2">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="showAlternatives" value="yes" class="accent-indigo-600" checked>
-                                    <span class="text-sm text-slate-700">Yes, show me alternatives</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="showAlternatives" value="no" class="accent-indigo-600">
-                                    <span class="text-sm text-slate-700">No, just process refund</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="flex gap-3 pt-4">
-                            <button onclick="closeRefundModal()" class="btn-secondary flex-1">Cancel</button>
-                            <button onclick="submitRefundRequest()" class="btn-primary flex-1">Submit Request</button>
-                        </div>
+                </div>
+            </div>
+            <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div class="flex gap-3">
+                    <i data-lucide="shield" class="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5"></i>
+                    <div>
+                        <h4 class="font-semibold text-green-900 mb-1">Hassle-Free Process</h4>
+                        <p class="text-sm text-green-800">Complete your booking in minutes. Instant confirmation sent to your email.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Refund Modal -->
+    <div id="refundModal" style="display: none;" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg max-w-2xl w-full p-8 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Request Refund / Alternative Property</h3>
+                <button onclick="closeRefundModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-800 mb-2">Reason for Refund/Change *</label>
+                    <select id="refundReason" class="form-input" required>
+                        <option value="">Select a reason</option>
+                        <option value="did_not_like_property">Didn't like the property</option>
+                        <option value="found_better">Found a better property elsewhere</option>
+                        <option value="personal_emergency">Personal emergency</option>
+                        <option value="change_plans">Changed my plans</option>
+                        <option value="financial_issues">Financial issues</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-800 mb-2">Additional Details *</label>
+                    <textarea id="refundDetails" class="form-input h-32" placeholder="Please provide more details about your request..." required></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-800 mb-2">Would you like to see alternative properties?</label>
+                    <div class="flex gap-6 mt-3">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="showAlternatives" value="yes" class="accent-blue-600" checked>
+                            <span class="text-sm text-gray-700">Yes, show me alternatives</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="showAlternatives" value="no" class="accent-blue-600">
+                            <span class="text-sm text-gray-700">No, just process refund</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 pt-6 border-t border-gray-200">
+                    <button onclick="closeRefundModal()" class="flex-1 btn-secondary py-3 rounded-lg">Cancel</button>
+                    <button onclick="submitRefundRequest()" class="flex-1 btn-primary py-3 rounded-lg">Submit Request</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-12 mt-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+            <p class="text-sm">© 2025 Roomhy. Your trusted student accommodation platform.</p>
+        </div>
+    </footer>
+
     <script>
-        // Initialize Lucide icons
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
+        lucide.createIcons();
 
         // Booking form state
         let bookingData = {
@@ -619,45 +416,48 @@
             razorpayPaymentId: null
         };
 
-        // Load URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        bookingData.propertyId = urlParams.get('propertyId');
-        bookingData.propertyName = urlParams.get('propertyName');
-        bookingData.ownerName = urlParams.get('ownerName');
-        bookingData.rentAmount = parseFloat(urlParams.get('rentAmount')) || 0;
-        bookingData.totalAmount = parseFloat(urlParams.get('totalAmount')) || 0;
-        bookingData.userId = urlParams.get('userId');
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // Load URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            bookingData.propertyId = urlParams.get('propertyId');
+            bookingData.propertyName = urlParams.get('propertyName');
+            bookingData.ownerName = urlParams.get('ownerName');
+            bookingData.rentAmount = parseFloat(urlParams.get('rentAmount')) || 0;
+            bookingData.totalAmount = parseFloat(urlParams.get('totalAmount')) || 0;
+            bookingData.userId = urlParams.get('userId');
 
-        // Populate form fields
-        document.getElementById('propertyNameDisplay').value = bookingData.propertyName || '';
-        document.getElementById('propertyIdDisplay').value = bookingData.propertyId || '';
-        document.getElementById('ownerNameDisplay').value = bookingData.ownerName || '';
-        document.getElementById('userId').value = bookingData.userId || '';
-        document.getElementById('rentAmount').textContent = '₹' + (bookingData.rentAmount > 0 ? bookingData.rentAmount.toLocaleString('en-IN') : '0');
-        document.getElementById('totalAmount').textContent = '₹' + (bookingData.totalAmount > 0 ? bookingData.totalAmount.toLocaleString('en-IN') : '0');
+            // Populate form fields
+            if (bookingData.propertyName) document.getElementById('propertyNameDisplay').value = bookingData.propertyName;
+            if (bookingData.propertyId) document.getElementById('propertyIdDisplay').value = bookingData.propertyId;
+            if (bookingData.ownerName) document.getElementById('ownerNameDisplay').value = bookingData.ownerName;
+            if (bookingData.userId) document.getElementById('userId').value = bookingData.userId;
+            
+            document.getElementById('rentAmount').textContent = '₹' + (bookingData.rentAmount > 0 ? bookingData.rentAmount.toLocaleString('en-IN') : '0');
+            document.getElementById('totalAmount').textContent = '₹' + (bookingData.totalAmount > 0 ? bookingData.totalAmount.toLocaleString('en-IN') : '0');
 
-        // Check URL params for pre-filled data
-        if (urlParams.get('prefillName')) {
-            document.getElementById('fullName').value = urlParams.get('prefillName');
-        }
-        if (urlParams.get('prefillPhone')) {
-            document.getElementById('phone').value = urlParams.get('prefillPhone');
-        }
-        if (urlParams.get('prefillEmail')) {
-            document.getElementById('email').value = urlParams.get('prefillEmail');
-        }
+            // Prefill from URL if available
+            if (urlParams.get('prefillName')) document.getElementById('fullName').value = urlParams.get('prefillName');
+            if (urlParams.get('prefillPhone')) document.getElementById('phone').value = urlParams.get('prefillPhone');
+            if (urlParams.get('prefillEmail')) document.getElementById('email').value = urlParams.get('prefillEmail');
+        });
 
-        // Terms checkbox listener
+        // Terms checkbox listener - enable payment button only when checked
         document.getElementById('termsCheckbox').addEventListener('change', function() {
-            document.getElementById('submitBtn').disabled = !this.checked;
+            document.getElementById('paymentBtn').disabled = !this.checked;
         });
 
         // Form field listeners
         const formFields = ['fullName', 'phone', 'email', 'guardianName', 'guardianPhone', 'streetAddress', 'city', 'state', 'postalCode', 'country'];
         formFields.forEach(field => {
-            document.getElementById(field).addEventListener('input', function() {
-                bookingData[field] = this.value;
-            });
+            const el = document.getElementById(field);
+            if (el) {
+                el.addEventListener('input', function() {
+                    bookingData[field] = this.value;
+                });
+            }
         });
 
         // File upload handling
@@ -667,27 +467,23 @@
 
         document.getElementById('addressProofUpload').addEventListener('dragover', (e) => {
             e.preventDefault();
-            e.currentTarget.classList.add('active');
+            e.currentTarget.classList.add('bg-blue-50');
         });
 
-        document.getElementById('addressProofUpload').addEventListener('dragleave', () => {
-            e.currentTarget.classList.remove('active');
+        document.getElementById('addressProofUpload').addEventListener('dragleave', (e) => {
+            e.currentTarget.classList.remove('bg-blue-50');
         });
 
         document.getElementById('addressProofUpload').addEventListener('drop', (e) => {
             e.preventDefault();
-            e.currentTarget.classList.remove('active');
+            e.currentTarget.classList.remove('bg-blue-50');
             const file = e.dataTransfer.files[0];
-            if (file) {
-                handleFileUpload(file);
-            }
+            if (file) handleFileUpload(file);
         });
 
         document.getElementById('addressProof').addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file) {
-                handleFileUpload(file);
-            }
+            if (file) handleFileUpload(file);
         });
 
         function handleFileUpload(file) {
@@ -706,7 +502,6 @@
             const nameDisplay = document.getElementById('addressProofName');
             nameDisplay.querySelector('span').textContent = file.name;
             nameDisplay.style.display = 'flex';
-            document.getElementById('addressProofUpload').classList.add('active');
         }
 
         // Payment button
@@ -738,9 +533,12 @@
                 description: 'Booking Payment for ' + bookingData.propertyName,
                 handler: function(response) {
                     bookingData.razorpayPaymentId = response.razorpay_payment_id;
+                    
+                    // Show payment success and submit button
+                    document.getElementById('paymentBtn').style.display = 'none';
+                    document.getElementById('submitBtn').style.display = 'flex';
                     document.getElementById('submitBtn').disabled = false;
-                    alert('Payment successful! Please complete your booking.');
-                    updateProgress(3);
+                    alert('Payment successful! Please click "Complete Booking" to finish.');
                 },
                 prefill: {
                     name: bookingData.fullName,
@@ -748,7 +546,7 @@
                     contact: bookingData.phone
                 },
                 theme: {
-                    color: '#4f46e5'
+                    color: '#3b82f6'
                 }
             };
 
@@ -757,7 +555,7 @@
         });
 
         // Submit booking form
-        async function submitBookingForm() {
+        document.getElementById('submitBtn').addEventListener('click', async function() {
             if (!bookingData.razorpayPaymentId) {
                 alert('Please complete payment first.');
                 return;
@@ -765,7 +563,7 @@
 
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Processing...';
+            submitBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Processing...';
             lucide.createIcons();
 
             try {
@@ -790,64 +588,29 @@
                     // Show success screen
                     document.getElementById('form-container').style.display = 'none';
                     document.getElementById('success-container').style.display = 'block';
-                    document.getElementById('success-container').classList.add('fade-in');
                     
-                    // Update credentials
                     document.getElementById('credentialUserId').textContent = result.userId || bookingData.userId;
                     document.getElementById('credentialPassword').textContent = result.password || 'N/A';
                     
-                    // Update progress
-                    updateProgress(4);
-                    
-                    // Reinitialize icons
                     lucide.createIcons();
                 } else {
                     alert('Booking failed: ' + (result.message || 'Unknown error'));
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Complete Booking';
+                    submitBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> Complete Booking';
                     lucide.createIcons();
                 }
             } catch (error) {
                 console.error('Booking error:', error);
                 alert('An error occurred. Please try again.');
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Complete Booking';
+                submitBtn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> Complete Booking';
                 lucide.createIcons();
             }
-        }
-
-        // Update progress
-        function updateProgress(step) {
-            for (let i = 1; i <= 3; i++) {
-                const stepEl = document.getElementById('step' + i);
-                const circle = stepEl.querySelector('.step-circle');
-                stepEl.classList.remove('active');
-                circle.classList.remove('completed');
-                
-                if (i < step) {
-                    circle.classList.add('completed');
-                    circle.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>';
-                } else if (i === step) {
-                    stepEl.classList.add('active');
-                    circle.innerHTML = i;
-                } else {
-                    circle.innerHTML = i;
-                }
-            }
-            if (step === 4) {
-                for (let i = 1; i <= 3; i++) {
-                    const stepEl = document.getElementById('step' + i);
-                    stepEl.querySelector('.step-circle').classList.add('completed');
-                    stepEl.querySelector('.step-circle').innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>';
-                }
-            }
-            lucide.createIcons();
-        }
+        });
 
         // Refund modal functions
         document.getElementById('refundBtn').addEventListener('click', function() {
             document.getElementById('refundModal').style.display = 'flex';
-            lucide.createIcons();
         });
 
         function closeRefundModal() {
