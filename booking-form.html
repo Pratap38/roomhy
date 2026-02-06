@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Complete Your Booking - Roomhy</title>
+    <!-- Tailwind CSS for Development (remove for production or use CLI) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Suppress Tailwind CDN warning for now - move to PostCSS in production */
+        @media print {
+            body { visibility: hidden; }
+        }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -817,7 +824,8 @@
                     formData.append('addressProof', bookingData.addressProof);
                 }
 
-                const response = await fetch('/api/bookings/create', {
+                console.log('📤 Submitting booking to:', `${API_URL}/api/bookings/create`);
+                const response = await fetch(`${API_URL}/api/bookings/create`, {
                     method: 'POST',
                     body: formData
                 });
@@ -868,7 +876,7 @@
             }
 
             try {
-                const response = await fetch('/api/refunds/request', {
+                const response = await fetch(`${API_URL}/api/bookings/refund-request`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
