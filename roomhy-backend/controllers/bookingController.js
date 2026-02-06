@@ -926,13 +926,18 @@ exports.confirmBooking = async (req, res) => {
             });
         }
 
-        // Check other required fields
-        if (!normalizedName || !email || !normalizedPropertyId || !normalizedArea || !normalizedOwnerId) {
+        // Check core required fields (area and owner_id can be optional/from booking request)
+        if (!normalizedName || !email || !normalizedPropertyId) {
             return res.status(400).json({
                 success: false,
-                message: 'Missing required booking information. Please provide: name, email, property_id, area, owner_id'
+                message: 'Missing required booking information. Please provide: name, email, property_id'
             });
         }
+
+        // Use defaults for optional fields if not provided
+        const finalArea = normalizedArea || 'N/A';
+        const finalOwnerId = normalizedOwnerId || 'owner_unknown';
+        const finalOwnerName = normalizedOwnerName || 'Unknown Owner';
 
         // Build address string
         let fullAddress = 'N/A';
@@ -958,10 +963,10 @@ exports.confirmBooking = async (req, res) => {
             guardian_phone: normalizedGuardianPhone,
             property_id: normalizedPropertyId,
             property_name: normalizedPropertyName,
-            owner_id: normalizedOwnerId,
-            owner_name: normalizedOwnerName,
+            owner_id: finalOwnerId,
+            owner_name: finalOwnerName,
             rent_amount: normalizedRent,
-            area: normalizedArea,
+            area: finalArea,
             property_type: normalizedPropertyType,
             request_type: normalizedRequestType,
             address_street: address_street,
