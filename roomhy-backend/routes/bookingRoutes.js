@@ -2,6 +2,22 @@ const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/bookingController');
 
+// ================== CONFIG ROUTES ==================
+
+// Get Razorpay Key (public endpoint for frontend payment initialization)
+router.get('/config/razorpay-key', (req, res) => {
+    try {
+        const key = process.env.RAZORPAY_KEY_ID || 'rzp_test_default';
+        res.json({ 
+            success: true,
+            razorpayKey: key
+        });
+    } catch (error) {
+        console.error('Error fetching Razorpay key:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // ================== BOOKING REQUEST ROUTES ==================
 
 // Create booking request or bid (new unified endpoint)

@@ -413,12 +413,32 @@
             postalCode: null,
             country: null,
             addressProof: null,
-            razorpayPaymentId: null
+            razorpayPaymentId: null,
+            razorpayKey: 'rzp_test_your_key_here' // Will be fetched from backend
         };
+
+        // Fetch Razorpay key from backend
+        async function fetchRazorpayKey() {
+            try {
+                const response = await fetch(`${API_URL}/api/booking/config/razorpay-key`);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.razorpayKey) {
+                        bookingData.razorpayKey = result.razorpayKey;
+                        console.log('✅ Razorpay key loaded successfully');
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Failed to fetch Razorpay key, using test key:', error);
+            }
+        }
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            
+            // Fetch Razorpay key immediately
+            fetchRazorpayKey();
             
             // Load URL parameters
             const urlParams = new URLSearchParams(window.location.search);
@@ -643,7 +663,7 @@
 
             // Initialize Razorpay payment
             const options = {
-                key: 'rzp_test_your_key_here',
+                key: bookingData.razorpayKey,
                 amount: bookingData.totalAmount * 100,
                 currency: 'INR',
                 name: 'RoomHy',
