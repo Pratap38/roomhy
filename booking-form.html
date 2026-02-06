@@ -433,6 +433,9 @@
             propertyId: null,
             propertyName: null,
             ownerName: null,
+            ownerId: null,
+            area: null,
+            propertyType: null,
             rentAmount: 0,
             totalAmount: 0,
             userId: null,
@@ -515,6 +518,9 @@
                 bookingData.propertyId = bookingRequestData?.property_id || urlParams.get('propertyId') || '';
                 bookingData.propertyName = bookingRequestData?.property_name || urlParams.get('propertyName') || '';
                 bookingData.ownerName = bookingRequestData?.owner_name || bookingRequestData?.ownerName || urlParams.get('ownerName') || '';
+                bookingData.ownerId = bookingRequestData?.owner_id || bookingRequestData?.ownerId || urlParams.get('ownerId') || '';
+                bookingData.area = bookingRequestData?.area || urlParams.get('area') || '';
+                bookingData.propertyType = bookingRequestData?.property_type || urlParams.get('propertyType') || '';
                 bookingData.budgetMin = parseFloat(bookingRequestData?.budget_min || 0) || 0;
                 bookingData.budgetMax = parseFloat(bookingRequestData?.budget_max || 0) || 0;
                 // Use fixed amount of ₹500 for bidding
@@ -540,6 +546,9 @@
                 bookingData.propertyId = bookingRequestData?.property_id || urlParams.get('propertyId') || '';
                 bookingData.propertyName = bookingRequestData?.property_name || urlParams.get('propertyName') || '';
                 bookingData.ownerName = bookingRequestData?.owner_name || bookingRequestData?.ownerName || urlParams.get('ownerName') || '';
+                bookingData.ownerId = bookingRequestData?.owner_id || bookingRequestData?.ownerId || urlParams.get('ownerId') || '';
+                bookingData.area = bookingRequestData?.area || urlParams.get('area') || '';
+                bookingData.propertyType = bookingRequestData?.property_type || urlParams.get('propertyType') || '';
                 bookingData.tenantName = bookingRequestData?.tenant_name || tenantNameFromUrl || '';
                 bookingData.tenantEmail = bookingRequestData?.tenant_email || tenantEmailFromUrl || '';
                 // Use fixed amount of ₹500
@@ -824,6 +833,9 @@
                     name: bookingData.fullName,
                     phone: bookingData.phone,
                     email: bookingData.email,
+                    area: bookingData.area,
+                    property_type: bookingData.propertyType,
+                    rent_amount: bookingData.rentAmount,
                     guardian_name: bookingData.guardianName,
                     guardian_phone: bookingData.guardianPhone,
                     address_street: bookingData.streetAddress,
