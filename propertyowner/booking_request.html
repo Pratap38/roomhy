@@ -823,6 +823,8 @@
                         body: JSON.stringify(bidPayload)
                     });
                     
+                    if (response.ok) {
+                        console.log('✅ API update successful');
                     } else {
                         console.warn('⚠️ API returned:', response.status, response.statusText);
                         try {
