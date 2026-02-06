@@ -864,42 +864,29 @@
                 bookingId, userId, propertyName, ownerName, ownerId
             });
             
-            // Store booking data for tenant
-            const bookingData = {
-                _id: bookingId,
-                bookingId: bookingId,
-                userId: userId,
-                ownerId: ownerId,
-                owner_name: ownerName,
-                property_name: propertyName,
-                property_id: currentChat.property_id || bookingId,
-                status: 'pending',
-                bookingFormLink: bookingFormLink,
-                createdAt: new Date().toISOString()
-            };
-            
-            console.log('💾 Booking data prepared:', bookingData);
+            console.log('💾 Booking link prepared:', bookingFormLink);
             
             try {
-                // Send booking request to database
-                const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
-                const response = await fetch(`${API_URL}/api/booking/save`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(bookingData)
-                });
+                // Send booking link as a message to Firestore chat
+                const messagesRef = window.collection(window.db, 'chats', bookingId, 'messages');
                 
-                if (response.ok) {
-                    console.log('✅ Booking request sent to tenant');
-                    
-                    // Send booking link in chat
-                    const bookingLinkMessage = `📋 Booking Form: ${bookingFormLink}`;
-                    console.log('🔗 Sending booking link:', bookingLinkMessage);
-                } else {
-                    console.warn('⚠️ Failed to send booking request:', response.status);
-                }
+                const bookingLinkMessage = {
+                    text: `📋 Here's your booking form:\n\n${bookingFormLink}`,
+                    sender: ownerId,
+                    senderName: ownerName,
+                    timestamp: window.serverTimestamp(),
+                    type: 'booking_link'
+                };
+                
+                console.log('🔗 Sending booking link message:', bookingLinkMessage.text);
+                
+                const messageRef = await window.addDoc(messagesRef, bookingLinkMessage);
+                console.log('✅ Booking link sent to tenant successfully');
+                console.log('📨 Message ID:', messageRef.id);
+                
             } catch (error) {
-                console.error('❌ Error sending booking request:', error.message);
+                console.error('❌ Error sending booking link:', error.message);
+                alert('Failed to send booking link to tenant');
             }
         }
 
