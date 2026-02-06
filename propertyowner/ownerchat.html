@@ -286,10 +286,13 @@
                         <div class="p-4 bg-white border-t border-gray-100">
                             <div class="flex items-end gap-3 max-w-4xl mx-auto">
                                 <div class="flex-1 flex flex-col gap-2">
-                                    <!-- Book Button -->
+                                    <!-- Reaction/Control Bar -->
                                     <div class="flex items-center gap-2 pb-1">
-                                        <button id="book-btn" class="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100 hover:bg-blue-100 transition-all">
-                                            <i data-lucide="bookmark" class="w-3 h-3"></i> BOOK
+                                        <button id="like-input-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 text-green-600 text-[10px] font-bold border border-green-100 hover:bg-green-100 transition-all">
+                                            <i data-lucide="thumbs-up" class="w-3 h-3"></i> LIKE
+                                        </button>
+                                        <button id="dislike-input-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-[10px] font-bold border border-red-100 hover:bg-red-100 transition-all">
+                                            <i data-lucide="thumbs-down" class="w-3 h-3"></i> DISLIKE
                                         </button>
                                     </div>
                                     <div class="relative flex-1">
@@ -307,6 +310,31 @@
         </div>
     </div>
 
+    <!-- Like Popup Modal -->
+    <div id="like-popup" class="popup-modal">
+        <div class="popup-content">
+            <div class="popup-icon success">👍</div>
+            <div class="popup-title">Book Property?</div>
+            <div class="popup-message">Click LIKE to accept this tenant request and send them the booking form.</div>
+            <div class="popup-buttons">
+                <button class="popup-btn popup-btn-secondary" onclick="closeLikePopup()">Cancel</button>
+                <button class="popup-btn popup-btn-primary" onclick="confirmLike()">Yes, Like</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dislike Popup Modal -->
+    <div id="dislike-popup" class="popup-modal">
+        <div class="popup-content">
+            <div class="popup-icon danger">👎</div>
+            <div class="popup-title">End Chat?</div>
+            <div class="popup-message">Click DISLIKE to reject this tenant request and close the chat permanently.</div>
+            <div class="popup-buttons">
+                <button class="popup-btn popup-btn-secondary" onclick="closeDislikePopup()">Cancel</button>
+                <button class="popup-btn popup-btn-primary" style="background: #dc2626; color: white;" onclick="confirmDislike()">Yes, Dislike</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         let currentOwner = null;
@@ -827,6 +855,8 @@
 
         // Event Listeners
         document.getElementById('send-btn').onclick = () => sendMessage();
+        document.getElementById('like-input-btn').onclick = () => showLikePopup();
+        document.getElementById('dislike-input-btn').onclick = () => showDislikePopup();
         
         document.getElementById('message-text').onkeypress = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -841,80 +871,76 @@
             document.getElementById('no-chat-selected').classList.remove('hidden');
         };
 
-        // Send booking request to tenant (websitechat.html)
-        async function sendBookingRequest() {
-            if (!currentChat || !currentOwner) {
-                console.error('❌ Missing chat or owner data');
-                return;
-            }
+        // Popup Functions
+        function showLikePopup() {
+            document.getElementById('like-popup').classList.add('active');
+        }
 
-            console.log('🎯 Sending booking request to tenant');
+        function closeLikePopup() {
+            document.getElementById('like-popup').classList.remove('active');
+        }
+
+        function confirmLike() {
+            closeLikePopup();
             
-            const bookingId = currentChat._id || currentChat.id;
-            const userId = currentChat.signup_user_id || currentChat.user_id;
-            const propertyName = currentChat.property_name || 'Roomhy Property';
-            const ownerId = currentOwner.loginId || currentOwner.ownerId;
-            const ownerName = currentOwner.name || currentOwner.ownerName || 'Owner';
-            
-            // Generate booking form link
-            const repoPath = '/roomhy';
-            const bookingFormLink = `${window.location.origin}${repoPath}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
-            
-            console.log('📋 Booking request data:', {
-                bookingId, userId, propertyName, ownerName, ownerId
-            });
-            
-            // Store booking data for tenant
-            const bookingData = {
-                _id: bookingId,
-                bookingId: bookingId,
-                userId: userId,
-                ownerId: ownerId,
-                owner_name: ownerName,
-                property_name: propertyName,
-                property_id: currentChat.property_id || bookingId,
-                status: 'pending',
-                bookingFormLink: bookingFormLink,
-                createdAt: new Date().toISOString()
-            };
-            
-            console.log('💾 Booking data prepared:', bookingData);
-            
-            try {
-                // Send booking request to database
-                const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
-                const response = await fetch(`${API_URL}/api/booking/save`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(bookingData)
+            // Generate booking form link when owner likes
+            if (currentChat && currentOwner) {
+                console.log('🎯 Owner liked - generating booking form link');
+                
+                const bookingId = currentChat._id || currentChat.id;
+                const userId = currentChat.signup_user_id || currentChat.user_id;
+                const propertyName = currentChat.property_name || 'Roomhy Property';
+                const ownerId = currentOwner.loginId || currentOwner.ownerId;
+                const ownerName = currentOwner.name || currentOwner.ownerName || 'Owner';
+                
+                // Generate booking form link
+                const repoPath = '/roomhy'; // Repository name
+                const bookingFormLink = `${window.location.origin}${repoPath}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                
+                console.log('📋 Booking form data:', {
+                    bookingId, userId, propertyName, ownerId, ownerName
                 });
                 
-                if (response.ok) {
-                    console.log('✅ Booking request sent to tenant');
-                    
-                    // Send booking link in chat
-                    const bookingLinkMessage = `📋 Booking Form: ${bookingFormLink}`;
-                    console.log('🔗 Sending booking link:', bookingLinkMessage);
-                } else {
-                    console.warn('⚠️ Failed to send booking request:', response.status);
-                }
-            } catch (error) {
-                console.error('❌ Error sending booking request:', error.message);
+                // Store in sessionStorage for booking-form.html
+                const bookingData = {
+                    property_id: currentChat.property_id || bookingId,
+                    property_name: propertyName,
+                    owner_name: ownerName,
+                    owner_id: ownerId,
+                    user_id: userId
+                };
+                
+                console.log('💾 Booking data for link:', bookingData);
+                
+                // Send booking form link in chat message
+                const bookingLinkMessage = `📋 Here's your booking form: ${bookingFormLink}`;
+                console.log('🔗 Booking link message:', bookingLinkMessage);
             }
+            
+            sendMessage('like');
         }
 
-        // Book button handler
-        const bookBtn = document.getElementById('book-btn');
-        if (bookBtn) {
-            bookBtn.addEventListener('click', function() {
-                console.log('🎯 Book button clicked');
-                if (currentChat && currentOwner) {
-                    sendBookingRequest();
-                } else {
-                    alert('Please select a conversation first');
-                }
-            });
+        function showDislikePopup() {
+            document.getElementById('dislike-popup').classList.add('active');
         }
+
+        function closeDislikePopup() {
+            document.getElementById('dislike-popup').classList.remove('active');
+        }
+
+        function confirmDislike() {
+            closeDislikePopup();
+            sendMessage('dislike');
+        }
+
+        // Close popups on background click
+        document.getElementById('like-popup').onclick = function(e) {
+            if (e.target === this) closeLikePopup();
+        };
+
+        document.getElementById('dislike-popup').onclick = function(e) {
+            if (e.target === this) closeDislikePopup();
+        };
 
         // Auto-expand textarea
         const tx = document.getElementById('message-text');
