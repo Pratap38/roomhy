@@ -802,25 +802,16 @@
 
                 // Try to save complete bid data to API/Database
                 try {
+                    // Simplified payload with core fields only
                     const bidPayload = {
-                        bidId: bidId,
                         _id: bidId,
+                        id: bidId,
+                        bookingId: bidId,
                         status: 'accepted',
                         responseDate: bid.responseDate,
                         acceptedAt: new Date().toISOString(),
-                        name: bidderName,
-                        email: bidderEmail,
-                        property_type: bid.property_type || '',
-                        area: bid.area || bid.city || '',
-                        budget_min: bid.bid_min || bid.budget_min || '',
-                        budget_max: bid.bid_max || bid.budget_max || '',
-                        message: bid.message || '',
-                        owner_name: bid.owner_name || bid.ownerName || '',
-                        owner_id: bid.owner_id || bid.ownerId || '',
-                        property_id: bid.property_id || '',
-                        property_name: bid.property_name || '',
-                        request_type: 'bid',
-                        user_id: bid.user_id || bid.signup_user_id || ''
+                        acceptedBy: 'owner',
+                        request_type: 'bid'
                     };
                     
                     console.log('💾 Saving bid to database:', `${API_URL}/api/booking/update`);
@@ -832,10 +823,12 @@
                         body: JSON.stringify(bidPayload)
                     });
                     
-                    if (response.ok) {
-                        console.log('✅ API update successful');
                     } else {
                         console.warn('⚠️ API returned:', response.status, response.statusText);
+                        try {
+                            const errorText = await response.text();
+                            console.warn('⚠️ Error details:', errorText);
+                        } catch (e) {}
                     }
                 } catch (e) {
                     console.warn('⚠️ API call failed:', e.message);
