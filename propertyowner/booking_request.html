@@ -1039,38 +1039,65 @@
                     }
                 }
 
-                // Create chat room first
-                console.log('Creating chat room...');
-                await createChatRoom(requestId, requestName, requestEmail, request);
-                console.log('✅ Chat room created');
-
-                // Try to save to API
+                // Save to API FIRST (before chat creation)
                 try {
-                    console.log('Saving to API:', `${API_URL}/api/booking/update`);
+                    console.log('💾 Saving to database:', `${API_URL}/api/booking/update`);
                     const response = await fetch(`${API_URL}/api/booking/update`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
-                            bookingId: requestId, 
-                            status: 'accepted', 
-                            responseDate: request.responseDate 
+                            bookingId: requestId,
+                            _id: requestId,
+                            status: 'accepted',
+                            responseDate: request.responseDate,
+                            acceptedAt: new Date().toISOString(),
+                            name: requestName,
+                            email: requestEmail,
+                            user_id: request.user_id || '',
+                            property_id: request.property_id || '',
+                            property_name: request.property_name || ''
                         })
                     });
+                    
                     if (response.ok) {
-                        console.log('✅ API update successful');
+                        const result = await response.json();
+                        console.log('✅ Database update successful:', result);
                     } else {
-                        console.warn('⚠️ API returned:', response.status, response.statusText);
+                        const errorText = await response.text();
+                        console.warn('⚠️ API returned:', response.status, errorText);
                     }
                 } catch (e) {
-                    console.warn('⚠️ API call failed:', e.message);
+                    console.warn('⚠️ API call failed (will try alternative):', e.message);
+                    // Try alternative endpoint
+                    try {
+                        const altResponse = await fetch(`${API_URL}/api/bookings/${requestId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                status: 'accepted',
+                                responseDate: request.responseDate,
+                                acceptedAt: new Date().toISOString()
+                            })
+                        });
+                        if (altResponse.ok) {
+                            console.log('✅ Alternative API endpoint worked');
+                        }
+                    } catch (altE) {
+                        console.warn('⚠️ Alternative endpoint also failed:', altE.message);
+                    }
                 }
 
+                // Create chat room after database save
+                console.log('💬 Creating chat room...');
+                await createChatRoom(requestId, requestName, requestEmail, request);
+                console.log('✅ Chat room created');
+
                 // Re-fetch to ensure updated data
-                console.log('Re-fetching booking data...');
+                console.log('🔄 Re-fetching booking data...');
                 await loadBookingRequests();
 
                 renderBookingTable();
-                alert('✅ Request accepted! Chat room created.');
+                alert('✅ Request accepted! Chat room created.\n\nThe tenant will see this in their chats.');
             } catch (error) {
                 console.error('Error accepting request:', error);
                 alert('Error accepting request: ' + error.message);

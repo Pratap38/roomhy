@@ -915,7 +915,9 @@
                 : 'https://roomhy-backend-wqwo.onrender.com';
 
             try {
-                // Fetch bookings - try multiple identifiers
+                console.log('🔄 Loading accepted bookings and chats...');
+                
+                // PRIMARY: Fetch bookings with accepted status from database
                 let url = `${API_URL}/api/booking/requests`;
                 
                 // Try by user_id first, then loginId, then email
@@ -928,80 +930,88 @@
                 const idParams = identifiers.map(i => `${i.key}=${encodeURIComponent(i.value)}`).join('&');
                 url += `?${idParams}`;
                 
-                console.log('📍 Fetching chats from URL:', url);
+                console.log('📍 Fetching bookings from:', url);
                 const response = await fetch(url);
                 const result = await response.json();
                 const allBookings = result.data || [];
                 
-                // Filter to show ACCEPTED/CONFIRMED bookings - more flexible filter
-                const bookings = allBookings.filter(b => {
-                    const status = b.status || b.booking_status || b.request_status || '';
-                    const acceptedStatuses = ['accepted', 'confirm', 'confirmed', 'accepted_by_owner', 'owner_accepted'];
-                    return acceptedStatuses.includes(status.toLowerCase()) || b.isAccepted === true;
+                // Filter to ONLY show ACCEPTED bookings from database
+                // These are bookings where owner has explicitly clicked 'Accept'
+                const acceptedBookings = allBookings.filter(b => {
+                    const status = (b.status || b.booking_status || b.request_status || '').toLowerCase();
+                    // Only include truly accepted bookings
+                    const isAccepted = ['accepted', 'accepted_by_owner', 'owner_accepted'].includes(status);
+                    const isConfirmed = ['confirmed', 'confirm'].includes(status);
+                    return isAccepted || isConfirmed || b.isAccepted === true;
                 });
                 
-                console.log('📊 Total bookings from API:', allBookings.length);
-                console.log('✅ Accepted bookings:', bookings.length);
-                console.log('Accepted booking details:', bookings);
+                console.log(`📊 Total bookings from DB: ${allBookings.length}, Accepted: ${acceptedBookings.length}`);
+                console.log('💾 Accepted bookings from DB:', acceptedBookings);
 
-                // Also fetch chat rooms from backend API
+                // SECONDARY: Fetch chat rooms that owner created
                 const backendChats = [];
                 try {
                     const chatsResponse = await fetch(`${API_URL}/api/chat/rooms?user_email=${loginId || userId}`);
                     if (chatsResponse.ok) {
                         const chatsResult = await chatsResponse.json();
                         backendChats.push(...(chatsResult.data || chatsResult || []));
-                        console.log('✅ Loaded', backendChats.length, 'chats from backend');
+                        console.log('💬 Loaded', backendChats.length, 'chat rooms from backend');
                     }
                 } catch (e) {
-                    console.log('Chat rooms endpoint not available on backend');
+                    console.log('ℹ️ Chat rooms endpoint not available:', e.message);
                 }
 
-                // Also load chats from localStorage (created by booking.html)
+                // TERTIARY: Load chats from localStorage (created locally)
                 const localStorageChats = [];
                 try {
                     const storedChatRooms = JSON.parse(localStorage.getItem('chatRooms') || '[]');
                     localStorageChats.push(...storedChatRooms);
-                    console.log('✅ Loaded', storedChatRooms.length, 'chats from localStorage');
+                    console.log('💾 Loaded', storedChatRooms.length, 'chats from localStorage');
                 } catch (e) {
-                    console.log('No chats in localStorage yet');
+                    console.log('ℹ️ No chats in localStorage');
                 }
 
-                // Merge all sources: backend, bookings, and localStorage
-                const mergedChats = [...bookings, ...backendChats, ...localStorageChats];
+                // Combine all sources: prioritize database accepted bookings
+                const mergedChats = [...acceptedBookings, ...backendChats, ...localStorageChats];
 
                 const chatList = document.getElementById('chat-list');
                 chatList.innerHTML = '';
 
                 if (mergedChats.length === 0) {
-                    chatList.innerHTML = '<div class="p-8 text-center text-xs text-slate-400">No accepted bookings found.<br/>Start by requesting a property and wait for owner to accept.</div>';
+                    chatList.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">
+                        <div class="mb-2">📭 No accepted bookings yet</div>
+                        <div class="text-[10px] leading-relaxed">Request a property and wait for the owner to accept your request.</div>
+                    </div>`;
                     return;
                 }
 
-                // Deduplicate by owner ID
-                const uniqueOwners = [];
-                const seenOwners = new Set();
+                // Deduplicate by owner ID/property
+                const uniqueChats = [];
+                const seenChats = new Set();
                 
-                // Process bookings and fetch owner names
+                // Process all merged chats
                 for (const b of mergedChats) {
-                    const ownerId = b.owner_id || b.ownerLoginId || b.owner;
-                    if (ownerId && !seenOwners.has(ownerId)) {
-                        seenOwners.add(ownerId);
+                    // Get owner identifier
+                    const ownerId = b.owner_id || b.ownerLoginId || b.owner || b.owner_email;
+                    const chatKey = `${ownerId}_${b.property_id || b.property_name || ''}`;
+                    
+                    if (chatKey && !seenChats.has(chatKey)) {
+                        seenChats.add(chatKey);
                         
-                        // Fetch owner name from API if not in booking data
-                        let ownerName = b.owner_name || b.ownerName || b.owner || b.ownerInfo?.name;
+                        // Get owner name from various fields
+                        let ownerName = b.owner_name || b.ownerName || b.owner_contact?.name;
                         
-                        // If no owner name in booking, fetch it
+                        // Fetch owner name from API if not available
                         if (!ownerName || ownerName === ownerId) {
                             try {
                                 ownerName = await fetchOwnerName(ownerId);
                             } catch (e) {
-                                console.warn('Error fetching owner name:', e);
-                                ownerName = ownerId;
+                                console.warn('Could not fetch owner name for:', ownerId);
+                                ownerName = ownerId || 'Property Owner';
                             }
                         }
                         
-                        // Ensure chat object has all necessary properties, including bookingId
+                        // Build complete chat object
                         const chat = {
                             _id: b._id || b.id || b.bookingId,
                             id: b._id || b.id || b.bookingId,
@@ -1009,30 +1019,44 @@
                             owner_name: ownerName || 'Property Owner',
                             owner_id: ownerId,
                             ownerLoginId: b.ownerLoginId || ownerId,
-                            property_name: b.property_name || b.property?.title || 'Roomhy Partner',
-                            status: b.status || 'pending',
+                            owner_email: b.owner_email || '',
+                            property_name: b.property_name || b.property?.title || b.property?.name || 'Roomhy Property',
+                            property_id: b.property_id || b.property?._id || '',
+                            status: b.status || 'accepted',
+                            acceptedAt: b.acceptedAt || b.responseDate || new Date().toISOString(),
                             chatRoomId: b._id || b.id || b.bookingId || `${userId}_${ownerId}`,
-                            timestamp: b.timestamp || new Date().toISOString()
+                            timestamp: b.timestamp || b.acceptedAt || new Date().toISOString(),
+                            rent: b.rent || b.property?.rent || '',
+                            location: b.location || b.property?.location || ''
                         };
                         
-                        console.log('✅ Chat created with owner:', chat.owner_name, 'ID:', chat.owner_id);
-                        uniqueOwners.push(chat);
+                        console.log('✅ Chat ready:', {
+                            owner: chat.owner_name,
+                            property: chat.property_name,
+                            status: chat.status
+                        });
+                        uniqueChats.push(chat);
                     }
                 }
                 
                 // Render chat list
-                if (uniqueOwners.length === 0) {
-                    chatList.innerHTML = '<div class="p-8 text-center text-xs text-slate-400">No accepted bookings found.<br/>Start by requesting a property and wait for owner to accept.</div>';
+                if (uniqueChats.length === 0) {
+                    chatList.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">
+                        <div class="mb-2">📭 No accepted bookings</div>
+                        <div class="text-[10px] leading-relaxed">Your accepted bookings will appear here.</div>
+                    </div>`;
                     return;
                 }
                 
-                uniqueOwners.forEach(chat => {
+                console.log(`🎯 Rendering ${uniqueChats.length} unique chats`);
+                
+                uniqueChats.forEach((chat, idx) => {
                     const item = document.createElement('div');
                     item.className = 'flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg sm:rounded-2xl cursor-pointer hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-slate-100 group';
                     
                     const ownerInitial = (chat.owner_name || 'O').charAt(0).toUpperCase();
                     const colors = ['bg-indigo-100', 'bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-pink-100'];
-                    const colorIndex = ownerInitial.charCodeAt(0) % colors.length;
+                    const colorIndex = (idx + ownerInitial.charCodeAt(0)) % colors.length;
                     const textColors = ['text-indigo-700', 'text-blue-700', 'text-green-700', 'text-purple-700', 'text-pink-700'];
                     const hoverBg = ['group-hover:bg-indigo-600', 'group-hover:bg-blue-600', 'group-hover:bg-green-600', 'group-hover:bg-purple-600', 'group-hover:bg-pink-600'];
                     
@@ -1046,7 +1070,7 @@
                         <div class="flex-1 min-w-0">
                             <h4 class="text-xs sm:text-sm font-bold text-slate-800 truncate">${chat.owner_name}</h4>
                             <p class="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-wider truncate">${chat.property_name}</p>
-                            <p class="text-[7px] sm:text-[9px] text-slate-500 mt-0.5 sm:mt-1">${chat.status === 'accepted' ? '✅ Accepted' : '⏳ Pending'} | ID: ${chatDisplayId}</p>
+                            <p class="text-[7px] sm:text-[9px] text-slate-500 mt-0.5 sm:mt-1">✅ Accepted | ID: ${chatDisplayId}</p>
                         </div>
                     `;
                     item.onclick = () => openChat(chat);
