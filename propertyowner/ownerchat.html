@@ -268,6 +268,10 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
+                                <button id="booking-form-btn" class="px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium hover:text-gray-900 flex items-center gap-1">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                    <span class="hidden sm:inline">Booking Form</span>
+                                </button>
                                 <button class="p-2 text-gray-400 hover:bg-gray-50 rounded-lg"><i data-lucide="phone" class="w-5 h-5"></i></button>
                                 <button class="p-2 text-gray-400 hover:bg-gray-50 rounded-lg"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
                             </div>
@@ -498,6 +502,37 @@
                 bookingIdDisplay.textContent = `Booking ID: ${booking._id}`;
                 bookingIdDisplay.style.display = 'block';
             }
+            
+            // Setup booking form button
+            const bookingFormBtn = document.getElementById('booking-form-btn');
+            bookingFormBtn.onclick = function() {
+                console.log('🎯 Booking Form button clicked from owner chat');
+                const propertyId = booking.property_id || '';
+                const propertyName = booking.property_name || booking.propertyName || 'Roomhy Property';
+                const tenantName = booking.name || 'Tenant';
+                const currentOwner = JSON.parse(localStorage.getItem('user') || '{}');
+                const ownerId = currentOwner.ownerId || currentOwner.loginId || '';
+                
+                console.log('📋 Booking form data from owner chat:', {
+                    propertyId, propertyName, tenantName, ownerId
+                });
+                
+                const bookingData = {
+                    property_id: propertyId,
+                    property_name: propertyName,
+                    tenant_name: tenantName,
+                    owner_id: ownerId
+                };
+                
+                console.log('💾 Setting sessionStorage with:', bookingData);
+                sessionStorage.setItem('bookingRequestData', JSON.stringify(bookingData));
+                console.log('✅ SessionStorage set from owner chat');
+                
+                // Navigate to booking form
+                const url = '../booking-form.html?ownerId=' + encodeURIComponent(ownerId || '');
+                console.log('🔗 Navigating to:', url);
+                window.location.href = url;
+            };
             
             // Mobile toggle
             if (window.innerWidth < 768) {
