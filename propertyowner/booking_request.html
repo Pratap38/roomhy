@@ -612,7 +612,7 @@
                         ${req.status === 'pending' ? `
                             <button onclick="acceptRequest('${req._id || req.id}', '${req.name}', '${req.email}')" class="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200">Accept</button>
                             <button onclick="rejectRequest('${req._id || req.id}')" class="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-medium hover:bg-red-200">Reject</button>
-                            <button onclick="confirmRequest('${req._id || req.id}')" class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200">Confirm</button>
+                            <button onclick="goToBookingForm('${req._id || req.id}', '${req.property_id || ''}', '${req.property_name || ''}', '${req.owner_name || req.ownerName || ''}', '${req.rent_amount || 0}', '${req.signup_user_id || req.user_id || ''}')" class="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200">Booking Form</button>
                         ` : req.status === 'accepted' ? `
                             <button onclick="openChat('${req._id || req.id}', '${req.user_id || ''}')" class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200 flex items-center gap-1"><i data-lucide="message-circle" class="w-3 h-3"></i>Chat</button>
                         ` : `<span class="text-xs text-gray-400">${(req.status || 'pending').toUpperCase()}</span>`}

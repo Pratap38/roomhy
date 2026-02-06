@@ -427,8 +427,10 @@
             let bookingRequestData = null;
             try {
                 const stored = sessionStorage.getItem('bookingRequestData');
+                console.log('📦 SessionStorage bookingRequestData:', stored);
                 if (stored) {
                     bookingRequestData = JSON.parse(stored);
+                    console.log('✅ Parsed booking data:', bookingRequestData);
                 }
             } catch (e) {
                 console.log('No booking request data in sessionStorage');
@@ -440,6 +442,13 @@
             bookingData.ownerName = bookingRequestData?.owner_name || bookingRequestData?.ownerName || urlParams.get('ownerName') || '';
             bookingData.rentAmount = parseFloat(bookingRequestData?.rent_amount || urlParams.get('rentAmount')) || 0;
             bookingData.totalAmount = parseFloat(bookingRequestData?.rent_amount || urlParams.get('totalAmount')) || 0;
+            
+            console.log('📋 Booking data loaded:', {
+                propertyId: bookingData.propertyId,
+                propertyName: bookingData.propertyName,
+                ownerName: bookingData.ownerName,
+                rentAmount: bookingData.rentAmount
+            });
             
             // Use userId from URL if provided, otherwise generate new one
             if (urlParams.get('userId')) {
@@ -455,6 +464,12 @@
             document.getElementById('propertyIdDisplay').value = bookingData.propertyId;
             document.getElementById('ownerNameDisplay').value = bookingData.ownerName;
             document.getElementById('userId').value = bookingData.userId;
+            
+            console.log('✨ Form fields populated:', {
+                propertyName: document.getElementById('propertyNameDisplay').value,
+                propertyId: document.getElementById('propertyIdDisplay').value,
+                ownerName: document.getElementById('ownerNameDisplay').value
+            });
             
             document.getElementById('rentAmount').textContent = '₹' + (bookingData.rentAmount > 0 ? bookingData.rentAmount.toLocaleString('en-IN') : '0');
             document.getElementById('totalAmount').textContent = '₹' + (bookingData.totalAmount > 0 ? bookingData.totalAmount.toLocaleString('en-IN') : '0');
