@@ -894,6 +894,23 @@
             window.location.href = `mailto:${bid.contactEmail}?subject=${subject}&body=${body}`;
         }
 
+        // Navigate to booking form with request data
+        function goToBookingForm(requestId, propertyId, propertyName, ownerName, rentAmount, userId) {
+            const bookingData = {
+                property_id: propertyId || '',
+                property_name: propertyName || '',
+                owner_name: ownerName || '',
+                rent_amount: rentAmount || 0,
+                user_id: userId || ''
+            };
+            
+            // Store in sessionStorage for access in booking-form.html
+            sessionStorage.setItem('bookingRequestData', JSON.stringify(bookingData));
+            
+            // Navigate to booking form
+            window.location.href = '../booking-form.html?userId=' + encodeURIComponent(userId || '');
+        }
+
         // Send bid acceptance email
         async function sendBidAcceptanceEmail(bid) {
             try {

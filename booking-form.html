@@ -111,15 +111,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div>
                         <label class="block text-sm font-semibold text-gray-800 mb-2">Property Name *</label>
-                        <input type="text" id="propertyNameDisplay" class="form-input" placeholder="Property name" readonly>
+                        <input type="text" id="propertyNameDisplay" class="form-input" placeholder="Enter property name" required>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-800 mb-2">Property ID *</label>
-                        <input type="text" id="propertyIdDisplay" class="form-input" placeholder="Property ID" readonly>
+                        <input type="text" id="propertyIdDisplay" class="form-input" placeholder="Enter property ID" required>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-800 mb-2">Owner Name *</label>
-                        <input type="text" id="ownerNameDisplay" class="form-input" placeholder="Owner name" readonly>
+                        <input type="text" id="ownerNameDisplay" class="form-input" placeholder="Enter owner name" required>
                     </div>
                 </div>
 
@@ -422,15 +422,30 @@
             
             // Load URL parameters
             const urlParams = new URLSearchParams(window.location.search);
-            bookingData.propertyId = urlParams.get('propertyId') || '';
-            bookingData.propertyName = urlParams.get('propertyName') || '';
-            bookingData.ownerName = urlParams.get('ownerName') || '';
-            bookingData.rentAmount = parseFloat(urlParams.get('rentAmount')) || 0;
-            bookingData.totalAmount = parseFloat(urlParams.get('totalAmount')) || 0;
-            bookingData.userId = urlParams.get('userId') || '';
+            
+            // Try to get booking data from sessionStorage first (passed from booking_request.html)
+            let bookingRequestData = null;
+            try {
+                const stored = sessionStorage.getItem('bookingRequestData');
+                if (stored) {
+                    bookingRequestData = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.log('No booking request data in sessionStorage');
+            }
 
-            // Generate userId if not provided - format: roomhyweb + 6 digit number
-            if (!bookingData.userId) {
+            // Use booking request data if available, otherwise use URL parameters
+            bookingData.propertyId = bookingRequestData?.property_id || urlParams.get('propertyId') || '';
+            bookingData.propertyName = bookingRequestData?.property_name || urlParams.get('propertyName') || '';
+            bookingData.ownerName = bookingRequestData?.owner_name || bookingRequestData?.ownerName || urlParams.get('ownerName') || '';
+            bookingData.rentAmount = parseFloat(bookingRequestData?.rent_amount || urlParams.get('rentAmount')) || 0;
+            bookingData.totalAmount = parseFloat(bookingRequestData?.rent_amount || urlParams.get('totalAmount')) || 0;
+            
+            // Use userId from URL if provided, otherwise generate new one
+            if (urlParams.get('userId')) {
+                bookingData.userId = urlParams.get('userId');
+            } else {
+                // Generate userId if not provided - format: roomhyweb + 6 digit number
                 const randomSixDigits = String(Math.floor(Math.random() * 900000) + 100000);
                 bookingData.userId = 'roomhyweb' + randomSixDigits;
             }
