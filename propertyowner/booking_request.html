@@ -1026,6 +1026,7 @@
                 const request = allBookingRequests.find(r => (r._id === requestId || r.id === requestId) && r.request_type !== 'bid');
                 if (!request) return;
 
+                console.log('📋 Request object:', request);
                 console.log('Accepting request:', requestId, 'Name:', requestName, 'Email:', requestEmail);
 
                 request.status = 'accepted';
@@ -1049,24 +1050,28 @@
 
                 // Save to API FIRST (before chat creation)
                 try {
+                    const payloadData = {
+                        bookingId: requestId,
+                        _id: requestId,
+                        status: 'accepted',
+                        responseDate: request.responseDate,
+                        acceptedAt: new Date().toISOString(),
+                        name: requestName,
+                        email: requestEmail,
+                        user_id: request.user_id || '',
+                        property_id: request.property_id || '',
+                        property_name: request.property_name || '',
+                        owner_name: request.owner_name || request.ownerName || '',
+                        owner_id: request.owner_id || request.ownerId || ''
+                    };
+                    
                     console.log('💾 Saving to database:', `${API_URL}/api/booking/update`);
+                    console.log('📦 Payload being sent:', payloadData);
+                    
                     const response = await fetch(`${API_URL}/api/booking/update`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            bookingId: requestId,
-                            _id: requestId,
-                            status: 'accepted',
-                            responseDate: request.responseDate,
-                            acceptedAt: new Date().toISOString(),
-                            name: requestName,
-                            email: requestEmail,
-                            user_id: request.user_id || '',
-                            property_id: request.property_id || '',
-                            property_name: request.property_name || '',
-                            owner_name: request.owner_name || request.ownerName || '',
-                            owner_id: request.owner_id || request.ownerId || ''
-                        })
+                        body: JSON.stringify(payloadData)
                     });
                     
                     if (response.ok) {

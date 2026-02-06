@@ -1006,7 +1006,15 @@
                             || b.owner_contact?.name
                             || b.ownerContactName
                             || b.contactName
-                            || b.participants?.[0]?.name;
+                            || b.participants?.[0]?.name
+                            || b.userName;  // ← Added: might be in userName
+                        
+                        // If still no owner name, try to extract from booking_details if available
+                        if (!ownerName && b.booking_details) {
+                            ownerName = b.booking_details.owner_name 
+                                || b.booking_details.ownerName 
+                                || b.booking_details.name;
+                        }
                         
                         // If still no owner name, try to extract from owner_contact object
                         if (!ownerName && b.owner_contact && typeof b.owner_contact === 'object') {
@@ -1019,7 +1027,15 @@
                             || b.property?.name
                             || b.property?.title
                             || b.roomName
-                            || b.room_name;
+                            || b.room_name
+                            || b.title;  // ← Added
+                        
+                        // If still no property name, try booking_details
+                        if (!propertyName && b.booking_details) {
+                            propertyName = b.booking_details.property_name 
+                                || b.booking_details.propertyName 
+                                || b.booking_details.title;
+                        }
                         
                         // Get property ID - try multiple field names
                         let propertyId = b.property_id 
@@ -1029,6 +1045,13 @@
                             || b.roomId
                             || b.room_id
                             || '';
+                        
+                        // If still no property ID, try booking_details
+                        if (!propertyId && b.booking_details) {
+                            propertyId = b.booking_details.property_id 
+                                || b.booking_details.propertyId 
+                                || '';
+                        }
                         
                         // Fetch owner name from API if still not available
                         if (!ownerName || ownerName === ownerId) {
