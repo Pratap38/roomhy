@@ -45,9 +45,27 @@ router.post('/create-order', (req, res) => {
             });
         }
 
+        // Check if keys are configured
+        const keyId = process.env.RAZORPAY_KEY_ID;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+        if (!keyId || !keySecret) {
+            console.error('❌ RAZORPAY CONFIGURATION ERROR');
+            console.error('❌ RAZORPAY_KEY_ID:', keyId ? 'SET' : 'MISSING');
+            console.error('❌ RAZORPAY_KEY_SECRET:', keySecret ? 'SET' : 'MISSING');
+            console.error('❌ Please configure Razorpay keys in your .env or deployment environment');
+            
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Razorpay keys not configured',
+                error: 'RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET is missing in environment',
+                hint: 'Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env or deployment platform'
+            });
+        }
+
         const razorpay = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID,
-            key_secret: process.env.RAZORPAY_KEY_SECRET
+            key_id: keyId,
+            key_secret: keySecret
         });
 
         const options = {
