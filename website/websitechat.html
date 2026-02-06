@@ -954,7 +954,9 @@
                     const chatsResponse = await fetch(`${API_URL}/api/chat/rooms?user_email=${loginId || userId}`);
                     if (chatsResponse.ok) {
                         const chatsResult = await chatsResponse.json();
-                        backendChats.push(...(chatsResult.data || chatsResult || []));
+                        const chats = chatsResult.data || chatsResult || [];
+                        console.log('📥 Raw backend chats:', chats);
+                        backendChats.push(...chats);
                         console.log('💬 Loaded', backendChats.length, 'chat rooms from backend');
                     }
                 } catch (e) {
@@ -1003,12 +1005,30 @@
                             || b.ownerName 
                             || b.owner_contact?.name
                             || b.ownerContactName
-                            || b.contactName;
+                            || b.contactName
+                            || b.participants?.[0]?.name;
                         
                         // If still no owner name, try to extract from owner_contact object
                         if (!ownerName && b.owner_contact && typeof b.owner_contact === 'object') {
                             ownerName = b.owner_contact.name || b.owner_contact.fullName || b.owner_contact.contactName;
                         }
+                        
+                        // Get property name - try multiple field names
+                        let propertyName = b.property_name 
+                            || b.propertyName
+                            || b.property?.name
+                            || b.property?.title
+                            || b.roomName
+                            || b.room_name;
+                        
+                        // Get property ID - try multiple field names
+                        let propertyId = b.property_id 
+                            || b.propertyId
+                            || b.property?._id
+                            || b.property?.id
+                            || b.roomId
+                            || b.room_id
+                            || '';
                         
                         // Fetch owner name from API if still not available
                         if (!ownerName || ownerName === ownerId) {
@@ -1029,8 +1049,8 @@
                             owner_id: ownerId,
                             ownerLoginId: b.ownerLoginId || ownerId,
                             owner_email: b.owner_email || '',
-                            property_name: b.property_name || b.property?.title || b.property?.name || 'Roomhy Property',
-                            property_id: b.property_id || b.property?._id || '',
+                            property_name: propertyName || 'Roomhy Property',
+                            property_id: propertyId || '',
                             status: b.status || 'accepted',
                             acceptedAt: b.acceptedAt || b.responseDate || new Date().toISOString(),
                             chatRoomId: b._id || b.id || b.bookingId || `${userId}_${ownerId}`,
