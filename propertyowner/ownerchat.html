@@ -827,8 +827,6 @@
 
         // Event Listeners
         document.getElementById('send-btn').onclick = () => sendMessage();
-        document.getElementById('like-input-btn').onclick = () => showLikePopup();
-        document.getElementById('dislike-input-btn').onclick = () => showDislikePopup();
         
         document.getElementById('message-text').onkeypress = (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -842,27 +840,6 @@
             document.getElementById('chat-active').classList.add('hidden');
             document.getElementById('no-chat-selected').classList.remove('hidden');
         };
-
-        // Popup Functions
-        function showLikePopup() {
-            document.getElementById('like-popup').classList.add('active');
-        }
-
-        function closeLikePopup() {
-            document.getElementById('like-popup').classList.remove('active');
-        }
-
-        function confirmLike() {
-            closeLikePopup();
-            
-            // Generate booking form link when owner likes
-            if (currentChat && currentOwner) {
-                console.log('🎯 Owner sending booking request');
-                sendBookingRequest();
-            }
-            
-            sendMessage('like');
-        }
 
         // Send booking request to tenant (websitechat.html)
         async function sendBookingRequest() {
@@ -924,35 +901,6 @@
             } catch (error) {
                 console.error('❌ Error sending booking request:', error.message);
             }
-        }
-
-        function showDislikePopup() {
-            document.getElementById('dislike-popup').classList.add('active');
-        }
-
-        function closeDislikePopup() {
-            document.getElementById('dislike-popup').classList.remove('active');
-        }
-
-        function confirmDislike() {
-            closeDislikePopup();
-            sendMessage('dislike');
-        }
-
-        // Close popups on background click
-        const likePopup = document.getElementById('like-popup');
-        const dislikePopup = document.getElementById('dislike-popup');
-        
-        if (likePopup) {
-            likePopup.onclick = function(e) {
-                if (e.target === this) closeLikePopup();
-            };
-        }
-
-        if (dislikePopup) {
-            dislikePopup.onclick = function(e) {
-                if (e.target === this) closeDislikePopup();
-            };
         }
 
         // Book button handler
