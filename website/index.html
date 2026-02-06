@@ -1597,7 +1597,7 @@
                 try {
                     // Get API base URL - support both local and production
                     const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                        ? 'http://localhost:5000'
+                        ? 'http://localhost:5001'
                         : 'https://roomhy-backend.onrender.com';
                     
                     const response = await fetch(`${apiBase}/api/locations/cities`);
@@ -1892,7 +1892,7 @@
             let areasByCity = {};
             try {
                 const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                    ? 'http://localhost:5000'
+                    ? 'http://localhost:5001'
                     : 'https://roomhy-backend.onrender.com';
                 const response = await fetch(`${apiBase}/api/locations/areas`);
                 if (response.ok) {
@@ -1955,31 +1955,59 @@
             // Re-run lucide icons for the new elements
             lucide.createIcons();
 
-            // Setup carousel rotation functions
-            window.startAreaCarousel = function(element) {
-                const carouselId = element.id;
+            // Setup carousel rotation functions with auto-play
+            window.startAutoCarousel = function(carouselId) {
                 const container = document.getElementById(carouselId);
                 if (!container) return;
                 
+                const mainImage = container.querySelector('.city-main-image');
                 const areaImages = container.querySelectorAll('.city-area-image');
-                if (areaImages.length === 0) return;
+                
+                // Ensure main image is visible initially
+                if (mainImage) mainImage.classList.remove('opacity-0');
 
-                // Start rotating through area images every 1.5 seconds
+                // If no areas, just show city image
+                if (areaImages.length === 0) {
+                    console.log(`Carousel ${carouselId}: No areas, showing city image only`);
+                    return;
+                }
+
+                // Start rotating through city image + area images every 2 seconds
                 const rotationKey = `carousel-${carouselId}`;
                 if (window[rotationKey]) clearInterval(window[rotationKey]);
                 
-                let currentIndex = 0;
-                window[rotationKey] = setInterval(() => {
-                    // Hide all area images
+                let currentIndex = -1; // Start at -1 to show city image first
+                
+                const rotateImages = () => {
+                    // Hide all images
+                    if (mainImage) mainImage.classList.add('opacity-0');
                     areaImages.forEach(img => img.classList.add('opacity-0'));
                     
-                    // Show next area image
-                    currentIndex = (currentIndex + 1) % areaImages.length;
-                    areaImages[currentIndex].classList.remove('opacity-0');
-                }, 1500);
+                    // Increment index
+                    currentIndex++;
+                    
+                    // Show city image (index 0) or area image (index > 0)
+                    if (currentIndex === 0) {
+                        if (mainImage) mainImage.classList.remove('opacity-0');
+                    } else {
+                        // Show area image at position (currentIndex - 1)
+                        const areaIndex = (currentIndex - 1) % areaImages.length;
+                        areaImages[areaIndex].classList.remove('opacity-0');
+                    }
+                    
+                    // Loop back to city image after showing all areas
+                    if (currentIndex > areaImages.length) {
+                        currentIndex = -1;
+                    }
+                };
                 
-                // Show first area image immediately
-                areaImages[0].classList.remove('opacity-0');
+                // Start auto-rotation after 2 seconds
+                window[rotationKey] = setInterval(rotateImages, 2000);
+            };
+
+            window.startAreaCarousel = function(element) {
+                const carouselId = element.id;
+                window.startAutoCarousel(carouselId);
             };
 
             window.stopAreaCarousel = function(element) {
@@ -1993,12 +2021,25 @@
                     window[rotationKey] = null;
                 }
 
-                // Hide all area images and show city image
+                // Show city image and hide all area images
                 const mainImage = container.querySelector('.city-main-image');
                 const areaImages = container.querySelectorAll('.city-area-image');
                 areaImages.forEach(img => img.classList.add('opacity-0'));
                 if (mainImage) mainImage.classList.remove('opacity-0');
             };
+
+            // Auto-start carousel for all city cards after a short delay
+            setTimeout(() => {
+                console.log('🎠 Starting carousels...');
+                const carousels = document.querySelectorAll('[id^="carousel-"]');
+                console.log(`Found ${carousels.length} carousels`);
+                carousels.forEach(carouselElement => {
+                    const mainImg = carouselElement.querySelector('.city-main-image');
+                    const areaImgs = carouselElement.querySelectorAll('.city-area-image');
+                    console.log(`Carousel ${carouselElement.id}: main-img=${mainImg?.src}, areas=${areaImgs.length}`);
+                    window.startAutoCarousel(carouselElement.id);
+                });
+            }, 500);
 
             // Show letter-avatar fallback when image missing or fails to load
             document.querySelectorAll('.city-main-image').forEach(img => {
