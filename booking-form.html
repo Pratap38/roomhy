@@ -82,6 +82,14 @@
     </style>
 </head>
 <body class="bg-gray-50">
+    <!-- API Configuration -->
+    <script>
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+            ? 'http://localhost:5001' 
+            : 'https://roomhy-backend-wqwo.onrender.com';
+        console.log('🔌 Using API URL:', API_URL);
+    </script>
+
     <!-- Header -->
     <header class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
