@@ -1052,7 +1052,7 @@
                 
                 uniqueChats.forEach((chat, idx) => {
                     const item = document.createElement('div');
-                    item.className = 'flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg sm:rounded-2xl cursor-pointer hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-slate-100 group';
+                    item.className = 'flex items-center gap-4 p-4 rounded-xl cursor-pointer hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200 group';
                     
                     const ownerInitial = (chat.owner_name || 'O').charAt(0).toUpperCase();
                     const colors = ['bg-indigo-100', 'bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-pink-100'];
@@ -1060,17 +1060,17 @@
                     const textColors = ['text-indigo-700', 'text-blue-700', 'text-green-700', 'text-purple-700', 'text-pink-700'];
                     const hoverBg = ['group-hover:bg-indigo-600', 'group-hover:bg-blue-600', 'group-hover:bg-green-600', 'group-hover:bg-purple-600', 'group-hover:bg-pink-600'];
                     
-                    const bookingId = chat._id || chat.id || chat.bookingId;
-                    const chatDisplayId = bookingId ? bookingId.substring(0, 8) : 'N/A';
+                    // Use property_id from the booking data for display
+                    const propertyId = chat.property_id || 'N/A';
                     
                     item.innerHTML = `
-                        <div class="w-10 sm:w-12 h-10 sm:h-12 rounded-full ${colors[colorIndex]} ${textColors[colorIndex]} flex items-center justify-center font-bold text-xs sm:text-sm ${hoverBg[colorIndex]} group-hover:text-white transition-all flex-shrink-0">
+                        <div class="w-14 h-14 rounded-full ${colors[colorIndex]} ${textColors[colorIndex]} flex items-center justify-center font-bold text-lg ${hoverBg[colorIndex]} group-hover:text-white transition-all flex-shrink-0">
                             ${ownerInitial}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h4 class="text-xs sm:text-sm font-bold text-slate-800 truncate">${chat.owner_name}</h4>
-                            <p class="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold tracking-wider truncate">${chat.property_name}</p>
-                            <p class="text-[7px] sm:text-[9px] text-slate-500 mt-0.5 sm:mt-1">✅ Accepted | ID: ${chatDisplayId}</p>
+                            <h4 class="text-base font-bold text-slate-900 truncate">${chat.owner_name || 'Property Owner'}</h4>
+                            <p class="text-sm text-slate-500 uppercase font-semibold tracking-wide truncate">${chat.property_name || 'Roomhy Property'}</p>
+                            <p class="text-xs text-slate-600 mt-1">✅ Accepted | ID: ${propertyId}</p>
                         </div>
                     `;
                     item.onclick = () => openChat(chat);
