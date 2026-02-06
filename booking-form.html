@@ -90,6 +90,25 @@
         console.log('🔌 Using API URL:', API_URL);
     </script>
 
+    <!-- Razorpay Checkout Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js" onerror="console.error('Failed to load Razorpay script')"></script>
+    
+    <!-- Preload Razorpay as fallback -->
+    <script>
+        // Ensure Razorpay is loaded
+        function loadRazorpay() {
+            if (typeof Razorpay === 'undefined') {
+                console.log('Loading Razorpay from fallback...');
+                const script = document.createElement('script');
+                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                script.onload = () => console.log('✅ Razorpay loaded successfully');
+                script.onerror = () => console.error('❌ Failed to load Razorpay');
+                document.head.appendChild(script);
+            }
+        }
+        loadRazorpay();
+    </script>
+
     <!-- Header -->
     <header class="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -709,11 +728,19 @@
             };
 
             try {
+                // Check if Razorpay is loaded
+                if (typeof Razorpay === 'undefined') {
+                    alert('Payment system is loading. Please wait a moment and try again, or refresh the page.');
+                    console.error('Razorpay not loaded');
+                    return;
+                }
+                
                 const razorpay = new Razorpay(options);
                 razorpay.open();
+                console.log('✅ Razorpay checkout opened');
             } catch (error) {
                 console.error('❌ Razorpay error:', error);
-                alert('Payment initialization failed: ' + error.message);
+                alert('Payment initialization failed: ' + error.message + '. Please refresh the page and try again.');
             }
         });
 
