@@ -422,18 +422,24 @@
             
             // Load URL parameters
             const urlParams = new URLSearchParams(window.location.search);
-            bookingData.propertyId = urlParams.get('propertyId');
-            bookingData.propertyName = urlParams.get('propertyName');
-            bookingData.ownerName = urlParams.get('ownerName');
+            bookingData.propertyId = urlParams.get('propertyId') || '';
+            bookingData.propertyName = urlParams.get('propertyName') || '';
+            bookingData.ownerName = urlParams.get('ownerName') || '';
             bookingData.rentAmount = parseFloat(urlParams.get('rentAmount')) || 0;
             bookingData.totalAmount = parseFloat(urlParams.get('totalAmount')) || 0;
-            bookingData.userId = urlParams.get('userId');
+            bookingData.userId = urlParams.get('userId') || '';
+
+            // Generate userId if not provided - format: roomhyweb + 6 digit number
+            if (!bookingData.userId) {
+                const randomSixDigits = String(Math.floor(Math.random() * 900000) + 100000);
+                bookingData.userId = 'roomhyweb' + randomSixDigits;
+            }
 
             // Populate form fields
-            if (bookingData.propertyName) document.getElementById('propertyNameDisplay').value = bookingData.propertyName;
-            if (bookingData.propertyId) document.getElementById('propertyIdDisplay').value = bookingData.propertyId;
-            if (bookingData.ownerName) document.getElementById('ownerNameDisplay').value = bookingData.ownerName;
-            if (bookingData.userId) document.getElementById('userId').value = bookingData.userId;
+            document.getElementById('propertyNameDisplay').value = bookingData.propertyName;
+            document.getElementById('propertyIdDisplay').value = bookingData.propertyId;
+            document.getElementById('ownerNameDisplay').value = bookingData.ownerName;
+            document.getElementById('userId').value = bookingData.userId;
             
             document.getElementById('rentAmount').textContent = '₹' + (bookingData.rentAmount > 0 ? bookingData.rentAmount.toLocaleString('en-IN') : '0');
             document.getElementById('totalAmount').textContent = '₹' + (bookingData.totalAmount > 0 ? bookingData.totalAmount.toLocaleString('en-IN') : '0');
