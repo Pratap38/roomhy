@@ -755,9 +755,9 @@
             const tenantName = currentChat.name || 'Tenant';
             const tenantEmail = currentChat.email || '';
             
-            // Generate booking form link
+            // Generate simple booking form link (only bookingId & userId in URL)
             const repoPath = '/roomhy';
-            const bookingFormLink = `${window.location.origin}${repoPath}/booking-form.html?bookingId=${bookingId}&userId=${userId}&ownerName=${encodeURIComponent(ownerName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
+            const bookingFormLink = `${window.location.origin}${repoPath}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
             
             console.log('📋 Booking link data:', {
                 bookingId, userId, propertyName, propertyId, ownerName, tenantName, tenantEmail
