@@ -1,5 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- 
+    ========================================
+    OWNER LOGIN PAGE
+    ========================================
+    This page handles login for:
+    - Property Owners
+    - Tenants (future)
+    
+    Uses storage keys: owner_user, owner_session (isolated from staff login)
+    Accessed by: Owner role users
+    ========================================
+-->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -137,7 +149,8 @@
             const loginId = document.getElementById('login-id').value.trim().toUpperCase();
             const password = document.getElementById('password').value.trim();
 
-            console.log("Attempting Login:", loginId, password);
+            console.log("[Owner Login] Attempting login with ID:", loginId);
+            console.log("[Owner Login] This is OWNER dashboard login (uses owner_user key)");
 
             // 1. Check Manager (Optional)
             if (loginId.startsWith("MGR")) {
@@ -396,8 +409,14 @@
             // Store all accounts
             localStorage.setItem('owner_accounts', JSON.stringify(ownerAccounts));
             
-            // Set current active account
-            localStorage.setItem('user', JSON.stringify(user));
+            // Clear STAFF sessions to prevent crosstalk
+            sessionStorage.removeItem('manager_user');
+            sessionStorage.removeItem('user');
+            localStorage.removeItem('staff_user');
+            localStorage.removeItem('staff_token');
+            
+            // Set current active account with OWNER-specific key
+            localStorage.setItem('owner_user', JSON.stringify(user));
             sessionStorage.setItem('owner_session', JSON.stringify(user));
 
             alert("?? Password Set! Starting Onboarding...");
@@ -426,8 +445,14 @@
             // Store all accounts
             localStorage.setItem('owner_accounts', JSON.stringify(ownerAccounts));
             
-            // Set current active account
-            localStorage.setItem('user', JSON.stringify(user));
+            // Clear STAFF sessions to prevent crosstalk
+            sessionStorage.removeItem('manager_user');
+            sessionStorage.removeItem('user');
+            localStorage.removeItem('staff_user');
+            localStorage.removeItem('staff_token');
+            
+            // Set current active account with OWNER-specific key
+            localStorage.setItem('owner_user', JSON.stringify(user));
             sessionStorage.setItem('owner_session', JSON.stringify(user));
 
             // ENFORCE ONBOARDING SEQUENCE

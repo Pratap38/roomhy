@@ -1,5 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- 
+    ========================================
+    STAFF LOGIN PAGE
+    ========================================
+    This page handles login for:
+    - SuperAdmin (email format)
+    - Area Managers (MGR prefix)
+    - Employees (RY/EMP prefix)
+    
+    Uses storage keys: staff_user, staff_token (isolated from owner login)
+    Owned by: Superadmin in manager.html
+    ========================================
+-->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -123,10 +136,13 @@
                 return;
             }
 
-            // Clear previous sessions
+            // Clear previous sessions - only clear STAFF sessions, not owner sessions
             sessionStorage.removeItem('manager_user');
             sessionStorage.removeItem('user');
-            sessionStorage.removeItem('owner_session');
+            // Don't remove owner_session - let owner login page manage that
+            
+            // Also clear owner-related localStorage to prevent crosstalk
+            localStorage.removeItem('owner_user'); // Will be set by owner login if needed
 
             const up = loginId.toUpperCase();
 
@@ -199,33 +215,42 @@
         }
 
         // SuperAdmin Login with optimized speed - try local first, then backend
+        // NOTE: This is STAFF login section - uses staff_user/staff_token keys
         async function loginSuperAdmin(email, password, errorMsg) {
-            console.log('[Login] Attempting SuperAdmin login with email:', email);
+            console.log('[Staff Login] Attempting SuperAdmin login with email:', email);
             
             // Try local login first (instant) - this is the primary path
             const db = JSON.parse(localStorage.getItem('roomhy_superadmin_db') || 'null');
             
             // Check hardcoded default credentials first (fastest)
             if (!db && email === 'roomhyadmin@gmail.com' && password === 'admin@123') {
-                console.log('[Login] ✅ SuperAdmin login with default credentials');
+                console.log('[Staff Login] ✅ SuperAdmin login with default credentials');
                 const user = { id: 'SUPER_ADMIN', loginId: 'SUPER_ADMIN', email, name: 'Super Admin', role: 'superadmin' };
                 sessionStorage.setItem('user', JSON.stringify(user));
-                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('staff_user', JSON.stringify(user));
+                localStorage.setItem('staff_token', 'superadmin_token');
+                // Clear owner sessions to prevent crosstalk
+                sessionStorage.removeItem('owner_session');
+                localStorage.removeItem('owner_user');
                 window.location.href = 'superadmin/superadmin.html';
                 return;
             }
 
             // Check local database (stored by seeder)
             if (db && db.email === email && db.password === password) {
-                console.log('[Login] ✅ SuperAdmin login with stored credentials');
+                console.log('[Staff Login] ✅ SuperAdmin login with stored credentials');
                 const user = { ...db, loginId: db.loginId || db.id || 'SUPER_ADMIN', role: 'superadmin' };
                 sessionStorage.setItem('user', JSON.stringify(user));
-                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('staff_user', JSON.stringify(user));
+                localStorage.setItem('staff_token', 'superadmin_token');
+                // Clear owner sessions to prevent crosstalk
+                sessionStorage.removeItem('owner_session');
+                localStorage.removeItem('owner_user');
                 window.location.href = 'superadmin/superadmin.html';
                 return;
             }
 
-            console.log('[Login] Local SuperAdmin credentials not found, trying backend API...');
+            console.log('[Staff Login] Local SuperAdmin credentials not found, trying backend API...');
 
             // If local login failed, try backend API with timeout (5 seconds max)
             try {
@@ -244,28 +269,32 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.token && data.user) {
-                        console.log('[Login] ✅ SuperAdmin login via backend API');
+                        console.log('[Staff Login] ✅ SuperAdmin login via backend API');
                         // Store user and token from backend
-                        localStorage.setItem('user', JSON.stringify(data.user));
-                        localStorage.setItem('token', data.token);
-                        sessionStorage.setItem('token', data.token);
+                        localStorage.setItem('staff_user', JSON.stringify(data.user));
+                        localStorage.setItem('staff_token', data.token);
+                        sessionStorage.setItem('user', JSON.stringify(data.user));
+                        // Clear owner sessions to prevent crosstalk
+                        sessionStorage.removeItem('owner_session');
+                        localStorage.removeItem('owner_user');
                         window.location.href = 'superadmin/superadmin.html';
                         return;
                     }
                 }
             } catch (err) {
-                console.warn('[Login] Backend API unavailable or slow:', err.message);
+                console.warn('[Staff Login] Backend API unavailable or slow:', err.message);
                 // Continue to show invalid credentials error
             }
 
             // If both local and backend failed
-            console.warn('[Login] SuperAdmin login failed - Invalid credentials');
+            console.warn('[Staff Login] SuperAdmin login failed - Invalid credentials');
             showError('Invalid credentials.', errorMsg);
         }
 
         // Owner Login
+        // NOTE: This is for OWNER dashboard - uses owner_session key
         function loginOwner(ownerId, password, errorMsg) {
-            console.log('[Login] Searching for Owner with ID:', ownerId);
+            console.log('[Owner Login] Searching for Owner with ID:', ownerId);
             
             const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
             // Try direct lookup first, then case-insensitive search
@@ -277,7 +306,7 @@
             }
 
             if (!owner) {
-                console.warn('[Login] Owner not found with ID:', ownerId);
+                console.warn('[Owner Login] Owner not found with ID:', ownerId);
                 return showError('ID not found.', errorMsg);
             }
 
@@ -286,13 +315,19 @@
             if (storedPass === password) {
                 // Check if first time setup is needed
                 if (owner.credentials?.firstTime || !owner.passwordSet) {
-                    console.warn('[Login] Owner found but first-time password setup required:', ownerId);
+                    console.warn('[Owner Login] Owner found but first-time password setup required:', ownerId);
                     showError('Please use the separate portal to set your password.', errorMsg);
                     return;
                 }
 
-                console.log('[Login] ✅ Owner login successful:', ownerId);
-                // Successful login - set sessionStorage ONLY (do not clear shared localStorage to avoid cross-tab logout)
+                console.log('[Owner Login] ✅ Owner login successful:', ownerId);
+                // Clear STAFF sessions to prevent crosstalk
+                sessionStorage.removeItem('manager_user');
+                sessionStorage.removeItem('user');
+                localStorage.removeItem('staff_user');
+                localStorage.removeItem('staff_token');
+                
+                // Successful login - set owner session
                 const sessionUser = { 
                     loginId: ownerId, 
                     role: 'owner', 
@@ -300,42 +335,48 @@
                     name: owner.profile?.name || 'Owner' 
                 };
                 sessionStorage.setItem('owner_session', JSON.stringify(sessionUser));
+                localStorage.setItem('owner_user', JSON.stringify(sessionUser));
                 window.location.href = 'propertyowner/admin.html';
             } else {
-                console.warn('[Login] Owner credentials invalid for:', ownerId);
+                console.warn('[Owner Login] Owner credentials invalid for:', ownerId);
                 showError('Invalid credentials.', errorMsg);
             }
         }
 
-        // Area Manager Login  
+        // Area Manager Login
+        // NOTE: This is STAFF login section - uses staff_user/staff_token keys
         function loginAreaManager(loginId, password, errorMsg) {
             const db = JSON.parse(localStorage.getItem('roomhy_areamanagers_db') || '[]');
-            console.log('[Login] Searching for Area Manager with ID:', loginId);
-            console.log('[Login] Total area managers in storage:', db.length);
+            console.log('[Staff Login] Searching for Area Manager with ID:', loginId);
+            console.log('[Staff Login] Total area managers in storage:', db.length);
             
             const mgr = db.find(m => (m.loginId || '').toUpperCase() === loginId.toUpperCase() && m.password === password);
             if (mgr) {
-                console.log('[Login] ✅ Area Manager login successful:', loginId);
+                console.log('[Staff Login] ✅ Area Manager login successful:', loginId);
                 const user = { ...mgr, role: 'areamanager' };
                 user.areaCode = user.areaCode || user.area || user.areaName || '';
                 user.areaName = user.areaName || user.area || '';
-                // Set in both storages for cross-environment compatibility
+                // Set staff session with isolated keys
                 sessionStorage.setItem('manager_user', JSON.stringify(user));
                 sessionStorage.setItem('user', JSON.stringify(user));
-                localStorage.setItem('manager_user', JSON.stringify(user));
-                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('staff_user', JSON.stringify(user));
+                localStorage.setItem('staff_token', 'manager_token');
+                // Clear owner sessions to prevent crosstalk
+                sessionStorage.removeItem('owner_session');
+                localStorage.removeItem('owner_user');
                 window.location.href = 'Areamanager/areaadmin.html';
             } else {
-                console.warn('[Login] Area Manager not found or password mismatch for:', loginId);
+                console.warn('[Staff Login] Area Manager not found or password mismatch for:', loginId);
                 showError('Invalid credentials.', errorMsg);
             }
         }
 
         // Employee Login with detailed logging
+        // NOTE: This is STAFF login section - uses staff_user/staff_token keys
         function loginEmployee(loginId, password, errorMsg) {
              const employees = JSON.parse(localStorage.getItem('roomhy_employees') || '[]');
-             console.log('[Login] Searching for employee with ID:', loginId);
-             console.log('[Login] Total employees in storage:', employees.length);
+             console.log('[Staff Login] Searching for employee with ID:', loginId);
+             console.log('[Staff Login] Total employees in storage:', employees.length);
              
              const emp = employees.find(e => {
                  const storedId = (e.loginId || '').toUpperCase();
@@ -343,21 +384,21 @@
                  const passwordMatch = e.password === password;
                  
                  if (storedId === inputId) {
-                     console.log('[Login] Found matching loginId:', storedId);
-                     console.log('[Login] Password in storage:', e.password ? '***' + e.password.slice(-3) : 'EMPTY');
-                     console.log('[Login] Password entered:', password ? '***' + password.slice(-3) : 'EMPTY');
-                     console.log('[Login] Password match:', passwordMatch);
+                     console.log('[Staff Login] Found matching loginId:', storedId);
+                     console.log('[Staff Login] Password in storage:', e.password ? '***' + e.password.slice(-3) : 'EMPTY');
+                     console.log('[Staff Login] Password entered:', password ? '***' + password.slice(-3) : 'EMPTY');
+                     console.log('[Staff Login] Password match:', passwordMatch);
                  }
                  return storedId === inputId && passwordMatch;
              });
 
              if (!emp) {
-                 console.warn('[Login] Employee not found or password mismatch for:', loginId);
+                 console.warn('[Staff Login] Employee not found or password mismatch for:', loginId);
                  showError('Invalid credentials.', errorMsg);
                  return;
              }
 
-             console.log('[Login] ✅ Employee login successful:', loginId);
+             console.log('[Staff Login] ✅ Employee login successful:', loginId);
 
              const user = {
                  loginId: emp.loginId,
@@ -371,11 +412,14 @@
                  areaCode: emp.areaCode || ''
              };
 
-             // Set in both storages for cross-environment compatibility
+             // Set staff session with isolated keys
              sessionStorage.setItem('manager_user', JSON.stringify(user));
              sessionStorage.setItem('user', JSON.stringify(user));
-             localStorage.setItem('manager_user', JSON.stringify(user));
-             localStorage.setItem('user', JSON.stringify(user));
+             localStorage.setItem('staff_user', JSON.stringify(user));
+             localStorage.setItem('staff_token', 'employee_token');
+             // Clear owner sessions to prevent crosstalk
+             sessionStorage.removeItem('owner_session');
+             localStorage.removeItem('owner_user');
              window.location.href = 'Areamanager/areaadmin.html';
         }
 
