@@ -1,3 +1,15 @@
+<!--
+========================================
+WEBSITE LOGIN/SIGNUP PAGE
+========================================
+This page handles:
+- Website tenant signup (registration)
+- Website tenant login
+
+Uses storage key: website_user (isolated from staff/owner login)
+Available to: Website visitors and tenants
+========================================
+-->
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
@@ -573,9 +585,9 @@
                 }
 
                 // Login successful!
-                showToast('? Login successful! Redirecting...', 'success');
+                showToast('✅ Login successful! Redirecting...', 'success');
 
-                // Store user session
+                // Store user session with WEBSITE-specific key
                 const loggedInUser = {
                     id: user.id,
                     loginId: user.loginId,
@@ -588,8 +600,16 @@
                     kycStatus: user.kycStatus
                 };
 
-                localStorage.setItem('user', JSON.stringify(loggedInUser));
-                localStorage.setItem('sessionStorage', JSON.stringify(loggedInUser));
+                // Clear STAFF and OWNER sessions to prevent crosstalk
+                localStorage.removeItem('staff_user');
+                sessionStorage.removeItem('staff_user');
+                localStorage.removeItem('owner_user');
+                sessionStorage.removeItem('owner_user');
+                localStorage.removeItem('staff_token');
+
+                // Set WEBSITE user session with isolated key
+                localStorage.setItem('website_user', JSON.stringify(loggedInUser));
+                sessionStorage.setItem('website_user', JSON.stringify(loggedInUser));
 
                 // Redirect to dashboard after 800ms
                 setTimeout(() => {
@@ -645,9 +665,17 @@
                     const data = await res.json().catch(() => ({}));
                     if (res.ok && data) {
                         showToast(data.message || 'Account created', 'success');
-                        // If backend returned user & tokens, store them
+                        // If backend returned user & tokens, store them with WEBSITE-specific key
                         if (data.data && data.data.user) {
-                            localStorage.setItem('user', JSON.stringify(data.data.user));
+                            const userData = data.data.user;
+                            // Clear STAFF and OWNER sessions
+                            localStorage.removeItem('staff_user');
+                            sessionStorage.removeItem('staff_user');
+                            localStorage.removeItem('owner_user');
+                            sessionStorage.removeItem('owner_user');
+                            // Store website user
+                            localStorage.setItem('website_user', JSON.stringify(userData));
+                            sessionStorage.setItem('website_user', JSON.stringify(userData));
                             if (data.data.accessToken) localStorage.setItem('accessToken', data.data.accessToken);
                             if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
                         }
@@ -672,10 +700,19 @@
                 sendSignupEmail(email, firstName, userId, password);
                 
                 showToast('Account created! Verification email sent.', 'success');
-                // create local user and redirect to website index
+                // create local website user with isolated key and redirect to website index
                 const localUser = { name: firstName + (lastName ? ' ' + lastName : ''), email, loginId: email, role: 'tenant', id: userId };
-                localStorage.setItem('user', JSON.stringify(localUser));
-                localStorage.setItem('sessionStorage', JSON.stringify(localUser));
+                
+                // Clear STAFF and OWNER sessions
+                localStorage.removeItem('staff_user');
+                sessionStorage.removeItem('staff_user');
+                localStorage.removeItem('owner_user');
+                sessionStorage.removeItem('owner_user');
+                localStorage.removeItem('staff_token');
+                
+                // Store website user with isolated key
+                localStorage.setItem('website_user', JSON.stringify(localUser));
+                sessionStorage.setItem('website_user', JSON.stringify(localUser));
                 setTimeout(() => { window.location.href = 'index.html'; }, 800);
             });
         }

@@ -3,18 +3,28 @@
  * Handles user session management and authentication checks
  */
 
-// Storage keys
+// Storage keys - each section has isolated session
 const AUTH_KEY = 'roomhy_auth';
-const USER_KEY = 'user';
+const USER_KEY = 'user'; // Legacy key for backward compatibility
+const WEBSITE_USER_KEY = 'website_user'; // Website/Tenant users
+const STAFF_USER_KEY = 'staff_user'; // Staff (SuperAdmin/Manager/Employee)
+const OWNER_USER_KEY = 'owner_user'; // Property owners
 
 /**
  * Get current logged-in user
+ * Checks all session types in priority order
  * @returns {Object|null} User object or null if not logged in
  */
 function getCurrentUser() {
     try {
-        // Try multiple storage locations for compatibility
-        const userStr = localStorage.getItem(USER_KEY) || 
+        // Try multiple storage locations in priority order
+        const userStr = localStorage.getItem(WEBSITE_USER_KEY) ||  // Website tenant user (highest priority)
+                       sessionStorage.getItem(WEBSITE_USER_KEY) ||
+                       localStorage.getItem(STAFF_USER_KEY) ||     // Staff user
+                       sessionStorage.getItem(STAFF_USER_KEY) ||
+                       localStorage.getItem(OWNER_USER_KEY) ||     // Owner user
+                       sessionStorage.getItem(OWNER_USER_KEY) ||
+                       localStorage.getItem(USER_KEY) ||           // Legacy key
                        sessionStorage.getItem(USER_KEY) ||
                        localStorage.getItem(AUTH_KEY);
         
