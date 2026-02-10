@@ -768,93 +768,103 @@
             // Get user ID from signup data
             const userId = signedUpUser.id || signedUpUser._id || signedUpUser.loginId || '';
 
-            // Submit a bid for EACH selected property (same workflow as requests)
-            let successCount = 0;
-            let failedCount = 0;
-
             document.getElementById('propertiesLoadingSpinner').classList.add('show');
 
-            for (const propertyId of selectedPropertyIds) {
-                try {
-                    // Find the property object from propertiesData to get owner details
-                    const property = propertiesData.find(p => p._id === propertyId || p.propertyId === propertyId || p.visitId === propertyId);
-                    
-                    if (!property) {
-                        console.warn('Property not found for ID:', propertyId);
-                        failedCount++;
-                        continue;
-                    }
+            // INSTANT FEEDBACK: Show confirmation modal immediately
+            // Don't wait for API calls
+            console.log('📋 Submitting bids for', selectedPropertyIds.length, 'properties');
+            showSuccessModal(selectedPropertyIds.length);
 
-                    // Get property owner ID
-                    const propertyOwnerId = (property.generatedCredentials && property.generatedCredentials.loginId) || 
-                                           property.ownerLoginId || 
-                                           property.createdBy || 
-                                           property.owner || 
-                                           property.propertyOwnerId;
+            // Submit bids in background (non-blocking)
+            // Use async/await without blocking the UI
+            (async () => {
+                let successCount = 0;
+                let failedCount = 0;
 
-                    if (!propertyOwnerId) {
-                        console.warn('Could not find property owner for property:', propertyId);
-                        failedCount++;
-                        continue;
-                    }
-
-                    // Prepare bid data in same format as property.html booking requests
-                    const bidData = {
-                        property_id: propertyId,
-                        property_name: property.property_name || property.propertyInfo?.name || 'Property',
-                        area: property.locality || property.propertyInfo?.area || '',
-                        property_type: property.propertyType || property.propertyInfo?.propertyType || 'Property',
-                        rent_amount: parseInt(property.monthlyRent || property.rent || property.propertyInfo?.rent || 0),
-                        user_id: userId,
-                        owner_id: propertyOwnerId,
-                        name: document.getElementById('fullName').value,
-                        email: emailFromForm,
-                        phone: '',
-                        request_type: 'bid', // Mark as bid instead of request
-                        message: `Looking for property with rent ₹${document.getElementById('minPrice').value}-${document.getElementById('maxPrice').value}, Gender: ${document.getElementById('gender').value}`
-                    };
-
-                    console.log('📤 Submitting bid for property:', propertyId, bidData);
-
-                    // Submit to /api/booking/create (same endpoint as requests)
-                    const response = await fetch(`${API_URL}/api/booking/create`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(bidData)
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log('✅ Bid submitted successfully for property:', propertyId, 'Booking ID:', result.bookingId || result._id);
+                for (const propertyId of selectedPropertyIds) {
+                    try {
+                        // Find the property object from propertiesData to get owner details
+                        const property = propertiesData.find(p => p._id === propertyId || p.propertyId === propertyId || p.visitId === propertyId);
                         
-                        // Store user email and loginId for websitechat.html
-                        if (!localStorage.getItem('user_email')) {
-                            localStorage.setItem('user_email', emailFromForm);
+                        if (!property) {
+                            console.warn('Property not found for ID:', propertyId);
+                            failedCount++;
+                            continue;
                         }
-                        if (!localStorage.getItem('user_id')) {
-                            localStorage.setItem('user_id', userId);
+
+                        // Get property owner ID
+                        const propertyOwnerId = (property.generatedCredentials && property.generatedCredentials.loginId) || 
+                                               property.ownerLoginId || 
+                                               property.createdBy || 
+                                               property.owner || 
+                                               property.propertyOwnerId;
+
+                        if (!propertyOwnerId) {
+                            console.warn('Could not find property owner for property:', propertyId);
+                            failedCount++;
+                            continue;
                         }
-                        
-                        successCount++;
-                    } else {
-                        const error = await response.text();
-                        console.error('❌ Failed to submit bid for property:', propertyId, error);
+
+                        // Prepare bid data in same format as property.html booking requests
+                        const bidData = {
+                            property_id: propertyId,
+                            property_name: property.property_name || property.propertyInfo?.name || 'Property',
+                            area: property.locality || property.propertyInfo?.area || '',
+                            property_type: property.propertyType || property.propertyInfo?.propertyType || 'Property',
+                            rent_amount: parseInt(property.monthlyRent || property.rent || property.propertyInfo?.rent || 0),
+                            user_id: userId,
+                            owner_id: propertyOwnerId,
+                            name: document.getElementById('fullName').value,
+                            email: emailFromForm,
+                            phone: '',
+                            request_type: 'bid', // Mark as bid instead of request
+                            message: `Looking for property with rent ₹${document.getElementById('minPrice').value}-${document.getElementById('maxPrice').value}, Gender: ${document.getElementById('gender').value}`
+                        };
+
+                        console.log('📤 Submitting bid for property:', propertyId);
+
+                        // Submit to /api/booking/create with 5 second timeout
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                        const response = await fetch(`${API_URL}/api/booking/create`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(bidData),
+                            signal: controller.signal
+                        });
+
+                        clearTimeout(timeoutId);
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            console.log('✅ Bid submitted successfully for property:', propertyId, 'Booking ID:', result.bookingId || result._id);
+                            successCount++;
+                        } else {
+                            const error = await response.text();
+                            console.error('❌ Failed to submit bid for property:', propertyId, error);
+                            failedCount++;
+                        }
+                    } catch (error) {
+                        console.error('Error submitting bid for property:', propertyId, error.message);
                         failedCount++;
                     }
-                } catch (error) {
-                    console.error('Error submitting bid for property:', propertyId, error);
-                    failedCount++;
                 }
-            }
 
-            document.getElementById('propertiesLoadingSpinner').classList.remove('show');
+                // Background completion logging
+                console.log('🏁 Bid submission batch complete:', successCount, 'successful,', failedCount, 'failed');
 
-            // Show results
-            if (successCount > 0) {
-                showSuccessModal(successCount);
-            } else {
-                alert('Failed to submit bids. Please try again.');
-            }
+                // Store user email and loginId for websitechat.html
+                if (!localStorage.getItem('user_email')) {
+                    localStorage.setItem('user_email', emailFromForm);
+                }
+                if (!localStorage.getItem('user_id')) {
+                    localStorage.setItem('user_id', userId);
+                }
+
+                // Hide spinner after all requests complete
+                document.getElementById('propertiesLoadingSpinner').classList.remove('show');
+            })();
         });
 
         // Show success modal
