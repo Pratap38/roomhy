@@ -126,11 +126,47 @@
             sessionStorage.removeItem('user');
             sessionStorage.removeItem('owner_session');
 
-            // Fast format-based detection first (no parsing needed)
             const up = loginId.toUpperCase();
 
+            // Priority 1: Check databases first (supports old and new IDs)
+            // This ensures old IDs are found before format-based routing
+            
+            // Check Area Managers DB
+            try {
+                const mgrs = JSON.parse(localStorage.getItem('roomhy_areamanagers_db') || '[]');
+                if (Array.isArray(mgrs) && mgrs.find(m => (m.loginId || '').toUpperCase() === up)) {
+                    loginAreaManager(loginId, password, errorMsg);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Could not parse roomhy_areamanagers_db', e);
+            }
+
+            // Check Employees DB
+            try {
+                const emps = JSON.parse(localStorage.getItem('roomhy_employees') || '[]');
+                if (Array.isArray(emps) && emps.find(e => (e.loginId || '').toUpperCase() === up)) {
+                    loginEmployee(loginId, password, errorMsg);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Could not parse roomhy_employees', e);
+            }
+
+            // Check Owners DB (object keyed by ownerId)
+            try {
+                const owners = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
+                if (owners && (owners[loginId] || owners[up])) {
+                    loginOwner(loginId, password, errorMsg);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Could not parse roomhy_owners_db', e);
+            }
+
+            // Priority 2: Format-based detection for new IDs or non-database matches
             if (loginId.includes('@')) {
-                // Email format - try SuperAdmin (fastest path)
+                // Email format - try SuperAdmin
                 loginSuperAdmin(loginId, password, errorMsg);
                 return;
             } else if (up.startsWith('ROOMHY')) {
@@ -145,38 +181,6 @@
                 // Employee format (RY prefix or generic EMP)
                 loginEmployee(loginId, password, errorMsg);
                 return;
-            }
-
-            // Fallback: check databases if format doesn't match (slower path)
-            try {
-                const mgrs = JSON.parse(localStorage.getItem('roomhy_areamanagers_db') || '[]');
-                if (Array.isArray(mgrs) && mgrs.find(m => (m.loginId || '').toUpperCase() === up)) {
-                    loginAreaManager(loginId, password, errorMsg);
-                    return;
-                }
-            } catch (e) {
-                console.warn('Could not parse roomhy_areamanagers_db', e);
-            }
-
-            try {
-                const emps = JSON.parse(localStorage.getItem('roomhy_employees') || '[]');
-                if (Array.isArray(emps) && emps.find(e => (e.loginId || '').toUpperCase() === up)) {
-                    loginEmployee(loginId, password, errorMsg);
-                    return;
-                }
-            } catch (e) {
-                console.warn('Could not parse roomhy_employees', e);
-            }
-
-            // Check Owners DB (object keyed by ownerId)
-            try {
-                const owners = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
-                if (owners && (owners[loginId] || owners[up] || Object.prototype.hasOwnProperty.call(owners, loginId))) {
-                    loginOwner(loginId, password, errorMsg);
-                    return;
-                }
-            } catch (e) {
-                console.warn('Could not parse roomhy_owners_db', e);
             }
 
             // If no match found anywhere
