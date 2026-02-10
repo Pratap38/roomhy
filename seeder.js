@@ -99,8 +99,13 @@ function initializeSeeder() {
     console.log("Tenants: To be created by Property Owner");
 }
 
-// Auto-initialize on page load
-document.addEventListener('DOMContentLoaded', initializeSeeder);
+// Auto-initialize on page load (check if already initialized to skip redundant work)
+document.addEventListener('DOMContentLoaded', function() {
+    // Only run seeder if data doesn't exist yet (avoids redundant checks)
+    if (!localStorage.getItem('roomhy_superadmin_db')) {
+        initializeSeeder();
+    }
+});
 
 // Also allow manual initialization
 if (typeof window !== 'undefined') {
