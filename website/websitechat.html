@@ -812,11 +812,30 @@
         let currentChat = null;
         let unsubscribeMessages = null;
 
-        // Load Session User
+        // Load Session User - Use AuthUtils for proper session isolation
         async function loadUser() {
-            let user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || 'null');
+            // Use AuthUtils to get properly isolated website_user session
+            let user = null;
             
-            // If not logged in, try to get user from email stored in localStorage
+            // Try AuthUtils first (checks website_user, staff_user, owner_user, legacy user)
+            if (typeof AuthUtils !== 'undefined' && AuthUtils.isLoggedIn()) {
+                user = AuthUtils.getCurrentUser();
+                console.log('[WebsiteChat] ✅ Loaded user from AuthUtils:', user.id || user.loginId);
+            }
+            
+            // Fallback: manual check for website_user key
+            if (!user) {
+                user = JSON.parse(sessionStorage.getItem('website_user') || localStorage.getItem('website_user') || 'null');
+                console.log('[WebsiteChat] ℹ️ Loaded user from website_user key:', user?.id || user?.loginId);
+            }
+            
+            // Final fallback: check legacy 'user' key
+            if (!user) {
+                user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || 'null');
+                console.log('[WebsiteChat] ℹ️ Loaded user from legacy user key:', user?.id || user?.loginId);
+            }
+            
+            // If still not logged in, try to get user from email stored in localStorage
             if (!user) {
                 const email = localStorage.getItem('user_email');
                 if (email) {
@@ -826,6 +845,7 @@
                         : 'https://roomhy-backend-wqwo.onrender.com';
                     
                     try {
+                        console.log('[WebsiteChat] 🔄 Fetching user from KYC API...');
                         const response = await fetch(`${API_URL}/api/kyc`);
                         const result = await response.json();
                         const kycUsers = result.data || [];
@@ -833,26 +853,32 @@
                         
                         if (kycUser) {
                             user = {
-                                loginId: kycUser.loginId || kycUser.id || kycUser._id,
+                                id: kycUser.id || kycUser._id,
+                                loginId: kycUser.loginId || kycUser.email,
                                 email: kycUser.email,
-                                name: kycUser.name || 'User',
+                                name: kycUser.name || kycUser.firstName || 'User',
                                 firstName: kycUser.firstName || 'User'
                             };
-                            console.log('✅ Loaded user from KYC:', user.loginId);
+                            console.log('[WebsiteChat] ✅ Loaded user from KYC API:', user.id);
                         }
                     } catch (e) {
-                        console.warn('Could not fetch KYC data:', e.message);
+                        console.warn('[WebsiteChat] ⚠️ Could not fetch KYC data:', e.message);
                     }
                 }
             }
             
             if (user) {
                 currentUser = user;
-                console.log('✅ User loaded:', currentUser.loginId);
+                console.log('[WebsiteChat] ✅ User session loaded:', {
+                    userId: currentUser.id || currentUser.loginId,
+                    name: currentUser.firstName || currentUser.name,
+                    email: currentUser.email
+                });
                 loadChats();
             } else {
+                console.error('[WebsiteChat] ❌ No user session found');
                 alert('Please login to continue');
-                window.location.href = 'tenantlogin.html';
+                window.location.href = 'signup.html';
             }
         }
 
@@ -908,29 +934,29 @@
         // Fetch user's ACCEPTED bookings to build chat list
         async function loadChats() {
             if (!currentUser) return;
-            const loginId = currentUser.loginId || localStorage.getItem('user_id');
-            const userId = localStorage.getItem('user_id');
+            const userId = currentUser.id || currentUser.loginId || localStorage.getItem('user_id');
+            const userEmail = currentUser.email || localStorage.getItem('user_email');
             const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
                 ? 'http://localhost:5001' 
                 : 'https://roomhy-backend-wqwo.onrender.com';
 
             try {
-                console.log('🔄 Loading accepted bookings and chats...');
+                console.log('[WebsiteChat] 🔄 Loading accepted bookings and chats...');
+                console.log('[WebsiteChat] Current user:', { userId, userEmail });
                 
                 // PRIMARY: Fetch bookings with accepted status from database
                 let url = `${API_URL}/api/booking/requests`;
                 
-                // Try by user_id first, then loginId, then email
+                // Try by user_id first, then email
                 const identifiers = [];
                 if (userId) identifiers.push({ key: 'user_id', value: userId });
-                if (loginId) identifiers.push({ key: 'user_id', value: loginId });
-                identifiers.push({ key: 'email', value: loginId || userId || '' });
+                identifiers.push({ key: 'email', value: userEmail || userId || '' });
                 
                 // Build URL with all identifiers
                 const idParams = identifiers.map(i => `${i.key}=${encodeURIComponent(i.value)}`).join('&');
                 url += `?${idParams}`;
                 
-                console.log('📍 Fetching bookings from:', url);
+                console.log('[WebsiteChat] 📍 Fetching bookings from:', url);
                 const response = await fetch(url);
                 const result = await response.json();
                 const allBookings = result.data || [];
@@ -945,22 +971,22 @@
                     return isAccepted || isConfirmed || b.isAccepted === true;
                 });
                 
-                console.log(`📊 Total bookings from DB: ${allBookings.length}, Accepted: ${acceptedBookings.length}`);
-                console.log('💾 Accepted bookings from DB:', acceptedBookings);
+                console.log(`[WebsiteChat] 📊 Total bookings from DB: ${allBookings.length}, Accepted: ${acceptedBookings.length}`);
+                console.log('[WebsiteChat] 💾 Accepted bookings:', acceptedBookings);
 
                 // SECONDARY: Fetch chat rooms that owner created
                 const backendChats = [];
                 try {
-                    const chatsResponse = await fetch(`${API_URL}/api/chat/rooms?user_email=${loginId || userId}`);
+                    const chatsResponse = await fetch(`${API_URL}/api/chat/rooms?user_email=${userEmail || userId}`);
                     if (chatsResponse.ok) {
                         const chatsResult = await chatsResponse.json();
                         const chats = chatsResult.data || chatsResult || [];
-                        console.log('📥 Raw backend chats:', chats);
+                        console.log('[WebsiteChat] 📥 Raw backend chats:', chats);
                         backendChats.push(...chats);
-                        console.log('💬 Loaded', backendChats.length, 'chat rooms from backend');
+                        console.log('[WebsiteChat] 💬 Loaded', backendChats.length, 'chat rooms from backend');
                     }
                 } catch (e) {
-                    console.log('ℹ️ Chat rooms endpoint not available:', e.message);
+                    console.log('[WebsiteChat] ℹ️ Chat rooms endpoint not available:', e.message);
                 }
 
                 // TERTIARY: Load chats from localStorage (created locally)
@@ -968,9 +994,9 @@
                 try {
                     const storedChatRooms = JSON.parse(localStorage.getItem('chatRooms') || '[]');
                     localStorageChats.push(...storedChatRooms);
-                    console.log('💾 Loaded', storedChatRooms.length, 'chats from localStorage');
+                    console.log('[WebsiteChat] 💾 Loaded', storedChatRooms.length, 'chats from localStorage');
                 } catch (e) {
-                    console.log('ℹ️ No chats in localStorage');
+                    console.log('[WebsiteChat] ℹ️ No chats in localStorage');
                 }
 
                 // Combine all sources: prioritize database accepted bookings
@@ -1007,7 +1033,7 @@
                             || b.ownerContactName
                             || b.contactName
                             || b.participants?.[0]?.name
-                            || b.userName;  // ← Added: might be in userName
+                            || b.userName;
                         
                         // If still no owner name, try to extract from booking_details if available
                         if (!ownerName && b.booking_details) {
@@ -1028,7 +1054,7 @@
                             || b.property?.title
                             || b.roomName
                             || b.room_name
-                            || b.title;  // ← Added
+                            || b.title;
                         
                         // If still no property name, try booking_details
                         if (!propertyName && b.booking_details) {
@@ -1058,7 +1084,7 @@
                             try {
                                 ownerName = await fetchOwnerName(ownerId);
                             } catch (e) {
-                                console.warn('Could not fetch owner name for:', ownerId, 'Using ID instead');
+                                console.warn('[WebsiteChat] Could not fetch owner name for:', ownerId, 'Using ID instead');
                                 ownerName = ownerId || 'Property Owner';
                             }
                         }
@@ -1082,8 +1108,9 @@
                             location: b.location || b.property?.location || ''
                         };
                         
-                        console.log('✅ Chat ready:', {
+                        console.log('[WebsiteChat] ✅ Chat prepared:', {
                             owner: chat.owner_name,
+                            ownerId: chat.owner_id,
                             property: chat.property_name,
                             propertyId: chat.property_id,
                             status: chat.status
@@ -1101,7 +1128,7 @@
                     return;
                 }
                 
-                console.log(`🎯 Rendering ${uniqueChats.length} unique chats`);
+                console.log(`[WebsiteChat] 🎯 Rendering ${uniqueChats.length} unique chats`);
                 
                 uniqueChats.forEach((chat, idx) => {
                     const item = document.createElement('div');
@@ -1123,16 +1150,16 @@
                         <div class="flex-1 min-w-0">
                             <h4 class="text-base font-bold text-slate-900 truncate">${chat.owner_name || 'Property Owner'}</h4>
                             <p class="text-sm text-slate-500 uppercase font-semibold tracking-wide truncate">${chat.property_name || 'Roomhy Property'}</p>
-                            <p class="text-xs text-slate-600 mt-1">✅ Accepted | ID: ${propertyId}</p>
+                            <p class="text-xs text-slate-600 mt-1">✅ Accepted | Owner ID: <span class="font-mono">${chat.owner_id || 'N/A'}</span></p>
                         </div>
                     `;
                     item.onclick = () => openChat(chat);
                     chatList.appendChild(item);
                 });
                 
-                console.log('✅ Chat list loaded with', uniqueChats.length, 'chats');
+                console.log('[WebsiteChat] ✅ Chat list loaded with', uniqueChats.length, 'chats');
             } catch (err) {
-                console.error("Error loading chats", err);
+                console.error("[WebsiteChat] Error loading chats", err);
             }
         }
 
@@ -1141,26 +1168,39 @@
             document.getElementById('no-chat-selected').classList.add('hidden');
             document.getElementById('chat-active').classList.remove('hidden');
             
-            // Display owner information
+            // Display owner information clearly
             const ownerName = chat.owner_name || chat.ownerName || 'Property Owner';
             const ownerId = chat.owner_id || chat.ownerLoginId || '...';
             const ownerInitial = (ownerName || 'O').charAt(0).toUpperCase();
             
+            console.log('[WebsiteChat] 📞 Opening chat with owner:', {
+                name: ownerName,
+                id: ownerId,
+                property: chat.property_name || 'N/A'
+            });
+            
+            // Update header with owner name (primary display)
             document.getElementById('active-chat-name').textContent = ownerName;
-            document.getElementById('active-chat-id').textContent = `Login ID: ${ownerId}`;
+            
+            // Update subheader with owner ID and property (secondary display)
+            const headerSubtext = document.getElementById('active-chat-id');
+            headerSubtext.innerHTML = `<span class="text-[10px] font-mono">ID: ${ownerId}</span> • <span class="text-[10px]">${chat.property_name || 'Property'}</span>`;
+            
+            // Update avatar with initial
             document.getElementById('active-chat-avatar').textContent = ownerInitial;
             
             // Update avatar background color based on owner initial
             const avatarEl = document.getElementById('active-chat-avatar');
             const colors = ['bg-indigo-100', 'bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-pink-100'];
             const colorIndex = ownerInitial.charCodeAt(0) % colors.length;
-            avatarEl.className = `w-12 h-12 rounded-full ${colors[colorIndex]} flex items-center justify-center font-bold text-slate-700`;
+            const textColors = ['text-indigo-700', 'text-blue-700', 'text-green-700', 'text-purple-700', 'text-pink-700'];
+            avatarEl.className = `w-12 h-12 rounded-full ${colors[colorIndex]} ${textColors[colorIndex]} flex items-center justify-center font-bold`;
 
             if (window.innerWidth < 768) {
                 document.getElementById('contacts-panel').classList.add('hidden');
             }
 
-            console.log('✅ Chat opened with owner:', ownerName, 'ID:', ownerId);
+            console.log('[WebsiteChat] ✅ Chat header updated - Owner: ' + ownerName + ', ID: ' + ownerId);
             loadMessages();
         }
 
@@ -1169,30 +1209,35 @@
 
             const bookingId = currentChat._id || currentChat.id || currentChat.bookingId;
             if (!bookingId) {
-                console.error('❌ No booking ID found in current chat:', currentChat);
+                console.error('[WebsiteChat] ❌ No booking ID found in current chat:', currentChat);
                 return;
             }
             
-            console.log('🔄 Loading messages for booking:', bookingId);
-            console.log('Current user ID:', currentUser.loginId);
+            const userId = currentUser.id || currentUser.loginId;
+            console.log('[WebsiteChat] 🔄 Loading messages for booking:', {
+                bookingId,
+                userId,
+                userName: currentUser.name || currentUser.firstName
+            });
+            
             const messagesRef = window.collection(window.db, 'chats', bookingId, 'messages');
             const q = window.query(messagesRef, window.orderBy('timestamp', 'asc'));
 
             if (unsubscribeMessages) unsubscribeMessages();
 
             unsubscribeMessages = window.onSnapshot(q, (snapshot) => {
-                console.log('📬 Firestore snapshot received, message count:', snapshot.size);
+                console.log('[WebsiteChat] 📬 Firestore snapshot received, message count:', snapshot.size);
                 const messagesDiv = document.getElementById('messages');
                 
                 if (!messagesDiv) {
-                    console.error('❌ Messages div not found in DOM');
+                    console.error('[WebsiteChat] ❌ Messages div not found in DOM');
                     return;
                 }
                 
                 messagesDiv.innerHTML = '';
 
                 if (snapshot.empty) {
-                    console.log('⚠️ No messages in Firestore for booking:', bookingId);
+                    console.log('[WebsiteChat] ⚠️ No messages in Firestore for booking:', bookingId);
                     messagesDiv.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">No messages yet. Start the conversation!</div>';
                     return;
                 }
