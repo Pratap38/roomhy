@@ -116,6 +116,8 @@
             const errorMsg = document.getElementById('error-msg');
             errorMsg.classList.add('hidden');
 
+            console.log('[Login] Starting login process for ID:', loginId);
+
             if (!loginId || !password) {
                 showError('Please fill in all fields.', errorMsg);
                 return;
@@ -135,6 +137,7 @@
             try {
                 const mgrs = JSON.parse(localStorage.getItem('roomhy_areamanagers_db') || '[]');
                 if (Array.isArray(mgrs) && mgrs.find(m => (m.loginId || '').toUpperCase() === up)) {
+                    console.log('[Login] Found in Area Managers DB');
                     loginAreaManager(loginId, password, errorMsg);
                     return;
                 }
@@ -146,6 +149,7 @@
             try {
                 const emps = JSON.parse(localStorage.getItem('roomhy_employees') || '[]');
                 if (Array.isArray(emps) && emps.find(e => (e.loginId || '').toUpperCase() === up)) {
+                    console.log('[Login] Found in Employees DB');
                     loginEmployee(loginId, password, errorMsg);
                     return;
                 }
@@ -157,6 +161,7 @@
             try {
                 const owners = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
                 if (owners && (owners[loginId] || owners[up])) {
+                    console.log('[Login] Found in Owners DB');
                     loginOwner(loginId, password, errorMsg);
                     return;
                 }
@@ -165,35 +170,44 @@
             }
 
             // Priority 2: Format-based detection for new IDs or non-database matches
+            console.log('[Login] Using format-based detection for ID:', loginId);
             if (loginId.includes('@')) {
                 // Email format - try SuperAdmin
+                console.log('[Login] Detected SuperAdmin (email format)');
                 loginSuperAdmin(loginId, password, errorMsg);
                 return;
             } else if (up.startsWith('ROOMHY')) {
                 // Owner ID format
+                console.log('[Login] Detected Owner (ROOMHY prefix)');
                 loginOwner(loginId, password, errorMsg);
                 return;
             } else if (up.startsWith('MGR')) {
                 // Area Manager format
+                console.log('[Login] Detected Area Manager (MGR prefix)');
                 loginAreaManager(loginId, password, errorMsg);
                 return;
             } else if (up.startsWith('RY') || up.startsWith('EMP')) {
                 // Employee format (RY prefix or generic EMP)
+                console.log('[Login] Detected Employee (RY/EMP prefix)');
                 loginEmployee(loginId, password, errorMsg);
                 return;
             }
 
             // If no match found anywhere
+            console.error('[Login] Could not detect user type for ID:', loginId);
             showError('Login ID format not recognized.', errorMsg);
         }
 
         // SuperAdmin Login with optimized speed - try local first, then backend
         async function loginSuperAdmin(email, password, errorMsg) {
+            console.log('[Login] Attempting SuperAdmin login with email:', email);
+            
             // Try local login first (instant) - this is the primary path
             const db = JSON.parse(localStorage.getItem('roomhy_superadmin_db') || 'null');
             
             // Check hardcoded default credentials first (fastest)
             if (!db && email === 'roomhyadmin@gmail.com' && password === 'admin@123') {
+                console.log('[Login] ✅ SuperAdmin login with default credentials');
                 const user = { id: 'SUPER_ADMIN', loginId: 'SUPER_ADMIN', email, name: 'Super Admin', role: 'superadmin' };
                 sessionStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('user', JSON.stringify(user));
@@ -203,12 +217,15 @@
 
             // Check local database (stored by seeder)
             if (db && db.email === email && db.password === password) {
+                console.log('[Login] ✅ SuperAdmin login with stored credentials');
                 const user = { ...db, loginId: db.loginId || db.id || 'SUPER_ADMIN', role: 'superadmin' };
                 sessionStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('user', JSON.stringify(user));
                 window.location.href = 'superadmin/superadmin.html';
                 return;
             }
+
+            console.log('[Login] Local SuperAdmin credentials not found, trying backend API...');
 
             // If local login failed, try backend API with timeout (5 seconds max)
             try {
@@ -227,6 +244,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.token && data.user) {
+                        console.log('[Login] ✅ SuperAdmin login via backend API');
                         // Store user and token from backend
                         localStorage.setItem('user', JSON.stringify(data.user));
                         localStorage.setItem('token', data.token);
@@ -236,16 +254,19 @@
                     }
                 }
             } catch (err) {
-                console.log('Backend API unavailable or slow:', err.message);
+                console.warn('[Login] Backend API unavailable or slow:', err.message);
                 // Continue to show invalid credentials error
             }
 
             // If both local and backend failed
+            console.warn('[Login] SuperAdmin login failed - Invalid credentials');
             showError('Invalid credentials.', errorMsg);
         }
 
         // Owner Login
         function loginOwner(ownerId, password, errorMsg) {
+            console.log('[Login] Searching for Owner with ID:', ownerId);
+            
             const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
             // Try direct lookup first, then case-insensitive search
             let owner = db[ownerId];
@@ -256,6 +277,7 @@
             }
 
             if (!owner) {
+                console.warn('[Login] Owner not found with ID:', ownerId);
                 return showError('ID not found.', errorMsg);
             }
 
@@ -264,10 +286,12 @@
             if (storedPass === password) {
                 // Check if first time setup is needed
                 if (owner.credentials?.firstTime || !owner.passwordSet) {
+                    console.warn('[Login] Owner found but first-time password setup required:', ownerId);
                     showError('Please use the separate portal to set your password.', errorMsg);
                     return;
                 }
 
+                console.log('[Login] ✅ Owner login successful:', ownerId);
                 // Successful login - set sessionStorage ONLY (do not clear shared localStorage to avoid cross-tab logout)
                 const sessionUser = { 
                     loginId: ownerId, 
@@ -278,15 +302,20 @@
                 sessionStorage.setItem('owner_session', JSON.stringify(sessionUser));
                 window.location.href = 'propertyowner/admin.html';
             } else {
+                console.warn('[Login] Owner credentials invalid for:', ownerId);
                 showError('Invalid credentials.', errorMsg);
             }
         }
 
-        // Area Manager Login
+        // Area Manager Login  
         function loginAreaManager(loginId, password, errorMsg) {
             const db = JSON.parse(localStorage.getItem('roomhy_areamanagers_db') || '[]');
+            console.log('[Login] Searching for Area Manager with ID:', loginId);
+            console.log('[Login] Total area managers in storage:', db.length);
+            
             const mgr = db.find(m => (m.loginId || '').toUpperCase() === loginId.toUpperCase() && m.password === password);
             if (mgr) {
+                console.log('[Login] ✅ Area Manager login successful:', loginId);
                 const user = { ...mgr, role: 'areamanager' };
                 user.areaCode = user.areaCode || user.area || user.areaName || '';
                 user.areaName = user.areaName || user.area || '';
@@ -297,19 +326,38 @@
                 localStorage.setItem('user', JSON.stringify(user));
                 window.location.href = 'Areamanager/areaadmin.html';
             } else {
+                console.warn('[Login] Area Manager not found or password mismatch for:', loginId);
                 showError('Invalid credentials.', errorMsg);
             }
         }
 
-        // Employee Login
+        // Employee Login with detailed logging
         function loginEmployee(loginId, password, errorMsg) {
              const employees = JSON.parse(localStorage.getItem('roomhy_employees') || '[]');
-             const emp = employees.find(e => (e.loginId || '').toUpperCase() === loginId.toUpperCase() && e.password === password);
+             console.log('[Login] Searching for employee with ID:', loginId);
+             console.log('[Login] Total employees in storage:', employees.length);
+             
+             const emp = employees.find(e => {
+                 const storedId = (e.loginId || '').toUpperCase();
+                 const inputId = loginId.toUpperCase();
+                 const passwordMatch = e.password === password;
+                 
+                 if (storedId === inputId) {
+                     console.log('[Login] Found matching loginId:', storedId);
+                     console.log('[Login] Password in storage:', e.password ? '***' + e.password.slice(-3) : 'EMPTY');
+                     console.log('[Login] Password entered:', password ? '***' + password.slice(-3) : 'EMPTY');
+                     console.log('[Login] Password match:', passwordMatch);
+                 }
+                 return storedId === inputId && passwordMatch;
+             });
 
              if (!emp) {
+                 console.warn('[Login] Employee not found or password mismatch for:', loginId);
                  showError('Invalid credentials.', errorMsg);
                  return;
              }
+
+             console.log('[Login] ✅ Employee login successful:', loginId);
 
              const user = {
                  loginId: emp.loginId,

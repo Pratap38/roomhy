@@ -697,6 +697,27 @@
                         // Persist merged cache for future fallback
                         try { localStorage.setItem('roomhy_employees_cache', JSON.stringify(employeesCache)); } catch(e) { console.warn('Could not persist merged employees cache:', e); }
 
+                        // IMPORTANT: Update roomhy_employees with plain passwords for index.html login
+                        // Extract login credentials (loginId + password only)
+                        const loginCredsArray = employeesCache.map(emp => ({
+                            loginId: emp.loginId,
+                            password: emp.password,
+                            name: emp.name,
+                            role: emp.role || 'employee',
+                            team: emp.role || emp.team || 'Employee',
+                            email: emp.email || '',
+                            permissions: emp.permissions || [],
+                            area: emp.area || '',
+                            areaName: emp.area || '',
+                            areaCode: emp.areaCode || ''
+                        }));
+                        try { 
+                            localStorage.setItem('roomhy_employees', JSON.stringify(loginCredsArray));
+                            console.log('✅ Updated roomhy_employees with', loginCredsArray.length, 'credentials for login');
+                        } catch(e) { 
+                            console.warn('Could not update roomhy_employees:', e); 
+                        }
+
                         console.log('Employees loaded into memory. Count:', employeesCache.length);
                     } else {
                         console.warn('Backend returned invalid employee data:', data);
@@ -987,24 +1008,28 @@
             if (!isEditing) {
                 // Store in roomhy_employees for index.html login
                 try {
+                    // Save credentials to roomhy_employees (this is what index.html uses for login)
                     const existingEmployees = JSON.parse(localStorage.getItem('roomhy_employees') || '[]');
+                    // Remove any old entry with same loginId to avoid duplicates
+                    const filtered = existingEmployees.filter(e => (e.loginId || '').toUpperCase() !== finalLoginId.toUpperCase());
+                    
                     const newEmployee = {
                         loginId: finalLoginId,
                         password: password,
                         name: name,
-                        email: email,
-                        phone: phone,
+                        email: email || '',
+                        phone: phone || '',
                         role: finalRole,
                         team: finalRole,
-                        area: area,
-                        areaName: area,
-                        areaCode: areaCode,
+                        area: area || '',
+                        areaName: area || '',
+                        areaCode: areaCode || '',
                         permissions: Array.from(selectedPermissions),
                         createdAt: new Date().toISOString()
                     };
-                    existingEmployees.push(newEmployee);
-                    localStorage.setItem('roomhy_employees', JSON.stringify(existingEmployees));
-                    console.log('? Credentials saved to localStorage:', finalLoginId);
+                    filtered.push(newEmployee);
+                    localStorage.setItem('roomhy_employees', JSON.stringify(filtered));
+                    console.log('✅ Credentials saved to roomhy_employees (for index.html login):', finalLoginId, 'with plain password');
                 } catch (e) {
                     console.warn('Could not save to localStorage:', e);
                 }
