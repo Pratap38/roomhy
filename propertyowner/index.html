@@ -72,7 +72,7 @@
                     <label class="block text-sm font-medium text-gray-700 text-left mb-2">Login ID</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i data-lucide="user" class="w-5 h-5"></i></span>
-                        <input type="text" id="login-id" class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="e.g. ROOMHY001" autocomplete="username" required>
+                        <input type="text" id="login-id" class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="e.g. ROOMHY1234" autocomplete="username" required>
                     </div>
                 </div>
                 <div class="mb-6">
@@ -126,7 +126,7 @@
             <div id="forgot-step-1" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Owner Login ID</label>
-                    <input type="text" id="forgot-login-id" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="e.g. ROOMHY001" autocomplete="username">
+                    <input type="text" id="forgot-login-id" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="e.g. ROOMHY1234" autocomplete="username">
                 </div>
                 <button type="button" onclick="requestOwnerOtp()" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition-colors">Send OTP</button>
             </div>
@@ -179,6 +179,7 @@
         let currentUserPayload = null;
         let forgotLoginId = '';
         let forgotResetToken = '';
+        const OWNER_LOGIN_REGEX = /^ROOMHY\d{4}$/;
 
         function togglePasswordVisibility(inputId, btn) {
             const input = document.getElementById(inputId);
@@ -228,6 +229,7 @@
         async function requestOwnerOtp() {
             const loginId = (document.getElementById('forgot-login-id')?.value || '').trim().toUpperCase();
             if (!loginId) return alert('Please enter Owner Login ID');
+            if (!OWNER_LOGIN_REGEX.test(loginId)) return alert('Owner Login ID must be in format ROOMHY1234');
             try {
                 const res = await fetch(`${API_URL}/api/auth/owner/forgot-password/request-otp`, {
                     method: 'POST',
@@ -323,6 +325,10 @@
 
             console.log("[Owner Login] Attempting login with ID:", loginId);
             console.log("[Owner Login] This is OWNER dashboard login (uses owner_user key)");
+
+            if (!OWNER_LOGIN_REGEX.test(loginId)) {
+                return alert("Use Owner Login ID from Enquiry approval (format: ROOMHY1234).");
+            }
 
             // 1. Check Manager (Optional)
             if (loginId.startsWith("MGR")) {

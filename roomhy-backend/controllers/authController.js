@@ -5,6 +5,7 @@ const Employee = require('../models/Employee');
 const Owner = require('../models/Owner');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
 
 // OTP storage (in production, use Redis or database)
 const otpStore = new Map();
@@ -323,6 +324,7 @@ exports.ownerForgotPasswordRequestOTP = async (req, res) => {
     try {
         const loginId = (req.body.loginId || '').toString().trim().toUpperCase();
         if (!loginId) return res.status(400).json({ message: 'Login ID is required' });
+        if (!OWNER_LOGIN_ID_REGEX.test(loginId)) return res.status(400).json({ message: 'Invalid Owner Login ID format. Use ROOMHY1234' });
 
         const owner = await Owner.findOne({ loginId });
         if (!owner) return res.status(404).json({ message: 'Owner login ID not found' });
@@ -372,6 +374,7 @@ exports.ownerForgotPasswordVerifyOTP = async (req, res) => {
         const loginId = (req.body.loginId || '').toString().trim().toUpperCase();
         const otp = (req.body.otp || '').toString().trim();
         if (!loginId || !otp) return res.status(400).json({ message: 'Login ID and OTP are required' });
+        if (!OWNER_LOGIN_ID_REGEX.test(loginId)) return res.status(400).json({ message: 'Invalid Owner Login ID format. Use ROOMHY1234' });
 
         const otpKey = `owner:${loginId}`;
         const otpData = otpStore.get(otpKey);
@@ -406,6 +409,7 @@ exports.ownerForgotPasswordReset = async (req, res) => {
         if (!loginId || !token || !newPassword) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
+        if (!OWNER_LOGIN_ID_REGEX.test(loginId)) return res.status(400).json({ message: 'Invalid Owner Login ID format. Use ROOMHY1234' });
         if (newPassword.length < 6) {
             return res.status(400).json({ message: 'Password must be at least 6 characters' });
         }
