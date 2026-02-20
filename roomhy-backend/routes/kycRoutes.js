@@ -36,7 +36,7 @@ router.post('/submit', async (req, res) => {
             password: signupData.password,
             role: signupData.role || 'tenant',
             kycStatus: signupData.kycStatus || 'pending',
-            status: signupData.status || 'active',
+            status: signupData.status || 'pending',
             createdAt: new Date()
         });
 

@@ -658,7 +658,7 @@ Available to: Website visitors and tenants
                     createdAt: new Date().toISOString(),
                     status: 'pending', // pending, verified, rejected
                     loginId: email, // Used for login
-                    kycStatus: 'not_submitted' // Track KYC separately
+                    kycStatus: 'pending'
                 };
 
                 const fullName = `${firstName} ${lastName}`.trim();
@@ -857,7 +857,7 @@ Available to: Website visitors and tenants
                     name: entry.firstName + (entry.lastName ? ' ' + entry.lastName : ''),
                     email: entry.email,
                     phone: entry.phone || '',
-                    kycStatus: entry.kycStatus || 'not_submitted',
+                    kycStatus: entry.kycStatus || 'pending',
                     status: entry.status || 'pending',
                     createdAt: entry.createdAt || new Date().toISOString()
                 };

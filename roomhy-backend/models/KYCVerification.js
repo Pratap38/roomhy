@@ -26,8 +26,8 @@ const kycVerificationSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['active', 'inactive', 'blocked'],
-        default: 'active'
+        enum: ['pending', 'verified', 'rejected', 'active', 'inactive', 'blocked'],
+        default: 'pending'
     },
     
     // Verification Documents
