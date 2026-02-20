@@ -18,9 +18,7 @@
     <title>Roomhy - Owner Login</title>
     <script>
         // API Configuration
-        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5001'
-            : 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -72,20 +70,14 @@
                     <label class="block text-sm font-medium text-gray-700 text-left mb-2">Login ID</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i data-lucide="user" class="w-5 h-5"></i></span>
-                        <input type="text" id="login-id" class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="e.g. ROOMHY1234" autocomplete="username" required>
+                        <input type="text" id="login-id" class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="e.g. ROOMHY001" required>
                     </div>
                 </div>
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 text-left mb-2">Password</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i data-lucide="key" class="w-5 h-5"></i></span>
-                        <input type="password" id="password" class="w-full pl-10 pr-12 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="Enter password" autocomplete="current-password" required>
-                        <button type="button" onclick="togglePasswordVisibility('password', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600" aria-label="Show password">
-                            <i data-lucide="eye" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                    <div class="mt-2 text-right">
-                        <button type="button" onclick="openForgotModal()" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Forgot Password?</button>
+                        <input type="password" id="password" class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder=""�"�"�"�"�"�"�"�" required>
                     </div>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors flex justify-center items-center gap-2">
@@ -103,11 +95,11 @@
             <form onsubmit="event.preventDefault(); finalizeOwnerLogin();">
                 <div class="mb-4 text-left">
                     <label class="text-sm font-medium text-gray-700 mb-2 block">New Password</label>
-                    <input type="password" id="new-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" placeholder="Min 6 chars" autocomplete="new-password" required>
+                    <input type="password" id="new-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" placeholder="Min 6 chars" required>
                 </div>
                 <div class="mb-6 text-left">
                     <label class="text-sm font-medium text-gray-700 mb-2 block">Confirm Password</label>
-                    <input type="password" id="confirm-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" placeholder="Confirm Password" autocomplete="new-password" required>
+                    <input type="password" id="confirm-password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition" placeholder="Confirm Password" required>
                 </div>
                 <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors flex justify-center items-center gap-2">
                     Update & Continue <i data-lucide="arrow-right" class="w-4 h-4"></i>
@@ -115,51 +107,7 @@
             </form>
         </div>
     </div>
-    <!-- Forgot Password Modal -->
-    <div id="forgot-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white w-full max-w-md rounded-xl border border-gray-200 shadow-xl p-6 relative">
-            <button type="button" onclick="closeForgotModal()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            <h2 class="text-xl font-bold text-gray-900 mb-2">Reset Password</h2>
-            <p id="forgot-subtitle" class="text-sm text-gray-500 mb-5">Enter your Owner Login ID</p>
-            <div id="forgot-step-1" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Owner Login ID</label>
-                    <input type="text" id="forgot-login-id" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="e.g. ROOMHY1234" autocomplete="username">
-                </div>
-                <button type="button" onclick="requestOwnerOtp()" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition-colors">Send OTP</button>
-            </div>
-            <div id="forgot-step-2" class="hidden space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Enter OTP</label>
-                    <input type="text" id="forgot-otp" maxlength="6" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors tracking-widest text-center" placeholder="6-digit OTP">
-                </div>
-                <button type="button" onclick="verifyOwnerOtp()" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition-colors">Verify OTP</button>
-            </div>
-            <div id="forgot-step-3" class="hidden space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                    <div class="relative">
-                        <input type="password" id="forgot-new-password" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="Min 6 characters" autocomplete="new-password">
-                        <button type="button" onclick="togglePasswordVisibility('forgot-new-password', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-                            <i data-lucide="eye" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-                    <div class="relative">
-                        <input type="password" id="forgot-confirm-password" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="Re-enter password" autocomplete="new-password">
-                        <button type="button" onclick="togglePasswordVisibility('forgot-confirm-password', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-                            <i data-lucide="eye" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                </div>
-                <button type="button" onclick="resetOwnerPassword()" class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition-colors">Set New Password</button>
-            </div>
-        </div>
-    </div>
+
     <script>
         lucide.createIcons();
         // Role selector behavior: Tenant -> tenant login page, Owner -> keep owner form
@@ -177,128 +125,6 @@
             });
         } catch (e) { console.warn('Role selector init failed', e); }
         let currentUserPayload = null;
-        let forgotLoginId = '';
-        let forgotResetToken = '';
-        const OWNER_LOGIN_REGEX = /^ROOMHY\d{4}$/;
-
-        function togglePasswordVisibility(inputId, btn) {
-            const input = document.getElementById(inputId);
-            if (!input) return;
-            const isPassword = input.type === 'password';
-            input.type = isPassword ? 'text' : 'password';
-            const icon = btn && btn.querySelector ? btn.querySelector('i') : null;
-            if (icon) {
-                icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
-                lucide.createIcons();
-            }
-        }
-
-        function setForgotStep(step) {
-            document.getElementById('forgot-step-1')?.classList.toggle('hidden', step !== 1);
-            document.getElementById('forgot-step-2')?.classList.toggle('hidden', step !== 2);
-            document.getElementById('forgot-step-3')?.classList.toggle('hidden', step !== 3);
-            const subtitle = document.getElementById('forgot-subtitle');
-            if (!subtitle) return;
-            if (step === 1) subtitle.textContent = 'Enter your Owner Login ID';
-            if (step === 2) subtitle.textContent = `OTP sent for ${forgotLoginId}`;
-            if (step === 3) subtitle.textContent = 'Set your new password';
-        }
-
-        function openForgotModal() {
-            const modal = document.getElementById('forgot-modal');
-            if (!modal) return;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            const currentLogin = (document.getElementById('login-id')?.value || '').trim().toUpperCase();
-            document.getElementById('forgot-login-id').value = currentLogin;
-            forgotLoginId = '';
-            forgotResetToken = '';
-            setForgotStep(1);
-            lucide.createIcons();
-        }
-
-        function closeForgotModal() {
-            const modal = document.getElementById('forgot-modal');
-            if (!modal) return;
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            forgotLoginId = '';
-            forgotResetToken = '';
-        }
-
-        async function requestOwnerOtp() {
-            const loginId = (document.getElementById('forgot-login-id')?.value || '').trim().toUpperCase();
-            if (!loginId) return alert('Please enter Owner Login ID');
-            if (!OWNER_LOGIN_REGEX.test(loginId)) return alert('Owner Login ID must be in format ROOMHY1234');
-            try {
-                const res = await fetch(`${API_URL}/api/auth/owner/forgot-password/request-otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ loginId })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) return alert(data.message || 'Unable to send OTP');
-                forgotLoginId = loginId;
-                setForgotStep(2);
-                if (data.demo_otp) console.log('[DEV] Owner OTP:', data.demo_otp);
-                alert(data.message || 'OTP sent successfully');
-            } catch (e) {
-                alert('Network error while sending OTP');
-            }
-        }
-
-        async function verifyOwnerOtp() {
-            const otp = (document.getElementById('forgot-otp')?.value || '').trim();
-            if (!forgotLoginId) return alert('Please request OTP first');
-            if (!otp || otp.length < 6) return alert('Enter valid 6-digit OTP');
-            try {
-                const res = await fetch(`${API_URL}/api/auth/owner/forgot-password/verify-otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ loginId: forgotLoginId, otp })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) return alert(data.message || 'Invalid OTP');
-                forgotResetToken = data.token || '';
-                setForgotStep(3);
-            } catch (e) {
-                alert('Network error while verifying OTP');
-            }
-        }
-
-        async function resetOwnerPassword() {
-            const newPassword = (document.getElementById('forgot-new-password')?.value || '').trim();
-            const confirmPassword = (document.getElementById('forgot-confirm-password')?.value || '').trim();
-            if (!forgotLoginId || !forgotResetToken) return alert('Please verify OTP first');
-            if (newPassword.length < 6) return alert('Password must be at least 6 characters');
-            if (newPassword !== confirmPassword) return alert('Passwords do not match');
-
-            try {
-                const res = await fetch(`${API_URL}/api/auth/owner/forgot-password/reset-password`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ loginId: forgotLoginId, token: forgotResetToken, newPassword })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) return alert(data.message || 'Failed to reset password');
-
-                // Update local fallback store used by current owner login flow
-                const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
-                if (!db[forgotLoginId]) db[forgotLoginId] = {};
-                db[forgotLoginId].credentials = db[forgotLoginId].credentials || {};
-                db[forgotLoginId].credentials.password = newPassword;
-                db[forgotLoginId].credentials.firstTime = false;
-                db[forgotLoginId].passwordSet = true;
-                localStorage.setItem('roomhy_owners_db', JSON.stringify(db));
-
-                document.getElementById('login-id').value = forgotLoginId;
-                document.getElementById('password').value = newPassword;
-                closeForgotModal();
-                alert('Password reset successful. Please login.');
-            } catch (e) {
-                alert('Network error while resetting password');
-            }
-        }
 
         // Auto-fill hint logic
         document.addEventListener('DOMContentLoaded', () => {
@@ -325,10 +151,6 @@
 
             console.log("[Owner Login] Attempting login with ID:", loginId);
             console.log("[Owner Login] This is OWNER dashboard login (uses owner_user key)");
-
-            if (!OWNER_LOGIN_REGEX.test(loginId)) {
-                return alert("Use Owner Login ID from Enquiry approval (format: ROOMHY1234).");
-            }
 
             // 1. Check Manager (Optional)
             if (loginId.startsWith("MGR")) {
@@ -441,36 +263,6 @@
                     }
                     return;
                 }
-            }
-
-            // C. Backend fallback (for users coming from another browser/session)
-            try {
-                const res = await fetch(`${API_URL}/api/owners/${encodeURIComponent(loginId)}`);
-                if (res.ok) {
-                    const owner = await res.json();
-                    const backendPass = owner?.credentials?.password || owner?.password || '';
-                    if (backendPass && backendPass === password) {
-                        // Sync local cache for smoother future logins
-                        db[loginId] = db[loginId] || {};
-                        db[loginId].profile = db[loginId].profile || owner.profile || { loginId, name: owner.name || 'Owner' };
-                        db[loginId].credentials = db[loginId].credentials || {};
-                        db[loginId].credentials.password = backendPass;
-                        db[loginId].credentials.firstTime = !!owner?.credentials?.firstTime;
-                        db[loginId].kyc = db[loginId].kyc || owner.kyc || { status: 'pending' };
-                        db[loginId].profileFilled = !!owner.profileFilled;
-                        localStorage.setItem('roomhy_owners_db', JSON.stringify(db));
-
-                        if (db[loginId].credentials.firstTime) {
-                            currentUserPayload = { loginId: loginId, role: 'owner', name: owner.name || owner.profile?.name || 'Owner' };
-                            showSetPasswordScreen();
-                        } else {
-                            proceedToDashboard(loginId, db[loginId]);
-                        }
-                        return;
-                    }
-                }
-            } catch (e) {
-                console.warn('Backend login fallback failed:', e.message);
             }
 
             alert("Invalid Credentials! Please check the ID and Password.");
@@ -679,5 +471,3 @@
     </script>
 </body>
 </html>
-
-
