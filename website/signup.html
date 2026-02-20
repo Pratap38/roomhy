@@ -656,14 +656,19 @@ Available to: Website visitors and tenants
 
                 // Try backend signup first
                 try {
-                    const res = await fetch(API_URL + '/signup', {
+                    const res = await fetch(`${API_URL}/api/auth/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
 
                     const data = await res.json().catch(() => ({}));
-                    if (res.ok && data) {
+                    if (!res.ok) {
+                        showToast(data.message || 'Signup failed. Please try again.', 'error');
+                        return;
+                    }
+
+                    if (data) {
                         showToast(data.message || 'Account created', 'success');
                         // If backend returned user & tokens, store them with WEBSITE-specific key
                         if (data.data && data.data.user) {
@@ -680,7 +685,7 @@ Available to: Website visitors and tenants
                             if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
                         }
                         // SAVE TO KYC VERIFICATION TABLE
-                        saveToKYCVerification(signupData);
+                        await saveToKYCVerification(signupData);
                         
                         // Send email with username and password
                         sendSignupEmail(email, firstName, userId, password);
@@ -694,7 +699,7 @@ Available to: Website visitors and tenants
                 }
 
                 // Fallback: save to KYC verification table so superadmin can view
-                saveToKYCVerification(signupData);
+                await saveToKYCVerification(signupData);
                 
                 // Send email with username and password
                 sendSignupEmail(email, firstName, userId, password);
@@ -751,7 +756,7 @@ Available to: Website visitors and tenants
          * Stores all signup data for KYC verification page to access
          * This acts as the central database for login verification
          */
-        function saveToKYCVerification(signupData) {
+        async function saveToKYCVerification(signupData) {
             try {
                 const kycTableKey = 'roomhy_kyc_verification'; // KYC Verification table
                 const existing = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
@@ -765,34 +770,42 @@ Available to: Website visitors and tenants
                 }
 
                 // Try to save to MongoDB API first
-                fetch(`${API_URL}/api/kyc/submit`, {
+                const response = await fetch(`${API_URL}/api/kyc/submit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(signupData)
-                }).then(res => {
-                    if (res.ok) {
-                        console.log('? Signup saved to MongoDB via API');
-                    } else {
-                        throw new Error('API failed');
+                });
+
+                if (response.ok) {
+                    console.log('? Signup saved to MongoDB via API');
+                } else {
+                    const apiError = await response.json().catch(() => ({}));
+                    const message = apiError.message || `KYC submit failed (${response.status})`;
+
+                    // Duplicate email already exists in DB; do not write duplicate local fallback.
+                    if (response.status === 400 && /already/i.test(message)) {
+                        showToast('This email is already registered', 'error');
+                        return;
                     }
-                }).catch(err => {
-                    console.log('Fallback to localStorage:', err);
+
                     // Add new signup to KYC table
                     existing.unshift(signupData);
                     localStorage.setItem(kycTableKey, JSON.stringify(existing));
                     console.log('? Signup saved to localStorage as fallback');
-                });
-
-                // Add new signup to KYC table (localStorage for offline support)
-                existing.unshift(signupData);
-                localStorage.setItem(kycTableKey, JSON.stringify(existing));
+                }
 
                 // Also maintain tenant list for backward compatibility
                 saveLocalSignup(signupData);
 
                 console.log('? Signup saved to KYC Verification table');
             } catch (e) { 
-                console.error('saveToKYCVerification error:', e); 
+                console.error('saveToKYCVerification error:', e);
+                const kycTableKey = 'roomhy_kyc_verification';
+                const existing = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
+                if (!existing.some(user => user.email === signupData.email)) {
+                    existing.unshift(signupData);
+                    localStorage.setItem(kycTableKey, JSON.stringify(existing));
+                }
             }
         }
 

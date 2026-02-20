@@ -1,9 +1,8 @@
 // API Configuration for RoomHy
-// Smart endpoint selection: Use localhost for development, Render for production
+// Keep production URL aligned with superadmin pages to avoid split data across backends.
 const getAPIURL = () => {
     const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    // Frontend on 5000, Backend API on 5001
-    return isDevelopment ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+    return isDevelopment ? 'http://localhost:5001' : 'https://roomhy-backend.onrender.com';
 };
 
 const API_URL = getAPIURL();

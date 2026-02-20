@@ -13,6 +13,22 @@
         .sidebar-link { color: #9ca3af; display: flex; align-items: center; padding: 0.75rem 1.5rem; border-left: 3px solid transparent; cursor: pointer; transition: all 0.2s; }
         .sidebar-link:hover { color: #f3f4f6; background-color: #1f2937; }
         .sidebar-link.active { background-color: #1f2937; color: #fff; border-left-color: #a855f7; }
+        
+        /* Submenu Styling */
+        .submenu {
+            background-color: #0f172a;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            max-height: 0;
+        }
+        .submenu.open {
+            max-height: 500px;
+        }
+        .submenu a {
+            padding-left: 3.5rem;
+            font-size: 0.85rem;
+        }
+        
         .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 14px; }
         .status-badge { font-weight: 600; padding: 0.5rem 0.75rem; border-radius: 0.375rem; font-size: 0.75rem; }
         .filter-btn { background-color: #f3f4f6; color: #6b7280; border: 2px solid transparent; }
@@ -38,11 +54,36 @@
                 </button>
             </div>
             <nav class="flex-1 overflow-y-auto">
-                <div class="sidebar-link" onclick="navigateTo('dashboard')"><i data-lucide="home" class="w-4 h-4 mr-3"></i> Dashboard</div>
-                <div class="sidebar-link active" onclick="navigateTo('rent')"><i data-lucide="credit-card" class="w-4 h-4 mr-3"></i> Rent Collection</div>
-                <div class="sidebar-link" onclick="navigateTo('owners')"><i data-lucide="users" class="w-4 h-4 mr-3"></i> Property Owners</div>
-                <div class="sidebar-link" onclick="navigateTo('tenants')"><i data-lucide="users" class="w-4 h-4 mr-3"></i> Tenants</div>
-                <div class="sidebar-link" onclick="navigateTo('properties')"><i data-lucide="home" class="w-4 h-4 mr-3"></i> Properties</div>
+                <div class="px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Overview</div>
+                <a href="superadmin.html" class="sidebar-link"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Dashboard</a>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Management</div>
+                <a href="manager.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Teams</a>
+                <a href="owner.html" class="sidebar-link"><i data-lucide="briefcase" class="w-5 h-5 mr-3"></i> Property Owners</a>
+                <a href="properties.html" class="sidebar-link"><i data-lucide="home" class="w-5 h-5 mr-3"></i> Properties</a>
+                <a href="tenant.html" class="sidebar-link"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Tenants</a>
+                <a href="new_signups.html" class="sidebar-link"><i data-lucide="file-badge" class="w-5 h-5 mr-3"></i> New Signups</a>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Operations</div>
+                <a href="websiteenq.html" class="sidebar-link"><i data-lucide="folder-open" class="w-5 h-5 mr-3"></i> Web Enquiry</a>
+                <a href="enquiry.html" class="sidebar-link"><i data-lucide="help-circle" class="w-5 h-5 mr-3"></i> Enquiries</a>
+                <a href="booking.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Bookings</a>
+                <a href="reviews.html" class="sidebar-link"><i data-lucide="star" class="w-5 h-5 mr-3"></i> Reviews</a>
+                <a href="complaint-history.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaint History</a>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Website</div>
+                <a href="website.html" class="sidebar-link"><i data-lucide="globe" class="w-5 h-5 mr-3"></i> Live Properties</a>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Finance</div>
+                <div class="group">
+                    <div class="sidebar-link justify-between" onclick="toggleSubmenu('finance-submenu', this)">
+                        <div class="flex items-center"><i data-lucide="wallet" class="w-5 h-5 mr-3"></i> Finance</div>
+                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i>
+                    </div>
+                    <div id="finance-submenu" class="submenu">
+                        <a href="rentcollection.html" class="sidebar-link text-sm hover:text-white">Rent Collections</a>
+                        <a href="platform.html" class="sidebar-link text-sm hover:text-white">Commissions</a>
+                        <a href="refund.html" class="sidebar-link text-sm hover:text-white">Refunds</a>
+                    </div>
+                </div>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">System</div>
+                <a href="location.html" class="sidebar-link"><i data-lucide="globe" class="w-5 h-5 mr-3"></i> Locations</a>
             </nav>
             <div class="p-4 border-t border-gray-700">
                 <button onclick="logout()" class="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:bg-gray-800 rounded"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Sign out</button>
@@ -173,8 +214,32 @@
 
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
-        // Use local development backend (has all endpoints)
-        const API_URL = 'http://localhost:5001';
+        // --- Sidebar Submenu Toggle ---
+        function toggleSubmenu(id, element) {
+            const submenu = document.getElementById(id);
+            const chevron = element.querySelector('.lucide-chevron-down');
+            
+            // Close all other submenus first
+            document.querySelectorAll('.submenu').forEach(sub => {
+                if(sub.id !== id) sub.classList.remove('open');
+            });
+            document.querySelectorAll('.lucide-chevron-down').forEach(ch => {
+                if(ch && ch !== chevron) ch.style.transform = 'rotate(0deg)';
+            });
+
+            if (submenu.classList.contains('open')) {
+                submenu.classList.remove('open');
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+            } else {
+                submenu.classList.add('open');
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // API config for local + render
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend-wqwo.onrender.com';
         let allTenants = [];
         let currentFilter = 'all';
         let refreshInterval = null;
@@ -333,6 +398,19 @@
             }
         }
 
+        function normKey(value) {
+            return (value || '').toString().trim().toUpperCase();
+        }
+
+        function mergeProfile(owner) {
+            return {
+                ...(owner?.profile || {}),
+                ...(owner?.bankDetails || {}),
+                ...(owner?.bank || {}),
+                ...(owner?.payment || {})
+            };
+        }
+
         function mergeTenantsWithRents(tenants, rents, owners) {
             // Create rent map by tenantLoginId
             const rentMap = {};
@@ -342,19 +420,40 @@
                 }
             });
 
-            // Create owner map by loginId or propertyOwnerId
+            // Create owner map by loginId and _id for flexible lookup
             const ownerMap = {};
             owners.forEach(owner => {
-                const loginId = owner.loginId || owner._id;
-                if (loginId) {
-                    ownerMap[loginId] = owner;
-                }
+                const keys = [
+                    owner.loginId,
+                    owner.ownerLoginId,
+                    owner._id,
+                    owner.id,
+                    owner.profile?.loginId
+                ].filter(Boolean);
+                keys.forEach(k => { ownerMap[normKey(k)] = owner; });
             });
 
             // Merge: for each tenant, add their rent info and owner info
             return tenants.map(tenant => {
-                const ownerLoginId = tenant.propertyOwnerId || tenant.ownerLoginId || tenant.owner_id;
-                const owner = ownerLoginId ? ownerMap[ownerLoginId] : null;
+                const ownerCandidateKeys = [
+                    tenant.propertyOwnerId,
+                    tenant.ownerLoginId,
+                    tenant.owner_id,
+                    tenant.ownerId,
+                    tenant?.property?.ownerLoginId,
+                    tenant?.property?.owner_id,
+                    tenant?.property?.ownerId,
+                    tenant?.property?.owner?.loginId,
+                    tenant?.property?.owner?._id,
+                    tenant?.property?.owner
+                ].filter(Boolean);
+
+                let owner = null;
+                for (const key of ownerCandidateKeys) {
+                    const matched = ownerMap[normKey(key)];
+                    if (matched) { owner = matched; break; }
+                }
+                const profile = mergeProfile(owner);
                 
                 return {
                     ...tenant,
@@ -368,7 +467,8 @@
                         name: 'N/A',
                         phone: 'N/A',
                         profile: { bankName: 'N/A', accountNumber: 'N/A', ifscCode: 'N/A', branchName: 'N/A' }
-                    }
+                    },
+                    ownerProfile: profile
                 };
             });
         }
@@ -436,13 +536,13 @@
 
                 // Owner info
                 const ownerInfo = tenant.ownerInfo || {};
-                const ownerProfile = ownerInfo.profile || {};
-                const ownerName = ownerInfo.name || ownerProfile.name || 'N/A';
-                const ownerPhone = ownerInfo.phone || ownerProfile.phone || 'N/A';
-                const bankName = ownerProfile.bankName || 'N/A';
-                const accountNumber = ownerProfile.accountNumber || 'N/A';
-                const ifscCode = ownerProfile.ifscCode || 'N/A';
-                const branchName = ownerProfile.branchName || 'N/A';
+                const ownerProfile = tenant.ownerProfile || ownerInfo.profile || {};
+                const ownerName = ownerInfo.name || ownerInfo.ownerName || ownerProfile.name || ownerProfile.ownerName || tenant.ownerName || 'N/A';
+                const ownerPhone = ownerInfo.phone || ownerInfo.mobile || ownerProfile.phone || ownerProfile.mobile || ownerProfile.contactPhone || 'N/A';
+                const bankName = ownerProfile.bankName || ownerProfile.bank || ownerProfile.bank_name || ownerProfile.upiId || ownerProfile.upi || ownerProfile.gpay || ownerProfile.paymentId || 'N/A';
+                const accountNumber = ownerProfile.accountNumber || ownerProfile.accountNo || ownerProfile.account_number || 'N/A';
+                const ifscCode = ownerProfile.ifscCode || ownerProfile.ifsc || ownerProfile.ifsc_code || 'N/A';
+                const branchName = ownerProfile.branchName || ownerProfile.branch || ownerProfile.branch_name || 'N/A';
 
                 return `
                     <tr class="hover:bg-gray-50 transition">
