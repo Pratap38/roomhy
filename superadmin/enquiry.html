@@ -704,8 +704,10 @@
                 visitData = { _id: currentApprovingId, visitId: currentApprovingId };
             }
             
-            const loginId = `ROOMHY${Math.floor(1000 + Math.random() * 9000)}`;
+            const loginId = `ROOMHY${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
             const password = Math.random().toString(36).slice(-8);
+            let finalLoginId = loginId;
+            let finalPassword = password;
 
             // Update status in storage if found
             if (idx !== -1) {
@@ -745,21 +747,30 @@
                 } else {
                     const data = await response.json();
                     console.log('✅ Visit approved and synced to backend:', data);
+                    // Prefer backend-returned credentials (backend enforces uniqueness/format)
+                    finalLoginId = data?.credentials?.loginId || finalLoginId;
+                    finalPassword = data?.credentials?.tempPassword || finalPassword;
                 }
             } catch (err) {
                 console.error('❌ Backend sync error:', err);
                 console.warn('Backend sync failed:', err.message);
             }
             
-            document.getElementById('modalLoginId').innerText = loginId;
-            document.getElementById('modalPassword').innerText = password;
+            // Keep local cache in sync with final credentials
+            if (idx !== -1) {
+                visits[idx].generatedCredentials = { loginId: finalLoginId, tempPassword: finalPassword };
+                if (window.safeStorage) { window.safeStorage.setVisits(visits); } else { localStorage.setItem('roomhy_visits', JSON.stringify(visits)); }
+            }
+
+            document.getElementById('modalLoginId').innerText = finalLoginId;
+            document.getElementById('modalPassword').innerText = finalPassword;
             
             // Send email with owner credentials
             const ownerEmail = visitData.ownerEmail || visitData.email;
             const ownerName = visitData.ownerName || visitData.name || 'Owner';
             if (ownerEmail) {
                 console.log('📧 Sending credentials email to:', ownerEmail);
-                sendOwnerCredentialsEmail(ownerEmail, ownerName, loginId, password);
+                sendOwnerCredentialsEmail(ownerEmail, ownerName, finalLoginId, finalPassword);
             } else {
                 console.warn('⚠️ No owner email found for', currentApprovingId);
             }

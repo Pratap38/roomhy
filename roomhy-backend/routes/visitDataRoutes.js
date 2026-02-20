@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const VisitData = require('../models/VisitData');
+const User = require('../models/user');
+const Owner = require('../models/Owner');
 
 // Helper function to convert string to boolean
 function stringToBoolean(value) {
@@ -9,6 +11,43 @@ function stringToBoolean(value) {
         return value.toLowerCase() === 'yes';
     }
     return false;
+}
+
+// Owner login ID format: ROOMHY + 4 digits (e.g., ROOMHY1234)
+const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
+
+function buildOwnerLoginId() {
+    const n = Math.floor(Math.random() * 10000); // 0-9999
+    return `ROOMHY${String(n).padStart(4, '0')}`;
+}
+
+function normalizeOwnerLoginId(raw) {
+    const id = (raw || '').toString().trim().toUpperCase();
+    if (!OWNER_LOGIN_ID_REGEX.test(id)) return '';
+    return id;
+}
+
+async function isOwnerLoginIdTaken(loginId) {
+    const id = (loginId || '').toString().trim().toUpperCase();
+    if (!id) return true;
+
+    const [owner, user, visit] = await Promise.all([
+        Owner.findOne({ loginId: id }).select('_id').lean(),
+        User.findOne({ loginId: id }).select('_id').lean(),
+        VisitData.findOne({ 'generatedCredentials.loginId': id }).select('_id').lean()
+    ]);
+
+    return !!(owner || user || visit);
+}
+
+async function generateUniqueOwnerLoginId(maxAttempts = 100) {
+    for (let i = 0; i < maxAttempts; i++) {
+        const candidate = buildOwnerLoginId();
+        // eslint-disable-next-line no-await-in-loop
+        const taken = await isOwnerLoginIdTaken(candidate);
+        if (!taken) return candidate;
+    }
+    throw new Error('Unable to generate unique owner login ID');
 }
 
 // ============================================================
@@ -155,8 +194,12 @@ router.post('/approve', async (req, res) => {
             });
         }
 
-        // Generate credentials if not provided
-        const finalLoginId = loginId || `ROOMHY${Math.floor(1000 + Math.random() * 9000)}`;
+        // Enforce login ID format ROOMHY + 4 digits and ensure uniqueness
+        const requestedLoginId = normalizeOwnerLoginId(loginId);
+        let finalLoginId = requestedLoginId;
+        if (!finalLoginId || await isOwnerLoginIdTaken(finalLoginId)) {
+            finalLoginId = await generateUniqueOwnerLoginId();
+        }
         const finalPassword = tempPassword || Math.random().toString(36).slice(-8);
 
         console.log('🔍 [visits/approve] Finding visit by visitId:', visitId);
