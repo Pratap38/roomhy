@@ -5,10 +5,15 @@
   "scripts": {
     "start": "npm install && npm --prefix roomhy-backend install && npm run build:css && node server.js",
     "dev": "npm install && npm --prefix roomhy-backend install && npm run build:css && npx nodemon server.js",
-    "build:css": "npx postcss src/css/styles.css -o public/css/styles.css"
+    "build:css": "npx postcss src/css/styles.css -o public/css/styles.css",
+    "react:dev": "cd react-app && npm run dev",
+    "react:build": "cd react-app && npm run build",
+    "react:preview": "cd react-app && npm run preview"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
     "agora-access-token": "^2.0.4",
+    "axios": "^1.6.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
@@ -20,12 +25,19 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
-    "socket.io": "^4.6.1"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "socket.io": "^4.6.1",
+    "socket.io-client": "^4.6.1"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.23",
     "nodemon": "^3.1.11",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.18"
+    "postcss-cli": "^11.0.1",
+    "tailwindcss": "^4.1.18",
+    "vite": "^5.0.0"
   }
 }

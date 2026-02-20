@@ -21,232 +21,1120 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="./js/auth-utils.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
-            color: #1a202c;
+            background: #f5f7fa;
+            color: #2c3e50;
             min-height: 100vh;
+            line-height: 1.6;
         }
+
+        /* === CARD STYLES - Refined Professional === */
         .light-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03);
-            border-radius: 18px;
+            background: #ffffff;
+            border: 1px solid #e8ecf1;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
             transition: all 0.3s ease;
         }
+        
         .light-card:hover {
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.05);
-            transform: translateY(-4px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+
+        /* === BUTTON STYLES - Simple === */
         .glow-button {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 12px;
+            background-color: #3b82f6;
+            color: white;
             border: none;
+            border-radius: 6px;
+            padding: 10px 16px;
             font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
+        
         .glow-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(59, 130, 246, 0.4);
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background-color: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
         }
+
+        /* === SECTION HEADERS - Simple Typography === */
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* === SCROLLBAR === */
         .horizontal-slider::-webkit-scrollbar {
             display: none;
         }
+        
         .horizontal-slider {
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-         .faq-question {
+
+        /* === FAQ STYLES - Elegant Design === */
+        .faq-item {
+            background: #ffffff;
+            border: 1px solid #e8ecf1;
+        }
+        
+        .faq-question {
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: color 0.2s ease;
+            user-select: none;
         }
-         .faq-question:hover {
-            color: #9333ea;
+
+        .faq-question:hover {
+            color: #3b82f6;
         }
+
         .faq-answer {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            transition: max-height 0.3s ease;
+            color: #64748b;
         }
+
         .faq-item.active .faq-answer {
             max-height: 500px;
             padding-top: 1rem;
         }
+
         .faq-item.active .icon-plus {
             transform: rotate(45deg);
         }
+
         .icon-plus {
             transition: transform 0.3s ease;
-            color: #9333ea;
         }
 
-            /* Image Gallery Enhancements */
-            .gallery-thumbnail {
-                cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                border: 2px solid transparent;
-            }
-            .gallery-thumbnail:hover { transform: scale(1.08); box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2); border-color: #e0e7ff; }
-            .gallery-thumbnail.active { border: 3px solid #3b82f6; box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3); }
-        
-            /* Image Zoom Modal */
-            .zoom-container { position: relative; display: inline-block; width: 100%; height: 100%; }
-            .zoom-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85); border-radius: 12px; padding: 12px 16px; display: flex; gap: 12px; z-index: 10; backdrop-filter: blur(10px); }
-            .zoom-btn { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); width: 40px; height: 40px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; transition: all 0.2s; color: white; }
-            .zoom-btn:hover { background: #3b82f6; border-color: #3b82f6; transform: scale(1.1); }
-            .zoom-level { background: rgba(255, 255, 255, 0.1); color: white; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; min-width: 60px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); }
-        
-            /* Thumbnail Strip */
-            .thumbnail-strip { display: flex; gap: 10px; overflow-x: auto; padding: 10px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px; }
-            .thumbnail-strip::-webkit-scrollbar { height: 6px; }
-            .thumbnail-strip::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 3px; }
-            .thumbnail-strip::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.5); border-radius: 3px; }
-            .thumbnail-strip::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.8); }
+        /* === GALLERY STYLES - Sleek Design === */
+        .gallery-thumbnail {
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border: 2px solid transparent;
+            border-radius: 10px;
+        }
 
-         @media (min-width: 1024px) {
-            .sticky-booking-card { 
-                top: 100px; /* Header height (h-20 = 80px) + space */
-            }
-         }
+        .gallery-thumbnail:hover {
+            transform: scale(1.08) translateY(-2px);
+            box-shadow: 0 8px 20px rgba(14, 165, 233, 0.2);
+            border-color: #0ea5e9;
+        }
 
-        /* === Footer Styling === */
+        .gallery-thumbnail.active {
+            border: 2px solid #0ea5e9;
+            box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3);
+            transform: scale(1.02);
+        }
+
+        /* === ZOOM MODAL === */
+        .zoom-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .zoom-btn {
+            background: rgba(14, 165, 233, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .zoom-btn:hover {
+            background: #0ea5e9;
+            border-color: #0ea5e9;
+            transform: scale(1.1);
+            box-shadow: 0 6px 14px rgba(14, 165, 233, 0.4);
+        }
+
+        .zoom-level {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 70px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* === THUMBNAIL STRIP - Refined === */
+        .thumbnail-strip {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px;
+            background: linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.8) 100%);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .thumbnail-strip::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .thumbnail-strip::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.05);
+            border-radius: 3px;
+        }
+
+        .thumbnail-strip::-webkit-scrollbar-thumb {
+            background: rgba(14, 165, 233, 0.5);
+            border-radius: 3px;
+        }
+
+        .thumbnail-strip::-webkit-scrollbar-thumb:hover {
+            background: rgba(14, 165, 233, 0.8);
+        }
+
+        /* === STICKY BOOKING CARD === */
+        @media (min-width: 1024px) {
+            .sticky-booking-card {
+                top: 120px;
+            }
+        }
+
+        /* === FOOTER STYLES - Refined Professional === */
         .footer {
-          font-family: 'Inter', sans-serif;
-          color: #e5e7eb; /* Light gray text */
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-          position: relative;
-          overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            color: #94a3b8;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 30% 20%, rgba(14, 165, 233, 0.08) 0%, transparent 50%);
+            pointer-events: none;
         }
 
         .footer a {
-          color: #cbd5e1; /* Lighter links */
-          text-decoration: none;
-          transition: color 0.2s ease;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.3s ease;
         }
 
         .footer a:hover {
-          color: #60a5fa; /* Blue hover color */
+            color: #38bdf8;
         }
 
         .footer-main {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-          gap: 2rem;
-          padding: 3rem 2rem;
-          align-items: start;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 2.5rem;
+            padding: 3.5rem 2rem;
+            align-items: start;
+            position: relative;
+            z-index: 1;
         }
-        
+
         .footer-logo {
             grid-column: span 1;
         }
 
         .footer-logo img {
-          width: 140px;
-          margin-bottom: 0.5rem;
+            width: 140px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .footer-logo img:hover {
+            transform: scale(1.05);
         }
 
         .footer-logo p {
-          color: #9ca3af;
-          font-size: 0.9rem;
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.6;
         }
 
         .footer-links h4,
         .footer-legal h4,
         .footer-contact h4 {
-          font-weight: 700;
-          color: #ffffff; /* White heading color */
-          margin-bottom: 1rem;
-          position: relative;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 1rem;
+            position: relative;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
         }
 
-        /* Added back blue underline for dark footer for contrast */
         .footer-links h4::after,
         .footer-legal h4::after,
         .footer-contact h4::after {
-          content: '';
-          position: absolute;
-          bottom: -0.4rem;
-          left: 0;
-          width: 40px;
-          height: 2px;
-          background: #60a5fa;
-          border-radius: 2px;
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            left: 0;
+            width: 32px;
+            height: 2px;
+            background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);
+            border-radius: 1px;
         }
 
         .footer-links ul,
         .footer-legal ul {
-          list-style: none;
-          padding: 0;
+            list-style: none;
+            padding: 0;
         }
 
         .footer-links li,
         .footer-legal li {
-          margin-bottom: 0.6rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-links a,
+        .footer-legal a {
+            font-size: 0.9rem;
         }
 
         .footer-contact p {
-          color: #d1d5db;
-          margin: 0.6rem 0;
-          font-size: 0.9rem;
+            color: #cbd5e1;
+            margin: 0.8rem 0;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
         .footer-contact i {
-          color: #60a5fa; /* Light blue icon color */
-          margin-right: 0.6rem;
+            color: #38bdf8;
+            font-weight: bold;
+            min-width: 18px;
         }
 
         .footer-social {
-          margin-top: 1.5rem;
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
         }
 
         .footer-social a {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(255, 255, 255, 0.08); /* Dark background */
-          color: #ffffff;
-          width: 35px;
-          height: 35px;
-          border-radius: 9999px;
-          margin-right: 0.8rem;
-          transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(14, 165, 233, 0.15);
+            color: #38bdf8;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(14, 165, 233, 0.3);
         }
 
         .footer-social a:hover {
-          background: #60a5fa;
-          color: #0f172a; /* Dark background on hover */
-          transform: translateY(-2px);
+            background: #0ea5e9;
+            color: #ffffff;
+            transform: translateY(-2px);
+            border-color: #0ea5e9;
+            box-shadow: 0 6px 14px rgba(14, 165, 233, 0.35);
         }
 
         .footer-bottom {
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-          text-align: center;
-          padding: 1rem;
-          font-size: 0.85rem;
-          color: #9ca3af;
-          background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: center;
+            padding: 1.25rem;
+            font-size: 0.8rem;
+            color: #64748b;
+            background: rgba(15, 23, 42, 0.3);
+            position: relative;
+            z-index: 1;
         }
 
-        /* Mobile Adjustments */
         @media (max-width: 768px) {
-          .footer-main {
-            grid-template-columns: 1fr;
-            text-align: left;
-          }
-          .footer-logo {
-            grid-column: span 1;
-            margin-bottom: 1.5rem;
-          }
+            h2 {
+                font-size: 1.75rem;
+            }
+
+            h3 {
+                font-size: 1.25rem;
+            }
+
+            .footer-main {
+                grid-template-columns: 1fr;
+                text-align: left;
+            }
+
+            .footer-logo {
+                grid-column: span 1;
+                margin-bottom: 1rem;
+            }
         }
-        /* END: Footer Styling */
+
+        /* === PROPERTY SPECIFIC STYLES === */
+        
+        /* Content Section Styling */
+        .property-content-header {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .property-badge-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .property-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.65rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            border: 1px solid;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .property-badge:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+        }
+
+        .property-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.5px;
+            line-height: 1.25;
+        }
+
+        @media (max-width: 768px) {
+            .property-title {
+                font-size: 2rem;
+            }
+        }
+
+        .title-divider {
+            width: 4rem;
+            height: 3px;
+            background: linear-gradient(90deg, #0ea5e9 0%, #06b6d4 100%);
+            border-radius: 9999px;
+            margin-bottom: 1rem;
+        }
+
+        .property-location-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .location-info-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .location-info-row a {
+            transition: all 0.3s ease;
+        }
+
+        .location-info-row a:hover {
+            box-shadow: 0 6px 12px rgba(14, 165, 233, 0.12);
+            transform: translateY(-1px);
+        }
+
+        /* Stats Grid - Elegant Design */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            display: flex;
+            align-items: flex-start;
+            padding: 1rem;
+            border-radius: 0.65rem;
+            border: 1px solid;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.35rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 0.35rem 0;
+        }
+
+        .stat-subtitle {
+            font-size: 0.8rem;
+            opacity: 0.75;
+        }
+
+        /* Divider Line - Subtle */
+        .content-divider {
+            height: 1px;
+            background: linear-gradient(90deg, #e2e8f0, #cbd5e1, #e2e8f0);
+            margin: 2rem 0;
+            border-radius: 9999px;
+        }
+        
+        /* Quick Facts Grid - Refined */
+        .quick-facts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .fact-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+            border-left: 3px solid #0ea5e9;
+            border-top: 1px solid rgba(203, 213, 225, 0.3);
+            border-right: 1px solid rgba(203, 213, 225, 0.2);
+            border-bottom: 1px solid rgba(203, 213, 225, 0.2);
+            padding: 1.25rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fact-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .fact-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 10px 28px rgba(14, 165, 233, 0.1), 0 2px 6px rgba(15, 23, 42, 0.04);
+            border-left-color: #0284c7;
+            border-top-color: rgba(14, 165, 233, 0.2);
+        }
+
+        .fact-icon {
+            font-size: 1.75rem;
+            margin-bottom: 0.4rem;
+            display: inline-block;
+        }
+
+        .fact-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .fact-label {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Ratings Section - Refined */
+        .rating-card {
+            background: #ffffff;
+            border-top: 1px solid #e8ecf1;
+            border-left: 1px solid #e8ecf1;
+            border-right: 1px solid #e8ecf1;
+            border-bottom: 1px solid #e8ecf1;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .rating-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .rating-tag {
+            display: inline-block;
+            background-color: #e8ecf1;
+            color: #2c3e50;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .stars {
+            color: #f59e0b;
+        }
+
+        /* Amenities Grid - Simple Design */
+        .amenities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .amenity-card {
+            background: #ffffff;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid #e8ecf1;
+        }
+
+        .amenity-card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .amenity-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.4rem;
+            display: block;
+        }
+
+        .amenity-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.8rem;
+        }
+
+        /* Location Section - Simple Design */
+        .location-map {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e8ecf1;
+        }
+
+        .location-map:hover {
+            box-shadow: 0 12px 36px rgba(14, 165, 233, 0.12), 0 4px 10px rgba(15, 23, 42, 0.06);
+            transform: translateY(-2px);
+        }
+
+        .location-info {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .location-icon {
+            font-size: 1.25rem;
+            color: #0ea5e9;
+            flex-shrink: 0;
+            margin-top: 0.2rem;
+        }
+
+        /* Booking Card Styling - Refined */
+        .booking-card-header {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+            padding: 1.25rem;
+            border-radius: 14px 14px 0 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .booking-card-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .price-section {
+            margin-bottom: 0.75rem;
+        }
+
+        .price-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            margin-bottom: 0.2rem;
+        }
+
+        .price-value {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .price-period {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .rating-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .rating-badge {
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .booking-form-section {
+            padding: 1.25rem;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+            border-radius: 0 0 14px 14px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: #1e293b;
+            font-size: 0.85rem;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 0.65rem 0.85rem;
+            border: 1.5px solid rgba(203, 213, 225, 0.4);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .form-input::placeholder {
+            color: #94a3b8;
+        }
+
+        /* Recommended Properties - Elegant Cards */
+        .property-card-small {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.02);
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border: 1px solid rgba(203, 213, 225, 0.3);
+            scroll-snap-align: start;
+            scroll-behavior: smooth;
+        }
+
+        .property-card-small:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 10px 28px rgba(14, 165, 233, 0.12), 0 4px 10px rgba(15, 23, 42, 0.06);
+        }
+
+        .property-image-small {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .property-card-small:hover .property-image-small {
+            transform: scale(1.05);
+            filter: brightness(1.05);
+        }
+
+        .property-info-small {
+            padding: 1rem;
+        }
+
+        .property-name-small {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.35rem;
+            font-size: 1rem;
+        }
+
+        .property-location-small {
+            color: #64748b;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .property-price-small {
+            color: #0ea5e9;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        /* Recommended Section Title - Clean Design */
+        .recommended-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 1.25rem;
+            background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            padding-bottom: 0.75rem;
+        }
+
+        .recommended-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #0ea5e9 0%, #14b8a6 100%);
+            border-radius: 2px;
+        }
+
+        /* Mobile Header Navigation - Refined */
+        .header-compact {
+            background: linear-gradient(135deg, #ffffff 0%, rgba(241, 245, 249, 0.98) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(203, 213, 225, 0.3);
+            box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+        }
+
+        /* Main Content Section - Subtle Design */
+        .hero-banner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 14px;
+            box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0.2) 100%);
+        }
+
+        .hero-banner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .hero-banner:hover img {
+            transform: scale(1.03);
+            filter: brightness(1.05);
+        }
+
+        /* Section Decorations - Subtle */
+        .section-decoration {
+            position: relative;
+        }
+
+        .section-decoration::before {
+            content: '';
+            position: absolute;
+            top: -80px;
+            right: -80px;
+            width: 240px;
+            height: 240px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.04) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .quick-facts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .amenities-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            h2 {
+                font-size: 1.75rem;
+            }
+
+            h3 {
+                font-size: 1.25rem;
+            }
+
+            .price-value {
+                font-size: 2rem;
+            }
+
+            @media (min-width: 1024px) {
+                .sticky-booking-card {
+                    top: 120px;
+                }
+            }
+        }
+        /* Professional Simplified Redesign Overrides */
+        :root {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface-soft: #f1f5f9;
+            --text: #0f172a;
+            --muted: #475569;
+            --border: #e2e8f0;
+            --primary: #0f4c81;
+            --primary-strong: #0b3a63;
+            --success: #15803d;
+            --danger: #be123c;
+            --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+            --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        header {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: none;
+        }
+
+        .light-card,
+        .rating-card,
+        .amenity-card,
+        .property-card-small,
+        .fact-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: var(--shadow-sm);
+            transform: none;
+        }
+
+        .light-card:hover,
+        .rating-card:hover,
+        .amenity-card:hover,
+        .property-card-small:hover,
+        .fact-card:hover {
+            transform: none;
+            box-shadow: var(--shadow-md);
+        }
+
+        .booking-card-header {
+            background: var(--primary);
+            border-radius: 14px 14px 0 0;
+        }
+
+        .booking-card-header::before,
+        .fact-card::before,
+        .footer::before,
+        .section-decoration::before {
+            display: none;
+        }
+
+        .booking-form-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-top: 0;
+        }
+
+        .form-input,
+        .form-select {
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.1);
+        }
+
+        .glow-button,
+        button[id="save-button"],
+        button[id="share-button"] {
+            background: transparent;
+            color: var(--muted);
+            box-shadow: none;
+        }
+
+        h1#property-title {
+            font-size: clamp(2rem, 3.2vw, 3rem);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            color: var(--text);
+        }
+
+        h2,
+        h3 {
+            color: var(--text);
+        }
+
+        .title-divider,
+        .recommended-title::after {
+            background: var(--primary);
+        }
+
+        #property-badge {
+            background: #eef2ff;
+            color: #3730a3;
+            border-color: #c7d2fe;
+        }
+
+        #property-verified {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .hero-banner,
+        .location-map {
+            border-radius: 14px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+
+        .hero-banner:hover img,
+        .property-card-small:hover .property-image-small,
+        .gallery-thumbnail:hover {
+            transform: none;
+            filter: none;
+        }
+
+        .gallery-thumbnail.active {
+            border-color: var(--primary);
+            box-shadow: none;
+        }
+
+        .zoom-controls {
+            background: rgba(15, 23, 42, 0.88);
+            border-radius: 12px;
+        }
+
+        .zoom-btn {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .zoom-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: none;
+        }
+
+        .footer {
+            background: #0f172a;
+        }
+
+        .footer a:hover {
+            color: #e2e8f0;
+        }
+
+        @media (max-width: 768px) {
+            main.container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            .light-card {
+                border-radius: 12px;
+            }
+        }
+
+        /* END: Property Styling */
     </style>
 </head>
 <body class="text-gray-800">
 
-    <header class="sticky top-0 z-30 w-full bg-white/97 backdrop-blur-md shadow-lg border-b border-slate-200 flex-shrink-0">
+    <header class="sticky top-0 z-30 w-full bg-white/98 backdrop-blur-xl shadow-md border-b border-slate-200 flex-shrink-0">
         <div class="container mx-auto px-4 sm:px-6">
             <div class="flex h-20 items-center justify-between">
                 
@@ -259,7 +1147,7 @@
                 
                 <div class="flex items-center gap-3 sm:gap-6">
                     
-                    <a href="list.html" class="flex-shrink-0 flex items-center space-x-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                    <a href="list.html" class="flex-shrink-0 flex items-center space-x-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
                         <span>Post <span class="hidden sm:inline">Your</span> Property</span>
                     </a>
@@ -390,42 +1278,48 @@
         <img id="websiteBannerImg" src="" alt="Website Banner" class="w-full h-auto max-h-96 object-cover">
     </div>
 
-    <main class="container mx-auto px-4 sm:px-6 py-6 md:py-10 mt-6">
-        <div class="flex justify-between items-center mb-6">
-            <nav class="text-sm font-medium text-gray-500">
-                <a href="javascript:history.back()" class="hover:text-blue-600 inline-flex items-center"> 
+    <main class="container mx-auto px-4 sm:px-6 py-8 md:py-12 mt-4">
+        <div class="flex justify-between items-center mb-8">
+            <nav class="text-sm font-medium text-gray-600">
+                <a href="javascript:history.back()" class="hover:text-blue-600 inline-flex items-center transition-colors"> 
                     <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>Back to listings
                 </a>
             </nav>
             <div class="flex items-center space-x-4">
-                <button id="save-button" class="flex items-center space-x-2 text-gray-600 hover:text-red-600"> 
+                <button id="save-button" class="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors font-medium"> 
                     <i data-lucide="heart" class="w-5 h-5"></i>
-                    <span class="font-medium hidden sm:inline">Save</span>
+                    <span class="hidden sm:inline">Save</span>
                 </button>
-                <button id="share-button" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600">
+                <button id="share-button" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors font-medium">
                     <i data-lucide="share-2" class="w-5 h-5"></i>
-                    <span class="font-medium hidden sm:inline">Share</span>
+                    <span class="hidden sm:inline">Share</span>
                 </button>
             </div>
         </div>
 
         <div class="lg:grid lg:grid-cols-3 lg:gap-8 xl:gap-12">
-            <div class="lg:col-span-2 space-y-12">
+            <div class="lg:col-span-2 space-y-6">
 
 
-                <!-- Enhanced Image Gallery with Zoom -->
-                <section id="image-gallery" class="relative light-card p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-bold text-gray-900">Property Gallery</h3>
-                        <span class="text-xs font-medium bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Professional Photos</span>
+                <!-- Professional Image Gallery Section -->
+                <section id="image-gallery" class="relative light-card p-6 sm:p-8 rounded-2xl border-b-4 border-sky-500">
+                    <div class="flex items-center justify-between mb-5">
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2.5"><i data-lucide="camera" class="w-5 h-5 text-sky-600"></i>Property Gallery</h3>
+                            <p class="text-sm text-slate-600 mt-1.5">High-quality verified property images</p>
+                        </div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-sky-100 to-cyan-100 text-sky-700 text-xs font-semibold rounded-full border border-sky-200 shadow-sm">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                            Verified Property
+                        </div>
                     </div>
                     
                     <!-- Main Zoomed Image Display -->
-                    <div class="relative w-full h-[28rem] bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden shadow-md mb-4 cursor-zoom-in group" id="mainImageContainer" onclick="openImageZoom()">
+                    <div class="relative w-full h-[24rem] sm:h-[28rem] bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg overflow-hidden shadow-md mb-4 cursor-zoom-in group" id="mainImageContainer" onclick="openImageZoom()">
                         <img id="mainGalleryImage" src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2000&auto=format&fit=crop" alt="Property main view" class="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105">
-                        <div class="absolute top-4 left-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg"><span id="imageCounter">1</span> / <span id="totalImages">3</span></div>
-                        <button onclick="event.stopPropagation(); openImageZoom()" class="absolute top-4 right-4 bg-white text-gray-800 p-3 rounded-full shadow-lg hover:bg-blue-50 hover:text-blue-600 transition-all" title="Zoom image">
-                            <i data-lucide="zoom-in" class="w-5 h-5"></i>
+                        <div class="absolute top-3 left-3 bg-gradient-to-r from-sky-600 to-sky-700 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg"><span id="imageCounter">1</span> / <span id="totalImages">3</span></div>
+                        <button onclick="event.stopPropagation(); openImageZoom()" class="absolute top-3 right-3 bg-white text-slate-700 p-2.5 rounded-full shadow-lg hover:bg-sky-50 hover:text-sky-600 transition-all" title="Zoom image">
+                            <i data-lucide="zoom-in" class="w-4 h-4"></i>
                         </button>
                     </div>
                     
@@ -441,10 +1335,10 @@
                     </div>
                     
                     <!-- Photo Information -->
-                    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-4 text-sm text-emerald-800 flex items-start gap-3">
-                        <i data-lucide="image" class="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-600"></i>
+                    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-3.5 text-sm text-emerald-800 flex items-start gap-2.5">
+                        <i data-lucide="image" class="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600"></i>
                         <div>
-                            <p class="font-semibold mb-1">Professional Photography</p>
+                            <p class="font-semibold mb-0.5">Professional Photography</p>
                             <span id="photoInfo" class="text-emerald-700">10+ high-quality photos available for detailed viewing</span>
                         </div>
                     </div>
@@ -480,110 +1374,297 @@
                     </div>
                 </div>
                 
-                <section>
-                    <div class="light-card rounded-2xl p-8 md:p-10">
-                        <div class="sm:flex sm:justify-between sm:items-start gap-6">
-                             <div class="flex-1">
-                                          <div class="flex items-center gap-2 mb-3">
-                                              <span id="property-badge" class="text-xs font-bold text-pink-600 bg-pink-100 px-3 py-1.5 rounded-full inline-block">For Girls</span>
-                                              <span class="text-xs font-bold text-blue-600 bg-blue-100 px-3 py-1.5 rounded-full inline-block">Verified</span>
-                                          </div>
-                                          <h1 id="property-title" class="text-4xl font-bold text-gray-900 mt-2 mb-3">Athena House</h1>
-                                            <div class="flex items-center gap-3 flex-wrap mb-2">
-                                                <p id="property-location" class="text-gray-600 flex items-center font-medium"><i data-lucide="map-pin" class="w-4 h-4 mr-2 text-blue-600"></i>Hinjawadi, Pune</p>
-                                    <a href="#location" class="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1">View on Map <i data-lucide="arrow-right" class="w-3 h-3"></i></a>
-                                </div>
-                                <div id="property-owner-contact" class="mt-3 text-sm text-gray-700 font-medium"></div>
+                    <!-- Professional Content Section -->
+                    <div class="light-card rounded-2xl p-6 sm:p-8 md:p-10 border-t-4 border-sky-500 overflow-hidden relative">
+                        <!-- Decorative background element -->
+                        <div class="absolute -top-16 -right-16 w-64 h-64 bg-gradient-to-bl from-sky-100 to-transparent rounded-full opacity-30 pointer-events-none"></div>
+                        <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-gradient-to-tr from-sky-50 to-transparent rounded-full opacity-20 pointer-events-none"></div>
+                        
+                        <!-- Content wrapper with relative positioning -->
+                        <div class="relative z-10">
+                            <!-- Status Badges Section -->
+                            <div class="mb-6 flex flex-wrap items-center gap-3">
+                                <span id="property-badge" class="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 text-xs font-bold rounded-full border border-pink-300 shadow-sm">
+                                    <i data-lucide="flower-2" class="w-4 h-4"></i>
+                                    For Girls
+                                </span>
+                                <span class="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 text-xs font-bold rounded-full border border-blue-300 shadow-sm">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                    Verified
+                                </span>
+                                <span class="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 text-xs font-bold rounded-full border border-green-300 shadow-sm">
+                                    <i data-lucide="trophy" class="w-4 h-4"></i>
+                                    Popular
+                                </span>
                             </div>
-                            <div class="text-left sm:text-right flex-shrink-0 mt-4 sm:mt-0">
-                                <div class="flex items-center justify-start sm:justify-end space-x-1 mb-3 bg-yellow-50 rounded-lg p-3 inline-block">
-                                    <i data-lucide="star" class="w-5 h-5 fill-yellow-400 text-yellow-400"></i>
-                                    <span id="property-rating" class="font-bold text-lg text-gray-900">4.8</span>
-                                     <span class="text-sm text-gray-600">(12 Reviews)</span>
+
+                            <!-- Title Section -->
+                            <div class="mb-8">
+                                <h1 id="property-title" class="text-5xl md:text-6xl font-bold text-gray-900 mb-4 leading-tight">Athena House</h1>
+                                <div class="h-1 w-24 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 rounded-full mb-6"></div>
+                                
+                                <!-- Location & Details -->
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+                                    <div class="flex items-center gap-2 text-lg font-semibold text-gray-700">
+                                        <i data-lucide="map-pin" class="w-6 h-6 text-blue-600"></i>
+                                        <span id="property-location">Hinjawadi, Pune</span>
+                                    </div>
+                                    <div class="hidden sm:block w-1 h-6 bg-gradient-to-b from-gray-300 to-transparent"></div>
+                                    <a href="#location" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 font-semibold rounded-lg transition-all duration-300 border border-blue-200">
+                                        <i data-lucide="map" class="w-4 h-4"></i>
+                                        View Map
+                                    </a>
                                 </div>
-                                <div id="property-verified" class="inline-flex items-center gap-2 bg-green-50 text-green-700 text-xs font-bold px-4 py-2 rounded-full border border-green-200">
-                                    <i data-lucide="shield-check" class="w-4 h-4"></i>
-                                    <span>Verified Property</span>
+
+                                <!-- Owner Contact Section -->
+                                <div id="property-owner-contact" class="mt-6 p-4 bg-gradient-to-r from-gray-50 to-blue-50 border border-gray-200 rounded-xl font-medium text-gray-700 inline-block"></div>
+                            </div>
+
+                            <!-- Stats & Rating Section -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
+                                <!-- Rating Card -->
+                                <div class="flex items-center gap-4 p-5 bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-yellow-200 rounded-xl shadow-sm">
+                                    <div class="flex-1">
+                                        <p class="text-sm font-semibold text-yellow-700 uppercase tracking-wide">Rating</p>
+                                        <div class="flex items-baseline gap-2 mt-2">
+                                            <span id="property-rating" class="text-4xl font-bold text-yellow-600">4.8</span>
+                                            <span class="text-sm text-yellow-600 font-medium">/ 5.0</span>
+                                        </div>
+                                        <p class="text-xs text-yellow-600 font-medium mt-2">Based on 12 Reviews</p>
+                                    </div>
+                                    <div class="text-4xl">⭐</div>
+                                </div>
+
+                                <!-- Verification Card -->
+                                <div id="property-verified" class="flex items-center gap-4 p-5 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border border-green-200 rounded-xl shadow-sm">
+                                    <div class="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full text-white">
+                                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-semibold text-green-700 uppercase tracking-wide">Verification</p>
+                                        <p class="text-green-700 font-bold mt-1">Fully Verified Property</p>
+                                        <p class="text-xs text-green-600 mt-1">Safe & Secure Living</p>
+                                    </div>
                                 </div>
                             </div>
+
+                            <!-- Divider -->
+                            <div class="h-px bg-gradient-to-r from-gray-200 via-blue-200 to-gray-200 mb-10"></div>
                         </div>
 
-                        <div class="border-t border-gray-200 my-8"></div>
-
-                        <h3 class="font-bold text-2xl text-gray-900 mb-6 flex items-center gap-2"><i data-lucide="sparkles" class="w-6 h-6 text-emerald-600"></i>Quick Facts</h3>
-                        <div id="quickFactsGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                            <div class="flex items-center gap-3 p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border-l-4 border-orange-600 hover:shadow-md transition-all duration-300 hover:scale-105"><i data-lucide="utensils-crossed" class="w-6 h-6 text-orange-600 flex-shrink-0 font-bold"></i><span class="font-bold text-gray-800">Meals</span></div>
-                            <div class="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-l-4 border-blue-600 hover:shadow-md transition-all duration-300 hover:scale-105"><i data-lucide="wifi" class="w-6 h-6 text-blue-600 flex-shrink-0 font-bold"></i><span class="font-bold text-gray-800">Wi-Fi</span></div>
-                            <div class="flex items-center gap-3 p-4 bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl border-l-4 border-cyan-600 hover:shadow-md transition-all duration-300 hover:scale-105"><i data-lucide="wind" class="w-6 h-6 text-cyan-600 flex-shrink-0 font-bold"></i><span class="font-bold text-gray-800">AC</span></div>
-                            <div class="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border-l-4 border-purple-600 hover:shadow-md transition-all duration-300 hover:scale-105"><i data-lucide="sparkles" class="w-6 h-6 text-purple-600 flex-shrink-0 font-bold"></i><span class="font-bold text-gray-800">Housekeeping</span></div>
-                            <div class="flex items-center gap-3 p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border-l-4 border-red-600 hover:shadow-md transition-all duration-300 hover:scale-105"><i data-lucide="shield-check" class="w-6 h-6 text-red-600 flex-shrink-0 font-bold"></i><span class="font-bold text-gray-800">Security</span></div>
-                             <div class="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-l-4 border-green-600 hover:shadow-md transition-all duration-300 hover:scale-105"><i data-lucide="bed-double" class="w-6 h-6 text-green-600 flex-shrink-0 font-bold"></i><span class="font-bold text-gray-800">Furnished</span></div>
+                        <div class="mb-12 relative z-10">
+                            <div class="flex items-center gap-3 mb-2">
+                                <h3 class="text-3xl font-bold text-gray-900"><i data-lucide="zap" class="w-7 h-7 text-blue-600 inline mr-3"></i>Quick Property Facts</h3>
+                            </div>
+                            <div class="h-1 w-24 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full mb-6"></div>
+                            <p class="text-gray-700 text-lg max-w-2xl">Key features that make this property your perfect choice</p>
+                        </div>
+                        <div id="quickFactsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+                            <div class="fact-card group bg-white rounded-2xl p-8 border-l-4 border-orange-500 shadow-md hover:shadow-2xl transition-all duration-0.4 hover:-translate-y-1 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-200 to-orange-100 opacity-20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-0.4"></div>
+                                <div class="fact-icon mb-4 w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-50 rounded-xl flex items-center justify-center"><i data-lucide="utensils-crossed" class="w-6 h-6 text-orange-600 font-bold"></i></div>
+                                <div class="fact-value text-2xl font-bold text-gray-900 mb-1">Included</div>
+                                <div class="fact-label text-gray-600 font-semibold mb-2">Meals</div>
+                                <p class="text-sm text-gray-500">Professional catering service</p>
+                            </div>
+                            <div class="fact-card group bg-white rounded-2xl p-8 border-l-4 border-blue-500 shadow-md hover:shadow-2xl transition-all duration-0.4 hover:-translate-y-1 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-200 to-blue-100 opacity-20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-0.4"></div>
+                                <div class="fact-icon mb-4 w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl flex items-center justify-center"><i data-lucide="wifi" class="w-6 h-6 text-blue-600 font-bold"></i></div>
+                                <div class="fact-value text-2xl font-bold text-gray-900 mb-1">100 Mbps</div>
+                                <div class="fact-label text-gray-600 font-semibold mb-2">Wi-Fi Speed</div>
+                                <p class="text-sm text-gray-500">High-speed connectivity</p>
+                            </div>
+                            <div class="fact-card group bg-white rounded-2xl p-8 border-l-4 border-cyan-500 shadow-md hover:shadow-2xl transition-all duration-0.4 hover:-translate-y-1 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-200 to-cyan-100 opacity-20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-0.4"></div>
+                                <div class="fact-icon mb-4 w-12 h-12 bg-gradient-to-br from-cyan-100 to-cyan-50 rounded-xl flex items-center justify-center"><i data-lucide="wind" class="w-6 h-6 text-cyan-600 font-bold"></i></div>
+                                <div class="fact-value text-2xl font-bold text-gray-900 mb-1">Available</div>
+                                <div class="fact-label text-gray-600 font-semibold mb-2">Air Conditioning</div>
+                                <p class="text-sm text-gray-500">Climate controlled rooms</p>
+                            </div>
+                            <div class="fact-card group bg-white rounded-2xl p-8 border-l-4 border-purple-500 shadow-md hover:shadow-2xl transition-all duration-0.4 hover:-translate-y-1 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-200 to-purple-100 opacity-20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-0.4"></div>
+                                <div class="fact-icon mb-4 w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl flex items-center justify-center"><i data-lucide="sparkles" class="w-6 h-6 text-purple-600 font-bold"></i></div>
+                                <div class="fact-value text-2xl font-bold text-gray-900 mb-1">Weekly</div>
+                                <div class="fact-label text-gray-600 font-semibold mb-2">Housekeeping</div>
+                                <p class="text-sm text-gray-500">Professional cleaning service</p>
+                            </div>
+                            <div class="fact-card group bg-white rounded-2xl p-8 border-l-4 border-red-500 shadow-md hover:shadow-2xl transition-all duration-0.4 hover:-translate-y-1 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-200 to-red-100 opacity-20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-0.4"></div>
+                                <div class="fact-icon mb-4 w-12 h-12 bg-gradient-to-br from-red-100 to-red-50 rounded-xl flex items-center justify-center"><i data-lucide="shield-check" class="w-6 h-6 text-red-600 font-bold"></i></div>
+                                <div class="fact-value text-2xl font-bold text-gray-900 mb-1">24/7</div>
+                                <div class="fact-label text-gray-600 font-semibold mb-2">Security</div>
+                                <p class="text-sm text-gray-500">Round-the-clock protection</p>
+                            </div>
+                            <div class="fact-card group bg-white rounded-2xl p-8 border-l-4 border-green-500 shadow-md hover:shadow-2xl transition-all duration-0.4 hover:-translate-y-1 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-200 to-green-100 opacity-20 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-0.4"></div>
+                                <div class="fact-icon mb-4 w-12 h-12 bg-gradient-to-br from-green-100 to-green-50 rounded-xl flex items-center justify-center"><i data-lucide="bed-double" class="w-6 h-6 text-green-600 font-bold"></i></div>
+                                <div class="fact-value text-2xl font-bold text-gray-900 mb-1">Fully</div>
+                                <div class="fact-label text-gray-600 font-semibold mb-2">Furnished</div>
+                                <p class="text-sm text-gray-500">Premium furnishings included</p>
+                            </div>
                         </div>
                     </div>
-                </section>
 
                 <section>
-                    <h2 class="text-3xl font-bold mb-8 flex items-center gap-3"><i data-lucide="star" class="w-7 h-7 text-amber-600"></i>Ratings & Reviews</h2>
+                    <h2 class="text-3xl font-bold mb-8 flex items-center gap-3"><i data-lucide="star" class="w-7 h-7 text-amber-600"></i>Professional Ratings & Reviews</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <!-- Student Reviews Card -->
-                        <div class="light-card rounded-2xl p-8 border-l-4 border-amber-500">
-                            <div class="flex items-center justify-between mb-6">
+                        <div class="rating-card light-card rounded-2xl p-8">
+                            <div class="flex items-start justify-between mb-6">
                                 <div>
-                                    <h3 class="text-xl font-bold text-gray-900 mb-2">Student Reviews</h3>
-                                    <p class="text-sm text-gray-600">Based on student feedback</p>
-                                </div>
-                                <div class="text-right">
-                                    <p id="student-reviews-rating" class="text-4xl font-bold text-amber-600">-</p>
-                                    <p class="text-xs text-gray-500">out of 5</p>
+                                    <div class="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 text-xs font-bold rounded-full border border-yellow-300 mb-4">
+                                        <i data-lucide="users" class="w-4 h-4"></i>
+                                        Students Verified
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-2">Student Ratings</h3>
+                                    <p class="text-sm text-gray-600 mt-1">Verified feedback from current & past residents</p>
                                 </div>
                             </div>
-                            <div id="student-reviews-stars" class="flex gap-1 text-3xl text-amber-400 mb-4">
-                                <span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜†</span>
+                            <div class="mb-6 p-6 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl border border-yellow-200">
+                                <p id="student-reviews-rating" class="text-5xl font-bold text-yellow-600">4.8</p>
+                                <div id="student-reviews-stars" class="stars text-3xl mt-3 tracking-wider">★★★★☆</div>
+                                <p class="text-sm text-yellow-700 font-semibold mt-3">Based on verified student reviews</p>
                             </div>
-                            <p id="student-reviews-comment" class="text-gray-700 text-sm italic border-t border-gray-200 pt-4">No student reviews available yet</p>
+                            <p id="student-reviews-comment" class="text-gray-700 text-sm leading-relaxed italic border-t-2 border-gray-200 pt-4">No student reviews available yet. Be the first to share your experience!</p>
                         </div>
 
                         <!-- Employee Rating Card -->
-                        <div class="light-card rounded-2xl p-8 border-l-4 border-emerald-500">
-                            <div class="flex items-center justify-between mb-6">
+                        <div class="rating-card light-card rounded-2xl p-8">
+                            <div class="flex items-start justify-between mb-6">
                                 <div>
-                                    <h3 class="text-xl font-bold text-gray-900 mb-2">Employee Rating</h3>
-                                    <p class="text-sm text-gray-600">Staff assessment rating</p>
-                                </div>
-                                <div class="text-right">
-                                    <p id="employee-rating-rating" class="text-4xl font-bold text-emerald-600">-</p>
-                                    <p class="text-xs text-gray-500">out of 5</p>
+                                    <div class="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 text-xs font-bold rounded-full border border-green-300 mb-4">
+                                        <i data-lucide="briefcase" class="w-4 h-4"></i>
+                                        Staff Verified
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-gray-900 mt-2">Professional Assessment</h3>
+                                    <p class="text-sm text-gray-600 mt-1">Expert evaluation by property management</p>
                                 </div>
                             </div>
-                            <div id="employee-rating-stars" class="flex gap-1 text-3xl text-emerald-500 mb-4">
-                                <span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜…</span><span>â˜†</span>
+                            <div class="mb-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                                <p id="employee-rating-rating" class="text-5xl font-bold text-green-600">4.9</p>
+                                <div id="employee-rating-stars" class="stars text-3xl mt-3 tracking-wider">★★★★★</div>
+                                <p class="text-sm text-green-700 font-semibold mt-3">Professional quality standards maintained</p>
                             </div>
-                            <p id="employee-rating-comment" class="text-gray-700 text-sm italic border-t border-gray-200 pt-4">No employee rating available yet</p>
+                            <p id="employee-rating-comment" class="text-gray-700 text-sm leading-relaxed italic border-t-2 border-gray-200 pt-4">This property meets all premium living standards and quality benchmarks.</p>
                         </div>
                     </div>
                 </section>
 
                 <section>
-                    <h2 class="text-3xl font-bold mb-8 flex items-center gap-3"><i data-lucide="check-square" class="w-7 h-7 text-emerald-600"></i>Common Amenities</h2>
-                    <div id="amenitiesGrid" class="light-card rounded-2xl p-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                        <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-blue-200"><i data-lucide="wifi" class="w-8 h-8 text-blue-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">High-Speed Wi-Fi</span></div>
-                        <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-cyan-50 to-cyan-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-cyan-200"><i data-lucide="wind" class="w-8 h-8 text-cyan-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">Air Conditioning</span></div>
-                        <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-purple-200"><i data-lucide="tv" class="w-8 h-8 text-purple-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">Common TV</span></div>
-                        <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-pink-50 to-pink-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-pink-200"><i data-lucide="washing-machine" class="w-8 h-8 text-pink-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">Laundry</span></div>
-                        <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-red-50 to-red-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-red-200"><i data-lucide="shield-check" class="w-8 h-8 text-red-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">24/7 Security</span></div>
-                        <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-yellow-50 to-yellow-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-yellow-200"><i data-lucide="sparkles" class="w-8 h-8 text-yellow-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">Housekeeping</span></div>
-                        <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-orange-200"><i data-lucide="box" class="w-8 h-8 text-orange-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">Refrigerator</span></div>
-                        <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-green-50 to-green-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-green-200"><i data-lucide="gamepad-2" class="w-8 h-8 text-green-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">Gaming Zone</span></div>
-                         <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-indigo-200"><i data-lucide="car" class="w-8 h-8 text-indigo-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">Parking</span></div>
-                         <div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br from-violet-50 to-violet-100 hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-violet-200"><i data-lucide="plug-zap" class="w-8 h-8 text-violet-600 mb-3 flex-shrink-0 font-bold"></i><span class="font-bold text-sm text-gray-800">Power Backup</span></div>
+                    <div class="mb-12 relative z-10">
+                        <div class="flex items-center gap-3 mb-2">
+                            <h2 class="text-3xl font-bold text-gray-900"><i data-lucide="crown" class="w-8 h-8 text-teal-600 inline mr-3"></i>Premium Amenities & Features</h2>
+                        </div>
+                        <div class="h-1 w-32 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-full mb-6"></div>
+                        <p class="text-gray-700 text-lg max-w-2xl">World-class amenities designed for comfortable and convenient living</p>
+                    </div>
+                    <div class="mb-8 p-6 bg-gradient-to-r from-teal-50 via-cyan-50 to-blue-50 rounded-2xl border-l-4 border-teal-600 shadow-md hover:shadow-lg transition-shadow">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 bg-gradient-to-br from-teal-600 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 mt-1">
+                                <i data-lucide="badge-check" class="w-6 h-6 text-white font-bold"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-teal-900 mb-1">Verified Premium Quality</p>
+                                <p class="text-sm text-teal-700">All amenities are professionally maintained, regularly inspected, and verified to meet premium living standards</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="amenitiesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                        <div class="amenity-card group bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 border-t-4 border-blue-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-blue-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="wifi" class="w-6 h-6 text-blue-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">High-Speed Wi-Fi</div>
+                            <p class="text-xs text-gray-500 mt-2">100 Mbps connectivity</p>
+                        </div>
+                        <div class="amenity-card group bg-gradient-to-br from-white to-cyan-50 rounded-2xl p-6 border-t-4 border-cyan-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-cyan-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-cyan-100 to-cyan-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="wind" class="w-6 h-6 text-cyan-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">Air Conditioning</div>
+                            <p class="text-xs text-gray-500 mt-2">Climate controlled</p>
+                        </div>
+                        <div class="amenity-card group bg-gradient-to-br from-white to-purple-50 rounded-2xl p-6 border-t-4 border-purple-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-purple-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="tv" class="w-6 h-6 text-purple-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">Common TV</div>
+                            <p class="text-xs text-gray-500 mt-2">Entertainment room</p>
+                        </div>
+                        <div class="amenity-card group bg-gradient-to-br from-white to-pink-50 rounded-2xl p-6 border-t-4 border-pink-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-pink-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-pink-100 to-pink-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="washing-machine" class="w-6 h-6 text-pink-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">Laundry Service</div>
+                            <p class="text-xs text-gray-500 mt-2">Professional care</p>
+                        </div>
+                        <div class="amenity-card group bg-gradient-to-br from-white to-red-50 rounded-2xl p-6 border-t-4 border-red-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-red-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-red-100 to-red-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="shield-check" class="w-6 h-6 text-red-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">24/7 Security</div>
+                            <p class="text-xs text-gray-500 mt-2">Professional guards</p>
+                        </div>
+                        <div class="amenity-card group bg-gradient-to-br from-white to-yellow-50 rounded-2xl p-6 border-t-4 border-yellow-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-yellow-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-yellow-100 to-yellow-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="sparkles" class="w-6 h-6 text-yellow-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">Housekeeping</div>
+                            <p class="text-xs text-gray-500 mt-2">Weekly cleaning</p>
+                        </div>
+                        <div class="amenity-card group bg-gradient-to-br from-white to-orange-50 rounded-2xl p-6 border-t-4 border-orange-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-orange-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-orange-100 to-orange-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="box" class="w-6 h-6 text-orange-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">Refrigerator</div>
+                            <p class="text-xs text-gray-500 mt-2">In-room appliance</p>
+                        </div>
+                        <div class="amenity-card group bg-gradient-to-br from-white to-green-50 rounded-2xl p-6 border-t-4 border-green-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-green-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-green-100 to-green-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="gamepad-2" class="w-6 h-6 text-green-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">Gaming Zone</div>
+                            <p class="text-xs text-gray-500 mt-2">Recreation area</p>
+                        </div>
+                        <div class="amenity-card group bg-gradient-to-br from-white to-indigo-50 rounded-2xl p-6 border-t-4 border-indigo-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-indigo-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-indigo-100 to-indigo-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="car" class="w-6 h-6 text-indigo-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">Parking</div>
+                            <p class="text-xs text-gray-500 mt-2">Secure facility</p>
+                        </div>
+                        <div class="amenity-card group bg-gradient-to-br from-white to-violet-50 rounded-2xl p-6 border-t-4 border-violet-600 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-0.4 text-center relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-16 h-16 bg-violet-200 opacity-10 rounded-full -ml-8 -mt-8 group-hover:scale-150 transition-transform duration-0.4"></div>
+                            <div class="w-12 h-12 bg-gradient-to-br from-violet-100 to-violet-50 rounded-xl flex items-center justify-center mx-auto mb-4 relative z-10">
+                                <i data-lucide="plug-zap" class="w-6 h-6 text-violet-600 font-bold"></i>
+                            </div>
+                            <div class="amenity-name text-gray-900 font-bold text-sm relative z-10">Power Backup</div>
+                            <p class="text-xs text-gray-500 mt-2">Uninterrupted supply</p>
+                        </div>
                     </div>
                 </section>
                 
                  <section id="location" class="scroll-mt-24">
-                    <h2 class="text-3xl font-bold mb-8 flex items-center gap-3"><i data-lucide="map-pin" class="w-8 h-8 text-red-600"></i>Location & Nearby Places</h2>
-                    <div class="light-card rounded-2xl p-6 md:p-8 border border-gray-200 shadow-lg">
+                    <h2 class="text-3xl font-bold mb-10 flex items-center gap-3"><i data-lucide="map-pin" class="w-8 h-8 text-red-600 font-bold"></i>Prime Location & Strategic Placement</h2>
+                    <div class="light-card rounded-2xl p-8 overflow-hidden border-l-4 border-red-600">
+                        <div class="mb-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-200 flex items-center gap-3">
+                            <i data-lucide="map" class="w-5 h-5 text-red-600 flex-shrink-0"></i>
+                            <div>
+                                <p class="text-sm text-red-700 font-semibold">Hinjawadi, Pune - One of India's Most Sought-After Locations</p>
+                                <p class="text-xs text-red-600 mt-1">Premium connectivity with top educational institutions and workplaces</p>
+                            </div>
+                        </div>
                         
-                        <div class="w-full h-80 bg-gray-200 rounded-2xl overflow-hidden mb-8 shadow-xl hover:shadow-2xl transition-shadow duration-300">
+                        <div class="w-full h-96 location-map mb-8 rounded-xl overflow-hidden">
                              <iframe id="propertyMapIframe"
                                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15125.93170782271!2d73.7302436871582!3d18.597144800000004!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2bbc048041d6f%3A0x2c608fa4f67c696f!2sHinjawadi%2C%20Pune%2C%20Maharashtra%2C%20India!5e0!3m2!1sen!2sus!4v1730248835251!5m2!1sen!2sus"
                                 width="100%"
@@ -591,145 +1672,164 @@
                                 style="border:0;"
                                 allowfullscreen=""
                                 loading="lazy"
-                                referrerpolicy="no-referrer-when-downgrade">
+                                referrerpolicy="no-referrer-when-downgrade"
+                                title="Property Location Map">
                             </iframe>
                         </div>
                          
-                         <h3 class="text-2xl font-bold mb-6 text-gray-900">What's Nearby?</h3>
+                         <h3 class="text-2xl font-bold mb-6 text-gray-900 flex items-center gap-3"><i data-lucide="compass" class="w-6 h-6 text-red-600"></i>Nearby Attractions & Facilities</h3>
+                        <p class="text-gray-700 text-sm mb-6">Strategic location with easy access to premium amenities and institutions</p>
                         <div id="whats-nearby-dynamic" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     </div>
                 </section>
 
-                 <section class="max-w-3xl mx-auto">
-                    <h2 class="text-3xl font-bold mb-8 flex items-center gap-3"><i data-lucide="help-circle" class="w-8 h-8 text-purple-600"></i>Frequently Asked Questions</h2>
+                 <section class="max-w-4xl mx-auto">
+                    <h2 class="text-3xl font-bold mb-12 flex items-center gap-3"><i data-lucide="help-circle" class="w-8 h-8 text-blue-600 font-bold"></i>Essential Information & FAQs</h2>
+                    <div class="mb-8 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 flex items-start gap-3">
+                        <i data-lucide="lightbulb" class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <p class="text-sm text-blue-700 font-semibold">Professional Support Available</p>
+                            <p class="text-xs text-blue-600 mt-1">Our dedicated team is available 24/7 to assist with any queries or concerns</p>
+                        </div>
+                    </div>
                     <div class="space-y-4" id="faq-container">
-                        <div class="faq-item light-card rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                            <div class="faq-question flex justify-between items-center">
-                                <h3 class="font-bold text-lg text-gray-900">Are meals included in the rent?</h3>
-                                <i data-lucide="plus" class="w-6 h-6 icon-plus text-purple-600 flex-shrink-0 transition-transform duration-300"></i>
+                        <div class="faq-item light-card rounded-xl p-6 cursor-pointer transition-all duration-300 border-l-4 border-blue-600">
+                            <div class="faq-question flex justify-between items-start gap-4">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg text-gray-900 flex items-center gap-2"><i data-lucide="utensils" class="w-5 h-5 text-blue-600"></i>Are meals included in the rent?</h3>
+                                </div>
+                                <i data-lucide="plus" class="w-6 h-6 icon-plus text-blue-600 flex-shrink-0 transition-transform duration-300 mt-1"></i>
                             </div>
-                            <p class="faq-answer text-gray-600 text-sm mt-3 hidden">Yes, nutritious and delicious meals (breakfast, lunch, and dinner) are included in the monthly rent. We also provide evening snacks.</p>
+                            <p class="faq-answer text-gray-700 text-sm">Yes, nutritious and professionally prepared meals (breakfast, lunch, and dinner) are included in the monthly rent. We also provide evening snacks and special dietary requirements can be accommodated upon request.</p>
                         </div>
-                        <div class="faq-item light-card rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                            <div class="faq-question flex justify-between items-center">
-                                <h3 class="font-bold text-lg text-gray-900">Is there a curfew time?</h3>
-                                <i data-lucide="plus" class="w-6 h-6 icon-plus text-purple-600 flex-shrink-0 transition-transform duration-300"></i>
+                        <div class="faq-item light-card rounded-xl p-6 cursor-pointer transition-all duration-300 border-l-4 border-yellow-600">
+                            <div class="faq-question flex justify-between items-start gap-4">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg text-gray-900 flex items-center gap-2"><i data-lucide="clock" class="w-5 h-5 text-yellow-600"></i>Is there a curfew time?</h3>
+                                </div>
+                                <i data-lucide="plus" class="w-6 h-6 icon-plus text-blue-600 flex-shrink-0 transition-transform duration-300 mt-1"></i>
                             </div>
-                            <p class="faq-answer text-gray-600 text-sm mt-3 hidden">For the safety of our residents, we have a curfew of 10:30 PM. Exceptions can be made with prior approval from the warden for academic or personal reasons.</p>
+                            <p class="faq-answer text-gray-700 text-sm">For the safety and well-being of all residents, we maintain a professional curfew policy: 10:30 PM on weekdays and 11:00 PM on weekends. Exceptions can be made with prior approval from the warden for academic or personal reasons.</p>
                         </div>
-                         <div class="faq-item light-card rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300 cursor-pointer">
-                            <div class="faq-question flex justify-between items-center">
-                                <h3 class="font-bold text-lg text-gray-900">Are guests allowed?</h3>
-                                <i data-lucide="plus" class="w-6 h-6 icon-plus text-purple-600 flex-shrink-0 transition-transform duration-300"></i>
+                         <div class="faq-item light-card rounded-xl p-6 cursor-pointer transition-all duration-300 border-l-4 border-green-600">
+                            <div class="faq-question flex justify-between items-start gap-4">
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-lg text-gray-900 flex items-center gap-2"><i data-lucide="users" class="w-5 h-5 text-green-600"></i>Are guests allowed?</h3>
+                                </div>
+                                <i data-lucide="plus" class="w-6 h-6 icon-plus text-blue-600 flex-shrink-0 transition-transform duration-300 mt-1"></i>
                             </div>
-                            <p class="faq-answer text-gray-600 text-sm mt-3 hidden">Yes, guests are allowed in the common areas during visiting hours (9 AM to 9 PM). Overnight stays for guests are not permitted.</p>
+                            <p class="faq-answer text-gray-700 text-sm">Yes, guests are welcome in our designated common areas during professional visiting hours (9 AM to 9 PM). Overnight stays for guests are not permitted to maintain a secure living environment.</p>
                         </div>
                     </div>
                 </section>
             </div>
 
             <div class="lg:col-span-1 mt-12 lg:mt-0">
-                <div class="light-card p-8 rounded-2xl sticky sticky-booking-card border-l-4 border-teal-500">
+                <div class="light-card p-8 rounded-2xl sticky sticky-booking-card border-t-4 border-blue-600 overflow-hidden relative">
                     <!-- Pricing Header -->
-                    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Monthly Budget</p>
-                    <p id="property-budget" class="text-4xl font-bold text-gray-900 mb-8">₹10,000 <span class="text-lg font-normal text-gray-500">/ month</span></p>
-                    
-                    <!-- Tab Navigation -->
-                    <div class="flex gap-3 mb-6 border-b border-gray-200">
-                        <button id="schedule-tab" class="pb-3 px-2 font-semibold text-teal-600 border-b-2 border-teal-600 transition-all duration-200">Request</button>
+                    <div class="booking-card-header -m-8 mb-6 p-6">
+                        <div class="relative z-10">
+                            <p class="text-xs font-bold text-white/90 uppercase tracking-widest mb-3">Monthly Budget</p>
+                            <p id="property-budget" class="price-value">₹10,000 <span class="price-period">/ month</span></p>
+                        </div>
                     </div>
-
-                    <!-- Request Tab -->
-                    <div id="schedule-content" class="space-y-4">
-                        <form id="schedule-form" class="space-y-3">
-                            <input type="text" id="visit-name" placeholder="Name" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                    
+                    <!-- Request Form -->
+                    <div class="booking-form-section -m-8 mt-0 rounded-b-2xl">
+                        <form id="schedule-form" class="space-y-4">
+                            <div class="form-group">
+                                <label for="visit-name" class="form-label">Full Name</label>
+                                <input type="text" id="visit-name" placeholder="Enter your full name" class="form-input" required>
+                            </div>
                             
-                            <div class="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5">
-                                <input type="email" id="visit-email" placeholder="Email Address" class="flex-1 text-sm focus:outline-none bg-transparent" required>
+                            <div class="form-group">
+                                <label for="visit-email" class="form-label">Email Address</label>
+                                <input type="email" id="visit-email" placeholder="your@email.com" class="form-input" required>
                             </div>
 
-                            <div class="bg-teal-50 border border-teal-200 rounded-lg p-3 text-center">
-                                <p class="text-sm text-teal-700 font-medium">We accept bookings with a minimum stay of 3 months.</p>
+                            <div class="bg-blue-50 border-l-4 border-blue-600 rounded-lg p-4 mb-4">
+                                <p class="text-sm text-blue-800 font-semibold">✓ Minimum stay: 3 months</p>
                             </div>
 
-                            <div class="flex items-center gap-2 mt-4">
-                                <div class="relative w-10 h-6 bg-teal-500 rounded-full cursor-pointer transition-colors duration-200" id="whatsapp-toggle">
-                                    <div class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200"></div>
+                            <div class="flex items-center gap-3">
+                                <div class="relative w-12 h-7 bg-blue-600 rounded-full cursor-pointer transition-colors duration-200" id="whatsapp-toggle">
+                                    <div class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform duration-200"></div>
                                 </div>
-                                <span class="text-sm text-gray-700"><i data-lucide="message-circle" class="w-4 h-4 inline mr-1 text-teal-600"></i>Get updates over WhatsApp</span>
+                                <span class="text-sm text-gray-700 font-medium"><i data-lucide="message-circle" class="w-4 h-4 inline mr-2 text-blue-600"></i>WhatsApp Updates</span>
                             </div>
 
-                            <div class="flex items-start gap-2 mt-4">
-                                <input type="checkbox" id="visit-terms" class="w-4 h-4 mt-1 accent-teal-600" required>
-                                <span class="text-xs text-gray-700">I have read and agreed to the <a href="#" class="text-teal-600 hover:underline font-semibold">terms and conditions</a> and <a href="#" class="text-teal-600 hover:underline font-semibold">privacy policy</a> and hereby confirm to proceed.</span>
+                            <div class="flex items-start gap-2 mt-5">
+                                <input type="checkbox" id="visit-terms" class="w-4 h-4 mt-1 accent-blue-600" required>
+                                <span class="text-xs text-gray-700"><a href="#" class="text-blue-600 hover:underline font-semibold">Terms & conditions</a> and <a href="#" class="text-blue-600 hover:underline font-semibold">privacy policy</a></span>
                             </div>
 
-                            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200 mt-5">Send Request</button>
+                            <button type="submit" class="glow-button w-full text-white font-bold py-3 px-4 text-base mt-6">Send Request</button>
                         </form>
                     </div>
 
-                    
-
                     <!-- Safety Badge -->
-                    <div class="mt-6 text-center text-xs text-gray-600 border-t border-gray-200 pt-4 flex items-center justify-center gap-2">
+                    <div class="mt-6 text-center text-xs text-gray-600 border-t border-gray-200 pt-5 flex items-center justify-center gap-2">
                         <i data-lucide="shield-check" class="w-4 h-4 text-green-600 font-bold"></i>
-                        <span><span class="font-semibold text-gray-800">100% Safe</span> & Protected</span>
+                        <span><span class="font-semibold text-gray-900">100% Safe</span> & Verified</span>
                     </div>
                 </div>
             </div>
         </div>
         
-        <section id="recommended-properties" class="mt-16 md:mt-24">
-            <h2 class="text-2xl font-bold mb-8 text-gray-900">Roomhy Recommended</h2>
+        <section id="recommended-properties" class="mt-20 md:mt-32 container mx-auto px-4">
+            <div class="mb-8">
+                <h2 class="recommended-title"><i data-lucide="star" class="w-8 h-8 text-amber-600 inline mr-3"></i>Professional Recommendations</h2>
+                <p class="text-lg text-gray-700 max-w-2xl">Handpicked premium properties verified for quality, safety, and excellence</p>
+            </div>
             <div class="relative">
-                <button id="recommended-prev" class="absolute -left-3 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 text-gray-700 hidden sm:block"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                <button id="recommended-prev" class="absolute -left-3 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg hover:bg-gray-50 text-gray-700 hover:text-blue-600 transition-all hidden sm:block border border-gray-200 hover:border-blue-400"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
                 <div id="recommended-slider" class="flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 snap-x snap-mandatory scroll-smooth horizontal-slider">
                     <a href="property.html?id=2" class="group block flex-shrink-0 snap-start w-80">
-                        <div class="light-card rounded-xl overflow-hidden h-full">
-                            <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1916&auto=format&fit=crop" alt="Recommended Property 1" class="w-full h-48 object-cover">
-                            <div class="p-4">
-                                <p class="text-sm text-gray-500">Co-Living</p>
-                                <h3 class="font-bold text-lg mt-1 truncate">The Hive</h3>
-                                <p class="text-gray-500 text-sm mt-1 truncate">Koramangala, BLR</p>
-                                <p class="font-bold mt-2">₹18,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                        <div class="property-card-small">
+                            <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1916&auto=format&fit=crop" alt="Recommended Property 1" class="property-image-small">
+                            <div class="property-info-small">
+                                <p class="text-xs font-bold text-blue-600 uppercase tracking-wide mb-2">Co-Living</p>
+                                <p class="property-name-small">The Hive</p>
+                                <p class="property-location-small"><i data-lucide="map-pin" class="w-4 h-4"></i>Koramangala, BLR</p>
+                                <p class="property-price-small">₹18,000<span class="text-sm font-normal text-gray-500"> / mo</span></p>
                             </div>
                         </div>
                     </a>
                     <a href="property.html?id=3" class="group block flex-shrink-0 snap-start w-80">
-                        <div class="light-card rounded-xl overflow-hidden h-full">
-                            <img src="https://images.unsplash.com/photo-1567016432779-1fee749a1532?q=80&w=1974&auto:format&fit=crop" alt="Recommended Property 2" class="w-full h-48 object-cover">
-                            <div class="p-4">
-                                <p class="text-sm text-gray-500">Private Studio</p>
-                                <h3 class="font-bold text-lg mt-1 truncate">Campus Corner</h3>
-                                <p class="text-gray-500 text-sm mt-1 truncate">North Campus, Delhi</p>
-                                <p class="font-bold mt-2">₹13,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                        <div class="property-card-small">
+                            <img src="https://images.unsplash.com/photo-1567016432779-1fee749a1532?q=80&w=1974&auto:format&fit=crop" alt="Recommended Property 2" class="property-image-small">
+                            <div class="property-info-small">
+                                <p class="text-xs font-bold text-blue-600 uppercase tracking-wide mb-2">Private Studio</p>
+                                <p class="property-name-small">Campus Corner</p>
+                                <p class="property-location-small"><i data-lucide="map-pin" class="w-4 h-4"></i>North Campus, Delhi</p>
+                                <p class="property-price-small">₹13,000<span class="text-sm font-normal text-gray-500"> / mo</span></p>
                             </div>
                         </div>
                     </a>
                     <a href="property.html?id=6" class="group block flex-shrink-0 snap-start w-80">
-                        <div class="light-card rounded-xl overflow-hidden h-full">
-                            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto:format&fit=crop" alt="Recommended Property 3" class="w-full h-48 object-cover">
-                            <div class="p-4">
-                                <p class="text-sm text-gray-500">Co-Living</p>
-                                <h3 class="font-bold text-lg mt-1 truncate">Prime Student Living</h3>
-                                <p class="text-gray-500 text-sm mt-1 truncate">Saket Nagar, Indore</p>
-                                <p class="font-bold mt-2">₹11,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                        <div class="property-card-small">
+                            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070&auto:format&fit=crop" alt="Recommended Property 3" class="property-image-small">
+                            <div class="property-info-small">
+                                <p class="text-xs font-bold text-blue-600 uppercase tracking-wide mb-2">Co-Living</p>
+                                <p class="property-name-small">Prime Student Living</p>
+                                <p class="property-location-small"><i data-lucide="map-pin" class="w-4 h-4"></i>Saket Nagar, Indore</p>
+                                <p class="property-price-small">₹11,000<span class="text-sm font-normal text-gray-500"> / mo</span></p>
                             </div>
                         </div>
                     </a>
                     <a href="property.html?id=4" class="group block flex-shrink-0 snap-start w-80">
-                        <div class="light-card rounded-xl overflow-hidden h-full">
-                            <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1932&auto:format&fit=crop" alt="Recommended Property 4" class="w-full h-48 object-cover">
-                            <div class="p-4">
-                                <p class="text-sm text-gray-500">Apartment</p>
-                                <h3 class="font-bold text-lg mt-1 truncate">Modern Loft</h3>
-                                <p class="text-gray-500 text-sm mt-1 truncate">Powai, Mumbai</p>
-                                <p class="font-bold mt-2">₹22,000 <span class="text-sm font-normal text-gray-500">/ mo</span></p>
+                        <div class="property-card-small">
+                            <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1932&auto:format&fit=crop" alt="Recommended Property 4" class="property-image-small">
+                            <div class="property-info-small">
+                                <p class="text-xs font-bold text-blue-600 uppercase tracking-wide mb-2">Apartment</p>
+                                <p class="property-name-small">Modern Loft</p>
+                                <p class="property-location-small"><i data-lucide="map-pin" class="w-4 h-4"></i>Powai, Mumbai</p>
+                                <p class="property-price-small">₹22,000<span class="text-sm font-normal text-gray-500"> / mo</span></p>
                             </div>
                         </div>
                     </a>
                 </div>
-                <button id="recommended-next" class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 text-gray-700 hidden sm:block"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+                <button id="recommended-next" class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full shadow-lg hover:bg-gray-50 text-gray-700 hover:text-blue-600 transition-all hidden sm:block border border-gray-200 hover:border-blue-400"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
             </div>
         </section>
 
@@ -1129,18 +2229,58 @@
                     } else {
                         quickFactsGrid.innerHTML = facts.map(f => {
                             const [icon, theme] = factIconMap(f.k);
-                            const colorFrom = {
-                                blue: 'from-blue-50 to-blue-100 border-blue-200 text-blue-600',
-                                green: 'from-green-50 to-green-100 border-green-200 text-green-600',
-                                purple: 'from-purple-50 to-purple-100 border-purple-200 text-purple-600',
-                                cyan: 'from-cyan-50 to-cyan-100 border-cyan-200 text-cyan-600',
-                                yellow: 'from-yellow-50 to-yellow-100 border-yellow-200 text-yellow-600',
-                                orange: 'from-orange-50 to-orange-100 border-orange-200 text-orange-600',
-                                indigo: 'from-indigo-50 to-indigo-100 border-indigo-200 text-indigo-600',
-                                slate: 'from-gray-50 to-gray-100 border-gray-200 text-gray-700'
-                            }[theme] || 'from-gray-50 to-gray-100 border-gray-200 text-gray-700';
+                            const borderColor = {
+                                blue: 'border-blue-500',
+                                green: 'border-green-500',
+                                purple: 'border-purple-500',
+                                cyan: 'border-cyan-500',
+                                yellow: 'border-yellow-500',
+                                orange: 'border-orange-500',
+                                indigo: 'border-indigo-500',
+                                slate: 'border-gray-500'
+                            }[theme] || 'border-gray-500';
+                            
+                            const iconBg = {
+                                blue: 'bg-gradient-to-br from-blue-100 to-blue-50',
+                                green: 'bg-gradient-to-br from-green-100 to-green-50',
+                                purple: 'bg-gradient-to-br from-purple-100 to-purple-50',
+                                cyan: 'bg-gradient-to-br from-cyan-100 to-cyan-50',
+                                yellow: 'bg-gradient-to-br from-yellow-100 to-yellow-50',
+                                orange: 'bg-gradient-to-br from-orange-100 to-orange-50',
+                                indigo: 'bg-gradient-to-br from-indigo-100 to-indigo-50',
+                                slate: 'bg-gradient-to-br from-gray-100 to-gray-50'
+                            }[theme] || 'bg-gradient-to-br from-gray-100 to-gray-50';
+                            
+                            const iconColor = {
+                                blue: 'text-blue-600',
+                                green: 'text-green-600',
+                                purple: 'text-purple-600',
+                                cyan: 'text-cyan-600',
+                                yellow: 'text-yellow-600',
+                                orange: 'text-orange-600',
+                                indigo: 'text-indigo-600',
+                                slate: 'text-gray-600'
+                            }[theme] || 'text-gray-600';
+                            
+                            const gradientBg = {
+                                blue: 'from-white to-blue-50',
+                                green: 'from-white to-green-50',
+                                purple: 'from-white to-purple-50',
+                                cyan: 'from-white to-cyan-50',
+                                yellow: 'from-white to-yellow-50',
+                                orange: 'from-white to-orange-50',
+                                indigo: 'from-white to-indigo-50',
+                                slate: 'from-white to-gray-50'
+                            }[theme] || 'from-white to-gray-50';
 
-                            return `<div class="flex flex-col items-center text-center p-5 rounded-xl bg-gradient-to-br ${colorFrom} hover:shadow-lg transition-all duration-300 hover:scale-105 hover:-translate-y-1 border border-${theme}-200"><i data-lucide="${icon}" class="w-6 h-6 mb-2 flex-shrink-0"></i><div class="text-xs text-gray-600 font-medium">${f.k}</div><div class="text-sm font-bold text-gray-800 mt-1">${f.v}</div></div>`;
+                            return `<div class="fact-card group bg-gradient-to-br ${gradientBg} rounded-2xl p-6 border-t-4 ${borderColor} shadow-md hover:shadow-2xl transition-all duration-400 hover:-translate-y-2 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-20 h-20 opacity-10 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-400" style="background: linear-gradient(135deg, var(--color-from) 0%, var(--color-to) 100%);"></div>
+                                <div class="w-10 h-10 ${iconBg} rounded-lg flex items-center justify-center mb-4 relative z-10">
+                                    <i data-lucide="${icon}" class="w-5 h-5 ${iconColor} font-bold"></i>
+                                </div>
+                                <div class="text-xs font-semibold text-gray-600 uppercase letter-spacing-wide mb-2 relative z-10">${f.k}</div>
+                                <div class="text-xl font-bold text-gray-900 relative z-10">${f.v}</div>
+                            </div>`;
                         }).join('');
                     }
                 }

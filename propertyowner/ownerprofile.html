@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - Owner Profile Setup</title>
     <script>
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -166,15 +168,30 @@
             const branchName = document.getElementById('branch-name').value;
 
             // Prepare data for MongoDB
+            const locationCode = user.locationCode || user.areaCode || '';
             const profileData = {
+                name,
+                phone,
+                email,
+                address,
+                locationCode,
+                profileFilled: true,
                 profile: {
-                    name, phone, email, address, bankName, accountNumber, ifscCode, branchName,
+                    name,
+                    phone,
+                    email,
+                    address,
+                    locationCode,
+                    bankName,
+                    accountNumber,
+                    ifscCode,
+                    branchName,
                     updatedAt: new Date().toISOString()
                 }
             };
 
             // Save to MongoDB
-            fetch(`http://localhost:5001/api/owners/${encodeURIComponent(loginId)}`, {
+            fetch(`${API_URL}/api/owners/${encodeURIComponent(loginId)}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(profileData)

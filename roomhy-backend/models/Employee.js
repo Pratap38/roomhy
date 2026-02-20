@@ -8,11 +8,14 @@ const employeeSchema = new mongoose.Schema({
     loginId: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        sparse: true
     },
     email: {
         type: String,
-        lowercase: true
+        lowercase: true,
+        unique: true,
+        sparse: true
     },
     phone: String,
     password: String,
@@ -42,6 +45,9 @@ const employeeSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+// Index for quick lookups
+// Note: email and loginId already have indexes from unique constraint
 employeeSchema.index({ area: 1, areaCode: 1 });
+employeeSchema.index({ isActive: 1 });
 
 module.exports = mongoose.model('Employee', employeeSchema);

@@ -181,6 +181,7 @@
         lucide.createIcons();
         let currentViewingId = null;
         let currentOwnersData = []; // For Excel Export
+        let ownersLookup = {};
 
         function toggleSubmenu(id, element) {
             const submenu = document.getElementById(id);
@@ -204,7 +205,7 @@
             let owners = [];
             try {
                 // Prefer backend with optional locationCode filter
-                let url = '/api/owners';
+                let url = `${API_URL}/api/owners`;
                 if (filterArea && filterArea !== 'all') url += `?locationCode=${encodeURIComponent(filterArea)}`;
                 const res = await fetch(url);
                 if (res.ok) {
@@ -224,46 +225,61 @@
                 owners = Object.keys(db).map(id => ({ loginId: id, ...db[id] }));
             }
 
-            // Fetch visit data and create a map of owner -> property details
+            // Fetch visit data from backend and create a map of owner -> property details
             let visitMap = {};
             try {
-                const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
-                if (visits && visits.length > 0) {
+                const visitsRes = await fetch(`${API_URL}/api/visits`);
+                const visitsPayload = visitsRes.ok ? await visitsRes.json() : {};
+                const visits = visitsPayload.visits || [];
+
+                if (Array.isArray(visits) && visits.length > 0) {
                     visits.forEach(v => {
-                        if (v.propertyInfo && v.propertyInfo.ownerName) {
-                            const ownerName = v.propertyInfo.ownerName.toUpperCase();
-                            if (!visitMap[ownerName]) {
-                                visitMap[ownerName] = {
-                                    monthlyRent: v.monthlyRent || '-',
-                                    deposit: v.deposit || '-'
-                                };
-                            }
+                        const ownerLoginId = v.generatedCredentials?.loginId || '';
+                        const ownerName = (v.ownerName || v.propertyInfo?.ownerName || '').toUpperCase();
+                        const monthlyRent = v.monthlyRent || v.propertyInfo?.rent || '-';
+                        const deposit = v.deposit || v.propertyInfo?.deposit || '-';
+
+                        if (ownerLoginId && !visitMap[ownerLoginId]) {
+                            visitMap[ownerLoginId] = { monthlyRent, deposit };
+                        }
+
+                        if (ownerName && !visitMap[ownerName]) {
+                            visitMap[ownerName] = { monthlyRent, deposit };
                         }
                     });
-                    console.log('✅ Loaded visit data for', Object.keys(visitMap).length, 'owners');
+                    console.log('Loaded visit data for', Object.keys(visitMap).length, 'owners');
                 }
             } catch (err) {
-                console.warn('⚠️ Failed to load visit data:', err);
+                console.warn('Failed to load visit data from backend:', err);
             }
 
             // ===== NEW: Load commission data for "To Be Paid" column =====
             let commissionMap = {};
+            let latestRentMap = {};
             try {
                 const commissionResponse = await fetch(`${API_URL}/api/rents`);
                 if (commissionResponse.ok) {
                     const responseData = await commissionResponse.json();
                     // Handle both array and object responses
-                    const paidData = responseData.rents || responseData;
-                    console.log('📡 Commission data received:', paidData.length);
+                    const allRents = responseData.rents || responseData || [];
+                    console.log('Commission data received:', allRents.length);
 
+                    allRents.forEach(payment => {
+                        const ownerLoginId = payment.ownerLoginId || payment.owner_id || payment.loginId;
+                        if (!ownerLoginId || latestRentMap[ownerLoginId]) return;
+                        latestRentMap[ownerLoginId] = {
+                            rentAmount: payment.rentAmount || payment.rent_amount || '-',
+                            deposit: payment.deposit || '-'
+                        };
+                    });
                     // Filter only paid/completed payments
-                    const paidPayments = paidData.filter(p => 
+                    const paidPayments = allRents.filter(p => 
                         p.paymentStatus === 'completed' || 
                         p.paymentStatus === 'paid' || 
                         p.paidAmount > 0
                     );
 
-                    console.log('✅ Filtered paid payments:', paidPayments.length);
+                    console.log('Filtered paid payments:', paidPayments.length);
 
                     // Calculate commissions per owner
                     paidPayments.forEach(payment => {
@@ -294,12 +310,12 @@
                         commissionMap[ownerLoginId].serviceFee += serviceFee;
                     });
 
-                    console.log('✅ Commission map created:', Object.keys(commissionMap).length, 'owners');
+                    console.log('Commission map created:', Object.keys(commissionMap).length, 'owners');
                 } else {
                     console.warn('Commission API returned:', commissionResponse.status);
                 }
             } catch (err) {
-                console.warn('⚠️ Failed to load commission data:', err);
+                console.warn('Failed to load commission data:', err);
             }
 
             // Apply filters
@@ -316,26 +332,34 @@
                 return;
             }
 
+            ownersLookup = {};
+            filtered.forEach(o => {
+                const ownerId = o.loginId || o._id || '';
+                if (ownerId) ownersLookup[ownerId] = o;
+            });
+
             currentOwnersData = filtered.map(o => {
+                const id = o.loginId || o._id || '';
                 const ownerName = (o.name || o.profile?.name || '').toUpperCase();
-                const visitInfo = visitMap[ownerName] || {};
-                const commInfo = commissionMap[o.loginId] || {};
+                const visitInfo = visitMap[id] || visitMap[ownerName] || {};
+                const latestRentInfo = latestRentMap[id] || {};
+                const commInfo = commissionMap[id] || {};
                 const toBePaid = commInfo.totalRent ? (commInfo.totalRent - commInfo.totalCommission - commInfo.serviceFee) : '-';
 
                 return {
-                    "Owner ID": o.loginId || o._id,
+                    "Owner ID": id,
                     "Name": o.name || 'Unknown',
                     "Email": o.email || '-',
                     "Phone": o.phone || '-',
                     "Address": o.address || '-',
                     "Password": o.password || o.credentials?.password || '-',
                     "Area": o.locationCode || '-',
-                    "Bank Name": o.profile?.bankName || '-',
-                    "Account Number": o.profile?.accountNumber || '-',
-                    "IFSC Code": o.profile?.ifscCode || '-',
-                    "Branch": o.profile?.branchName || '-',
-                    "Monthly Rent": visitInfo.monthlyRent || '-',
-                    "Security Deposit": visitInfo.deposit || '-',
+                    "Bank Name": o.bankName || o.profile?.bankName || '-',
+                    "Account Number": o.accountNumber || o.profile?.accountNumber || '-',
+                    "IFSC Code": o.ifscCode || o.profile?.ifscCode || '-',
+                    "Branch": o.branchName || o.profile?.branchName || '-',
+                    "Monthly Rent": visitInfo.monthlyRent || latestRentInfo.rentAmount || '-',
+                    "Security Deposit": visitInfo.deposit || latestRentInfo.deposit || '-',
                     "To Be Paid": toBePaid,
                     "Aadhar": o.aadharNumber || o.kyc?.aadharNumber || '-',
                     "KYC Status": o.kycStatus || o.kyc?.status || 'Pending'
@@ -351,19 +375,20 @@
                 const credsPassword = o.password || o.credentials?.password || '-';
                 const areaCode = o.locationCode || '-';
                 const ownerProfile = o.profile || {};
-                const bankName = ownerProfile.bankName || '-';
-                const accountNumber = ownerProfile.accountNumber || '-';
-                const ifscCode = ownerProfile.ifscCode || '-';
-                const branchName = ownerProfile.branchName || '-';
+                const bankName = o.bankName || ownerProfile.bankName || '-';
+                const accountNumber = o.accountNumber || ownerProfile.accountNumber || '-';
+                const ifscCode = o.ifscCode || ownerProfile.ifscCode || '-';
+                const branchName = o.branchName || ownerProfile.branchName || '-';
                 const aadhar = o.aadharNumber || o.kyc?.aadharNumber || '-';
                 const kycStatus = o.kycStatus || o.kyc?.status || 'pending';
                 const documentImage = o.documentImage || o.kyc?.documentImage || '';
 
                 // Get rent and deposit from visit data
                 const ownerName = (o.name || o.profile?.name || '').toUpperCase();
-                const visitInfo = visitMap[ownerName] || {};
-                const monthlyRent = visitInfo.monthlyRent || '-';
-                const securityDeposit = visitInfo.deposit || '-';
+                const visitInfo = visitMap[id] || visitMap[ownerName] || {};
+                const latestRentInfo = latestRentMap[id] || {};
+                const monthlyRent = visitInfo.monthlyRent || latestRentInfo.rentAmount || '-';
+                const securityDeposit = visitInfo.deposit || latestRentInfo.deposit || '-';
 
                 // Get commission-based payout
                 const commInfo = commissionMap[id] || {};
@@ -456,11 +481,11 @@
         }
 
         function viewDoc(id) {
-            const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
-            const kyc = db[id]?.kyc;
-            if(kyc && kyc.documentImage) {
+            const owner = ownersLookup[id];
+            const image = owner?.documentImage || owner?.kyc?.documentImage || '';
+            if (image) {
                 currentViewingId = id;
-                document.getElementById('docImage').src = kyc.documentImage;
+                document.getElementById('docImage').src = image;
                 document.getElementById('docModal').classList.remove('hidden');
                 document.getElementById('docModal').classList.add('flex');
             }
@@ -564,4 +589,3 @@
     </script>
 </body>
 </html>
-

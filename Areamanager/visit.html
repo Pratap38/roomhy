@@ -462,34 +462,53 @@
         </div>
     </div>
 
-    <!-- Camera Modal (reusable) -->
-    <div id="cameraModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-60">
-        <div class="bg-white rounded-lg w-full max-w-lg p-4 shadow-xl">
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="font-bold">Capture Photo</h3>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="toggleCamera()" class="text-xs px-2 py-1 bg-gray-200 rounded">ðŸ”„ Switch Camera</button>
-                    <button onclick="closeCamera()" class="text-gray-600 px-2 py-1">Close</button>
-                </div>
-            </div>
-            <div id="cameraContainer" class="w-full h-72 bg-black flex items-center justify-center overflow-hidden rounded mb-2 relative">
-                <video id="cameraVideo" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; display:block;"></video>
-                <canvas id="cameraCanvas" style="display:none"></canvas>
-                <div id="cameraLoading" class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-sm">
-                    <div class="text-center">
-                        <p class="mb-2">Initializing camera...</p>
-                        <div class="inline-block w-8 h-8 border-4 border-gray-300 border-t-white rounded-full animate-spin"></div>
+    <!-- Camera Modal (full-screen) -->
+    <div id="cameraModal" class="fixed inset-0 bg-black hidden z-[80]">
+        <div class="w-full h-full bg-black text-white flex flex-col">
+            <!-- Capture View -->
+            <div id="cameraCaptureView" class="h-full flex flex-col p-4 sm:p-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-lg">Capture Photo</h3>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="toggleCamera()" class="text-xs px-3 py-2 bg-white/20 rounded">Switch Camera</button>
+                        <button type="button" onclick="closeCamera()" class="text-xs px-3 py-2 bg-white/20 rounded">Close</button>
                     </div>
                 </div>
-            </div>
-            <div id="cameraError" class="text-sm text-red-600 mb-2" style="display:none;"></div>
-                <div id="cameraLocation" class="text-xs text-gray-600 mb-2" style="display:none;">
+                <div id="cameraContainer" class="flex-1 bg-black flex items-center justify-center overflow-hidden rounded mb-3 relative min-h-[300px]">
+                    <video id="cameraVideo" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover; display:block;"></video>
+                    <canvas id="cameraCanvas" style="display:none"></canvas>
+                    <div id="cameraLoading" class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-sm">
+                        <div class="text-center">
+                            <p class="mb-2">Initializing camera...</p>
+                            <div class="inline-block w-8 h-8 border-4 border-gray-300 border-t-white rounded-full animate-spin"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="cameraError" class="text-sm text-red-300 mb-2" style="display:none;"></div>
+                <div id="cameraLocation" class="text-xs text-gray-200 mb-3" style="display:none;">
                     <strong>Location:</strong> <span id="cameraLocationText">-</span>
                 </div>
-            <div class="flex justify-between items-center">
-                <div class="text-sm text-gray-500">Frame the shot and press Capture.</div>
-                <div class="flex gap-2">
-                    <button type="button" onclick="capturePhoto()" class="px-4 py-2 bg-purple-600 text-white rounded">Capture</button>
+                <div class="flex items-center justify-end">
+                    <button type="button" onclick="capturePhoto()" class="px-5 py-3 bg-purple-600 text-white rounded">Capture</button>
+                </div>
+            </div>
+
+            <!-- Preview View -->
+            <div id="cameraPreviewView" class="hidden h-full flex flex-col p-4 sm:p-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-lg">Photo Preview</h3>
+                    <button type="button" onclick="closeCamera()" class="text-xs px-3 py-2 bg-white/20 rounded">Close</button>
+                </div>
+                <div id="previewContainer" class="flex-1 bg-black flex items-center justify-center overflow-hidden rounded mb-3 min-h-[300px]">
+                    <img id="capturedPreviewImage" src="" alt="Captured Preview" style="width:100%; height:100%; object-fit:cover;">
+                </div>
+                <div id="previewLocation" class="text-xs text-gray-200 mb-3" style="display:none;">
+                    <strong>Location:</strong> <span id="previewLocationText">-</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                    <button type="button" onclick="deleteCapture()" class="px-4 py-3 bg-red-600 text-white rounded">Delete</button>
+                    <button type="button" onclick="recapturePhoto()" class="px-4 py-3 bg-gray-600 text-white rounded">Recapture</button>
+                    <button type="button" onclick="confirmCapture()" class="px-4 py-3 bg-green-600 text-white rounded">Keep Photo</button>
                 </div>
             </div>
         </div>
@@ -505,6 +524,7 @@
         let staffPhotoDataURL = null; // preview / selected dataURL for staff professional photo
         let staffPhotoDataURLs = []; // array of selected/provided professional photos (dataURLs)
         let createProfessionalPhotos = []; // temporary storage for professional photos when creating a new visit
+        let _currentCapturedPhoto = null; // Store the currently captured photo for preview
 
         // Helper: set toggle button value and visual state
         function setToggle(fieldId, value, button) {
@@ -1033,6 +1053,7 @@
         let _cameraStream = null;
         let _cameraTargetField = null; // field id to save
         let _currentFacingMode = 'user'; // Track current facing mode
+        let _cameraPreviousModalState = null; // restore add modal after camera closes
         const capturedPhotos = { extra: [] };
 
         // Auto-generate property id helper
@@ -1050,15 +1071,30 @@
         async function openCamera(fieldId) {
             _cameraTargetField = fieldId;
             _currentFacingMode = 'user'; // Reset to front camera
+            _currentCapturedPhoto = null; // Reset captured photo
             const modal = document.getElementById('cameraModal');
             const video = document.getElementById('cameraVideo');
             const loading = document.getElementById('cameraLoading');
             const errorDiv = document.getElementById('cameraError');
+            const addModal = document.getElementById('addModal');
             if (!modal || !video) return alert('Camera element not found');
-            
-            // Show modal and loading state
+
+            if (addModal) {
+                _cameraPreviousModalState = {
+                    hadFlex: addModal.classList.contains('flex'),
+                    wasHidden: addModal.classList.contains('hidden')
+                };
+                addModal.classList.remove('flex');
+                addModal.classList.add('hidden');
+            }
+            document.body.style.overflow = 'hidden';
+
+            // Show capture view, hide preview view
+            document.getElementById('cameraCaptureView').classList.remove('hidden');
+            document.getElementById('cameraPreviewView').classList.add('hidden');
+
+            // Show full-screen camera and loading state
             modal.classList.remove('hidden');
-            modal.classList.add('flex');
             if (loading) loading.style.display = 'flex';
             if (errorDiv) errorDiv.style.display = 'none';
 
@@ -1166,7 +1202,8 @@
             const video = document.getElementById('cameraVideo');
             const loading = document.getElementById('cameraLoading');
             const errorDiv = document.getElementById('cameraError');
-            
+            const addModal = document.getElementById('addModal');
+
             // Stop all video tracks
             if (video && video.srcObject) {
                 const tracks = video.srcObject.getTracks();
@@ -1176,18 +1213,26 @@
                 });
                 video.srcObject = null;
             }
-            
-            // Hide modal and clear states
-            if (modal) { 
-                modal.classList.add('hidden'); 
-                modal.classList.remove('flex'); 
+
+            // Hide camera and clear states
+            if (modal) {
+                modal.classList.add('hidden');
             }
             if (loading) loading.style.display = 'none';
             if (errorDiv) errorDiv.style.display = 'none';
             if (document.getElementById('cameraLocation')) document.getElementById('cameraLocation').style.display = 'none';
-            
+            if (document.getElementById('previewLocation')) document.getElementById('previewLocation').style.display = 'none';
+
+            // Restore visit form modal automatically
+            if (addModal && _cameraPreviousModalState && _cameraPreviousModalState.hadFlex && !_cameraPreviousModalState.wasHidden) {
+                addModal.classList.remove('hidden');
+                addModal.classList.add('flex');
+            }
+            document.body.style.overflow = '';
+
             _cameraStream = null;
             _cameraTargetField = null;
+            _cameraPreviousModalState = null;
         }
 
         function capturePhoto() {
@@ -1214,33 +1259,77 @@
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dataURL = canvas.toDataURL('image/jpeg', 0.85);
                 
-                // close stream
+                // Store the captured photo for preview
+                _currentCapturedPhoto = dataURL;
+                
+                // Close video stream but keep modal open for preview
                 if (video && video.srcObject) {
                     const tracks = video.srcObject.getTracks();
                     tracks.forEach(t => t.stop());
                     video.srcObject = null;
                 }
                 
-                // store in hidden inputs / previews
-                if (_cameraTargetField === 'photo_extra') {
-                    capturedPhotos.extra = capturedPhotos.extra || [];
-                    if (capturedPhotos.extra.length >= 11) { alert('Maximum 11 extra photos'); closeCamera(); return; }
-                    capturedPhotos.extra.push(dataURL);
-                    updatePreviewExtra();
-                } else {
-                    // For mandatory fields, allow up to 5 captures
-                    if (!capturedPhotos[_cameraTargetField]) capturedPhotos[_cameraTargetField] = [];
-                    if (capturedPhotos[_cameraTargetField].length >= 5) { alert('Maximum 5 captures per field'); closeCamera(); return; }
-                    capturedPhotos[_cameraTargetField].push(dataURL);
-                    updateCarousel(_cameraTargetField);
-                    updatePreviewFromSelection(_cameraTargetField);
+                // Show preview view and hide capture view
+                document.getElementById('cameraCaptureView').classList.add('hidden');
+                document.getElementById('cameraPreviewView').classList.remove('hidden');
+                
+                // Display captured image in preview
+                const previewImg = document.getElementById('capturedPreviewImage');
+                if (previewImg) previewImg.src = dataURL;
+                
+                // Copy location from capture view if available
+                const captureLocDiv = document.getElementById('cameraLocation');
+                const previewLocDiv = document.getElementById('previewLocation');
+                const previewLocText = document.getElementById('previewLocationText');
+                if (captureLocDiv && captureLocDiv.style.display !== 'none' && previewLocText) {
+                    const locText = document.getElementById('cameraLocationText');
+                    if (locText) previewLocText.innerText = locText.innerText;
+                    previewLocDiv.style.display = 'block';
                 }
-                updateFileCountUI();
-                closeCamera();
             } catch (err) {
                 console.error('Capture failed:', err);
                 alert('Failed to capture photo. Please try again.');
             }
+        }
+
+        function deleteCapture() {
+            _currentCapturedPhoto = null;
+            // Reset modal to camera view
+            document.getElementById('cameraCaptureView').classList.remove('hidden');
+            document.getElementById('cameraPreviewView').classList.add('hidden');
+            // Restart camera
+            initCamera();
+        }
+
+        function recapturePhoto() {
+            _currentCapturedPhoto = null;
+            // Reset modal to camera view
+            document.getElementById('cameraCaptureView').classList.remove('hidden');
+            document.getElementById('cameraPreviewView').classList.add('hidden');
+            // Restart camera
+            initCamera();
+        }
+
+        function confirmCapture() {
+            const dataURL = _currentCapturedPhoto;
+            if (!dataURL) return alert('No photo to save');
+            
+            // Store in captured photos collection
+            if (_cameraTargetField === 'photo_extra') {
+                capturedPhotos.extra = capturedPhotos.extra || [];
+                if (capturedPhotos.extra.length >= 11) { alert('Maximum 11 extra photos'); closeCamera(); return; }
+                capturedPhotos.extra.push(dataURL);
+                updatePreviewExtra();
+            } else {
+                // For mandatory fields, allow up to 5 captures
+                if (!capturedPhotos[_cameraTargetField]) capturedPhotos[_cameraTargetField] = [];
+                if (capturedPhotos[_cameraTargetField].length >= 5) { alert('Maximum 5 captures per field'); closeCamera(); return; }
+                capturedPhotos[_cameraTargetField].push(dataURL);
+                updateCarousel(_cameraTargetField);
+                updatePreviewFromSelection(_cameraTargetField);
+            }
+            updateFileCountUI();
+            closeCamera();
         }
 
         function updateCarousel(fieldId) {
@@ -1919,6 +2008,7 @@
     </script>
 </body>
 </html>
+
 
 
 

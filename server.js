@@ -18,6 +18,8 @@ app.use(express.json());
 app.use(cors());
 
 // Serve Static Files (HTML, CSS, JS, Images)
+// Priority: React build > Legacy HTML > Images/Resources
+app.use(express.static('react-app/dist')); // Serve React build if it exists
 app.use(express.static('.')); // Serve all files from root directory
 app.use('/Areamanager', express.static('./Areamanager'));
 app.use('/propertyowner', express.static('./propertyowner'));
@@ -50,6 +52,7 @@ app.use('/api/rooms', require('./roomhy-backend/routes/roomRoutes'));
 app.use('/api/notifications', require('./roomhy-backend/routes/notificationRoutes'));
 app.use('/api/owners', require('./roomhy-backend/routes/ownerRoutes'));
 app.use('/api/booking', require('./roomhy-backend/routes/bookingRoutes'));
+app.use('/api/area-managers', require('./roomhy-backend/routes/areaManagerRoutes'));
 app.use('/api/employees', require('./roomhy-backend/routes/employeeRoutes'));
 app.use('/api/complaints', require('./roomhy-backend/routes/complaintRoutes'));
 app.use('/api/favorites', require('./roomhy-backend/routes/favoritesRoutes'));
@@ -251,15 +254,26 @@ const PORT = process.env.PORT || 5001;
 // Must come AFTER all other routes and static middleware
 const path = require('path');
 const fs = require('fs');
+
+// React app fallback - try React build first
 app.use((req, res, next) => {
     // Only respond to requests for non-API, non-static routes
     if (req.path.startsWith('/api/')) {
         return next(); // Pass API requests to 404 handler
     }
+    
+    // Try React build index.html first
+    const reactIndexPath = path.join(__dirname, 'react-app/dist/index.html');
+    if (fs.existsSync(reactIndexPath)) {
+        return res.sendFile(reactIndexPath);
+    }
+    
+    // Fallback to legacy index.html
     const indexPath = path.join(__dirname, 'index.html');
     if (fs.existsSync(indexPath)) {
         return res.sendFile(indexPath);
     }
+    
     return res.status(404).send('Not Found');
 });
 

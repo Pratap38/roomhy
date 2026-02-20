@@ -43,8 +43,8 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f1f2f6; 
-            color: #1F2937;
+            background-color: #f8fafc;
+            color: #1e293b;
         }
 
         .text-shadow {
@@ -52,73 +52,164 @@
         }
 
         .light-card {
-            background: #FFFFFF;
-            border: 1px solid #E5E7EB;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
             transition: box-shadow 0.3s ease, transform 0.3s ease;
         }
         .light-card:hover {
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+            transform: translateY(-2px);
         }
         
         .glow-button {
             transition: all 0.3s ease;
         }
         .glow-button:hover {
-            transform: scale(1.02); /* Slightly less aggressive scale for filter buttons */
+            transform: scale(1.02);
         }
         
         .horizontal-slider::-webkit-scrollbar {
             display: none;
         }
         .horizontal-slider {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
         
-        /* ENHANCED FOCUS RING FOR SELECT/INPUTS - MADE BORDER LOOK MORE SOLID */
-        .form-select, .form-input {
-            transition: all 0.2s ease-in-out;
-            /* Removed subtle box-shadow for a more solid, flat look */
-            
-            /* Custom arrow CSS */
+        /* Professional Filter Styles */
+        .filter-select, .filter-input {
             appearance: none;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M7 7l3-3 3 3m0 6l-3 3-3-3' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: right 0.75rem center;
-            background-size: 1.2em 1.2em;
-            padding-right: 2.5rem; /* Make room for the custom arrow */
+            background-size: 1.1em 1.1em;
+            padding-right: 2.5rem;
         }
-        .form-input:focus, .form-select:focus, .form-checkbox:focus, .form-radio:focus {
+        .filter-select:focus, .filter-input:focus {
             outline: none;
-            border-color: #3b82f6; /* Primary blue border */
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); /* Softer, broader focus ring */
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
         }
         
-         @media (min-width: 1024px) {
-            #filter-sidebar {
-                top: 2.5rem; /* Adjust as needed */
-            }
-         }
-         
-         .filter-action-select {
-             /* This style block is kept for completeness in case it was used elsewhere, though the element was removed from the header. */
-             background-color: white;
-             border: 1px solid #D1D5DB; /* gray-300 */
-             padding: 0.5rem 0.75rem; /* py-2 px-3 */
-             border-radius: 0.5rem; /* rounded-lg */
-             font-size: 0.875rem; /* text-sm */
-             font-weight: 500;
-             color: #4B5563; /* text-gray-700 */
-             cursor: pointer;
-             transition: all 0.2s;
-             box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-         }
-         .filter-action-select:hover {
-             background-color: #F9FAFB; /* gray-50 */
-             border-color: #9CA3AF; /* gray-400 */
-         }
+        .filter-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .filter-section-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        /* Bid Button - Emerald */
+        .btn-bid {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-bid:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 16px rgba(16, 185, 129, 0.4);
+        }
+        
+        /* Apply Button - Sky Blue */
+        .btn-apply {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            box-shadow: 0 3px 10px rgba(14, 165, 233, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-apply:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 16px rgba(14, 165, 233, 0.4);
+        }
+
+        /* Simplified professional filter + listing styles */
+        .filter-shell {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .filter-block {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+        }
+
+        .filter-block label {
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .filter-shell .form-select,
+        .filter-shell .form-input {
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            border-radius: 10px;
+        }
+
+        .filter-shell .form-select:focus,
+        .filter-shell .form-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .results-toolbar {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 12px 14px;
+        }
+
+        .property-card-pro {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .property-card-pro:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1);
+        }
+
+        .property-image-wrap {
+            position: relative;
+            background: #e2e8f0;
+        }
+
+        .property-chip {
+            display: inline-flex;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #1d4ed8;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 9999px;
+            padding: 3px 10px;
+        }
+
+        .price-pill {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            white-space: nowrap;
+        }
+
+        .price-pill span {
+            font-size: 12px;
+            font-weight: 500;
+            color: #64748b;
+        }
 
     </style>
 </head>
@@ -288,7 +379,7 @@
 
     <main class="container mx-auto px-4 sm:px-6 py-8 md:py-12 mt-8">
         
-         <div class="mb-6 lg:hidden">
+         <div class="mb-6 lg:hidden results-toolbar">
             <div class="flex justify-between items-center mb-4">
                 <h2 id="mobile-property-count" class="text-xl font-bold text-gray-900">Loading...</h2>
                 <span class="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-md">Page 1 of 1</span>
@@ -314,7 +405,7 @@
         <div id="filter-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
 
         <!-- Mobile Filter Drawer (Enhanced FilterSection.tsx) -->
-        <div id="mobile-filter-drawer" class="fixed top-0 right-0 w-full max-w-full h-full bg-gradient-to-b from-slate-50 to-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out lg:hidden overflow-hidden">
+        <div id="mobile-filter-drawer" class="fixed top-0 right-0 w-full max-w-full h-full bg-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out lg:hidden overflow-hidden filter-shell">
             <!-- Header with glass effect -->
             <div class="p-4 border-b border-slate-200 flex justify-between items-center shadow-sm bg-white/80 backdrop-blur-md sticky top-0 z-10">
                 <div class="flex items-center gap-3">
@@ -331,10 +422,10 @@
                 </button>
             </div>
             
-            <div class="p-5 h-full overflow-y-auto pb-28 space-y-6">
+            <div class="p-5 h-full overflow-y-auto pb-28 space-y-5">
                 
                 <!-- Location Section -->
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                <div class="filter-block p-4">
                     <div class="flex items-center gap-2 mb-4">
                         <i data-lucide="map-pin" class="w-5 h-5 text-blue-600"></i>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Location</h4>
@@ -363,7 +454,7 @@
                 </div>
 
                 <!-- Budget Section -->
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                <div class="filter-block p-4">
                     <div class="flex items-center gap-2 mb-4">
                         <i data-lucide="wallet" class="w-5 h-5 text-emerald-600"></i>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Budget Range</h4>
@@ -386,7 +477,7 @@
                 </div>
 
                 <!-- Property Details Section -->
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                <div class="filter-block p-4">
                     <div class="flex items-center gap-2 mb-4">
                         <i data-lucide="home" class="w-5 h-5 text-purple-600"></i>
                         <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Property Details</h4>
@@ -397,9 +488,9 @@
                             <label class='block text-sm font-semibold text-gray-700 mb-2'>Gender</label>
                             <select id="mobile-gender" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all">
                                 <option value="">Select Gender</option>
-                                <option value="boys">Boys</option>
-                                <option value="girls">Girls</option>
-                                <option value="co-ed">Co-ed</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
                             </select>
                         </div>
 
@@ -452,6 +543,10 @@
 
                 <!-- Apply & Clear Filters -->
                 <div class='flex flex-col gap-3 pt-2'>
+                    <button id="mobile-bid-on-all" class='w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2' onclick="openBidOnAllModal()">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        Bid on All Matches
+                    </button>
                     <button id="mobile-apply-filters" class='w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2'>
                         <i data-lucide="check" class="w-5 h-5"></i>
                         Apply Filters
@@ -465,10 +560,10 @@
         </div>
 
 
-        <div class="lg:grid lg:grid-cols-5 lg:gap-12">
+        <div class="lg:grid lg:grid-cols-12 lg:gap-8">
             
             <!-- Desktop Filter Sidebar (Enhanced FilterSection.tsx) -->
-            <aside id="filter-sidebar" class="lg:col-span-1 lg:sticky h-fit mb-8 lg:mb-0 hidden lg:block p-6 bg-white rounded-3xl transition-all duration-300 top-[150px] border border-slate-200 shadow-lg hover:shadow-xl">
+            <aside id="filter-sidebar" class="lg:col-span-3 lg:sticky h-fit mb-8 lg:mb-0 hidden lg:block p-5 transition-all duration-300 top-[150px] filter-shell">
                 <!-- Header -->
                 <div class='mb-6 pb-4 border-b border-slate-200'>
                     <div class='flex items-center gap-3 mb-2'>
@@ -485,7 +580,7 @@
                 <div class='space-y-5'>
                     
                     <!-- Location Card -->
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                    <div class="filter-block p-4">
                         <label class='block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2'>
                             <i data-lucide="map-pin" class="w-4 h-4 text-blue-600"></i>
                             Location
@@ -504,7 +599,7 @@
                     </div>
 
                     <!-- Budget Card -->
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                    <div class="filter-block p-4">
                         <label class='block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2'>
                             <i data-lucide="wallet" class="w-4 h-4 text-emerald-600"></i>
                             Budget Range
@@ -526,16 +621,16 @@
                     </div>
 
                     <!-- Property Details Card -->
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                    <div class="filter-block p-4">
                         <label class='block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2'>
                             <i data-lucide="home" class="w-4 h-4 text-purple-600"></i>
                             Property Details
                         </label>
                         <select id="desktop-gender" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all text-sm mb-3">
                             <option value="">Select Gender</option>
-                            <option value="boys">Boys</option>
-                            <option value="girls">Girls</option>
-                            <option value="co-ed">Co-ed</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
                         </select>
                         <select id="desktop-property-type" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all text-sm mb-3">
                             <option value="">Select Property Type</option>
@@ -576,6 +671,10 @@
 
                     <!-- Apply & Clear Filters (Original Buttons Reinstated) -->
                     <div class='flex flex-col gap-3 pt-6 mt-6 border-t border-blue-200'>
+                        <button id="desktop-bid-on-all" class='w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2' onclick="openBidOnAllModal()">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                            Bid on All Matches
+                        </button>
                         <button id="desktop-apply-filters" class='w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2'>
                             <i data-lucide="check" class="w-5 h-5"></i>
                             Apply Filters
@@ -588,9 +687,9 @@
                 </div>
             </aside>
 
-            <div id="main-content-area" class="lg:col-span-4"> 
+            <div id="main-content-area" class="lg:col-span-9"> 
                  
-                 <div class="hidden lg:flex items-center justify-between mb-6">
+                 <div class="hidden lg:flex items-center justify-between mb-6 results-toolbar">
                     <div class="flex items-center gap-4">
                         <h2 id="desktop-property-count" class="text-3xl font-bold text-gray-900">Loading...</h2>
                         <span class="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-md">Page 1 of 1</span>
@@ -615,7 +714,7 @@
 
                 <div id="stays-list-view">
                     <section>
-                        <div id="propertiesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                        <div id="propertiesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                             <!-- Live properties will be rendered here based on approved & online visits -->
                         </div>
                         <nav class="flex items-center justify-between border-t border-gray-200 px-4 sm:px-0 mt-12 pt-8">
@@ -669,6 +768,111 @@
             <div class="mt-12 border-t border-gray-700 pt-8 text-center text-gray-400 text-sm"><p>&copy; 2025 Roomhy. All Rights Reserved. Built with ?? for students.</p></div>
         </div>
     </footer>
+
+    <!-- Bid on All Modal -->
+    <div id="bid-on-all-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full my-8" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-5 rounded-t-2xl">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                            Bid on All Matching Properties
+                        </h2>
+                        <p class="text-green-100 text-sm mt-1">Send your bid to all properties matching your criteria</p>
+                    </div>
+                    <button id="close-request-all-modal" onclick="closeBidOnAllModal()" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 space-y-5">
+                <!-- User Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Full Name *</label>
+                        <input type="text" id="bid-full-name" placeholder="Enter your full name" class="form-input w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-500/50" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Email Address *</label>
+                        <input type="email" id="bid-email" placeholder="your.email@gmail.com" class="form-input w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-500/50" required>
+                    </div>
+                </div>
+
+                <!-- Selected Filters Info -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                        <i data-lucide="filter" class="w-4 h-4"></i>
+                        Your Search Criteria
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        <div>
+                            <span class="text-green-700">City:</span>
+                            <span id="bid-city-display" class="text-green-900 font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="text-green-700">Area:</span>
+                            <span id="bid-area-display" class="text-green-900 font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="text-green-700">Budget:</span>
+                            <span id="bid-budget-display" class="text-green-900 font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="text-green-700">Gender:</span>
+                            <span id="bid-gender-display" class="text-green-900 font-medium">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Properties List -->
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        Matching Properties
+                    </h4>
+                    <div id="bid-properties-loading" class="flex items-center justify-center py-8">
+                        <div class="animate-spin">
+                            <i data-lucide="loader" class="w-6 h-6 text-green-600"></i>
+                        </div>
+                        <span class="ml-2 text-gray-600">Finding matching properties...</span>
+                    </div>
+                    <div id="bid-properties-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+                    <div id="bid-no-properties" class="text-center py-8 text-gray-500 hidden">
+                        <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-gray-300"></i>
+                        <p>No properties match your criteria</p>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button id="submit-all-bids-btn" onclick="submitAllBids()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                    <span>Send Bids to All (<span id="bid-count">0</span> Properties)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bid Success Modal -->
+    <div id="bid-success-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[60] p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center" onclick="event.stopPropagation()">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="check-circle" class="w-8 h-8 text-green-600"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Bids Sent Successfully!</h2>
+            <p class="text-gray-600 text-sm mb-4">Your bid has been sent to all matching property owners.</p>
+            <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                <p class="text-sm text-gray-600"><strong>Bids sent to:</strong> <span id="bid-success-count">0</span> properties</p>
+                <p class="text-xs text-gray-500 mt-2">Property owners will review your bid and respond within 24 hours.</p>
+            </div>
+            <button onclick="closeBidSuccessModal()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-lg">
+                Done
+            </button>
+        </div>
+    </div>
 
 
     <script>
@@ -797,10 +1001,12 @@
                     desktopSelect.innerHTML = '<option value="">Select a city</option>';
                     cities.forEach(city => {
                         const option = document.createElement('option');
-                        option.value = city.name.toLowerCase().replace(/\s+/g, '-');
+                        option.value = city._id || city.id || city.name.toLowerCase().replace(/\s+/g, '-');
+                        option.dataset.cityName = city.name || '';
                         option.textContent = `${city.name}, ${city.state}`;
                         desktopSelect.appendChild(option);
                     });
+                    desktopSelect.dataset.source = 'locations-api';
                 }
 
                 // Populate mobile city dropdown
@@ -809,10 +1015,12 @@
                     mobileSelect.innerHTML = '<option value="">Select a city</option>';
                     cities.forEach(city => {
                         const option = document.createElement('option');
-                        option.value = city.name.toLowerCase().replace(/\s+/g, '-');
+                        option.value = city._id || city.id || city.name.toLowerCase().replace(/\s+/g, '-');
+                        option.dataset.cityName = city.name || '';
                         option.textContent = `${city.name}, ${city.state}`;
                         mobileSelect.appendChild(option);
                     });
+                    mobileSelect.dataset.source = 'locations-api';
                 }
 
                 console.log('Cities loaded successfully:', cities.length);
@@ -833,10 +1041,12 @@
                         select.innerHTML = '<option value="">Select a city</option>';
                         fallbackCities.forEach(city => {
                             const option = document.createElement('option');
-                            option.value = city.name.toLowerCase().replace(/\s+/g, '-');
+                            option.value = city._id || city.id || city.name.toLowerCase().replace(/\s+/g, '-');
+                            option.dataset.cityName = city.name || '';
                             option.textContent = `${city.name}, ${city.state}`;
                             select.appendChild(option);
                         });
+                        select.dataset.source = 'locations-api';
                     }
                 });
             }
@@ -845,8 +1055,8 @@
         // ======================================================
         // Load Areas based on selected city
         // ======================================================
-        async function loadAreasForCity(cityName) {
-            if (!cityName) {
+        async function loadAreasForCity(cityId) {
+            if (!cityId) {
                 // Reset area dropdowns
                 const desktopAreaSelect = document.getElementById('desktop-select-area');
                 const mobileAreaSelect = document.getElementById('mobile-select-area');
@@ -856,12 +1066,13 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/api/locations/areas/city/${encodeURIComponent(cityName)}`);
+                const response = await fetch(`${API_URL}/api/locations/areas`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch areas');
                 }
                 const data = await response.json();
-                const areas = data.success ? data.data : data;
+                const allAreas = data.success ? data.data : data;
+                const areas = (Array.isArray(allAreas) ? allAreas : []).filter(a => (a.city && a.city._id) === cityId);
 
                 // Populate desktop area dropdown
                 const desktopAreaSelect = document.getElementById('desktop-select-area');
@@ -869,7 +1080,8 @@
                     desktopAreaSelect.innerHTML = '<option value="">Select an area</option>';
                     areas.forEach(area => {
                         const option = document.createElement('option');
-                        option.value = area.name.toLowerCase().replace(/\s+/g, '-');
+                        option.value = area._id || area.id || area.name.toLowerCase().replace(/\s+/g, '-');
+                        option.dataset.areaName = area.name || '';
                         option.textContent = area.name;
                         desktopAreaSelect.appendChild(option);
                     });
@@ -881,13 +1093,14 @@
                     mobileAreaSelect.innerHTML = '<option value="">Select an area</option>';
                     areas.forEach(area => {
                         const option = document.createElement('option');
-                        option.value = area.name.toLowerCase().replace(/\s+/g, '-');
+                        option.value = area._id || area.id || area.name.toLowerCase().replace(/\s+/g, '-');
+                        option.dataset.areaName = area.name || '';
                         option.textContent = area.name;
                         mobileAreaSelect.appendChild(option);
                     });
                 }
 
-                console.log('Areas loaded for city:', cityName, areas.length);
+                console.log('Areas loaded for city ID:', cityId, areas.length);
             } catch (error) {
                 console.error('Error loading areas:', error);
                 // Fallback to empty areas
@@ -1013,20 +1226,29 @@
         function autoSelectCityInDropdowns() {
             const cityParam = getUrlParam('city');
             if (!cityParam) return;
-
-            // Use the city name directly from URL parameter
-            const cityValue = cityParam.toLowerCase();
-
-            // Auto-select in mobile dropdown
-            const mobileSelect = document.getElementById('mobile-select-city');
-            if (mobileSelect) {
-                mobileSelect.value = cityValue;
-            }
-
-            // Auto-select in desktop dropdown
+            const normalized = cityParam.toLowerCase().trim();
             const desktopSelect = document.getElementById('desktop-select-city');
-            if (desktopSelect) {
-                desktopSelect.value = cityValue;
+            const mobileSelect = document.getElementById('mobile-select-city');
+
+            const pickMatchingValue = (selectEl) => {
+                if (!selectEl) return '';
+                let matched = '';
+                for (const opt of Array.from(selectEl.options)) {
+                    const text = (opt.textContent || '').toLowerCase();
+                    const cityName = (opt.dataset.cityName || '').toLowerCase();
+                    if (text.includes(normalized) || cityName.includes(normalized) || normalized.includes(cityName)) {
+                        matched = opt.value;
+                        break;
+                    }
+                }
+                if (matched) selectEl.value = matched;
+                return matched;
+            };
+
+            const selected = pickMatchingValue(desktopSelect) || pickMatchingValue(mobileSelect);
+            if (selected) {
+                if (desktopSelect) desktopSelect.value = selected;
+                if (mobileSelect) mobileSelect.value = selected;
             }
         }
 
@@ -1038,7 +1260,103 @@
         // ======================================================
 
         function getVisitsFromStorage() {
-            try { return JSON.parse(localStorage.getItem('roomhy_visits') || '[]'); } catch (e) { return []; }
+            try {
+                const local = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
+                if (Array.isArray(local) && local.length) return local;
+            } catch (e) {}
+            try {
+                const session = JSON.parse(sessionStorage.getItem('roomhy_visits') || '[]');
+                if (Array.isArray(session)) return session;
+            } catch (e) {}
+            return [];
+        }
+
+        function normalizeGenderValue(value) {
+            const v = (value || '').toString().toLowerCase().trim();
+            if (!v) return '';
+            if (v.includes('co-ed') || v.includes('coed') || v.includes('co ed') || v.includes('any') || v.includes('all') || v === 'other') return 'co-ed';
+            if (
+                v.includes('male') ||
+                v.includes('boy') ||
+                v.includes('man') ||
+                v.includes('men') ||
+                v.includes('gent') ||
+                v === 'm'
+            ) return 'male';
+            if (
+                v.includes('female') ||
+                v.includes('girl') ||
+                v.includes('woman') ||
+                v.includes('women') ||
+                v.includes('lad') ||
+                v === 'f'
+            ) return 'female';
+            return v;
+        }
+
+        function isGenderMatch(propertyGender, selectedGender) {
+            const prop = normalizeGenderValue(propertyGender);
+            const selected = normalizeGenderValue(selectedGender);
+            if (!selected) return true;
+            if (!prop) return true; // don't reject missing data
+            if (prop === 'co-ed' || selected === 'co-ed') return true;
+            return prop === selected;
+        }
+
+        function slimPropertyForCache(p) {
+            const prop = p.propertyInfo || {};
+            const photos = (p.professionalPhotos && p.professionalPhotos.length)
+                ? p.professionalPhotos
+                : (p.photos || prop.photos || []);
+            const firstPhoto = photos[0] || '';
+
+            return {
+                _id: p._id,
+                enquiry_id: p.enquiry_id,
+                status: p.status,
+                isLiveOnWebsite: p.isLiveOnWebsite,
+                city: p.city || prop.city || '',
+                locality: p.locality || prop.area || '',
+                rent: p.rent || p.monthlyRent || prop.rent || prop.monthlyRent || 0,
+                monthlyRent: p.monthlyRent || p.rent || prop.monthlyRent || prop.rent || 0,
+                property_type: p.property_type || p.type || prop.property_type || prop.type || '',
+                gender: p.gender || prop.gender || prop.genderSuitability || '',
+                isVerified: !!p.isVerified,
+                rating: p.rating || 0,
+                reviewsCount: p.reviewsCount || 0,
+                propertyInfo: {
+                    name: p.property_name || prop.name || p.title || prop.title || '',
+                    title: p.title || prop.title || '',
+                    city: p.city || prop.city || '',
+                    area: p.locality || prop.area || '',
+                    rent: p.rent || p.monthlyRent || prop.rent || prop.monthlyRent || 0,
+                    monthlyRent: p.monthlyRent || p.rent || prop.monthlyRent || prop.rent || 0,
+                    propertyType: prop.propertyType || prop.property_type || p.property_type || p.type || '',
+                    type: p.type || prop.type || p.property_type || prop.property_type || '',
+                    genderSuitability: prop.genderSuitability || p.gender || prop.gender || ''
+                },
+                // Keep at most one preview image to avoid quota overflow
+                photos: firstPhoto ? [firstPhoto] : [],
+                professionalPhotos: firstPhoto ? [firstPhoto] : []
+            };
+        }
+
+        function cachePropertiesSafely(properties) {
+            const payload = properties.map(slimPropertyForCache);
+            const serialized = JSON.stringify(payload);
+            try {
+                localStorage.setItem('roomhy_visits', serialized);
+                return true;
+            } catch (e) {
+                // localStorage can fail due to quota/tracking prevention, fallback to sessionStorage
+                try {
+                    sessionStorage.setItem('roomhy_visits', serialized);
+                    return false;
+                } catch (e2) {
+                    console.warn('Storage unavailable for property cache; proceeding without cache');
+                    return false;
+                }
+            }
         }
 
         // Fetch properties from approval API (MongoDB) - only approved properties
@@ -1113,12 +1431,27 @@
                 
                 properties = properties.filter((prop, idx) => {
                     const propInfo = prop.propertyInfo || {};
+                    const desktopCitySelect = document.getElementById('desktop-select-city');
+                    const mobileCitySelect = document.getElementById('mobile-select-city');
+                    const activeCitySelect = desktopCitySelect && desktopCitySelect.value ? desktopCitySelect : mobileCitySelect;
+                    const citySelectedOption = activeCitySelect ? activeCitySelect.options[activeCitySelect.selectedIndex] : null;
+                    const filterCityName = citySelectedOption
+                        ? (citySelectedOption.dataset.cityName || citySelectedOption.textContent || '')
+                        : '';
+
+                    const desktopAreaSelect = document.getElementById('desktop-select-area');
+                    const mobileAreaSelect = document.getElementById('mobile-select-area');
+                    const activeAreaSelect = desktopAreaSelect && desktopAreaSelect.value ? desktopAreaSelect : mobileAreaSelect;
+                    const areaSelectedOption = activeAreaSelect ? activeAreaSelect.options[activeAreaSelect.selectedIndex] : null;
+                    const filterAreaName = areaSelectedOption
+                        ? (areaSelectedOption.dataset.areaName || areaSelectedOption.textContent || '')
+                        : '';
                     
-                    // City - ONLY filter if property HAS city data
+                    // City filter using selected option text (fast-bidding style)
                     if (filters.city && filters.city !== '') {
                         const propCity = (prop.city || propInfo.city || '').toString().toLowerCase().trim();
+                        const filterCity = (filterCityName || filters.city || '').toString().toLowerCase().trim();
                         if (propCity) {  // Only apply filter if property has city data
-                            const filterCity = filters.city.toString().toLowerCase().trim();
                             const cityMatch = propCity.includes(filterCity) || filterCity.includes(propCity);
                             if (idx === 0) console.log('🏙️ City filter: prop="' + propCity + '" filter="' + filterCity + '" match=' + cityMatch);
                             if (!cityMatch) return false;
@@ -1126,11 +1459,11 @@
                         // If property has no city data, don't filter (pass through)
                     }
                     
-                    // Area - ONLY filter if property HAS area data
+                    // Area filter using selected option text (fast-bidding style)
                     if (filters.area && filters.area !== '') {
                         const propArea = (prop.locality || propInfo.area || '').toString().toLowerCase().trim();
+                        const filterArea = (filterAreaName || filters.area || '').toString().toLowerCase().trim();
                         if (propArea) {  // Only apply filter if property has area data
-                            const filterArea = filters.area.toString().toLowerCase().trim();
                             const areaMatch = propArea.includes(filterArea) || filterArea.includes(propArea);
                             if (idx === 0) console.log('📍 Area filter: prop="' + propArea + '" filter="' + filterArea + '" match=' + areaMatch);
                             if (!areaMatch) return false;
@@ -1140,9 +1473,18 @@
 
                     // Gender
                     if (filters.gender) {
-                        const propGender = (prop.gender || propInfo.gender || prop.genderSuitability || '').toString().toLowerCase();
-                        const filterGender = filters.gender.toString().toLowerCase();
-                        if (propGender && !['co-ed', filterGender, filterGender.replace('-', '')].includes(propGender)) return false;
+                        const propGender = (
+                            prop.gender ||
+                            propInfo.gender ||
+                            prop.genderSuitability ||
+                            propInfo.genderSuitability ||
+                            prop.property_type ||
+                            prop.type ||
+                            propInfo.propertyType ||
+                            propInfo.type ||
+                            ''
+                        ).toString();
+                        if (!isGenderMatch(propGender, filters.gender)) return false;
                     }
 
                     // Property type
@@ -1165,8 +1507,8 @@
                 });
                 console.log('After client filter:', beforeClientFilter, '→', properties.length);
 
-                // Cache in localStorage for offline access
-                localStorage.setItem('roomhy_visits', JSON.stringify(properties));
+                // Cache lightweight payload to avoid quota overflow from image-heavy objects
+                cachePropertiesSafely(properties);
                 return properties;
 
             } catch (err) {
@@ -1176,33 +1518,8 @@
         }
 
         function populateAreaOptionsFromVisits(cityValue) {
-            // Fetch all properties first to get unique areas
-            fetchPropertiesFromAPI({ city: cityValue || '' }).then(visits => {
-                const areas = new Set();
-                
-                visits.forEach(v => {
-                    // Handle ApprovedProperty data structure from MongoDB
-                    const propInfo = v.propertyInfo || {};
-                    let area = propInfo.area || '';
-                    
-                    if (area) areas.add(area);
-                });
-
-                const desktopAreaSelect = document.getElementById('desktop-select-area');
-                const mobileAreaSelect = document.getElementById('mobile-select-area');
-                
-                const areaOptions = '<option value="">All Areas</option>' + 
-                    Array.from(areas).map(a => `<option value="${a}">${a}</option>`).join('');
-                
-                if (desktopAreaSelect) {
-                    desktopAreaSelect.innerHTML = areaOptions;
-                }
-                if (mobileAreaSelect) {
-                    mobileAreaSelect.innerHTML = areaOptions;
-                }
-            }).catch(err => {
-                console.error('Error populating areas:', err);
-            });
+            // Keep behavior aligned with fast-bidding: areas come from locations API by selected city ID
+            return loadAreasForCity(cityValue || '');
         }
 
         function renderPropertyCard(v) {
@@ -1242,34 +1559,45 @@
             }).replace(/"/g, '&quot;');
 
             return `
-                <div class="light-card rounded-lg sm:rounded-xl overflow-hidden h-full flex flex-col shadow-md hover:shadow-lg transition-shadow">
+                <div class="property-card-pro h-full flex flex-col">
                     <a href="property.html?id=${propertyId}" class="group block flex-grow">
-                        <div class="relative">
-                            <img src="${img}" alt="${title}" class="w-full h-40 sm:h-48 lg:h-56 object-cover group-hover:opacity-90 transition-opacity">
-                            ${v.isVerified ? '<div class="absolute top-2 right-2 sm:top-3 sm:right-3 bg-green-100 text-green-800 text-xs font-bold px-2 sm:px-3 py-1 rounded-full flex items-center space-x-1"><i data-lucide="shield-check" class="w-3 sm:w-4 h-3 sm:h-4"></i><span class="hidden sm:inline">Verified</span></div>' : ''}
-                            <button class="favorite-btn absolute top-2 left-2 sm:top-3 sm:left-3 bg-white hover:bg-red-50 text-gray-600 hover:text-red-500 p-1.5 sm:p-2 rounded-full shadow-md transition-colors" data-property-id="${rawPropertyId}" data-property='${propertyDataStr}' title="Add to favorites">
-                                <i data-lucide="heart" class="w-4 sm:w-5 h-4 sm:h-5"></i>
+                        <div class="property-image-wrap">
+                            <img src="${img}" alt="${title}" class="w-full h-44 sm:h-52 object-cover">
+                            <button class="favorite-btn absolute top-3 left-3 bg-white/95 hover:bg-red-50 text-gray-600 hover:text-red-500 p-2 rounded-full shadow-sm transition-colors" data-property-id="${rawPropertyId}" data-property='${propertyDataStr}' title="Add to favorites">
+                                <i data-lucide="heart" class="w-4 h-4"></i>
                             </button>
+                            ${v.isVerified ? '<div class="absolute top-3 right-3 bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i><span>Verified</span></div>' : ''}
                         </div>
-                        <div class="p-3 sm:p-5 text-left bg-white flex-grow">
-                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
-                                <div class="flex-1">
-                                    <span class="text-xs text-pink-800 bg-pink-100 px-2 py-1 rounded-full font-medium inline-block">${badge}</span>
-                                    <h3 class="text-base sm:text-lg lg:text-xl font-bold mt-2 sm:mt-3 mb-1 sm:mb-2 text-gray-900 line-clamp-2">${title}</h3>
-                                    <p class="text-sm sm:text-base text-gray-500 flex items-start mb-2 sm:mb-4"><i data-lucide="map-pin" class="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2 flex-shrink-0 mt-0.5"></i><span class="line-clamp-1">${area}${city ? ', ' + city : ''}</span></p>
-                                </div>
-                                <div class="text-right flex-shrink-0">
-                                    <p class="text-base sm:text-lg font-bold text-gray-900">₹${rent} <span class="text-xs sm:text-sm font-normal text-gray-500">/ mo</span></p>
-                                    <div class="flex items-center justify-end space-x-1 text-sm"><i data-lucide="star" class="w-4 h-4 text-yellow-500 fill-yellow-500"></i><span class="font-semibold text-gray-800">${v.rating || '4.5'}</span><span class="text-xs text-gray-500">(${v.reviewsCount || 0})</span></div>
-                                </div>
+
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-3 mb-2">
+                                <span class="property-chip">${badge}</span>
+                                <p class="price-pill">₹${rent}<span> / month</span></p>
                             </div>
-                            ${ thumbs ? `<div class="mt-2 sm:mt-4 overflow-x-auto horizontal-slider flex gap-2 pb-2"><div class="flex gap-2">${thumbs}</div></div>` : '' }
+
+                            <h3 class="text-lg font-bold text-slate-900 line-clamp-2">${title}</h3>
+                            <p class="mt-2 text-sm text-slate-600 flex items-start">
+                                <i data-lucide="map-pin" class="w-4 h-4 mr-1.5 mt-0.5 flex-shrink-0"></i>
+                                <span class="line-clamp-1">${area}${city ? ', ' + city : ''}</span>
+                            </p>
+
+                            <div class="mt-3 flex items-center justify-between">
+                                <div class="flex items-center text-sm text-slate-600">
+                                    <i data-lucide="star" class="w-4 h-4 text-amber-500 fill-amber-500 mr-1"></i>
+                                    <span class="font-semibold text-slate-800">${v.rating || '4.5'}</span>
+                                    <span class="ml-1">(${v.reviewsCount || 0})</span>
+                                </div>
+                                <span class="text-xs text-slate-500">Updated listing</span>
+                            </div>
+
+                            ${ thumbs ? `<div class="mt-3 overflow-x-auto horizontal-slider flex gap-2 pb-1"><div class="flex gap-2">${thumbs}</div></div>` : '' }
                         </div>
                     </a>
-                    <div class="p-3 sm:p-5 pt-2 sm:pt-0 bg-white border-t border-gray-100">
-                        <a href="property.html?id=${propertyId}" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 text-sm sm:text-base">
+
+                    <div class="px-4 pb-4">
+                        <a href="property.html?id=${propertyId}" class="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm">
                             <i data-lucide="message-square" class="w-4 h-4"></i>
-                            <span>Bid Now</span>
+                            View & Bid
                         </a>
                     </div>
                 </div>`;
@@ -1399,21 +1727,8 @@
 
         // Function to populate cities from MongoDB
         function populateCities() {
-            fetchPropertiesFromAPI({}).then(properties => {
-                const cities = new Set();
-                properties.forEach(p => {
-                    const city = p.city || p.propertyInfo?.city || '';
-                    if (city) cities.add(city.toLowerCase());
-                });
-                
-                const cityOptions = '<option value="">Select a city</option>' + 
-                    Array.from(cities).sort().map(c => `<option value="${c.toLowerCase()}">${c}</option>`).join('');
-                
-                document.getElementById('desktop-select-city').innerHTML = cityOptions;
-                document.getElementById('mobile-select-city').innerHTML = cityOptions;
-            }).catch(err => {
-                console.error('Error populating cities:', err);
-            });
+            // Use same source/model as fast-bidding (locations API)
+            return loadCities();
         }
 
         // Initialize on load
@@ -1447,35 +1762,8 @@
 
         // Function to populate area dropdown based on selected city
         function updateAreaDropdown(cityValue) {
-            const areas = cityAreaMap[cityValue.toLowerCase()] || [];
-
-            // Update mobile area dropdown
-            const mobileAreaSelect = document.getElementById('mobile-select-area');
-            if (mobileAreaSelect) {
-                mobileAreaSelect.innerHTML = '<option value="">First select a city</option>';
-                if (areas.length > 0) {
-                    areas.forEach(area => {
-                        const option = document.createElement('option');
-                        option.value = area.toLowerCase();
-                        option.textContent = area;
-                        mobileAreaSelect.appendChild(option);
-                    });
-                }
-            }
-
-            // Update desktop area dropdown
-            const desktopAreaSelect = document.getElementById('desktop-select-area');
-            if (desktopAreaSelect) {
-                desktopAreaSelect.innerHTML = '<option value="">First select a city</option>';
-                if (areas.length > 0) {
-                    areas.forEach(area => {
-                        const option = document.createElement('option');
-                        option.value = area.toLowerCase();
-                        option.textContent = area;
-                        desktopAreaSelect.appendChild(option);
-                    });
-                }
-            }
+            // Keep area behavior aligned with fast-bidding (areas by selected city ID)
+            return loadAreasForCity(cityValue || '');
         }
 
         // Add change event listeners to city and area dropdowns
@@ -1636,6 +1924,10 @@
             // First, try to populate from MongoDB approved properties
             async function populateCitiesFromMongoDB(){
                 try{
+                    const desktopExisting = document.getElementById('desktop-select-city');
+                    if (desktopExisting && desktopExisting.dataset.source === 'locations-api') {
+                        return;
+                    }
                     const response = await fetch(`${API_URL}/api/approved-properties/public/approved`);
                     if (!response.ok) throw new Error('Failed to fetch');
                     
@@ -1869,10 +2161,10 @@
             
             // On desktop, adjust grid
             if (window.innerWidth >= 1024) {
-                // When sidebar is hidden, main content spans 4 cols
-                mainContentArea.classList.toggle('lg:col-span-4', isNowHidden);
-                // When sidebar is visible, main content spans 3 cols
-                mainContentArea.classList.toggle('lg:col-span-3', !isNowHidden);
+                // When sidebar is hidden, main content spans full width
+                mainContentArea.classList.toggle('lg:col-span-12', isNowHidden);
+                // When sidebar is visible, main content uses 9/12 split
+                mainContentArea.classList.toggle('lg:col-span-9', !isNowHidden);
                 // Ensure sidebar is shown/hidden correctly on desktop
                 filterSidebar.classList.toggle('lg:block', !isNowHidden);
             }
@@ -1957,7 +2249,7 @@
                 if (mobileSelect) mobileSelect.value = cityParam;
             }
 
-            const cityValue = (desktopCity || mobileCity || '').toString().toLowerCase();
+            const cityValue = (desktopCity || mobileCity || '').toString().trim();
 
             const desktopArea = document.getElementById('desktop-select-area')?.value || '';
             const mobileArea = document.getElementById('mobile-select-area')?.value || '';
@@ -1996,13 +2288,6 @@
                 let filtered = visits;
                 // Show all properties (even without professional photos - use regular photos as fallback)
                 // filtered = filtered.filter(v => v.professionalPhotos && v.professionalPhotos.length > 0);
-
-                if (genderValue) {
-                    filtered = filtered.filter(v => {
-                        const gender = (v.propertyInfo && v.propertyInfo.gender || '').toString().toLowerCase();
-                        return gender === genderValue.toLowerCase() || gender === 'co-ed' || genderValue.toLowerCase() === 'co-ed';
-                    });
-                }
 
                 // Store filtered properties for "Request on all" feature
                 currentFilteredProperties = filtered;
@@ -2142,6 +2427,29 @@
             
             const modal = document.getElementById('request-all-modal');
             if (modal) modal.classList.remove('hidden');
+        }
+
+        // Bid on All - Opens the request modal for bidding
+        function openBidOnAllModal() {
+            // Get current filter values
+            const city = document.getElementById('desktop-select-city')?.value || document.getElementById('mobile-select-city')?.value || '';
+            const area = document.getElementById('desktop-select-area')?.value || document.getElementById('mobile-select-area')?.value || '';
+            const minPrice = document.getElementById('desktop-min-price')?.value || document.getElementById('mobile-min-price')?.value || '';
+            const maxPrice = document.getElementById('desktop-max-price')?.value || document.getElementById('mobile-max-price')?.value || '';
+            const gender = document.getElementById('desktop-gender')?.value || document.getElementById('mobile-gender')?.value || '';
+            
+            // Check if filters are applied
+            if (!city && !area && !minPrice && !maxPrice) {
+                alert('Please select filters first to find matching properties.');
+                return;
+            }
+
+            // Show the request all modal (reusing existing functionality)
+            showRequestAllModal();
+        }
+
+        function closeBidOnAllModal() {
+            closeRequestAllModal();
         }
 
         function closeRequestAllModal() {

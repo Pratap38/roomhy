@@ -58,7 +58,10 @@ exports.getAllOwners = async (req, res) => {
 
         // Area Based Filtering
         if (locationCode) {
-            query.locationCode = { $regex: `^${locationCode}`, $options: 'i' };
+            query.$or = [
+                { locationCode: { $regex: `^${locationCode}`, $options: 'i' } },
+                { 'profile.locationCode': { $regex: `^${locationCode}`, $options: 'i' } }
+            ];
         }
 
         // Status Filtering
@@ -101,10 +104,14 @@ exports.getAllOwners = async (req, res) => {
             phone: o.profile?.phone || o.phone || '',
             address: o.profile?.address || o.address || '',
             locationCode: o.profile?.locationCode || o.locationCode || '',
-            bankAccount: o.profile?.bankAccount || o.bankAccount || '',
+            bankName: o.profile?.bankName || '',
+            accountNumber: o.profile?.accountNumber || '',
+            ifscCode: o.profile?.ifscCode || '',
+            branchName: o.profile?.branchName || '',
             aadharNumber: o.kyc?.aadharNumber || '',
             kycStatus: o.kyc?.status || 'pending',
             documentImage: o.kyc?.documentImage || '',
+            profileFilled: !!o.profileFilled,
             password: o.credentials?.password || ''
         }));
 
@@ -128,11 +135,13 @@ exports.updateOwnerKyc = async (req, res) => {
         const owner = await Owner.findOne({ $or: [{ _id: id }, { loginId: id }] });
         if (!owner) return res.status(404).json({ message: 'Owner not found' });
 
+        owner.kyc = owner.kyc || {};
         owner.kyc.status = status;
         if (status === 'verified') {
             owner.kyc.verifiedAt = new Date();
             owner.isActive = true; // Activate owner on verification
         } else {
+            owner.kyc.rejectionReason = rejectionReason || '';
             owner.isActive = false;
         }
 
@@ -158,9 +167,25 @@ exports.updateOwnerKyc = async (req, res) => {
 // Get Single Owner
 exports.getOwnerById = async (req, res) => {
     try {
-        const owner = await Owner.findOne({ loginId: req.params.loginId });
+        const owner = await Owner.findOne({ loginId: req.params.loginId }).lean();
         if (!owner) return res.status(404).json({ message: 'Owner not found' });
-        res.json(owner);
+        res.json({
+            ...owner,
+            name: owner.profile?.name || owner.name || 'Unknown',
+            email: owner.profile?.email || owner.email || '',
+            phone: owner.profile?.phone || owner.phone || '',
+            address: owner.profile?.address || owner.address || '',
+            locationCode: owner.profile?.locationCode || owner.locationCode || '',
+            bankName: owner.profile?.bankName || '',
+            accountNumber: owner.profile?.accountNumber || '',
+            ifscCode: owner.profile?.ifscCode || '',
+            branchName: owner.profile?.branchName || '',
+            aadharNumber: owner.kyc?.aadharNumber || '',
+            kycStatus: owner.kyc?.status || 'pending',
+            documentImage: owner.kyc?.documentImage || '',
+            profileFilled: !!owner.profileFilled,
+            password: owner.credentials?.password || ''
+        });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

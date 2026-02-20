@@ -17,17 +17,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RoomHy - Staff Login</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Suppress Tailwind CDN production warning in development
+        // Suppress Tailwind CDN production warning BEFORE loading Tailwind
         const originalWarn = console.warn;
+        const originalError = console.error;
         console.warn = function(...args) {
-            if (args[0] && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
-                return; // Suppress this specific warning
+            const msg = args[0] ? String(args[0]) : '';
+            // Suppress Tailwind CDN warning
+            if (msg.includes('cdn.tailwindcss.com should not be used in production')) {
+                return;
+            }
+            if (msg.includes('should not be used in production')) {
+                return;
             }
             originalWarn.apply(console, args);
         };
+        // Also suppress in console.error if needed
+        console.error = function(...args) {
+            const msg = args[0] ? String(args[0]) : '';
+            if (msg.includes('cdn.tailwindcss.com')) {
+                originalWarn('(Tailwind CDN warning suppressed in development mode)');
+                return;
+            }
+            originalError.apply(console, args);
+        };
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
@@ -113,10 +128,101 @@
             </form>
             
             <div class="mt-6 text-center border-t border-gray-100 pt-4">
-                <p class="text-sm text-gray-500">Don't have credentials yet?</p>
-                <a href="owner-login.html" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Request access or sign up</a>
+                <button type="button" class="text-sm font-medium text-indigo-600 hover:text-indigo-800" onclick="showForgotPasswordModal()">
+                    Forgot Password?
+                </button>
             </div>
         </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgot-password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" onclick="if(event.target.id === 'forgot-password-modal') closeForgotPasswordModal()">
+        <div class="card-light w-full max-w-md p-8 mx-4 fade-in">
+            <div class="text-center mb-6">
+                <button type="button" class="float-right text-gray-400 hover:text-gray-600" onclick="closeForgotPasswordModal()">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+                <h2 class="text-2xl font-bold text-gray-900">Reset Password</h2>
+                <p class="text-gray-500 text-sm mt-1">Enter your email to receive an OTP</p>
+            </div>
+
+            <!-- Step 1: Email Entry -->
+            <form id="step-email" class="space-y-4" onsubmit="event.preventDefault(); sendOTP();">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                    <input 
+                        type="email" 
+                        class="input-focus w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 transition-colors outline-none" 
+                        id="forgot-email" 
+                        placeholder="Enter your email..." 
+                        required
+                    >
+                    <div id="forgot-email-error" class="error-msg hidden"></div>
+                </div>
+                <button type="submit" class="btn-primary w-full text-white font-bold py-3 rounded-lg transition-all">
+                    Send OTP
+                </button>
+            </form>
+
+            <!-- Step 2: OTP Verification -->
+            <form id="step-otp" class="space-y-4 hidden" onsubmit="event.preventDefault(); verifyOTP();">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Enter OTP</label>
+                    <p class="text-xs text-gray-400 mb-3">6-digit OTP sent to <span id="otp-email-display"></span></p>
+                    <input 
+                        type="text" 
+                        class="input-focus w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 transition-colors outline-none text-center text-2xl tracking-widest" 
+                        id="forgot-otp" 
+                        placeholder="000000" 
+                        maxlength="6"
+                        required
+                    >
+                    <div id="forgot-otp-error" class="error-msg hidden"></div>
+                </div>
+                <button type="submit" class="btn-primary w-full text-white font-bold py-3 rounded-lg transition-all">
+                    Verify OTP
+                </button>
+                <button type="button" class="w-full text-indigo-600 font-medium py-2 hover:text-indigo-800" onclick="backToEmail()">
+                    Back
+                </button>
+            </form>
+
+            <!-- Step 3: Password Reset -->
+            <form id="step-password" class="space-y-4 hidden" onsubmit="event.preventDefault(); resetPassword();">
+                <!-- Hidden username field for accessibility and password manager compatibility -->
+                <input type="text" style="display:none;" autocomplete="username" id="forgot-username-field" value="">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                    <input 
+                        type="password" 
+                        class="input-focus w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 transition-colors outline-none" 
+                        id="forgot-new-password" 
+                        placeholder="Enter new password..." 
+                        autocomplete="new-password"
+                        required
+                    >
+                    <div id="forgot-password-error" class="error-msg hidden"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                    <input 
+                        type="password" 
+                        class="input-focus w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 transition-colors outline-none" 
+                        id="forgot-confirm-password" 
+                        placeholder="Confirm your password..." 
+                        autocomplete="new-password"
+                        required
+                    >
+                    <div id="forgot-confirm-error" class="error-msg hidden"></div>
+                </div>
+                <button type="submit" class="btn-primary w-full text-white font-bold py-3 rounded-lg transition-all">
+                    Reset Password
+                </button>
+                <button type="button" class="w-full text-indigo-600 font-medium py-2 hover:text-indigo-800" onclick="backToEmail()">
+                    Back
+                </button>
+            </form>
     </div>
 
     <script>
@@ -426,6 +532,354 @@
         function showError(msg, errorMsg) {
             errorMsg.textContent = msg;
             errorMsg.classList.remove('hidden');
+        }
+
+        // Forgot Password Functions
+        let forgotPasswordState = {
+            email: '',
+            otp: '',
+            token: '',
+            source: '',
+            localOtp: ''  // OTP for emails found only in localStorage
+        };
+
+        function showForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').classList.remove('hidden');
+            resetForgotPasswordModal();
+            lucide.createIcons();
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').classList.add('hidden');
+            resetForgotPasswordModal();
+        }
+
+        function resetForgotPasswordModal() {
+            document.getElementById('step-email').classList.remove('hidden');
+            document.getElementById('step-otp').classList.add('hidden');
+            document.getElementById('step-password').classList.add('hidden');
+            document.getElementById('forgot-email').value = '';
+            document.getElementById('forgot-otp').value = '';
+            document.getElementById('forgot-new-password').value = '';
+            document.getElementById('forgot-confirm-password').value = '';
+            clearErrors();
+            forgotPasswordState = { email: '', otp: '', token: '', source: '', localOtp: '' };
+        }
+
+        function clearErrors() {
+            document.getElementById('forgot-email-error').classList.add('hidden');
+            document.getElementById('forgot-otp-error').classList.add('hidden');
+            document.getElementById('forgot-password-error').classList.add('hidden');
+            document.getElementById('forgot-confirm-error').classList.add('hidden');
+        }
+
+        async function sendOTP() {
+            clearErrors();
+            const email = document.getElementById('forgot-email').value.trim();
+            const emailError = document.getElementById('forgot-email-error');
+
+            if (!email) {
+                emailError.textContent = 'Please enter your email address';
+                emailError.classList.remove('hidden');
+                return;
+            }
+
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                emailError.textContent = 'Please enter a valid email address';
+                emailError.classList.remove('hidden');
+                return;
+            }
+
+            console.log('[ForgotPassword] Checking for email:', email);
+
+            // Step 1: Check local databases first (manager.html, employees, etc.)
+            let staffFound = false;
+            let staffType = '';
+
+            // Helper function to safely access localStorage with Tracking Prevention handling
+            function safeLocalStorageGet(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch (e) {
+                    console.warn('[ForgotPassword] Tracking Prevention: Could not access', key);
+                    return null;
+                }
+            }
+
+            // Check SuperAdmin
+            try {
+                const superAdminStr = safeLocalStorageGet('roomhy_superadmin_db');
+                const superAdminDb = superAdminStr ? JSON.parse(superAdminStr) : null;
+                if (superAdminDb && superAdminDb.email && superAdminDb.email.toLowerCase() === email.toLowerCase()) {
+                    staffFound = true;
+                    staffType = 'superadmin';
+                    console.log('[ForgotPassword] Found in SuperAdmin DB');
+                }
+            } catch (e) {
+                console.warn('[ForgotPassword] Could not check SuperAdmin DB', e);
+            }
+
+            // Check Area Managers (from manager.html)
+            if (!staffFound) {
+                try {
+                    const managersStr = safeLocalStorageGet('roomhy_areamanagers_db');
+                    const managers = managersStr ? JSON.parse(managersStr) : [];
+                    if (Array.isArray(managers)) {
+                        const found = managers.find(m => m.email && m.email.toLowerCase() === email.toLowerCase());
+                        if (found) {
+                            staffFound = true;
+                            staffType = 'areamanager';
+                            console.log('[ForgotPassword] Found in Area Managers DB');
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[ForgotPassword] Could not check Area Managers DB', e);
+                }
+            }
+
+            // Check Employees
+            if (!staffFound) {
+                try {
+                    const employeesStr = safeLocalStorageGet('roomhy_employees');
+                    const employees = employeesStr ? JSON.parse(employeesStr) : [];
+                    if (Array.isArray(employees)) {
+                        const found = employees.find(e => e.email && e.email.toLowerCase() === email.toLowerCase());
+                        if (found) {
+                            staffFound = true;
+                            staffType = 'employee';
+                            console.log('[ForgotPassword] Found in Employees DB');
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[ForgotPassword] Could not check Employees DB', e);
+                }
+            }
+
+            // Step 2: Always verify with backend (even if found locally for security)
+            console.log('[ForgotPassword] Verifying email with backend...');
+            try {
+                const response = await fetch(API_URL + '/api/auth/forgot-password/request-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, source: staffFound ? staffType : 'api' })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // If found locally but not in backend, still allow to proceed
+                    if (staffFound) {
+                        console.log('[ForgotPassword] Found locally but not in backend, will handle locally');
+                    } else {
+                        emailError.textContent = data.message || 'Email not found. Please check and try again.';
+                        emailError.classList.remove('hidden');
+                        return;
+                    }
+                } else {
+                    // Success from backend
+                    staffFound = true;
+                    staffType = 'verified';
+                }
+            } catch (err) {
+                // Network error - if found locally, continue anyway
+                if (!staffFound) {
+                    console.error('Error checking backend:', err);
+                    emailError.textContent = 'Failed to connect. Please try again.';
+                    emailError.classList.remove('hidden');
+                    return;
+                } else {
+                    console.warn('Backend connection failed, but email found locally - continuing');
+                }
+            }
+
+            // Step 3: If found, proceed with OTP
+            if (staffFound) {
+                console.log('[ForgotPassword] Staff found as ' + staffType + ', proceeding with OTP');
+                
+                // Store email for next steps
+                try {
+                    sessionStorage.setItem('forgotPasswordEmail', email);
+                } catch (e) {
+                    console.warn('[ForgotPassword] Could not save to sessionStorage:', e);
+                }
+                
+                forgotPasswordState.email = email;
+                forgotPasswordState.source = staffType;
+                
+                // If email found ONLY locally (not in backend), generate local OTP
+                if (['superadmin', 'areamanager', 'employee'].includes(staffType)) {
+                    const localOtp = String(Math.floor(100000 + Math.random() * 900000));
+                    forgotPasswordState.localOtp = localOtp;
+                    console.log('[ForgotPassword] ⚠️  EMAIL FOUND LOCALLY ONLY');
+                    console.log('[ForgotPassword] Generated Local OTP:', localOtp);
+                    console.log('[ForgotPassword] Enter this OTP in the form to proceed');
+                }
+                
+                document.getElementById('otp-email-display').textContent = email;
+                document.getElementById('step-email').classList.add('hidden');
+                document.getElementById('step-otp').classList.remove('hidden');
+                
+                console.log('[ForgotPassword] Proceeding to OTP step for:', email);
+            } else {
+                emailError.textContent = 'Email not found in any staff system. Please check and try again.';
+                emailError.classList.remove('hidden');
+            }
+        }
+
+        async function verifyOTP() {
+            clearErrors();
+            const otp = document.getElementById('forgot-otp').value.trim();
+            const otpError = document.getElementById('forgot-otp-error');
+
+            if (!otp || otp.length !== 6 || !/^\d+$/.test(otp)) {
+                otpError.textContent = 'Please enter a valid 6-digit OTP';
+                otpError.classList.remove('hidden');
+                return;
+            }
+
+            // If email was found only locally, verify against locally generated OTP
+            if (forgotPasswordState.localOtp) {
+                console.log('[ForgotPassword] Verifying OTP locally...');
+                if (otp === forgotPasswordState.localOtp) {
+                    console.log('[ForgotPassword] ✅ OTP verified successfully!');
+                    // Generate a fake token for local handling
+                    forgotPasswordState.token = 'local_' + Date.now();
+                    document.getElementById('step-otp').classList.add('hidden');
+                    document.getElementById('step-password').classList.remove('hidden');
+                    return;
+                } else {
+                    console.log('[ForgotPassword] ❌ OTP mismatch. Expected:', forgotPasswordState.localOtp, 'Got:', otp);
+                    otpError.textContent = 'Invalid OTP. Please try again.';
+                    otpError.classList.remove('hidden');
+                    return;
+                }
+            }
+
+            // Otherwise verify with backend API
+            try {
+                const response = await fetch(API_URL + '/api/auth/forgot-password/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: forgotPasswordState.email, otp })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    otpError.textContent = data.message || 'Invalid OTP. Please try again.';
+                    otpError.classList.remove('hidden');
+                    return;
+                }
+
+                forgotPasswordState.token = data.token;
+                document.getElementById('step-otp').classList.add('hidden');
+                document.getElementById('step-password').classList.remove('hidden');
+            } catch (err) {
+                console.error('Error verifying OTP:', err);
+                otpError.textContent = 'Failed to verify OTP. Please try again.';
+                otpError.classList.remove('hidden');
+            }
+        }
+
+        async function resetPassword() {
+            clearErrors();
+            const newPassword = document.getElementById('forgot-new-password').value;
+            const confirmPassword = document.getElementById('forgot-confirm-password').value;
+            const passwordError = document.getElementById('forgot-password-error');
+            const confirmError = document.getElementById('forgot-confirm-error');
+
+            if (!newPassword) {
+                passwordError.textContent = 'Please enter a new password';
+                passwordError.classList.remove('hidden');
+                return;
+            }
+
+            // If password was reset locally, update localStorage
+            if (forgotPasswordState.source === 'employee') {
+                if (newPassword.length < 6) {
+                    passwordError.textContent = 'Password must be at least 6 characters';
+                    passwordError.classList.remove('hidden');
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    confirmError.textContent = 'Passwords do not match';
+                    confirmError.classList.remove('hidden');
+                    return;
+                }
+
+                // Update password in localStorage
+                try {
+                    const employeesStr = localStorage.getItem('roomhy_employees');
+                    const employees = employeesStr ? JSON.parse(employeesStr) : [];
+                    const employee = employees.find(e => e.email && e.email.toLowerCase() === forgotPasswordState.email.toLowerCase());
+                    
+                    if (employee) {
+                        employee.password = newPassword;
+                        localStorage.setItem('roomhy_employees', JSON.stringify(employees));
+                        console.log('[ForgotPassword] ✅ Password updated in localStorage for:', forgotPasswordState.email);
+                        
+                        // Close modal and redirect
+                        closeForgotPasswordModal();
+                        alert('✅ Password reset successfully! Please login with your new password.', 'success');
+                        return;
+                    } else {
+                        passwordError.textContent = 'Employee record not found';
+                        passwordError.classList.remove('hidden');
+                        return;
+                    }
+                } catch (err) {
+                    console.error('[ForgotPassword] Error updating localStorage:', err);
+                    passwordError.textContent = 'Failed to update password';
+                    passwordError.classList.remove('hidden');
+                    return;
+                }
+            }
+
+            if (newPassword.length < 6) {
+                passwordError.textContent = 'Password must be at least 6 characters';
+                passwordError.classList.remove('hidden');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                confirmError.textContent = 'Passwords do not match';
+                confirmError.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL + '/api/auth/forgot-password/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: forgotPasswordState.email, 
+                        token: forgotPasswordState.token,
+                        newPassword 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    passwordError.textContent = data.message || 'Failed to reset password. Please try again.';
+                    passwordError.classList.remove('hidden');
+                    return;
+                }
+
+                // Password reset successful
+                alert('Password reset successful! You can now login with your new password.');
+                closeForgotPasswordModal();
+                document.getElementById('login-id').focus();
+            } catch (err) {
+                console.error('Error resetting password:', err);
+                passwordError.textContent = 'Failed to reset password. Please try again.';
+                passwordError.classList.remove('hidden');
+            }
+        }
+
+        function backToEmail() {
+            resetForgotPasswordModal();
         }
     </script>
 </body>
