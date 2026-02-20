@@ -195,14 +195,17 @@ class SuperAdminNotificationManager {
     async fetchNotifications() {
         try {
             const response = await fetch(`${this.API_URL}/api/notifications?unread=true&toLoginId=superadmin`);
-            const data = await response.json();
-            
-            if (data.success && Array.isArray(data)) {
-                const newCount = data.length;
+            const payload = await response.json();
+            const list = Array.isArray(payload)
+                ? payload
+                : (Array.isArray(payload.notifications) ? payload.notifications : []);
+
+            if (list.length >= 0) {
+                const newCount = list.length;
                 
                 if (newCount > this.unreadCount) {
                     // New notifications received
-                    const newNotifs = data.slice(0, newCount - this.unreadCount);
+                    const newNotifs = list.slice(0, newCount - this.unreadCount);
                     newNotifs.forEach(notification => {
                         this.handleNewNotification(notification);
                     });
@@ -215,7 +218,7 @@ class SuperAdminNotificationManager {
                 }
                 
                 this.unreadCount = newCount;
-                this.notifications = data;
+                this.notifications = list;
                 this.updateBellBadge();
             }
         } catch (error) {

@@ -14,8 +14,13 @@ router.post('/send', async (req, res) => {
             });
         }
 
-        // Send email asynchronously
-        sendMail(to, subject, text, html);
+        const sent = await sendMail(to, subject, text, html);
+        if (!sent) {
+            return res.status(500).json({
+                success: false,
+                message: 'Email transporter is not configured or delivery failed'
+            });
+        }
 
         res.json({
             success: true,
@@ -113,8 +118,13 @@ Questions? Contact us at hello@roomhy.com
 © 2025 Roomhy. All rights reserved.
         `;
 
-        // Send email asynchronously
-        sendMail(email, subject, text, html);
+        const sent = await sendMail(email, subject, text, html);
+        if (!sent) {
+            return res.status(500).json({
+                success: false,
+                message: 'Email transporter is not configured or delivery failed'
+            });
+        }
 
         res.json({
             success: true,

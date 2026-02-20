@@ -1,11 +1,11 @@
 const nodemailer = require('nodemailer');
 
 // Read SMTP config from environment variables
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = process.env.SMTP_PORT;
+const SMTP_HOST = process.env.SMTP_HOST || (process.env.GMAIL_USER ? 'smtp.gmail.com' : '');
+const SMTP_PORT = process.env.SMTP_PORT || (process.env.GMAIL_USER ? '587' : '');
 const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_USER = process.env.SMTP_USER || process.env.GMAIL_USER;
+const SMTP_PASS = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
 const FROM_EMAIL = process.env.FROM_EMAIL || (SMTP_USER || 'no-reply@roomhy.com');
 
 let transporter = null;
@@ -24,13 +24,15 @@ if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
 async function sendMail(to, subject, text, html) {
     if (!transporter) {
         console.warn('sendMail skipped because transporter is not configured');
-        return;
+        return false;
     }
     try {
         await transporter.sendMail({ from: FROM_EMAIL, to, subject, text, html });
         console.log('Email sent to', to, 'subject:', subject);
+        return true;
     } catch (err) {
         console.error('Failed sending email to', to, err && err.message);
+        return false;
     }
 }
 

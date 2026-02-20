@@ -4,6 +4,7 @@ const notificationController = require('../controllers/notificationController');
 
 // Existing routes
 router.get('/', notificationController.getNotifications);
+router.put('/:id/read', notificationController.markRead);
 router.post('/chat-message', notificationController.sendChatMessageNotification);
 
 // Website user notifications

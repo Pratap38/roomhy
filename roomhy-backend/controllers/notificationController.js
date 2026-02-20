@@ -204,30 +204,13 @@ exports.sendEmailNotification = async (req, res) => {
         }
 
         // Build email HTML based on type
+        // Build email HTML based on type and send via shared SMTP mailer
         const emailHTML = buildNotificationEmail(type, message, data);
-        const nodemailer = require('nodemailer');
-
-        // Configure Gmail SMTP
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.GMAIL_USER || 'your-email@gmail.com',
-                pass: process.env.GMAIL_APP_PASSWORD || 'your-app-password'
-            },
-            tls: {
-                rejectUnauthorized: false
-            }
-        });
-
-        const mailOptions = {
-            from: process.env.GMAIL_USER || 'noreply@roomhy.com',
-            to: ownerEmail,
-            subject: subject,
-            html: emailHTML,
-            text: message
-        };
-
-        await transporter.sendMail(mailOptions);
+        const mailer = require('../utils/mailer');
+        const sent = await mailer.sendMail(ownerEmail, subject || 'RoomHy Notification', message || '', emailHTML);
+        if (!sent) {
+            return res.status(500).json({ error: 'Email transporter is not configured or delivery failed' });
+        }
         console.log(`✅ Email notification sent to ${ownerEmail} for ${type}`);
         
         res.status(200).json({ success: true, message: 'Email sent successfully' });
@@ -279,26 +262,16 @@ exports.testEmailNotification = async (req, res) => {
             </html>
         `;
 
-        const nodemailer = require('nodemailer');
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.GMAIL_USER || 'your-email@gmail.com',
-                pass: process.env.GMAIL_APP_PASSWORD || 'your-app-password'
-            },
-            tls: {
-                rejectUnauthorized: false
-            }
-        });
-
-        const mailOptions = {
-            from: process.env.GMAIL_USER || 'noreply@roomhy.com',
-            to: email,
-            subject: '✅ RoomHy Notification System - Test Email',
-            html: testHTML
-        };
-
-        await transporter.sendMail(mailOptions);
+        const mailer = require('../utils/mailer');
+        const sent = await mailer.sendMail(
+            email,
+            'RoomHy Notification System - Test Email',
+            'RoomHy notification test email',
+            testHTML
+        );
+        if (!sent) {
+            return res.status(500).json({ error: 'Email transporter is not configured or delivery failed' });
+        }
         res.status(200).json({ success: true, message: 'Test email sent successfully' });
 
     } catch (error) {

@@ -109,10 +109,30 @@
 
     <script>
         lucide.createIcons();
-        let user = JSON.parse(localStorage.getItem('user') || 'null');
-        
-        if (!user) {
-             window.location.href = 'ownerlogin.html'; // Kick back to login if no session
+        function parseJsonSafe(value) {
+            try { return JSON.parse(value || 'null'); } catch (_) { return null; }
+        }
+
+        // Resolve owner session safely. Do not prefer generic "user" because staff also uses it.
+        function getOwnerSession() {
+            const fromOwnerSession = parseJsonSafe(sessionStorage.getItem('owner_session'));
+            if (fromOwnerSession && (fromOwnerSession.role === 'owner' || fromOwnerSession.loginId)) return fromOwnerSession;
+
+            const fromOwnerUser = parseJsonSafe(sessionStorage.getItem('owner_user') || localStorage.getItem('owner_user'));
+            if (fromOwnerUser && (fromOwnerUser.role === 'owner' || fromOwnerUser.loginId)) return fromOwnerUser;
+
+            const fromOwnerUserLegacy = parseJsonSafe(localStorage.getItem('ownerUser'));
+            if (fromOwnerUserLegacy && (fromOwnerUserLegacy.role === 'owner' || fromOwnerUserLegacy.loginId)) return fromOwnerUserLegacy;
+
+            const genericUser = parseJsonSafe(localStorage.getItem('user'));
+            if (genericUser && genericUser.role === 'owner' && genericUser.loginId) return genericUser;
+
+            return null;
+        }
+
+        let user = getOwnerSession();
+        if (!user || !user.loginId) {
+            window.location.href = 'ownerlogin.html';
         }
 
         // Pre-fill
@@ -237,7 +257,10 @@
             user.ifscCode = ifscCode;
             user.branchName = branchName;
             localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('ownerUser', JSON.stringify(user));
+            localStorage.setItem('owner_user', JSON.stringify(user));
             sessionStorage.setItem('owner_session', JSON.stringify(user));
+            sessionStorage.setItem('owner_user', JSON.stringify(user));
 
             // FLOW: 2. Profile (Done) -> 3. KYC
             window.location.href = 'ownerkyc.html';

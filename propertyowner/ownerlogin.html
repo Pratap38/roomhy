@@ -219,8 +219,9 @@
         function proceedToDashboard(loginId, ownerData) {
             const user = { loginId: loginId, ownerId: loginId, ...ownerData.profile, role: 'owner' };
             
-            // Set Session
+            // Set Session - store in both keys to avoid conflicts with staff/admin logins
             localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('ownerUser', JSON.stringify(user));
             sessionStorage.setItem('owner_session', JSON.stringify(user));
 
             // Check Onboarding Status
@@ -265,6 +266,7 @@
             // Set Session & Redirect
             const user = { loginId: loginId, ownerId: loginId, ...currentUserPayload, role: 'owner' };
             localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('ownerUser', JSON.stringify(user));
             sessionStorage.setItem('owner_session', JSON.stringify(user));
 
             alert("🎉 Password Set Successfully! Proceeding to Profile Setup...");
