@@ -635,8 +635,13 @@ Available to: Website visitors and tenants
                 }
 
                 // Generate sequential user ID
-                let counter = parseInt(localStorage.getItem('userIdCounter') || '0') + 1;
-                localStorage.setItem('userIdCounter', counter.toString());
+                let counter = 1;
+                try {
+                    counter = parseInt(localStorage.getItem('userIdCounter') || '0', 10) + 1;
+                    localStorage.setItem('userIdCounter', counter.toString());
+                } catch (_) {
+                    counter = Math.floor(Date.now() / 1000) % 1000000;
+                }
                 const userId = 'roomhyweb' + String(counter).padStart(6, '0');
 
                 const signupData = {
@@ -652,7 +657,16 @@ Available to: Website visitors and tenants
                     kycStatus: 'not_submitted' // Track KYC separately
                 };
 
-                const payload = { firstName, lastName, email, phone, password };
+                const fullName = `${firstName} ${lastName}`.trim();
+                const payload = {
+                    name: fullName,
+                    firstName,
+                    lastName,
+                    email,
+                    phone,
+                    password,
+                    role: 'tenant'
+                };
 
                 // Try backend signup first
                 try {
@@ -671,8 +685,8 @@ Available to: Website visitors and tenants
                     if (data) {
                         showToast(data.message || 'Account created', 'success');
                         // If backend returned user & tokens, store them with WEBSITE-specific key
-                        if (data.data && data.data.user) {
-                            const userData = data.data.user;
+                        const userData = (data.data && data.data.user) || data.user;
+                        if (userData) {
                             // Clear STAFF and OWNER sessions
                             localStorage.removeItem('staff_user');
                             sessionStorage.removeItem('staff_user');
@@ -681,8 +695,9 @@ Available to: Website visitors and tenants
                             // Store website user
                             localStorage.setItem('website_user', JSON.stringify(userData));
                             sessionStorage.setItem('website_user', JSON.stringify(userData));
-                            if (data.data.accessToken) localStorage.setItem('accessToken', data.data.accessToken);
-                            if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
+                            if (data.data && data.data.accessToken) localStorage.setItem('accessToken', data.data.accessToken);
+                            if (data.data && data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
+                            if (data.token) localStorage.setItem('accessToken', data.token);
                         }
                         // SAVE TO KYC VERIFICATION TABLE
                         await saveToKYCVerification(signupData);
@@ -759,7 +774,12 @@ Available to: Website visitors and tenants
         async function saveToKYCVerification(signupData) {
             try {
                 const kycTableKey = 'roomhy_kyc_verification'; // KYC Verification table
-                const existing = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
+                let existing = [];
+                try {
+                    existing = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
+                } catch (_) {
+                    existing = [];
+                }
                 
                 // Check if email already exists
                 const emailExists = existing.some(user => user.email === signupData.email);
@@ -789,9 +809,13 @@ Available to: Website visitors and tenants
                     }
 
                     // Add new signup to KYC table
-                    existing.unshift(signupData);
-                    localStorage.setItem(kycTableKey, JSON.stringify(existing));
-                    console.log('? Signup saved to localStorage as fallback');
+                    try {
+                        existing.unshift(signupData);
+                        localStorage.setItem(kycTableKey, JSON.stringify(existing));
+                        console.log('? Signup saved to localStorage as fallback');
+                    } catch (_) {
+                        console.warn('LocalStorage unavailable; skipped fallback cache');
+                    }
                 }
 
                 // Also maintain tenant list for backward compatibility
@@ -801,10 +825,15 @@ Available to: Website visitors and tenants
             } catch (e) { 
                 console.error('saveToKYCVerification error:', e);
                 const kycTableKey = 'roomhy_kyc_verification';
-                const existing = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
-                if (!existing.some(user => user.email === signupData.email)) {
-                    existing.unshift(signupData);
-                    localStorage.setItem(kycTableKey, JSON.stringify(existing));
+                let existing = [];
+                try {
+                    existing = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
+                    if (!existing.some(user => user.email === signupData.email)) {
+                        existing.unshift(signupData);
+                        localStorage.setItem(kycTableKey, JSON.stringify(existing));
+                    }
+                } catch (_) {
+                    console.warn('LocalStorage unavailable in error fallback');
                 }
             }
         }

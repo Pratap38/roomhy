@@ -11,13 +11,19 @@ const API_URL = getAPIURL();
 console.log('🔗 [API Config] Environment:', window.location.hostname === 'localhost' ? 'DEVELOPMENT' : 'PRODUCTION');
 console.log('🔗 [API Config] API_URL:', API_URL);
 
-// Test API connectivity (use a public endpoint that doesn't require auth)
+// Test API connectivity (use public endpoints that don't require auth)
 (async () => {
     try {
-        const testResponse = await fetch(`${API_URL}/api/locations/cities`, {
+        let testResponse = await fetch(`${API_URL}/api/locations/cities`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
         });
+        if (testResponse.status === 404) {
+            testResponse = await fetch(`${API_URL}/api/cities`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
         if (testResponse.ok) {
             console.log('✅ [API Config] Backend is accessible');
         } else {
