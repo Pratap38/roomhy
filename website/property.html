@@ -2064,6 +2064,7 @@
 
         // Dynamic property loader - reads ?id= from URL and populates the page
         (function() {
+            let activePropertyData = null;
             function getParam(name) {
                 const params = new URLSearchParams(window.location.search);
                 return params.get(name);
@@ -2075,6 +2076,8 @@
 
             function populateFromVisit(v) {
                 if (!v) return;
+                activePropertyData = v;
+                try { sessionStorage.setItem('currentProperty', JSON.stringify(v)); } catch (e) {}
                 const prop = v.propertyInfo || {};
                 const titleEl = document.getElementById('property-title');
                 const locEl = document.getElementById('property-location');
@@ -2159,19 +2162,32 @@
                 }
 
                 // Student Reviews and Employee Rating Display
+                const normalizeRatingValue = (val) => {
+                    if (val === null || val === undefined) return null;
+                    if (typeof val === 'number') return Number.isFinite(val) ? val : null;
+                    const text = String(val).trim();
+                    if (!text || text === '-' || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return null;
+                    const matched = text.match(/(\d+(\.\d+)?)/);
+                    if (!matched) return null;
+                    const parsed = parseFloat(matched[1]);
+                    if (Number.isNaN(parsed)) return null;
+                    return Math.max(0, Math.min(5, parsed));
+                };
+
                 const updateRatingDisplay = (rating, starsId, ratingId, commentId, isStudent = true) => {
                     const starsEl = document.getElementById(starsId);
                     const ratingEl = document.getElementById(ratingId);
                     const commentEl = document.getElementById(commentId);
-                    
-                    if (!rating || rating === '-' || rating === 0) {
-                        if (starsEl) starsEl.innerHTML = '<span>★</span><span>★</span><span>★</span><span>★</span><span>☆</span>';
+                    const emptyStarsHtml = '<span>☆</span><span>☆</span><span>☆</span><span>☆</span><span>☆</span>';
+
+                    const ratingValue = normalizeRatingValue(rating);
+                    if (ratingValue === null) {
+                        if (starsEl) starsEl.innerHTML = emptyStarsHtml;
                         if (ratingEl) ratingEl.textContent = '-';
                         if (commentEl) commentEl.textContent = isStudent ? 'No student reviews available yet' : 'No employee rating available yet';
                         return;
                     }
-                    
-                    const ratingValue = parseFloat(rating);
+
                     const fullStars = Math.floor(ratingValue);
                     const emptyStars = 5 - fullStars;
                     let starsHtml = '';
@@ -2187,10 +2203,12 @@
                 };
                 
                 // Display Student Reviews Rating
-                updateRatingDisplay(v.studentReviewsRating, 'student-reviews-stars', 'student-reviews-rating', 'student-reviews-comment', true);
+                const studentRatingFromVisit = v.studentReviewsRating ?? v.studentRating ?? v.student_reviews_rating ?? (v.propertyInfo && (v.propertyInfo.studentReviewsRating || v.propertyInfo.studentRating));
+                updateRatingDisplay(studentRatingFromVisit, 'student-reviews-stars', 'student-reviews-rating', 'student-reviews-comment', true);
                 
                 // Display Employee Rating
-                updateRatingDisplay(v.employeeRating, 'employee-rating-stars', 'employee-rating-rating', 'employee-rating-comment', false);
+                const employeeRatingFromVisit = v.employeeRating ?? v.professionalRating ?? v.employee_rating ?? (v.propertyInfo && (v.propertyInfo.employeeRating || v.propertyInfo.professionalRating));
+                updateRatingDisplay(employeeRatingFromVisit, 'employee-rating-stars', 'employee-rating-rating', 'employee-rating-comment', false);
 
 
                 // Quick Facts
@@ -2551,6 +2569,32 @@
                 if (window.lucide && typeof window.lucide.createIcons === 'function') window.lucide.createIcons();
             }
 
+            async function fetchPropertyFromBackend(id) {
+                const idStr = String(id || '').trim();
+                if (!idStr) return null;
+                try {
+                    const response = await fetch(`${API_URL}/api/approved-properties/public/approved`);
+                    if (!response.ok) return null;
+                    const payload = await response.json();
+                    const properties = Array.isArray(payload)
+                        ? payload
+                        : (Array.isArray(payload.properties) ? payload.properties : (Array.isArray(payload.visits) ? payload.visits : []));
+                    if (!properties.length) return null;
+
+                    const found = properties.find((p) => {
+                        const candidates = [
+                            p._id, p.id, p.visitId, p.propertyId, p.enquiry_id,
+                            p.propertyInfo && p.propertyInfo.propertyId
+                        ].filter(Boolean).map(String);
+                        return candidates.includes(idStr);
+                    });
+                    return found || null;
+                } catch (err) {
+                    console.warn('Failed to load property from backend:', err);
+                    return null;
+                }
+            }
+
             // Gallery controls with zoom / pan / scroll
             (function() {
                 let galleryState = { images: [], index: 0, scale: 1, tx: 0, ty: 0 };
@@ -2654,7 +2698,7 @@
                 }
             })();
 
-            document.addEventListener('DOMContentLoaded', () => {
+            document.addEventListener('DOMContentLoaded', async () => {
                 const id = getParam('id') || '1';
                 const visits = getVisitsFromStorage();
                 let found = null;
@@ -2717,7 +2761,12 @@
                         }).join('');
                     }
                 } else {
-                    populateFromSample(id);
+                    const backendProperty = await fetchPropertyFromBackend(id);
+                    if (backendProperty) {
+                        populateFromVisit(backendProperty);
+                    } else {
+                        populateFromSample(id);
+                    }
                 }
 
                 // Load and display website banner photo
@@ -2762,10 +2811,11 @@
                         e.preventDefault();
 
                         // Check if user is logged in
-                        const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+                        const user = (typeof AuthUtils !== 'undefined' && AuthUtils.getCurrentUser) ? AuthUtils.getCurrentUser() : null;
                         if (!user || !user.loginId) {
-                            alert('Please login to submit a request');
-                            window.location.href = '../index.html';
+                            if (typeof AuthUtils !== 'undefined' && AuthUtils.showAuthPromptModal) {
+                                AuthUtils.showAuthPromptModal('Please login/signup to submit a request.');
+                            }
                             return;
                         }
 
@@ -2821,10 +2871,33 @@
 
                     // âœ… Get property owner ID from approved visit data
                     let propertyOwnerId = null;
+                    const resolveOwnerId = (obj) => {
+                        if (!obj || typeof obj !== 'object') return null;
+                        return (obj.generatedCredentials && obj.generatedCredentials.loginId) ||
+                               (obj.propertyInfo && obj.propertyInfo.generatedCredentials && obj.propertyInfo.generatedCredentials.loginId) ||
+                               obj.ownerLoginId ||
+                               obj.ownerId ||
+                               obj.owner_id ||
+                               obj.ownerLoginID ||
+                               obj.loginId ||
+                               obj.createdBy ||
+                               obj.owner ||
+                               obj.propertyOwnerId ||
+                               (obj.propertyInfo && (obj.propertyInfo.ownerId || obj.propertyInfo.ownerLoginId || obj.propertyInfo.owner_id));
+                    };
+
+                    propertyOwnerId = resolveOwnerId(activePropertyData);
+                    if (!propertyOwnerId) {
+                        try {
+                            const storedProperty = JSON.parse(sessionStorage.getItem('currentProperty') || '{}');
+                            propertyOwnerId = resolveOwnerId(storedProperty);
+                        } catch (e) {}
+                    }
+
                     const visits = getVisitsFromStorage();
                     const propertyId_str = String(propertyId);
                     
-                    if (visits && visits.length > 0) {
+                    if (!propertyOwnerId && visits && visits.length > 0) {
                         const foundVisit = visits.find(x => 
                             String(x._id) === propertyId_str || 
                             String(x.id) === propertyId_str || 
@@ -2832,24 +2905,51 @@
                         );
                         
                         if (foundVisit) {
-                            // Accept both 'approved' and 'live' statuses
-                            const validStatuses = ['approved', 'live'];
-                            if (!validStatuses.includes(foundVisit.status)) {
-                                alert('Error: This property has not been approved by admin yet. Please contact support.');
+                            const status = String(foundVisit.status || '').toLowerCase();
+                            if (['rejected', 'declined', 'blocked'].includes(status)) {
+                                alert('Error: This property is currently not available for requests.');
                                 return;
                             }
                             
-                            propertyOwnerId = (foundVisit.generatedCredentials && foundVisit.generatedCredentials.loginId) || 
-                                           foundVisit.ownerLoginId || 
-                                           foundVisit.createdBy || 
-                                           foundVisit.owner || 
-                                           foundVisit.propertyOwnerId ||
-                                           (foundVisit.propertyInfo && foundVisit.propertyInfo.ownerId);
+                            propertyOwnerId = resolveOwnerId(foundVisit);
                         }
                     }
 
                     if (!propertyOwnerId) {
-                        alert('Error: Could not identify property owner. Property must be approved by admin first.');
+                        try {
+                            const ownerEmail = (activePropertyData && (activePropertyData.ownerEmail || (activePropertyData.propertyInfo && activePropertyData.propertyInfo.ownerEmail))) || '';
+                            const ownerPhoneRaw = (activePropertyData && (activePropertyData.contactPhone || activePropertyData.ownerPhone || (activePropertyData.propertyInfo && (activePropertyData.propertyInfo.contactPhone || activePropertyData.propertyInfo.ownerPhone)))) || '';
+                            const ownerName = (activePropertyData && (activePropertyData.ownerName || (activePropertyData.propertyInfo && activePropertyData.propertyInfo.ownerName))) || '';
+                            const ownerPhoneDigits = String(ownerPhoneRaw).replace(/\D/g, '');
+
+                            const ownersRes = await fetch(`${API_URL}/api/owners`);
+                            if (ownersRes.ok) {
+                                const ownersPayload = await ownersRes.json();
+                                const owners = Array.isArray(ownersPayload)
+                                    ? ownersPayload
+                                    : (Array.isArray(ownersPayload.owners) ? ownersPayload.owners : []);
+
+                                const matchedOwner = owners.find((o) => {
+                                    const email = String((o.email || (o.profile && o.profile.email) || '')).toLowerCase();
+                                    const phone = String((o.phone || (o.profile && o.profile.phone) || '')).replace(/\D/g, '');
+                                    const name = String((o.name || (o.profile && o.profile.name) || '')).toLowerCase();
+                                    if (ownerEmail && email && email === ownerEmail.toLowerCase()) return true;
+                                    if (ownerPhoneDigits && phone && phone === ownerPhoneDigits) return true;
+                                    if (ownerName && name && name === ownerName.toLowerCase()) return true;
+                                    return false;
+                                });
+
+                                if (matchedOwner && matchedOwner.loginId) {
+                                    propertyOwnerId = matchedOwner.loginId;
+                                }
+                            }
+                        } catch (lookupErr) {
+                            console.warn('Owner lookup fallback failed:', lookupErr);
+                        }
+                    }
+
+                    if (!propertyOwnerId) {
+                        alert('Error: Could not identify the property owner for this listing.');
                         return;
                     }
 
@@ -2912,7 +3012,7 @@
                             
                             // âœ… REDIRECT TO INDEX PAGE ONLY
                             setTimeout(() => {
-                                window.location.href = '../index.html';
+                                window.location.href = 'index.html';
 
                                 }, 1500);
                             } else {
@@ -2965,7 +3065,7 @@
                 // Manual logout
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = 'login.html';
+                window.location.href = 'signup.html';
             }
         }
         
@@ -3182,11 +3282,12 @@
                 
                 if (isSaved) {
                     // Add to favorites using MongoDB API
-                    const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+                    const user = (typeof AuthUtils !== 'undefined' && AuthUtils.getCurrentUser) ? AuthUtils.getCurrentUser() : null;
                     
                     if (!user || !user.loginId) {
-                        alert('Please login to save favorites');
-                        window.location.href = 'signup.html';
+                        if (typeof AuthUtils !== 'undefined' && AuthUtils.showAuthPromptModal) {
+                            AuthUtils.showAuthPromptModal('Please login/signup to save favorites.');
+                        }
                         return;
                     }
                     
@@ -3243,7 +3344,7 @@
                     });
                 } else {
                     // Remove from favorites
-                    const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+                    const user = (typeof AuthUtils !== 'undefined' && AuthUtils.getCurrentUser) ? AuthUtils.getCurrentUser() : null;
                     
                     if (user && user.loginId) {
                         // Try API first
@@ -3320,9 +3421,10 @@
             };
 
             window.redirectToLogin = function(){
-                // optional: preserve current page to return after login
                 try{ localStorage.setItem('post_login_redirect', window.location.href); }catch(e){}
-                window.location.href = 'login.html';
+                if (typeof AuthUtils !== 'undefined' && AuthUtils.showAuthPromptModal) {
+                    AuthUtils.showAuthPromptModal('Please login or signup to continue.');
+                }
             };
         })();
 
@@ -3700,5 +3802,4 @@
     </script>
 </body>
 </html>
-
 
