@@ -9,6 +9,87 @@ const USER_KEY = 'user'; // Legacy key for backward compatibility
 const WEBSITE_USER_KEY = 'website_user'; // Website/Tenant users
 const STAFF_USER_KEY = 'staff_user'; // Staff (SuperAdmin/Manager/Employee)
 const OWNER_USER_KEY = 'owner_user'; // Property owners
+const WEBSITE_TOKEN_KEY = 'website_token';
+const ACCESS_TOKEN_KEY = 'accessToken';
+const TOKEN_KEY = 'token';
+
+function getApiUrl() {
+    if (typeof window !== 'undefined' && window.API_URL) return window.API_URL;
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    return isLocal ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+}
+
+function getStoredToken() {
+    try {
+        return localStorage.getItem(WEBSITE_TOKEN_KEY) ||
+            sessionStorage.getItem(WEBSITE_TOKEN_KEY) ||
+            localStorage.getItem(ACCESS_TOKEN_KEY) ||
+            sessionStorage.getItem(ACCESS_TOKEN_KEY) ||
+            localStorage.getItem(TOKEN_KEY) ||
+            sessionStorage.getItem(TOKEN_KEY) ||
+            '';
+    } catch (_) {
+        return '';
+    }
+}
+
+function normalizeWebsiteUser(user) {
+    if (!user || typeof user !== 'object') return null;
+    const loginId = user.loginId || user.email || user.id || '';
+    return {
+        ...user,
+        loginId,
+        email: user.email || '',
+        role: user.role || 'tenant'
+    };
+}
+
+function setWebsiteSession(user, token) {
+    const normalized = normalizeWebsiteUser(user);
+    if (!normalized) return null;
+    const safeToken = (token || '').toString().trim();
+    try {
+        localStorage.removeItem(STAFF_USER_KEY);
+        sessionStorage.removeItem(STAFF_USER_KEY);
+        localStorage.removeItem(OWNER_USER_KEY);
+        sessionStorage.removeItem(OWNER_USER_KEY);
+        localStorage.removeItem('staff_token');
+
+        localStorage.setItem(WEBSITE_USER_KEY, JSON.stringify(normalized));
+        sessionStorage.setItem(WEBSITE_USER_KEY, JSON.stringify(normalized));
+        localStorage.setItem(USER_KEY, JSON.stringify(normalized)); // legacy compatibility
+        sessionStorage.setItem(USER_KEY, JSON.stringify(normalized)); // legacy compatibility
+
+        if (safeToken) {
+            localStorage.setItem(WEBSITE_TOKEN_KEY, safeToken);
+            sessionStorage.setItem(WEBSITE_TOKEN_KEY, safeToken);
+            localStorage.setItem(ACCESS_TOKEN_KEY, safeToken);
+            sessionStorage.setItem(ACCESS_TOKEN_KEY, safeToken);
+            localStorage.setItem(TOKEN_KEY, safeToken);
+            sessionStorage.setItem(TOKEN_KEY, safeToken);
+        }
+    } catch (e) {
+        console.error('Error setting website session:', e);
+    }
+    return normalized;
+}
+
+function clearWebsiteSession() {
+    try {
+        localStorage.removeItem(WEBSITE_USER_KEY);
+        sessionStorage.removeItem(WEBSITE_USER_KEY);
+        localStorage.removeItem(WEBSITE_TOKEN_KEY);
+        sessionStorage.removeItem(WEBSITE_TOKEN_KEY);
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
+        sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+        localStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        sessionStorage.removeItem(USER_KEY);
+    } catch (e) {
+        console.error('Error clearing website session:', e);
+    }
+}
 
 /**
  * Get current logged-in user
@@ -31,7 +112,7 @@ function getCurrentUser() {
         if (!userStr) return null;
         
         const user = JSON.parse(userStr);
-        return user && (user.id || user.loginId || user.ownerId) ? user : null;
+        return normalizeWebsiteUser(user);
     } catch (e) {
         console.error('Error getting current user:', e);
         return null;
@@ -44,7 +125,7 @@ function getCurrentUser() {
  */
 function isLoggedIn() {
     const user = getCurrentUser();
-    return user !== null;
+    return user !== null && !!getStoredToken();
 }
 
 /**
@@ -108,6 +189,110 @@ function requireAuth(loginPage = 'login.html', showModal = false, modalId = null
     return true;
 }
 
+async function validateToken() {
+    const token = getStoredToken();
+    const user = getCurrentUser();
+    if (!token || !user) return { valid: false, user: null };
+
+    try {
+        const res = await fetch(`${getApiUrl()}/api/auth/me`, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) {
+            clearWebsiteSession();
+            return { valid: false, user: null };
+        }
+
+        const data = await res.json().catch(() => ({}));
+        const serverUser = normalizeWebsiteUser((data && data.user) || user);
+        if (!serverUser || !serverUser.loginId) {
+            clearWebsiteSession();
+            return { valid: false, user: null };
+        }
+
+        setWebsiteSession(serverUser, token);
+        return { valid: true, user: serverUser };
+    } catch (e) {
+        console.warn('Token validation failed:', e.message);
+        clearWebsiteSession();
+        return { valid: false, user: null };
+    }
+}
+
+async function ensureValidSession(redirectPage = 'signup.html') {
+    const result = await validateToken();
+    if (result.valid) return true;
+    window.location.href = redirectPage;
+    return false;
+}
+
+function showAuthPromptModal(message = 'Please login or signup to continue.') {
+    try {
+        const existing = document.getElementById('roomhy-auth-prompt-overlay');
+        if (existing) existing.remove();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'roomhy-auth-prompt-overlay';
+        overlay.style.cssText = [
+            'position:fixed',
+            'inset:0',
+            'background:rgba(0,0,0,0.5)',
+            'display:flex',
+            'align-items:center',
+            'justify-content:center',
+            'z-index:99999',
+            'padding:16px'
+        ].join(';');
+
+        const modal = document.createElement('div');
+        modal.style.cssText = [
+            'width:100%',
+            'max-width:420px',
+            'background:#fff',
+            'border-radius:14px',
+            'padding:22px',
+            'box-shadow:0 20px 40px rgba(0,0,0,0.2)',
+            'font-family:Inter, sans-serif'
+        ].join(';');
+
+        modal.innerHTML = `
+            <h3 style="margin:0 0 8px;font-size:20px;color:#111827;">Sign In Required</h3>
+            <p style="margin:0 0 16px;color:#4b5563;font-size:14px;line-height:1.5;">${message}</p>
+            <div style="display:flex;gap:10px;">
+                <button id="roomhy-auth-login-btn" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid #2563eb;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;">Login</button>
+                <button id="roomhy-auth-signup-btn" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid #16a34a;background:#16a34a;color:#fff;font-weight:600;cursor:pointer;">Signup</button>
+            </div>
+            <button id="roomhy-auth-close-btn" style="margin-top:12px;width:100%;padding:9px 12px;border-radius:10px;border:1px solid #d1d5db;background:#fff;color:#374151;font-weight:600;cursor:pointer;">Close</button>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        document.getElementById('roomhy-auth-login-btn')?.addEventListener('click', () => {
+            window.location.href = 'login.html';
+        });
+        document.getElementById('roomhy-auth-signup-btn')?.addEventListener('click', () => {
+            window.location.href = 'signup.html';
+        });
+        document.getElementById('roomhy-auth-close-btn')?.addEventListener('click', () => {
+            overlay.remove();
+        });
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.remove();
+        });
+    } catch (err) {
+        console.error('showAuthPromptModal error:', err);
+    }
+}
+
+async function ensureValidSessionOrPrompt(message = 'Please login or signup to continue.') {
+    const result = await validateToken();
+    if (result.valid) return true;
+    showAuthPromptModal(message);
+    return false;
+}
+
 /**
  * Logout user - clears session and redirects
  * @param {string} redirectPage - URL to redirect after logout (relative to website folder)
@@ -115,10 +300,9 @@ function requireAuth(loginPage = 'login.html', showModal = false, modalId = null
  */
 function logout(redirectPage = 'login.html', callback = null) {
     // Clear all session data from localStorage
-    localStorage.removeItem('user');
+    clearWebsiteSession();
     localStorage.removeItem('USER_KEY');
     localStorage.removeItem(AUTH_KEY);
-    localStorage.removeItem('token');
     localStorage.removeItem('owner_session');
     localStorage.removeItem('tenant_user');
     localStorage.removeItem('bookingRequestData');
@@ -213,9 +397,28 @@ if (typeof window !== 'undefined') {
         getUserName,
         getUserEmail,
         getUserRole,
+        getStoredToken,
+        setWebsiteSession,
+        clearWebsiteSession,
+        validateToken,
+        ensureValidSession,
+        ensureValidSessionOrPrompt,
+        showAuthPromptModal,
         requireAuth,
         logout,
         updateSidebarUserInfo,
         initAuth
     };
+
+    // Show centered login/signup prompt on protected website pages (no redirect)
+    (function autoPromptOnPageLoad() {
+        const currentPage = (window.location.pathname.split('/').pop() || '').toLowerCase();
+        const publicPages = new Set(['signup.html', 'login.html']);
+        if (publicPages.has(currentPage)) return;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hasSession = await ensureValidSessionOrPrompt('Please login or signup to continue on this page.');
+            if (!hasSession) return;
+        });
+    })();
 }

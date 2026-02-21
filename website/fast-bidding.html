@@ -720,6 +720,14 @@
         document.getElementById('fastBiddingForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
+            if (typeof AuthUtils !== 'undefined' && AuthUtils.ensureValidSessionOrPrompt) {
+                const ok = await AuthUtils.ensureValidSessionOrPrompt('Please login/signup to send bids.');
+                if (!ok) return;
+            } else if (typeof AuthUtils !== 'undefined' && AuthUtils.showAuthPromptModal) {
+                AuthUtils.showAuthPromptModal('Please login/signup to send bids.');
+                return;
+            }
+
             if (!validateForm()) {
                 alert('Please fill in all required fields correctly');
                 return;
@@ -729,21 +737,23 @@
             const emailFromForm = document.getElementById('gmail').value.trim();
 
             // Check if user is signed up - try MongoDB first
-            let signedUpUser = null;
+            let signedUpUser = (typeof AuthUtils !== 'undefined' && AuthUtils.getCurrentUser) ? AuthUtils.getCurrentUser() : null;
             
             try {
-                // Fetch from MongoDB via API
-                const response = await fetch(`${API_URL}/api/kyc`);
-                if (response.ok) {
-                    const signupUsers = await response.json();
-                    signedUpUser = signupUsers.find(u => u.email && u.email.toLowerCase() === emailFromForm.toLowerCase());
-                    console.log('✓ User email checked against MongoDB');
+                // Fetch from MongoDB only if local session user is unavailable
+                if (!signedUpUser) {
+                    const response = await fetch(`${API_URL}/api/kyc`);
+                    if (response.ok) {
+                        const signupUsers = await response.json();
+                        signedUpUser = signupUsers.find(u => u.email && u.email.toLowerCase() === emailFromForm.toLowerCase());
+                        console.log('User email checked against MongoDB');
+                    }
                 }
             } catch (error) {
                 console.warn('Failed to fetch from MongoDB, falling back to localStorage');
             }
 
-            // Fallback to localStorage if API fails
+            // Fallback to localStorage if API/session lookup fails
             if (!signedUpUser) {
                 const signupUsers = JSON.parse(localStorage.getItem('roomhy_kyc_verification') || '[]');
                 signedUpUser = signupUsers.find(u => u.email.toLowerCase() === emailFromForm.toLowerCase());
@@ -766,7 +776,7 @@
             const selectedPropertyIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.propertyId);
 
             // Get user ID from signup data
-            const userId = signedUpUser.id || signedUpUser._id || signedUpUser.loginId || '';
+            const userId = signedUpUser.loginId || signedUpUser.id || signedUpUser._id || '';
 
             document.getElementById('propertiesLoadingSpinner').classList.add('show');
 
@@ -968,3 +978,5 @@
             </div>
         </div>
     </div>
+</body>
+</html>

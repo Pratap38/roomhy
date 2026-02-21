@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
@@ -765,7 +765,7 @@
                     </ul>
                 </div>
             </div>
-            <div class="mt-12 border-t border-gray-700 pt-8 text-center text-gray-400 text-sm"><p>&copy; 2025 Roomhy. All Rights Reserved. Built with ?? for students.</p></div>
+            <div class="mt-12 border-t border-gray-700 pt-8 text-center text-gray-400 text-sm"><p>&copy; 2025 Roomhy. All Rights Reserved. Built with ❤️ for students.</p></div>
         </div>
     </footer>
 
@@ -2028,7 +2028,7 @@
                 // Manual logout
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = 'login.html';
+                window.location.href = 'signup.html';
             }
         }
         
@@ -2330,9 +2330,11 @@
             const prefix = isDesktop ? 'desktop' : 'mobile';
             
             // Get user info
-            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+            const user = (typeof AuthUtils !== 'undefined' && AuthUtils.getCurrentUser) ? AuthUtils.getCurrentUser() : null;
             if (!user || !user.loginId) {
-                alert('Please login to submit a bidding request');
+                if (typeof AuthUtils !== 'undefined' && AuthUtils.showAuthPromptModal) {
+                    AuthUtils.showAuthPromptModal('Please login/signup to submit a bidding request.');
+                }
                 return;
             }
 
@@ -2415,10 +2417,11 @@
                 return;
             }
 
-            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+            const user = (typeof AuthUtils !== 'undefined' && AuthUtils.getCurrentUser) ? AuthUtils.getCurrentUser() : null;
             if (!user || !user.loginId) {
-                alert('Please login to submit requests');
-                window.location.href = '../index.html';
+                if (typeof AuthUtils !== 'undefined' && AuthUtils.showAuthPromptModal) {
+                    AuthUtils.showAuthPromptModal('Please login/signup to submit requests.');
+                }
                 return;
             }
 
@@ -2460,10 +2463,12 @@
         async function submitRequestAll() {
             console.log('Submit request all clicked');
             const submitBtn = document.getElementById('submit-request-all');
-            const user = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null');
+            const user = (typeof AuthUtils !== 'undefined' && AuthUtils.getCurrentUser) ? AuthUtils.getCurrentUser() : null;
 
             if (!user || !user.loginId) {
-                alert('Please login to submit requests');
+                if (typeof AuthUtils !== 'undefined' && AuthUtils.showAuthPromptModal) {
+                    AuthUtils.showAuthPromptModal('Please login/signup to submit requests.');
+                }
                 return;
             }
 

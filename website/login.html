@@ -9,6 +9,7 @@
         const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./js/auth-utils.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -335,13 +336,13 @@
 
                     if (response.ok && data.token && data.user) {
                         showToast('Login successful!', 'success');
-                        // Store user and token in multiple places for reliability
-                        localStorage.setItem('user', JSON.stringify(data.user));
-                        localStorage.setItem('token', data.token);
-                        sessionStorage.setItem('token', data.token);
-                        // Also store globally for access without storage
-                        window.authToken = data.token;
-                        console.log('[Login] Token stored in localStorage, sessionStorage, and window');
+                        if (typeof AuthUtils !== 'undefined' && AuthUtils.setWebsiteSession) {
+                            AuthUtils.setWebsiteSession(data.user, data.token);
+                        } else {
+                            localStorage.setItem('user', JSON.stringify(data.user));
+                            localStorage.setItem('token', data.token);
+                            sessionStorage.setItem('token', data.token);
+                        }
                         setTimeout(() => redirectAfterLogin(data.user), 300);
                         return;
                     }
@@ -352,32 +353,9 @@
                         return;
                     }
 
-                    // Backend failed or returned non-ok -> fall back to localStorage check
-                    const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-                    const localMatch = tenants.find(t => (t.email || '').toLowerCase() === email.toLowerCase() && (t.password === password));
-                    if (localMatch) {
-                        // create minimal user object and store
-                        const userObj = { name: localMatch.name || email.split('@')[0], email: localMatch.email, role: 'tenant', id: localMatch.id };
-                        localStorage.setItem('user', JSON.stringify(userObj));
-                        showToast('Login successful (offline)', 'success');
-                        setTimeout(() => redirectAfterLogin(userObj), 300);
-                        return;
-                    }
-
                     showToast('Login failed: incorrect credentials', 'error');
                 } catch (err) {
                     console.error('[Login] Fetch error:', err);
-                    // network error -> try local fallback
-                    const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-                    const localMatch = tenants.find(t => (t.email || '').toLowerCase() === email.toLowerCase() && (t.password === password));
-                    if (localMatch) {
-                        const userObj = { name: localMatch.name || email.split('@')[0], email: localMatch.email, role: 'tenant', id: localMatch.id };
-                        localStorage.setItem('user', JSON.stringify(userObj));
-                        showToast('Login successful (offline)', 'success');
-                        setTimeout(() => redirectAfterLogin(userObj), 300);
-                        return;
-                    }
-
                     showToast('Network error: ' + err.message, 'error');
                 }
             });

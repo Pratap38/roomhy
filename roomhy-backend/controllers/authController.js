@@ -3,6 +3,7 @@ const Tenant = require('../models/Tenant');
 const AreaManager = require('../models/AreaManager');
 const Employee = require('../models/Employee');
 const Owner = require('../models/Owner');
+const KYCVerification = require('../models/KYCVerification');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
@@ -635,6 +636,26 @@ exports.login = async (req, res) => {
     }
 };
 
+// Validate current token and return current user
+exports.me = async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ message: 'Not authorized' });
+        res.json({
+            user: {
+                id: req.user._id,
+                name: req.user.name,
+                email: req.user.email,
+                phone: req.user.phone,
+                role: req.user.role,
+                loginId: req.user.loginId
+            }
+        });
+    } catch (err) {
+        console.error('me error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // Verify owner temporary password (used by owner login UI)
 exports.verifyOwnerTemp = async (req, res) => {
     try {
@@ -746,14 +767,63 @@ exports.setTenantPassword = async (req, res) => {
 // Simple register (for testing). Admin should create owners in approval flow.
 exports.register = async (req, res) => {
     try {
-        const { name, email, phone, password, role } = req.body;
-        if (!name || !phone || !password) return res.status(400).json({ message: 'Missing fields' });
+        const { name, firstName, lastName, email, phone, password, role } = req.body;
+        if (!name || !email || !phone || !password) return res.status(400).json({ message: 'Missing fields' });
         const existing = await User.findOne({ $or: [{ email }, { phone }] });
         if (existing) return res.status(400).json({ message: 'User exists' });
 
-        const user = await User.create({ name, email, phone, password, role: role || 'tenant' });
+        const normalizedEmail = (email || '').toString().trim().toLowerCase();
+        const normalizedRole = role || 'tenant';
+        const derivedLoginId = normalizedEmail;
+
+        const user = await User.create({
+            name,
+            email: normalizedEmail,
+            phone,
+            password,
+            role: normalizedRole,
+            loginId: derivedLoginId
+        });
+
+        // Keep New Signups in MongoDB Atlas in sync with website registrations
+        const splitName = (name || '').trim().split(/\s+/);
+        const safeFirstName = (firstName || splitName[0] || 'User').trim();
+        const safeLastName = (lastName || splitName.slice(1).join(' ') || '').trim();
+        const signupId = `roomhyweb${String(Date.now()).slice(-6)}`;
+
+        await KYCVerification.findOneAndUpdate(
+            { email: normalizedEmail },
+            {
+                $set: {
+                    loginId: derivedLoginId,
+                    firstName: safeFirstName,
+                    lastName: safeLastName,
+                    phone,
+                    role: normalizedRole === 'owner' ? 'propertyowner' : normalizedRole,
+                    status: 'pending',
+                    kycStatus: 'pending',
+                    password: user.password
+                },
+                $setOnInsert: {
+                    id: signupId,
+                    createdAt: new Date()
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
         const token = generateToken(user);
-        res.status(201).json({ token, user: { id: user._id, name: user.name, role: user.role } });
+        res.status(201).json({
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                loginId: user.loginId
+            }
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });

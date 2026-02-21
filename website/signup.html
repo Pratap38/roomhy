@@ -17,6 +17,7 @@ Available to: Website visitors and tenants
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy | Light & Blue Edition</title>
     <script src="./js/api-config.js"></script>
+    <script src="./js/auth-utils.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -543,7 +544,7 @@ Available to: Website visitors and tenants
         if (loginForm) {
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
+
                 const loginId = loginForm.querySelector('input[type="text"]').value.trim().toLowerCase();
                 const password = loginForm.querySelector('input[type="password"]').value;
 
@@ -552,73 +553,32 @@ Available to: Website visitors and tenants
                     return;
                 }
 
-                // ====== CHECK AGAINST KYC VERIFICATION TABLE ======
-                const kycTableKey = 'roomhy_kyc_verification';
-                const allUsers = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
+                try {
+                    const response = await fetch(`${API_URL}/api/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ identifier: loginId, password })
+                    });
 
-                // Find user by email or loginId
-                const user = allUsers.find(u => 
-                    u.email.toLowerCase() === loginId || 
-                    (u.loginId && u.loginId.toLowerCase() === loginId) ||
-                    u.phone === loginId
-                );
-
-                if (!user) {
-                    showToast('? Account not found. Please sign up first!', 'error');
-                    return;
-                }
-
-                // Check if user is verified by KYC admin
-                if (user.status !== 'verified') {
-                    if (user.status === 'rejected') {
-                        showToast('? Your account was rejected. Please contact support.', 'error');
-                    } else {
-                        showToast('? Your account is pending verification. Check back later!', 'error');
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || !data.token || !data.user) {
+                        showToast(data.message || 'Invalid login credentials', 'error');
+                        return;
                     }
-                    return;
+
+                    if (typeof AuthUtils !== 'undefined' && AuthUtils.setWebsiteSession) {
+                        AuthUtils.setWebsiteSession(data.user, data.token);
+                    }
+
+                    showToast('Login successful! Redirecting...', 'success');
+                    setTimeout(() => { window.location.href = 'index.html'; }, 800);
+                } catch (err) {
+                    console.error('Login failed:', err);
+                    showToast('Unable to login right now. Please try again.', 'error');
                 }
-
-                // Verify password (simple check - in production, use hashing)
-                if (user.password !== password) {
-                    showToast('? Incorrect password!', 'error');
-                    return;
-                }
-
-                // Login successful!
-                showToast('✅ Login successful! Redirecting...', 'success');
-
-                // Store user session with WEBSITE-specific key
-                const loggedInUser = {
-                    id: user.id,
-                    loginId: user.loginId,
-                    email: user.email,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    phone: user.phone,
-                    role: 'tenant',
-                    status: user.status,
-                    kycStatus: user.kycStatus
-                };
-
-                // Clear STAFF and OWNER sessions to prevent crosstalk
-                localStorage.removeItem('staff_user');
-                sessionStorage.removeItem('staff_user');
-                localStorage.removeItem('owner_user');
-                sessionStorage.removeItem('owner_user');
-                localStorage.removeItem('staff_token');
-
-                // Set WEBSITE user session with isolated key
-                localStorage.setItem('website_user', JSON.stringify(loggedInUser));
-                sessionStorage.setItem('website_user', JSON.stringify(loggedInUser));
-
-                // Redirect to dashboard after 800ms
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 800);
             });
         }
-
-        // Signup form handler: POST to backend, then persist to localStorage for KYC verification
+// Signup form handler: creates account in MongoDB and starts website session
         const signupForm = document.getElementById('signup-form');
         if (signupForm) {
             signupForm.addEventListener('submit', async (e) => {
@@ -638,29 +598,6 @@ Available to: Website visitors and tenants
                     return;
                 }
 
-                // Generate sequential user ID
-                let counter = 1;
-                try {
-                    counter = parseInt(localStorage.getItem('userIdCounter') || '0', 10) + 1;
-                    localStorage.setItem('userIdCounter', counter.toString());
-                } catch (_) {
-                    counter = Math.floor(Date.now() / 1000) % 1000000;
-                }
-                const userId = 'roomhyweb' + String(counter).padStart(6, '0');
-
-                const signupData = {
-                    id: userId,
-                    firstName: firstName,
-                    lastName: lastName,
-                    email: email,
-                    phone: phone,
-                    password: password, // Hashed in production
-                    createdAt: new Date().toISOString(),
-                    status: 'pending', // pending, verified, rejected
-                    loginId: email, // Used for login
-                    kycStatus: 'pending'
-                };
-
                 const fullName = `${firstName} ${lastName}`.trim();
                 const payload = {
                     name: fullName,
@@ -672,7 +609,6 @@ Available to: Website visitors and tenants
                     role: 'tenant'
                 };
 
-                // Try backend signup first
                 try {
                     const res = await fetch(`${API_URL}/api/auth/register`, {
                         method: 'POST',
@@ -682,68 +618,28 @@ Available to: Website visitors and tenants
 
                     const data = await res.json().catch(() => ({}));
                     if (!res.ok) {
-                        console.warn('Auth register failed:', data && data.message ? data.message : `HTTP ${res.status}`);
-                        await saveToKYCVerification(signupData);
-                        showToast(data.message || 'Signup saved for verification.', 'success');
+                        showToast(data.message || 'Unable to create account', 'error');
                         return;
                     }
 
-                    if (data) {
-                        showToast(data.message || 'Account created', 'success');
-                        // If backend returned user & tokens, store them with WEBSITE-specific key
-                        const userData = (data.data && data.data.user) || data.user;
-                        if (userData) {
-                            // Clear STAFF and OWNER sessions
-                            localStorage.removeItem('staff_user');
-                            sessionStorage.removeItem('staff_user');
-                            localStorage.removeItem('owner_user');
-                            sessionStorage.removeItem('owner_user');
-                            // Store website user
-                            localStorage.setItem('website_user', JSON.stringify(userData));
-                            sessionStorage.setItem('website_user', JSON.stringify(userData));
-                            if (data.data && data.data.accessToken) localStorage.setItem('accessToken', data.data.accessToken);
-                            if (data.data && data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
-                            if (data.token) localStorage.setItem('accessToken', data.token);
-                        }
-                        // SAVE TO KYC VERIFICATION TABLE
-                        await saveToKYCVerification(signupData);
-                        
-                        // Send email with username and password
-                        sendSignupEmail(email, firstName, userId, password);
-                        
-                        // Always redirect to website index after signup
-                        setTimeout(() => { location.href = 'index.html'; }, 900);
-                        return;
+                    const userData = (data.data && data.data.user) || data.user || null;
+                    const token = (data.data && data.data.accessToken) || data.token || '';
+
+                    if (userData && token && typeof AuthUtils !== 'undefined' && AuthUtils.setWebsiteSession) {
+                        AuthUtils.setWebsiteSession(userData, token);
                     }
+
+                    showToast(data.message || 'Account created', 'success');
+                    setTimeout(() => { location.href = 'index.html'; }, 900);
+                    return;
                 } catch (err) {
-                    console.warn('Signup backend failed, falling back to localStorage:', err.message);
+                    console.warn('Signup backend failed:', err.message);
+                    showToast('Unable to connect to signup service. Please try again.', 'error');
+                    return;
                 }
-
-                // Fallback: save to KYC verification table so superadmin can view
-                await saveToKYCVerification(signupData);
-                
-                // Send email with username and password
-                sendSignupEmail(email, firstName, userId, password);
-                
-                showToast('Account created! Verification email sent.', 'success');
-                // create local website user with isolated key and redirect to website index
-                const localUser = { name: firstName + (lastName ? ' ' + lastName : ''), email, loginId: email, role: 'tenant', id: userId };
-                
-                // Clear STAFF and OWNER sessions
-                localStorage.removeItem('staff_user');
-                sessionStorage.removeItem('staff_user');
-                localStorage.removeItem('owner_user');
-                sessionStorage.removeItem('owner_user');
-                localStorage.removeItem('staff_token');
-                
-                // Store website user with isolated key
-                localStorage.setItem('website_user', JSON.stringify(localUser));
-                sessionStorage.setItem('website_user', JSON.stringify(localUser));
-                setTimeout(() => { window.location.href = 'index.html'; }, 800);
             });
         }
-
-        /**
+    /**
          * SEND SIGNUP EMAIL
          * Sends username and password to the user's email
          */
