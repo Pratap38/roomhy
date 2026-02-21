@@ -67,7 +67,7 @@
         // --- STRICT AUTH CHECK ---
         // 1. Get user
         // Try per-tab/session storage first, then fallback to localStorage
-        let user = JSON.parse(sessionStorage.getItem('manager_user') || sessionStorage.getItem('user') || localStorage.getItem('manager_user') || localStorage.getItem('user') || 'null');
+        const user = JSON.parse(sessionStorage.getItem('manager_user') || sessionStorage.getItem('user') || localStorage.getItem('manager_user') || localStorage.getItem('user') || 'null');
         
         // 2. Check if user exists AND has the correct role
         // If user is an OWNER or TENANT trying to access this page, force logout/redirect
@@ -102,71 +102,12 @@
 
         let allowedModules = [];
 
-        function normalizePermissionIds(list) {
-            const alias = {
-                locations: 'location',
-                location: 'location',
-                finance: 'payments',
-                refunds: 'payments',
-                commissions: 'payments',
-                web_enquiry: 'enquiries',
-                owner: 'owners',
-                tenant: 'tenants',
-                visit: 'visits',
-                property: 'properties'
-            };
-            return [...new Set((Array.isArray(list) ? list : []).map(id => alias[id] || id))];
+        if (user.role === 'areamanager') {
+            allowedModules = Object.keys(sidebarConfig);
+        } else if (user.role === 'employee') {
+            const assigned = user.permissions || [];
+            allowedModules = [...new Set([...assigned, ...mandatoryPermissions])];
         }
-
-        function hydrateUserFromLatestEmployeeData(currentUser) {
-            if (!currentUser || !currentUser.loginId) return currentUser;
-            try {
-                const loginId = String(currentUser.loginId || '').toUpperCase();
-                const cache = JSON.parse(localStorage.getItem('roomhy_employees_cache') || '[]');
-                const creds = JSON.parse(localStorage.getItem('roomhy_employees') || '[]');
-                const latest = (Array.isArray(cache) ? cache : []).find(e => String(e.loginId || '').toUpperCase() === loginId)
-                    || (Array.isArray(creds) ? creds : []).find(e => String(e.loginId || '').toUpperCase() === loginId);
-
-                if (latest) {
-                    const merged = {
-                        ...currentUser,
-                        role: latest.role || currentUser.role,
-                        permissions: normalizePermissionIds(latest.permissions || currentUser.permissions || []),
-                        area: latest.area || currentUser.area,
-                        areaName: latest.areaName || latest.area || currentUser.areaName || currentUser.area,
-                        areaCode: latest.areaCode || currentUser.areaCode,
-                        city: latest.city || currentUser.city,
-                        team: latest.team || latest.role || currentUser.team
-                    };
-                    try {
-                        localStorage.setItem('user', JSON.stringify(merged));
-                        localStorage.setItem('manager_user', JSON.stringify(merged));
-                        sessionStorage.setItem('user', JSON.stringify(merged));
-                        sessionStorage.setItem('manager_user', JSON.stringify(merged));
-                    } catch (e) {}
-                    return merged;
-                }
-            } catch (e) {
-                console.warn('Failed to hydrate latest employee permissions:', e);
-            }
-            return {
-                ...currentUser,
-                permissions: normalizePermissionIds(currentUser.permissions || [])
-            };
-        }
-
-        function computeAllowedModules(currentUser) {
-            if (!currentUser) return [];
-            if (currentUser.role === 'areamanager') return Object.keys(sidebarConfig);
-            if (currentUser.role === 'employee') {
-                const assigned = normalizePermissionIds(currentUser.permissions || []);
-                return [...new Set([...assigned, ...mandatoryPermissions])];
-            }
-            return [];
-        }
-
-        user = hydrateUserFromLatestEmployeeData(user);
-        allowedModules = computeAllowedModules(user);
 
         function createLink(id) {
             const config = sidebarConfig[id];
@@ -203,8 +144,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            user = hydrateUserFromLatestEmployeeData(user);
-            allowedModules = computeAllowedModules(user);
             const nav = document.getElementById('dynamicSidebarNav');
             let html = '';
 
@@ -302,37 +241,6 @@
                     if(innerMobile) innerMobile.style.display = 'none';
                 } catch (e) {}
             });
-        });
-
-        window.addEventListener('storage', (event) => {
-            if (event.key === 'roomhy_employees_cache' || event.key === 'roomhy_employees') {
-                user = hydrateUserFromLatestEmployeeData(user);
-                allowedModules = computeAllowedModules(user);
-                const nav = document.getElementById('dynamicSidebarNav');
-                if (!nav) return;
-                let html = '';
-                html += createLink('dashboard');
-                const mgmt = ['properties', 'tenants', 'owners', 'visits', 'location', 'enquiries'];
-                if(mgmt.some(id => allowedModules.includes(id))) {
-                    html += `<div class="px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-4">Management</div>`;
-                    mgmt.forEach(id => html += createLink(id));
-                }
-                const fin = ['payments'];
-                if(fin.some(id => allowedModules.includes(id))) {
-                    html += `<div class="px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-4">Finance</div>`;
-                    fin.forEach(id => html += createLink(id));
-                }
-                const sys = ['chat', 'reports'];
-                if(sys.some(id => allowedModules.includes(id))) {
-                    html += `<div class="px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-4">System</div>`;
-                    sys.forEach(id => html += createLink(id));
-                }
-                html += `<div class="px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-4">Account</div>`;
-                html += `<a href="profile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>`;
-                html += `<a href="setting.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>`;
-                nav.innerHTML = html;
-                if (window.lucide) lucide.createIcons();
-            }
         });
     </script>
 
