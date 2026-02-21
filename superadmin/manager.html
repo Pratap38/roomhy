@@ -101,11 +101,26 @@
 </head>
 <body class="text-slate-800">
     <script>
-        // Check session
+        // Check session & permissions
         const user = JSON.parse(localStorage.getItem('user') || 'null');
+        const userPermissions = user?.permissions || [];
+        
+        // Check if user has access to Area Admin
+        const hasAreaAdminAccess = user?.role === 'superadmin' || 
+                                   user?.role === 'admin' || 
+                                   (Array.isArray(userPermissions) && userPermissions.some(p => 
+                                       p === 'area_admin' ||
+                                       p === 'area_management' || 
+                                       p === 'areaadmin' || 
+                                       p === 'manage_areas'
+                                   ));
+        
         if (!user || (user.role !== 'superadmin' && user.role !== 'admin')) {
              console.log("Session check: User is " + (user ? user.role : 'null'));
         }
+        
+        console.log('[Manager] User permissions:', userPermissions);
+        console.log('[Manager] Has Area Admin access:', hasAreaAdminAccess);
     </script>
 
     <div class="flex h-screen overflow-hidden">
@@ -117,7 +132,7 @@
                      <div><h1 class="text-xl font-bold text-white">RoomHy</h1><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
                  </div>
             </div>
-            <nav class="flex-1 py-6 space-y-1">
+            <nav class="flex-1 py-6 space-y-1" id="dynamicNav">
                 <div class="px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Overview</div>
                 <a href="superadmin.html" class="sidebar-link"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Dashboard</a>
                 <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Management</div>
@@ -466,7 +481,29 @@
             loadEmployees();
             updateCounts();
             initLocationSync();
+            initDynamicSidebar(); // Initialize sidebar with permission-based links
         });
+
+        // Initialize dynamic sidebar based on permissions
+        function initDynamicSidebar() {
+            const nav = document.getElementById('dynamicNav');
+            if (!nav) return;
+            
+            // Find or create the Area Management section
+            if (hasAreaAdminAccess && !document.getElementById('areaAdminLink')) {
+                // Insert Area Admin link after Teams link
+                const teamLink = nav.querySelector('a[href="manager.html"]');
+                if (teamLink) {
+                    const areaLink = document.createElement('a');
+                    areaLink.id = 'areaAdminLink';
+                    areaLink.href = '../Areamanager/areaadmin.html';
+                    areaLink.className = 'sidebar-link';
+                    areaLink.innerHTML = '<i data-lucide="grid-3x3" class="w-5 h-5 mr-3"></i> Area Management';
+                    teamLink.parentElement.insertBefore(areaLink, teamLink.nextElementSibling);
+                    lucide.createIcons();
+                }
+            }
+        }
 
         // Load employees from localStorage cache (fallback when backend is unavailable)
         function loadEmployeesFromCache() {
