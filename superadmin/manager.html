@@ -524,11 +524,12 @@
             try {
                 // First try to fetch from MongoDB API
                 const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                    ? 'http://localhost:5000'
-                    : 'https://roomhy-backend.onrender.com';
-                
+                    ? 'http://localhost:5001'
+                    : 'https://roomhy-backend-wqwo.onrender.com';
+
                 // Fetch cities from MongoDB
                 const citiesResponse = await fetch(`${apiBase}/api/locations/cities`);
+                if (!citiesResponse.ok) throw new Error(`Cities API failed: ${citiesResponse.status}`);
                 const citiesResult = await citiesResponse.json();
                 citiesData = (citiesResult.data || []).map(city => ({
                     id: city._id || city.id,
@@ -540,6 +541,7 @@
 
                 // Fetch areas from MongoDB
                 const areasResponse = await fetch(`${apiBase}/api/locations/areas`);
+                if (!areasResponse.ok) throw new Error(`Areas API failed: ${areasResponse.status}`);
                 const areasResult = await areasResponse.json();
                 areasData = (areasResult.data || []).map(area => ({
                     id: area._id || area.id,
@@ -835,17 +837,47 @@
         // --- Permission UI ---
         function renderPermissions() {
             document.getElementById('permissionsContainer').innerHTML = allPermissions.map(p => `
-                <div class="permission-item" onclick="togglePerm('${p.id}', this)">
+                <div class="permission-item" data-perm-id="${p.id}" onclick="togglePerm('${p.id}', this)">
                     <div class="w-4 h-4 border rounded bg-white flex-shrink-0 checkbox-ui"></div>
                     <span class="text-xs font-medium text-gray-700">${p.label}</span>
                 </div>`).join('');
         }
         function togglePerm(id, el) {
-            if(selectedPermissions.has(id)) { selectedPermissions.delete(id); el.classList.remove('selected'); el.querySelector('.checkbox-ui').innerHTML=''; el.querySelector('.checkbox-ui').classList.remove('bg-purple-600'); } 
-            else { selectedPermissions.add(id); el.classList.add('selected'); el.querySelector('.checkbox-ui').innerHTML='<i data-lucide="check" class="w-3 h-3 text-white"></i>'; el.querySelector('.checkbox-ui').classList.add('bg-purple-600'); lucide.createIcons(); }
+            const row = el || document.querySelector(`.permission-item[data-perm-id="${id}"]`);
+            if (!row) return;
+            const checkbox = row.querySelector('.checkbox-ui');
+            if (!checkbox) return;
+
+            if (selectedPermissions.has(id)) {
+                selectedPermissions.delete(id);
+                row.classList.remove('selected');
+                checkbox.innerHTML = '';
+                checkbox.classList.remove('bg-purple-600');
+                return;
+            }
+
+            selectedPermissions.add(id);
+            row.classList.add('selected');
+            checkbox.innerHTML = '<i data-lucide="check" class="w-3 h-3 text-white"></i>';
+            checkbox.classList.add('bg-purple-600');
+            lucide.createIcons();
         }
-        function selectAllPerms() { allPermissions.forEach(p => { if(!selectedPermissions.has(p.id)) togglePerm(p.id, document.querySelectorAll('.permission-item')[allPermissions.indexOf(p)]); }); }
-        function clearPerms() { selectedPermissions.forEach(id => togglePerm(id, document.querySelectorAll('.permission-item')[allPermissions.findIndex(p=>p.id===id)])); }
+        function selectAllPerms() {
+            allPermissions.forEach(p => {
+                if (!selectedPermissions.has(p.id)) togglePerm(p.id);
+            });
+        }
+        function clearPerms() {
+            selectedPermissions.clear();
+            document.querySelectorAll('.permission-item').forEach(row => {
+                row.classList.remove('selected');
+                const checkbox = row.querySelector('.checkbox-ui');
+                if (checkbox) {
+                    checkbox.innerHTML = '';
+                    checkbox.classList.remove('bg-purple-600');
+                }
+            });
+        }
 
         // --- Actions ---
         function generateCreds() {
@@ -895,6 +927,7 @@
             const name = document.getElementById('empName').value.trim();
             const photoUrl = document.getElementById('empPhotoDataUrl').value;
             const preview = document.getElementById('empPhotoPreview');
+            if (!preview) return;
             
             if (photoUrl) {
                 const img = document.createElement('img');
@@ -902,7 +935,6 @@
                 img.className = 'w-full h-full rounded-full object-cover';
                 preview.innerHTML = '';
                 preview.appendChild(img);
-                document.getElementById('empPhotoInitials').innerText = '';
             } else {
                 const initials = name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || '--';
                 preview.innerHTML = `<span id="empPhotoInitials">${initials}</span>`;
