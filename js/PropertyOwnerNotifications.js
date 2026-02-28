@@ -39,12 +39,13 @@ class PropertyOwnerNotifications {
                 this.notificationManager.requestNotificationPermission().then(granted => {
                     if (granted) {
                         console.log('✅ Notification permission granted');
-                        // Register notification callbacks
-                        this.registerCallbacks();
-                        // Start polling for notifications
-                        this.notificationManager.startPolling();
                     }
                 });
+
+                // Register callbacks and start polling even if browser notification
+                // permission is blocked; sound + in-app dropdown should still work.
+                this.registerCallbacks();
+                this.notificationManager.startPolling();
             } else {
                 console.warn('NotificationManager not loaded');
             }

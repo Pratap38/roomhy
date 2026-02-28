@@ -32,6 +32,25 @@ const ownerSchema = new mongoose.Schema({
         documentImage: String,
         verifiedAt: Date,
         submittedAt: Date
+    }, // Digital Check-In fields (with "checkin" prefix for frontend display)
+    checkinDob: String,
+    checkinPhone: String,
+    checkinAddress: String,
+    checkinArea: String,
+    checkinPassword: String,
+    checkinAadhaarLinkedPhone: String,
+    checkinAadhaarNumber: String,
+    checkinAccountHolderName: String,
+    checkinUpiId: String,
+    checkinBankAccountNumber: String,
+    checkinIfscCode: String,
+    checkinBankName: String,
+    checkinBranchName: String,
+    checkinCancelledCheque: {
+        name: String,
+        mimeType: String,  // Changed from "type" to avoid Mongoose keyword conflict
+        size: Number,
+        dataUrl: String
     },
     isActive: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }

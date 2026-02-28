@@ -6,7 +6,7 @@
     <title>Owner Enquiries - Roomhy</title>
     <script>
         // API Configuration
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -23,6 +23,8 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-slate-800">
     <div class="flex h-screen overflow-hidden">
@@ -40,8 +42,6 @@
                 <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                 <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
                 <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
-                <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
-                <a href="enquiry.html" class="sidebar-link active"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
                 <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
                 <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                 <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
@@ -91,12 +91,9 @@
 
                         <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                         <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                        <a href="enquiry.html" class="sidebar-link active"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
-                        <a href="documents.html" class="sidebar-link"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents</a>
                         <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                         <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                         <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
-                        <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                         <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
                         <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                         <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
@@ -144,21 +141,53 @@
                     container.innerHTML = '<p class="text-gray-500">No enquiries yet.</p>';
                     return;
                 }
-                container.innerHTML = `<table class='min-w-full text-xs text-left text-gray-700'><thead class='bg-gray-100'><tr><th class='px-2 py-1'>Property</th><th class='px-2 py-1'>Tenant</th><th class='px-2 py-1'>Gmail</th><th class='px-2 py-1'>Status</th><th class='px-2 py-1'>Date</th><th class='px-2 py-1'>Actions</th></tr></thead><tbody>${list.map(e => {
-                    let chatBtn = '';
-                    if (e.status === 'accepted' && e.chatOpen) {
-                        chatBtn = `<a href='chat.html?enquiryId=${e._id}&studentId=${e.studentId}' class='ml-2 bg-blue-600 text-white px-2 py-1 rounded text-xs'>Chat</a>`;
-                    }
+                
+                const rows = list.map(enquiry => {
+                    const propertyName = enquiry.propertyName || enquiry.propertyId || 'N/A';
+                    const tenantName = enquiry.studentName || enquiry.studentId || 'N/A';
+                    const email = enquiry.ownerGmail || '-';
+                    const date = new Date(enquiry.ts).toLocaleString();
+                    
                     let statusColor = 'bg-gray-200 text-gray-700';
-                    if (e.status === 'pending') statusColor = 'bg-yellow-100 text-yellow-800';
-                    if (e.status === 'accepted') statusColor = 'bg-green-100 text-green-800';
-                    if (e.status === 'rejected') statusColor = 'bg-red-100 text-red-700';
-                    if (e.status === 'approved') statusColor = 'bg-blue-100 text-blue-800';
-                    if (e.status === 'request to connect') statusColor = 'bg-purple-100 text-purple-800';
-                    const statusBadge = `<span class='inline-block px-2 py-0.5 rounded text-xs font-semibold ${statusColor}'>${e.status.charAt(0).toUpperCase() + e.status.slice(1)}</span>`;
-                    return `<tr><td class='px-2 py-1'>${e.propertyName || e.propertyId}</td><td class='px-2 py-1'>${e.studentName || e.studentId}</td><td class='px-2 py-1'>${e.ownerGmail || '-'}</td><td class='px-2 py-1'>${statusBadge}</td><td class='px-2 py-1'>${new Date(e.ts).toLocaleString()}</td><td class='px-2 py-1'>${chatBtn}</td></tr>`;
-                }).join('')}</tbody></table>`;
+                    if (enquiry.status === 'pending') statusColor = 'bg-yellow-100 text-yellow-800';
+                    else if (enquiry.status === 'accepted') statusColor = 'bg-green-100 text-green-800';
+                    else if (enquiry.status === 'rejected') statusColor = 'bg-red-100 text-red-700';
+                    else if (enquiry.status === 'approved') statusColor = 'bg-blue-100 text-blue-800';
+                    else if (enquiry.status === 'request to connect') statusColor = 'bg-purple-100 text-purple-800';
+                    
+                    const statusText = enquiry.status.charAt(0).toUpperCase() + enquiry.status.slice(1);
+                    let actionBtn = '';
+                    if (enquiry.status === 'accepted' && enquiry.chatOpen) {
+                        actionBtn = `<a href="chat.html?enquiryId=${enquiry._id}&studentId=${enquiry.studentId}" class="ml-2 bg-blue-600 text-white px-2 py-1 rounded text-xs">Chat</a>`;
+                    }
+                    
+                    return `<tr>
+                        <td class="px-2 py-1">${propertyName}</td>
+                        <td class="px-2 py-1">${tenantName}</td>
+                        <td class="px-2 py-1">${email}</td>
+                        <td class="px-2 py-1"><span class="inline-block px-2 py-0.5 rounded text-xs font-semibold ${statusColor}">${statusText}</span></td>
+                        <td class="px-2 py-1">${date}</td>
+                        <td class="px-2 py-1">${actionBtn}</td>
+                    </tr>`;
+                }).join('');
+                
+                const table = `<table class="min-w-full text-xs text-left text-gray-700">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-2 py-1">Property</th>
+                            <th class="px-2 py-1">Tenant</th>
+                            <th class="px-2 py-1">Gmail</th>
+                            <th class="px-2 py-1">Status</th>
+                            <th class="px-2 py-1">Date</th>
+                            <th class="px-2 py-1">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+                
+                container.innerHTML = table;
             } catch (e) {
+                console.error('Error loading enquiries:', e);
                 document.getElementById('enquiry-list').innerHTML = '<p class="text-red-500">Failed to load enquiries.</p>';
             }
         });
@@ -178,3 +207,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+

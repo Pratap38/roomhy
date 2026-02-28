@@ -810,6 +810,45 @@
             }
         });
 
+        function persistBookingForMyStays(confirmedBooking) {
+            try {
+                const bookingRecord = confirmedBooking || {};
+                const normalized = {
+                    ...bookingRecord,
+                    booking_id: bookingRecord.booking_id || bookingRecord._id || bookingRecord.id || '',
+                    user_id: bookingRecord.user_id || bookingData.userId || '',
+                    property_id: bookingRecord.property_id || bookingData.propertyId || '',
+                    property_name: bookingRecord.property_name || bookingData.propertyName || '',
+                    owner_id: bookingRecord.owner_id || bookingData.ownerId || '',
+                    owner_name: bookingRecord.owner_name || bookingData.ownerName || '',
+                    property_location: bookingRecord.property_location || bookingRecord.location || bookingData.area || '',
+                    property_type: bookingRecord.property_type || bookingData.propertyType || '',
+                    total_amount: bookingRecord.total_amount || bookingData.totalAmount || 500,
+                    payment_id: bookingRecord.payment_id || bookingData.razorpayPaymentId || '',
+                    user_name: bookingRecord.user_name || bookingRecord.name || bookingData.fullName || '',
+                    user_phone: bookingRecord.user_phone || bookingRecord.phone || bookingData.phone || '',
+                    user_email: bookingRecord.user_email || bookingRecord.email || bookingData.email || '',
+                    check_in_date: bookingRecord.check_in_date || bookingRecord.created_at || new Date().toISOString(),
+                    check_out_date: bookingRecord.check_out_date || bookingRecord.updated_at || new Date().toISOString(),
+                    booking_status: bookingRecord.booking_status || bookingRecord.status || 'confirmed'
+                };
+
+                sessionStorage.setItem('bookingConfirmation', JSON.stringify(normalized));
+                localStorage.setItem('lastBooking', JSON.stringify(normalized));
+
+                if (normalized.user_id) {
+                    localStorage.setItem('userId', normalized.user_id);
+                    sessionStorage.setItem('userId', normalized.user_id);
+                }
+                if (normalized.user_email) {
+                    localStorage.setItem('userEmail', normalized.user_email);
+                    sessionStorage.setItem('userEmail', normalized.user_email);
+                }
+            } catch (error) {
+                console.error('Failed to persist booking for My Stays:', error);
+            }
+        }
+
         // Submit booking form
         document.getElementById('submitBtn').addEventListener('click', async function() {
             if (!bookingData.razorpayPaymentId) {
@@ -849,18 +888,40 @@
                     status: 'confirmed'
                 };
 
-                console.log('📤 Submitting booking to:', `${API_URL}/api/bookings/confirm`);
-                const response = await fetch(`${API_URL}/api/bookings/confirm`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(apiPayload)
-                });
+                console.log('Submitting booking payload...');
+                const confirmEndpoints = [
+                    `${API_URL}/api/booking/confirm`,
+                    `${API_URL}/api/bookings/confirm`
+                ];
+                let response = null;
+
+                for (const endpoint of confirmEndpoints) {
+                    console.log('Submitting booking to:', endpoint);
+                    const attempt = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(apiPayload)
+                    });
+
+                    if (attempt.ok || attempt.status !== 404) {
+                        response = attempt;
+                        break;
+                    }
+                }
+
+                if (!response) {
+                    throw new Error('Booking API endpoint not found');
+                }
 
                 const result = await response.json();
 
                 if (result.success) {
+                    const confirmedBooking = result.data || {};
+                    bookingData.bookingId = confirmedBooking._id || confirmedBooking.booking_id || bookingData.bookingId || '';
+                    persistBookingForMyStays(confirmedBooking);
+
                     // Show success screen
                     document.getElementById('form-container').style.display = 'none';
                     document.getElementById('success-container').style.display = 'block';
@@ -903,17 +964,57 @@
                 return;
             }
 
+            const requestType = showAlternatives === 'yes' ? 'alternative_property' : 'refund';
+            const bookingId = bookingData.bookingId || bookingData.propertyId || '';
+            const userId = bookingData.userId || '';
+            const paymentId = bookingData.razorpayPaymentId || bookingData.bookingId || bookingData.propertyId || '';
+            const userName = bookingData.fullName || document.getElementById('fullName')?.value?.trim() || '';
+            const userPhone = bookingData.phone || document.getElementById('phone')?.value?.trim() || '';
+            const userEmail = bookingData.email || document.getElementById('email')?.value?.trim() || '';
+
+            if (!bookingId || !userId || !paymentId || !userName || !userPhone) {
+                alert('Missing booking details. Please complete booking before requesting refund.');
+                return;
+            }
+
+            const payload = {
+                booking_id: bookingId,
+                user_id: userId,
+                payment_id: paymentId,
+                user_name: userName,
+                user_phone: userPhone,
+                user_email: userEmail,
+                request_type: requestType,
+                refund_amount: bookingData.totalAmount || 500,
+                refund_method: requestType === 'refund' ? 'other' : null,
+                other_details: `Reason: ${reason}. Details: ${details}`,
+                preferred_area: showAlternatives === 'yes' ? (bookingData.area || null) : null,
+                property_requirements: showAlternatives === 'yes' ? details : null
+            };
+
             try {
-                const response = await fetch(`${API_URL}/api/bookings/refund-request`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        bookingId: bookingData.userId,
-                        reason,
-                        details,
-                        showAlternatives: showAlternatives === 'yes'
-                    })
-                });
+                const refundEndpoints = [
+                    `${API_URL}/api/booking/refund-request`,
+                    `${API_URL}/api/bookings/refund-request`
+                ];
+                let response = null;
+
+                for (const endpoint of refundEndpoints) {
+                    const attempt = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (attempt.ok || attempt.status !== 404) {
+                        response = attempt;
+                        break;
+                    }
+                }
+
+                if (!response) {
+                    throw new Error('Refund API endpoint not found');
+                }
 
                 const result = await response.json();
 

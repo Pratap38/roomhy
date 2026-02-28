@@ -1,35 +1,20 @@
-const cron = require('node-cron');
+﻿const cron = require('node-cron');
 let Rent = null;
-let transporter = null;
+const { sendMail } = require('../utils/mailer');
 
 try {
     Rent = require('../models/Rent');
 } catch (err) {
-    console.warn('⚠️  Rent model not found:', err.message);
-}
-
-const nodemailer = require('nodemailer');
-
-// Configure email transporter
-try {
-    transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.GMAIL_USER || 'your-email@gmail.com',
-            pass: process.env.GMAIL_APP_PASSWORD || 'your-app-password'
-        }
-    });
-} catch (err) {
-    console.warn('⚠️  Email transporter configuration failed:', err.message);
+    console.warn('âš ï¸  Rent model not found:', err.message);
 }
 
 // Send rent reminders: Every day at 10 AM during collection period (10-15th)
 const rentReminderSchedule = cron.schedule('0 10 10-15 * *', async () => {
-    if (!Rent || !transporter) {
-        console.warn('⚠️  Skipping rent reminder - dependencies not loaded');
+    if (!Rent) {
+        console.warn('âš ï¸  Skipping rent reminder - dependencies not loaded');
         return;
     }
-    console.log('🔔 Running rent reminder job...');
+    console.log('ðŸ”” Running rent reminder job...');
     try {
         const currentMonth = new Date().toISOString().slice(0, 7);
         const pendingRents = await Rent.find({
@@ -48,19 +33,19 @@ const rentReminderSchedule = cron.schedule('0 10 10-15 * *', async () => {
             await rent.save();
         }
 
-        console.log(`✅ Sent ${pendingRents.length} rent reminders`);
+        console.log(`âœ… Sent ${pendingRents.length} rent reminders`);
     } catch (err) {
-        console.error('❌ Rent reminder job error:', err.message);
+        console.error('âŒ Rent reminder job error:', err.message);
     }
 });
 
 // Send delayed payment reminders: 3x daily (9 AM, 2 PM, 6 PM) after 15th until 31st
 const delayedReminderSchedule = cron.schedule('0 9,14,18 16-31 * *', async () => {
-    if (!Rent || !transporter) {
-        console.warn('⚠️  Skipping delayed reminder - dependencies not loaded');
+    if (!Rent) {
+        console.warn('âš ï¸  Skipping delayed reminder - dependencies not loaded');
         return;
     }
-    console.log('🚨 Running delayed payment reminder job...');
+    console.log('ðŸš¨ Running delayed payment reminder job...');
     try {
         // Get previous month's overdue rents
         const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().slice(0, 7);
@@ -98,9 +83,55 @@ const delayedReminderSchedule = cron.schedule('0 9,14,18 16-31 * *', async () =>
             }
         }
 
-        console.log(`✅ Sent ${sent} delayed payment reminders`);
+        console.log(`âœ… Sent ${sent} delayed payment reminders`);
     } catch (err) {
-        console.error('❌ Delayed reminder job error:', err.message);
+        console.error('âŒ Delayed reminder job error:', err.message);
+    }
+});
+
+// Daily auto reminders for rents manually enabled from rent collection page
+const autoReminderSchedule = cron.schedule('30 10 * * *', async () => {
+    if (!Rent) {
+        console.warn('⚠️  Skipping daily auto reminder - dependencies not loaded');
+        return;
+    }
+
+    console.log('🔔 Running daily auto reminder job...');
+    try {
+        const activeRents = await Rent.find({ autoReminderEnabled: true });
+
+        let sent = 0;
+        for (const rent of activeRents) {
+            // Auto-stop if already paid
+            if (rent.paymentStatus === 'paid' || rent.paymentStatus === 'completed') {
+                rent.autoReminderEnabled = false;
+                rent.autoReminderLastSentAt = undefined;
+                await rent.save();
+                continue;
+            }
+
+            const lastSent = rent.autoReminderLastSentAt ? new Date(rent.autoReminderLastSentAt) : null;
+            const now = new Date();
+            const alreadySentToday = lastSent && lastSent.toDateString() === now.toDateString();
+            if (alreadySentToday) continue;
+
+            const emailSent = await sendRentReminderEmail(rent);
+            if (!emailSent) continue;
+
+            rent.autoReminderLastSentAt = now;
+            rent.reminders.push({
+                sentAt: now,
+                type: 'auto_daily',
+                status: 'sent',
+                message: 'Daily auto reminder sent'
+            });
+            await rent.save();
+            sent++;
+        }
+
+        console.log(`✅ Sent ${sent} daily auto reminders`);
+    } catch (err) {
+        console.error('❌ Daily auto reminder job error:', err.message);
     }
 });
 
@@ -108,10 +139,8 @@ const delayedReminderSchedule = cron.schedule('0 9,14,18 16-31 * *', async () =>
 async function sendRentReminderEmail(rent) {
     try {
         const mailOptions = {
-            from: process.env.GMAIL_USER || 'roomhy@gmail.com',
-            to: rent.tenantEmail,
-            cc: process.env.ADMIN_EMAIL || '',
-            subject: `🔔 Rent Due Reminder - ${rent.propertyName}`,
+                        to: rent.tenantEmail,
+                        subject: `ðŸ”” Rent Due Reminder - ${rent.propertyName}`,
             html: `
                 <!DOCTYPE html>
                 <html>
@@ -140,7 +169,7 @@ async function sendRentReminderEmail(rent) {
                                 <h4>Rent Details:</h4>
                                 <p><strong>Property:</strong> ${rent.propertyName}</p>
                                 <p><strong>Room:</strong> ${rent.roomNumber}</p>
-                                <p><strong>Rent Amount:</strong> ₹${rent.rentAmount}</p>
+                                <p><strong>Rent Amount:</strong> â‚¹${rent.rentAmount}</p>
                                 <p><strong>Due By:</strong> 15th of ${rent.collectionMonth}</p>
                             </div>
                             
@@ -167,11 +196,11 @@ async function sendRentReminderEmail(rent) {
             `
         };
 
-        await transporter.sendMail(mailOptions);
-        console.log('✅ Rent reminder email sent to', rent.tenantEmail);
+        await sendMail(mailOptions.to, mailOptions.subject, '', mailOptions.html);
+        console.log('âœ… Rent reminder email sent to', rent.tenantEmail);
         return true;
     } catch (err) {
-        console.error('❌ Failed to send rent reminder:', err.message);
+        console.error('âŒ Failed to send rent reminder:', err.message);
         return false;
     }
 }
@@ -184,10 +213,8 @@ async function sendDelayedReminderEmail(rent, reminderNumber = 1) {
         const daysOverdue = Math.floor((new Date() - new Date(rent.overdueStartDate)) / (1000 * 60 * 60 * 24));
         
         const mailOptions = {
-            from: process.env.GMAIL_USER || 'roomhy@gmail.com',
-            to: rent.tenantEmail,
-            cc: process.env.ADMIN_EMAIL || '',
-            subject: `⚠️ ${urgency} - Overdue Rent Payment - ${rent.propertyName}`,
+                        to: rent.tenantEmail,
+                        subject: `âš ï¸ ${urgency} - Overdue Rent Payment - ${rent.propertyName}`,
             html: `
                 <!DOCTYPE html>
                 <html>
@@ -216,14 +243,14 @@ async function sendDelayedReminderEmail(rent, reminderNumber = 1) {
                             <p><strong style="color: #dc2626;">Your rent payment is overdue!</strong></p>
                             
                             <div class="alert">
-                                ⚠️ Immediate action required. Please arrange payment immediately.
+                                âš ï¸ Immediate action required. Please arrange payment immediately.
                             </div>
                             
                             <div class="details">
                                 <h4 style="color: #dc2626;">Overdue Details:</h4>
                                 <p><strong>Property:</strong> ${rent.propertyName}</p>
                                 <p><strong>Room:</strong> ${rent.roomNumber}</p>
-                                <p><strong>Outstanding Amount:</strong> ₹${rent.totalDue - rent.paidAmount}</p>
+                                <p><strong>Outstanding Amount:</strong> â‚¹${rent.totalDue - rent.paidAmount}</p>
                                 <p><strong>Days Overdue:</strong> ${daysOverdue} days</p>
                                 <p><strong>Original Due Date:</strong> 15th of ${rent.collectionMonth}</p>
                             </div>
@@ -256,11 +283,11 @@ async function sendDelayedReminderEmail(rent, reminderNumber = 1) {
             `
         };
 
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ Delayed payment reminder #${reminderNumber} sent to`, rent.tenantEmail);
+        await sendMail(mailOptions.to, mailOptions.subject, '', mailOptions.html);
+        console.log(`âœ… Delayed payment reminder #${reminderNumber} sent to`, rent.tenantEmail);
         return true;
     } catch (err) {
-        console.error(`❌ Failed to send delayed reminder #${reminderNumber}:`, err.message);
+        console.error(`âŒ Failed to send delayed reminder #${reminderNumber}:`, err.message);
         return false;
     }
 }
@@ -268,13 +295,16 @@ async function sendDelayedReminderEmail(rent, reminderNumber = 1) {
 // Export functions
 module.exports = {
     startCronJobs: () => {
-        console.log('🕐 Cron jobs initialized');
+        console.log('ðŸ• Cron jobs initialized');
         console.log('   - Rent reminders: Daily 10 AM (10-15th)');
         console.log('   - Delayed payment reminders: 9 AM, 2 PM, 6 PM (after 15th)');
+        console.log('   - Auto reminders: Daily 10:30 AM (enabled manually per unpaid rent)');
     },
     stopCronJobs: () => {
         rentReminderSchedule.stop();
         delayedReminderSchedule.stop();
-        console.log('🛑 Cron jobs stopped');
+        autoReminderSchedule.stop();
+        console.log('ðŸ›‘ Cron jobs stopped');
     }
 };
+

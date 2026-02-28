@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - Tenant Dashboard</title>
     <script>
-        const API_URL = 'https://roomhy-backend.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,9 +19,8 @@
             theme: {
                 extend: {
                     colors: {
-                        'brand-dark': '#0f172a',     // Sidebar bg
-                        'brand-blue': '#2563eb',     // Rent card bg
-                        'brand-purple': '#9333ea',   // Accents
+                        'brand-blue': '#2563eb',
+                        'brand-purple': '#9333ea',
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
@@ -30,338 +31,397 @@
     </script>
     
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); 
+            min-height: 100vh; 
+        }
         
-        /* Sidebar Styles */
-        .sidebar-item {
-            display: flex;
+        .top-navbar {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        .nav-item {
+            display: inline-flex;
             align-items: center;
-            padding: 10px 24px;
-            color: #94a3b8; /* Slate-400 */
+            padding: 8px 16px;
+            color: #64748b;
             font-weight: 500;
             font-size: 0.9rem;
             transition: all 0.2s;
-            border-left: 4px solid transparent;
             cursor: pointer;
-            width: 100%;
-            text-align: left;
-            text-decoration: none; /* For a tags */
+            text-decoration: none;
+            border-radius: 8px;
+            white-space: nowrap;
         }
-        .sidebar-item:hover {
-            background-color: #1e293b; /* Slate-800 */
-            color: #f8fafc;
+        
+        .nav-item:hover {
+            background-color: #f1f5f9;
+            color: #1e293b;
         }
-        .sidebar-item.active {
-            background-color: #1e293b;
-            color: #ffffff;
-            border-left-color: #9333ea; /* Purple border */
-        }
-        .sidebar-item i { margin-right: 12px; width: 18px; height: 18px; }
-
-        .sidebar-section-title {
-            padding: 16px 24px 8px;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748b; /* Slate-500 */
-            font-weight: 700;
+        
+        .nav-item.active {
+            color: #2563eb;
+            background-color: #dbeafe;
         }
 
-        /* Card Styles */
         .dashboard-card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
         }
         
         .rent-banner {
-            background-color: #2563eb; /* Bright Blue */
-            background-image: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #06b6d4 100%);
             color: white;
-            border-radius: 12px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);
+            position: relative;
+            overflow: hidden;
         }
         
-        /* Custom Scrollbar for Sidebar */
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #334155; border-radius: 4px; }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            z-index: 100;
+            min-width: 220px;
+            margin-top: 8px;
+        }
         
-        /* Modal */
-        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+        .dropdown-menu.show {
+            display: block;
+        }
+        
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: #475569;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            text-decoration: none;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        .dropdown-item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+        
+        .dropdown-item:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background-color: #e2e8f0;
+            margin: 4px 0;
+        }
+        
+        .modal-backdrop { 
+            background-color: rgba(0, 0, 0, 0.5); 
+            backdrop-filter: blur(2px); 
+        }
     </style>
 </head>
 <body class="text-slate-800">
-    <div class="flex h-screen overflow-hidden">
+    <div class="flex flex-col h-screen overflow-hidden">
         
-        <!-- Static Sidebar (Dark Theme) -->
-        <aside class="w-64 bg-brand-dark flex-shrink-0 hidden md:flex flex-col transition-all duration-300">
-            <!-- Logo Area -->
-            <div class="h-20 flex items-center px-6 border-b border-slate-800">
-                <div class="bg-purple-600 p-2 rounded-lg mr-3">
-                    <i data-lucide="home" class="w-5 h-5 text-white"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold text-white tracking-tight">RoomHy</h1>
-                    <p class="text-[10px] text-slate-400 font-medium tracking-wider">TENANT PORTAL</p>
-                </div>
-            </div>
-
-            <!-- User Info Section -->
-            <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/50">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm" id="sidebar-avatar">
-                        T
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-white truncate" id="sidebar-user-name">Tenant</p>
-                        <p class="text-xs text-slate-400 truncate font-mono" id="sidebar-user-id" style="display: none;"></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Navigation with New Content -->
-            <nav class="flex-1 py-2 overflow-y-auto custom-scrollbar">
-                
-                <a href="tenantdashboard.html" class="sidebar-item active">
-                    Dashboard
-                </a>
-
-                <div class="sidebar-section-title">Account & Actions</div>
-                <button onclick="openModal('payRentModal')" class="sidebar-item">
-                    Make Payment
-                </button>
-                <button onclick="manageRentReminder()" class="sidebar-item">
-                    Manage Rent Reminders
-                </button>
-
-                <div class="sidebar-section-title">Information Hub</div>
-                <a href="tenantcomplints.html" class="sidebar-item">
-                    View My Requests/Complaints
-                </a>
-                <button onclick="scrollToTab('documents')" class="sidebar-item">
-                    Documents & Bills
-                </button>
-                <button onclick="scrollToTab('activity')" class="sidebar-item">
-                    Activity Timeline
-                </button>
-
-                <div class="sidebar-section-title">Support</div>
-                <!-- No Icon here as requested -->
-                <button onclick="viewEmergency()" class="sidebar-item text-red-400 hover:text-red-300">
-                    Emergency Contacts
-                </button>
-
-            </nav>
-
-            <!-- Logout (Fixed Link) -->
-            <div class="p-4 border-t border-slate-800">
-                <a href="tenantlogin.html" onclick="clearSession()" class="flex items-center text-slate-400 hover:text-white w-full px-4 py-2 text-sm font-medium transition-colors">
-                    <i data-lucide="log-out" class="w-5 h-5 mr-3"></i> Logout
-                </a>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-            
-            <!-- Header -->
-            <header class="bg-white h-16 flex items-center justify-between px-6 border-b border-slate-200 flex-shrink-0">
-                <div class="flex items-center">
-                    <button id="mobile-menu-open" class="md:hidden mr-4 text-slate-500"><i data-lucide="menu" class="w-6 h-6"></i></button>
-                    <h2 class="text-lg font-bold text-slate-800">Dashboard</h2>
-                </div>
-                
-                <div class="flex items-center gap-4">
-                    <button class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                        <i data-lucide="bell" class="w-5 h-5"></i>
-                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-                    </button>
-                    <div class="w-9 h-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-sm cursor-pointer" id="headerAvatar">
-                        T
-                    </div>
-                </div>
-            </header>
-
-            <!-- Scrollable Canvas -->
-            <main class="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50">
-                <div class="max-w-5xl mx-auto space-y-8">
-
-                    <!-- Greeting -->
-                    <div>
-                        <h1 class="text-3xl font-bold text-slate-900 flex items-center">
-                            Hi, <span id="welcome-name" class="mx-2">Tenant</span> <span class="text-3xl">ðŸ‘‹</span>
-                        </h1>
-                    </div>
-
-                    <!-- Rent Card (Blue) -->
-                    <div class="rent-banner p-8 shadow-lg relative overflow-hidden">
-                        <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white opacity-5 rounded-full blur-2xl"></div>
-                        <div class="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-black opacity-5 rounded-full blur-2xl"></div>
-
-                        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                            <div>
-                                <div class="flex items-center gap-2 text-blue-100 mb-2">
-                                    <i data-lucide="receipt" class="w-5 h-5"></i>
-                                    <span class="font-medium">Rent Due - Current Month</span>
-                                </div>
-                                <div class="flex items-baseline gap-1">
-                                    <h2 class="text-5xl font-bold text-white" id="rent-amount">₹ --</h2>
-                                </div>
-                                <div class="flex items-center gap-3 mt-4 text-sm">
-                                    <span class="text-blue-100">Due by: 5th of Month</span>
-                                    <span class="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-sm">
-                                        <i data-lucide="bell" class="w-3 h-3 mr-1.5"></i> Unpaid
-                                    </span>
-                                </div>
+        <!-- Modern Top Navigation Bar -->
+        <nav class="top-navbar">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <!-- Logo & Brand -->
+                    <div class="flex items-center gap-8">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-gradient-to-br from-blue-600 to-purple-600 p-2 rounded-lg">
+                                <i data-lucide="building-2" class="w-6 h-6 text-white"></i>
                             </div>
-                            
-                            <button onclick="openModal('payRentModal')" class="bg-white text-brand-blue hover:bg-blue-50 px-8 py-3.5 rounded-lg font-bold shadow-md transition-transform hover:scale-105 flex items-center">
-                                Pay Now
+                            <div>
+                                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">RoomHy</h1>
+                                <p class="text-xs text-slate-500 font-semibold">Tenant Portal</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Navigation Items -->
+                        <div class="hidden md:flex items-center gap-1">
+                            <a href="tenantdashboard.html" class="nav-item active">
+                                <i data-lucide="home" class="w-4 h-4 mr-2"></i>Dashboard
+                            </a>
+                            <button onclick="openModal('payRentModal')" class="nav-item">
+                                <i data-lucide="credit-card" class="w-4 h-4 mr-2"></i>Pay Rent
                             </button>
                         </div>
                     </div>
 
-                    <!-- Current Stay Card -->
-                    <div class="dashboard-card p-6">
-                        <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                            <i data-lucide="home" class="w-5 h-5 text-brand-blue"></i> Your Current Stay
-                        </h3>
-                        
-                        <div class="grid md:grid-cols-2 gap-y-6 gap-x-12">
-                            <div class="flex items-start gap-3">
-                                <div class="mt-1"><i data-lucide="map-pin" class="w-5 h-5 text-red-500"></i></div>
-                                <div>
-                                    <p class="text-sm text-slate-500 font-medium">Property</p>
-                                    <p class="text-base font-semibold text-slate-800" id="prop-name">Loading...</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-3">
-                                <div class="mt-1"><i data-lucide="bed-double" class="w-5 h-5 text-brand-blue"></i></div>
-                                <div>
-                                    <p class="text-sm text-slate-500 font-medium">Room/Bed</p>
-                                    <p class="text-base font-semibold text-slate-800" id="room-info">Loading...</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-3">
-                                <div class="mt-1"><i data-lucide="user-check" class="w-5 h-5 text-green-500"></i></div>
-                                <div>
-                                    <p class="text-sm text-slate-500 font-medium">Login ID</p>
-                                    <p class="text-base font-semibold text-slate-800 font-mono" id="login-id">--</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-3">
-                                <div class="mt-1"><i data-lucide="calendar" class="w-5 h-5 text-orange-500"></i></div>
-                                <div>
-                                    <p class="text-sm text-slate-500 font-medium">Move-in</p>
-                                    <p class="text-base font-semibold text-slate-800" id="move-in-date">--</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-6 pt-4 border-t border-slate-100">
-                            <a href="#" class="text-brand-blue text-sm font-medium hover:underline flex items-center">
-                                View All Details & Rules <i data-lucide="chevron-right" class="w-4 h-4 ml-1"></i>
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Quick Access Tools -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <a href="tenantcomplaints.html" class="dashboard-card p-4 flex flex-col items-center justify-center hover:border-brand-blue transition-colors cursor-pointer group">
-                            <div class="bg-red-50 p-3 rounded-full mb-3 group-hover:bg-red-100 transition-colors">
-                                <i data-lucide="flag" class="w-6 h-6 text-red-600"></i>
-                            </div>
-                            <span class="text-sm font-semibold text-slate-700">Lodge Complaint</span>
-                        </a>
-                        <button onclick="scrollToTab('documents')" class="dashboard-card p-4 flex flex-col items-center justify-center hover:border-brand-blue transition-colors cursor-pointer group">
-                             <div class="bg-purple-50 p-3 rounded-full mb-3 group-hover:bg-purple-100 transition-colors">
-                                <i data-lucide="file-text" class="w-6 h-6 text-purple-600"></i>
-                            </div>
-                            <span class="text-sm font-semibold text-slate-700">My Docs</span>
+                    <!-- Right Side Icons -->
+                    <div class="flex items-center gap-4">
+                        <button class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
                         </button>
-                         <button onclick="viewEmergency()" class="dashboard-card p-4 flex flex-col items-center justify-center hover:border-brand-blue transition-colors cursor-pointer group">
-                             <div class="bg-green-50 p-3 rounded-full mb-3 group-hover:bg-green-100 transition-colors">
-                                <i data-lucide="phone-call" class="w-6 h-6 text-green-600"></i>
-                            </div>
-                            <span class="text-sm font-semibold text-slate-700">Emergency</span>
+
+                        <button id="mobile-menu-toggle" class="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+                            <i data-lucide="menu" class="w-5 h-5"></i>
                         </button>
-                    </div>
 
-                    <!-- Information Hub Content (Hidden Sections for Scroll) -->
-                     <div id="documents" class="dashboard-card p-6">
-                        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                             <i data-lucide="folder-open" class="w-5 h-5 text-purple-600"></i> Documents & Bills
-                        </h3>
-                         <div class="space-y-3">
-                            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-purple-200 transition">
-                                <div class="flex items-center gap-3">
-                                    <div class="bg-purple-100 p-2 rounded text-purple-600"><i data-lucide="file-text" class="w-4 h-4"></i></div>
-                                    <div>
-                                        <p class="text-sm font-semibold text-slate-800">Rental Agreement</p>
-                                        <p class="text-xs text-slate-500">Signed on Oct 01, 2025</p>
-                                    </div>
-                                </div>
-                                <button class="text-purple-600 hover:text-purple-800"><i data-lucide="download" class="w-4 h-4"></i></button>
+                        <!-- User Avatar Dropdown -->
+                        <div class="relative" id="userMenuBtn" onmouseenter="showUserMenu()" onmouseleave="hideUserMenu()">
+                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm cursor-pointer hover:shadow-lg transition-shadow" id="headerAvatar">
+                                T
                             </div>
-                             <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-green-200 transition">
-                                <div class="flex items-center gap-3">
-                                    <div class="bg-green-100 p-2 rounded text-green-600"><i data-lucide="receipt" class="w-4 h-4"></i></div>
-                                    <div>
-                                        <p class="text-sm font-semibold text-slate-800">Oct 2025 Rent Receipt</p>
-                                        <p class="text-xs text-slate-500">Paid via UPI</p>
-                                    </div>
+                            
+                            <div class="dropdown-menu" id="userMenu">
+                                <div class="px-4 py-3 border-b border-slate-100">
+                                    <p class="text-sm font-semibold text-slate-900" id="userMenuName">Tenant</p>
+                                    <p class="text-xs text-slate-500 mt-1">tenant@roomhy.com</p>
                                 </div>
-                                <button class="text-green-600 hover:text-green-800"><i data-lucide="download" class="w-4 h-4"></i></button>
+                                <button onclick="scrollToTab('activity')" class="dropdown-item">
+                                    <i data-lucide="history" class="w-4 h-4 mr-3"></i> Activity
+                                </button>
+                                <button onclick="scrollToTab('documents')" class="dropdown-item">
+                                    <i data-lucide="file-text" class="w-4 h-4 mr-3"></i> Documents
+                                </button>
+                                <button onclick="manageRentReminder()" class="dropdown-item">
+                                    <i data-lucide="bell" class="w-4 h-4 mr-3"></i> Reminders
+                                </button>
+                                <div class="dropdown-divider"></div>
+                                <button onclick="viewEmergency()" class="dropdown-item">
+                                    <i data-lucide="phone-call" class="w-4 h-4 mr-3 text-red-500"></i> Emergency
+                                </button>
+                                <div class="dropdown-divider"></div>
+                                <a href="tenantlogin.html" onclick="clearSession()" class="dropdown-item text-red-600">
+                                    <i data-lucide="log-out" class="w-4 h-4 mr-3"></i> Logout
+                                </a>
                             </div>
                         </div>
                     </div>
-
-                    <div id="activity" class="dashboard-card p-6">
-                         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                             <i data-lucide="activity" class="w-5 h-5 text-blue-600"></i> Activity Timeline
-                        </h3>
-                         <div class="relative border-l-2 border-slate-100 ml-3 space-y-6 pl-6 py-2">
-                            <div class="relative">
-                                <div class="absolute -left-[29px] top-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white ring-2 ring-green-100"></div>
-                                <p class="text-sm font-semibold text-slate-800">Rent Paid Successfully</p>
-                                <p class="text-xs text-slate-500 mt-0.5">Oct 2025 "¢ ₹ 8,500</p>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
+            </div>
+
+            <!-- Mobile Navigation Menu -->
+            <div id="mobileMenu" class="md:hidden border-t border-slate-100 bg-slate-50 hidden">
+                <div class="px-4 py-3 space-y-2">
+                    <a href="tenantdashboard.html" class="block w-full text-left px-4 py-2 rounded-lg bg-blue-50 text-blue-600 font-medium">
+                        <i data-lucide="home" class="w-4 h-4 inline mr-2"></i>Dashboard
+                    </a>
+                    <button onclick="openModal('payRentModal')" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 font-medium transition">
+                        <i data-lucide="credit-card" class="w-4 h-4 inline mr-2"></i>Pay Rent
+                    </button>
+                    <button onclick="scrollToTab('documents')" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 transition">
+                        <i data-lucide="file-text" class="w-4 h-4 inline mr-2"></i>Documents
+                    </button>
+                    <button onclick="viewEmergency()" class="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 transition">
+                        <i data-lucide="phone-call" class="w-4 h-4 inline mr-2"></i>Emergency
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-y-auto">
+            <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                
+                <!-- Welcome Greeting -->
+                <div>
+                    <h2 class="text-4xl font-bold text-slate-900">Welcome back, <span id="welcome-name" class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Tenant</span></h2>
+                    <p class="text-slate-500 mt-2">Here's your rental summary and account overview</p>
+                </div>
+
+                <!-- Main Rent Payment Card -->
+                <div class="rent-banner p-8 rounded-2xl shadow-xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
+                    <div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
+
+                    <div class="relative z-10 grid md:grid-cols-2 gap-8">
+                        <div>
+                            <div class="flex items-center gap-2 text-blue-100 mb-3">
+                                <i data-lucide="receipt" class="w-5 h-5"></i>
+                                <span class="font-semibold text-sm uppercase tracking-wide">Monthly Rent Payment</span>
+                            </div>
+                            <div class="mb-6">
+                                <p class="text-sm text-blue-100 mb-2">Amount Due</p>
+                                <h1 class="text-6xl font-bold text-white" id="rent-amount">₹ --</h1>
+                            </div>
+                            <div class="flex flex-wrap gap-3 items-center">
+                                <span class="px-4 py-2 bg-white/20 text-white rounded-full text-sm font-medium backdrop-blur">Due: 5th of Month</span>
+                                <span id="paymentStatusBadge" class="px-4 py-2 bg-red-500 text-white rounded-full text-sm font-bold flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-4 h-4"></i> Unpaid
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col justify-between items-start md:items-end gap-6">
+                            <div class="text-white/90 text-sm space-y-2">
+                                <p><strong>Property:</strong> <span id="prop-name">Loading...</span></p>
+                                <p><strong>Room:</strong> <span id="room-info">Loading...</span></p>
+                                <p><strong>Login ID:</strong> <span id="login-id" class="font-mono">--</span></p>
+                            </div>
+                            <button onclick="openModal('payRentModal')" class="bg-white text-blue-600 hover:bg-blue-50 px-8 py-4 rounded-xl font-bold shadow-lg transition-all hover:shadow-2xl hover:scale-105 flex items-center gap-2 w-full md:w-auto justify-center">
+                                <i data-lucide="credit-card" class="w-5 h-5"></i> Pay Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <a href="tenantcomplaints.html" class="dashboard-card p-6 flex flex-col cursor-pointer group">
+                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-red-200 transition">
+                            <i data-lucide="flag" class="w-6 h-6 text-red-600"></i>
+                        </div>
+                        <h3 class="font-semibold text-slate-900 mb-2">Lodge Complaint</h3>
+                        <p class="text-sm text-slate-500">Report maintenance or other issues</p>
+                        <div class="mt-4 text-blue-600 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                            Open <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </div>
+                    </a>
+
+                    <button onclick="scrollToTab('documents')" class="dashboard-card p-6 flex flex-col cursor-pointer group">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-purple-200 transition">
+                            <i data-lucide="file-text" class="w-6 h-6 text-purple-600"></i>
+                        </div>
+                        <h3 class="font-semibold text-slate-900 mb-2">Documents & Bills</h3>
+                        <p class="text-sm text-slate-500">Access rental agreements and receipts</p>
+                        <div class="mt-4 text-blue-600 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                            View <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </div>
+                    </button>
+
+                    <button onclick="viewEmergency()" class="dashboard-card p-6 flex flex-col cursor-pointer group">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-green-200 transition">
+                            <i data-lucide="phone-call" class="w-6 h-6 text-green-600"></i>
+                        </div>
+                        <h3 class="font-semibold text-slate-900 mb-2">Emergency Contacts</h3>
+                        <p class="text-sm text-slate-500">Quick access to important contacts</p>
+                        <div class="mt-4 text-blue-600 text-sm font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                            Show <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Current Stay Information -->
+                <div class="dashboard-card p-8">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i data-lucide="home" class="w-6 h-6 text-blue-600"></i>
+                        </div>
+                        Your Current Stay
+                    </h3>
+                    
+                    <div class="grid md:grid-cols-4 gap-6">
+                        <div class="p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-100">
+                            <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">Property</p>
+                            <p class="text-lg font-bold text-slate-900" id="prop-name-detail">Loading...</p>
+                        </div>
+                        <div class="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-100">
+                            <p class="text-xs text-blue-600 font-semibold uppercase tracking-wider mb-2">Room Details</p>
+                            <p class="text-lg font-bold text-blue-900" id="room-info-detail">Loading...</p>
+                        </div>
+                        <div class="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-100">
+                            <p class="text-xs text-purple-600 font-semibold uppercase tracking-wider mb-2">Login ID</p>
+                            <p class="text-lg font-bold text-purple-900 font-mono" id="login-id-detail">--</p>
+                        </div>
+                        <div class="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-100">
+                            <p class="text-xs text-orange-600 font-semibold uppercase tracking-wider mb-2">Move-In Date</p>
+                            <p class="text-lg font-bold text-orange-900" id="move-in-date-detail">--</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Section -->
+                <div id="documents" class="dashboard-card p-8">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i data-lucide="folder-open" class="w-6 h-6 text-purple-600"></i>
+                        </div>
+                        Documents & Bills
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-purple-300 hover:bg-purple-50 transition cursor-pointer group">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition">
+                                    <i data-lucide="file-text" class="w-5 h-5 text-purple-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-slate-900">Rental Agreement</p>
+                                    <p class="text-xs text-slate-500 mt-1">Signed on Oct 01, 2025</p>
+                                </div>
+                            </div>
+                            <button class="text-slate-400 hover:text-purple-600 transition">
+                                <i data-lucide="download" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-green-300 hover:bg-green-50 transition cursor-pointer group">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition">
+                                    <i data-lucide="receipt" class="w-5 h-5 text-green-600"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-slate-900">Oct 2025 Rent Receipt</p>
+                                    <p class="text-xs text-slate-500 mt-1">Paid via UPI</p>
+                                </div>
+                            </div>
+                            <button class="text-slate-400 hover:text-green-600 transition">
+                                <i data-lucide="download" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Timeline -->
+                <div id="activity" class="dashboard-card p-8 pb-12">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i data-lucide="activity" class="w-6 h-6 text-blue-600"></i>
+                        </div>
+                        Activity Timeline
+                    </h3>
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="flex flex-col items-center">
+                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center border-4 border-white shadow-md">
+                                    <i data-lucide="check-circle" class="w-5 h-5 text-green-600"></i>
+                                </div>
+                                <div class="w-0.5 h-12 bg-slate-200 mt-2"></div>
+                            </div>
+                            <div class="pt-1">
+                                <p class="font-semibold text-slate-900">Rent Paid Successfully</p>
+                                <p class="text-sm text-slate-500 mt-1">Oct 2025 • ₹ 8,500</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </main>
         </div>
-
-        <!-- Mobile Sidebar Overlay -->
-        <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden backdrop-blur-sm" onclick="toggleMobileMenu()"></div>
-        <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-brand-dark z-40 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col overflow-y-auto">
-            <div class="h-20 flex items-center px-6 border-b border-slate-800">
-                <h1 class="text-xl font-bold text-white">RoomHy</h1>
-                <button onclick="toggleMobileMenu()" class="ml-auto text-slate-400"><i data-lucide="x"></i></button>
-            </div>
-            <nav class="flex-1 py-4 space-y-1 px-2">
-                 <!-- Mobile Navigation Items -->
-                <a href="tenantdashboard.html" class="sidebar-item active text-white">Dashboard</a>
-                
-                <div class="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider mt-2">Account</div>
-                <button onclick="openModal('payRentModal'); toggleMobileMenu()" class="sidebar-item text-slate-300">Make Payment</button>
-                <button onclick="manageRentReminder(); toggleMobileMenu()" class="sidebar-item text-slate-300">Manage Reminders</button>
-                
-                <div class="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider mt-2">Info</div>
-                <a href="tenantcomplaints.html" class="sidebar-item text-slate-300">View Requests</a>
-                <button onclick="scrollToTab('documents'); toggleMobileMenu()" class="sidebar-item text-slate-300">Documents</button>
-                
-                <div class="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider mt-2">Support</div>
-                <button onclick="viewEmergency(); toggleMobileMenu()" class="sidebar-item text-red-400">Emergency Contacts</button>
-                
-                <div class="mt-4 border-t border-slate-800 pt-4">
-                     <a href="tenantlogin.html" onclick="clearSession()" class="sidebar-item text-slate-400">Logout</a>
-                </div>
-            </nav>
-        </aside>
     </div>
 
     <!-- Payment Modal -->
@@ -381,13 +441,27 @@
                 <button onclick="initiateRazorpayPayment()" class="w-full p-4 border border-slate-200 rounded-xl flex items-center hover:border-brand-blue hover:bg-blue-50 transition group">
                     <i data-lucide="credit-card" class="w-5 h-5 mr-4 text-brand-blue"></i>
                     <div class="text-left">
-                        <span class="font-semibold text-slate-700">Pay via Razorpay</span>
+                        <span class="font-semibold text-slate-700">Pay Online</span>
                         <p class="text-xs text-slate-500">Cards • UPI • Wallets • Netbanking</p>
+                    </div>
+                </button>
+                <button onclick="requestCashPayment()" class="w-full p-4 border border-slate-200 rounded-xl flex items-center hover:border-amber-500 hover:bg-amber-50 transition group">
+                    <i data-lucide="hand-coins" class="w-5 h-5 mr-4 text-amber-600"></i>
+                    <div class="text-left">
+                        <span class="font-semibold text-slate-700">Pay by Cash</span>
+                        <p class="text-xs text-slate-500">Request owner collection and verify OTP</p>
                     </div>
                 </button>
                 <div class="p-3 bg-green-50 rounded-lg border border-green-200 text-sm">
                     <p class="font-semibold text-green-800">✓ Secure Payment</p>
                     <p class="text-xs text-green-700">Your payment is encrypted and secure</p>
+                </div>
+
+                <div id="cashPaymentPanel" class="hidden p-3 bg-amber-50 rounded-lg border border-amber-200 space-y-3">
+                    <p class="text-xs text-amber-800">Owner should click <strong>Received</strong> in owner payment panel. Then OTP will be sent to your Gmail.</p>
+                    <input id="cashOtpInput" type="text" maxlength="6" placeholder="Enter 6-digit OTP" class="w-full p-2 border border-amber-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none" />
+                    <button onclick="verifyCashPaymentOtp()" class="w-full bg-amber-600 text-white font-semibold py-2 rounded-lg hover:bg-amber-700 text-sm">Verify OTP and Mark Paid</button>
+                    <p id="cashPaymentStatus" class="text-xs text-amber-900"></p>
                 </div>
             </div>
         </div>
@@ -417,34 +491,44 @@
         </div>
     </div>
 
-    <script src="../website/js/auth-utils.js"></script>
     <script>
         lucide.createIcons();
 
-        // --- Auth & Data Loading ---
+        function getTenantUser() {
+            try {
+                return JSON.parse(localStorage.getItem('tenant_user') || localStorage.getItem('user') || 'null');
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function getUserId() {
+            const user = getTenantUser();
+            return user ? (user.tenantId || user.loginId || '') : '';
+        }
+
+        function showUserMenu() {
+            document.getElementById('userMenu').classList.add('show');
+        }
+
+        function hideUserMenu() {
+            document.getElementById('userMenu').classList.remove('show');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            const user = JSON.parse(localStorage.getItem('tenant_user') || localStorage.getItem('user') || 'null');
+            const user = getTenantUser();
             if (!user || user.role !== 'tenant') {
-                // Show Session Modal instead of redirecting immediately (fixes URL error in some envs)
                 document.getElementById('sessionModal').classList.remove('hidden');
                 document.getElementById('sessionModal').classList.add('flex');
                 return;
             }
 
-            // Update sidebar with user info
-            updateSidebarUserInfo({
-                userIdElementId: 'sidebar-user-id',
-                userNameElementId: 'sidebar-user-name',
-                avatarElementId: 'sidebar-avatar',
-                showUserId: true
-            });
-
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
             const tenantRecord = tenants.find(t => t.loginId === user.loginId);
 
-            // Populate UI
             document.getElementById('welcome-name').innerText = user.name.split(' ')[0];
             document.getElementById('headerAvatar').innerText = user.name.charAt(0).toUpperCase();
+            document.getElementById('userMenuName').innerText = user.name;
 
             if (tenantRecord) {
                 const rent = tenantRecord.agreedRent || 0;
@@ -459,34 +543,34 @@
                 document.getElementById('modal-amount').innerText = `₹ ${rent.toLocaleString()}`;
                 
                 document.getElementById('prop-name').innerText = propName;
+                document.getElementById('prop-name-detail').innerText = propName;
                 document.getElementById('room-info').innerText = roomInfo;
+                document.getElementById('room-info-detail').innerText = roomInfo;
                 document.getElementById('login-id').innerText = tenantRecord.loginId || getUserId();
-                document.getElementById('move-in-date').innerText = tenantRecord.moveInDate ? new Date(tenantRecord.moveInDate).toLocaleDateString('en-IN') : '-';
+                document.getElementById('login-id-detail').innerText = tenantRecord.loginId || getUserId();
+                document.getElementById('move-in-date-detail').innerText = tenantRecord.moveInDate ? new Date(tenantRecord.moveInDate).toLocaleDateString('en-IN') : '-';
             } else {
-                // If no tenant record found, still show user ID
                 document.getElementById('login-id').innerText = getUserId();
+                document.getElementById('login-id-detail').innerText = getUserId();
             }
         });
 
-        // --- Mobile Menu ---
-        function toggleMobileMenu() {
-            const sidebar = document.getElementById('mobile-sidebar');
-            const overlay = document.getElementById('mobile-overlay');
-            
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            }
-        }
-        document.getElementById('mobile-menu-open').addEventListener('click', toggleMobileMenu);
+        document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        });
 
-        // --- Modal Logic ---
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
             document.getElementById(id).classList.add('flex');
+            if (id === 'payRentModal') {
+                const panel = document.getElementById('cashPaymentPanel');
+                const status = document.getElementById('cashPaymentStatus');
+                const otpInput = document.getElementById('cashOtpInput');
+                if (panel) panel.classList.add('hidden');
+                if (status) status.textContent = '';
+                if (otpInput) otpInput.value = '';
+            }
         }
 
         function closeModal(id) {
@@ -494,7 +578,6 @@
             document.getElementById(id).classList.remove('flex');
         }
 
-        // --- Feature Functions ---
         function manageRentReminder() {
             const body = `
                 <p class="text-sm text-slate-600 mb-4">You receive automatic reminders 3 days before the 1st of every month.</p>
@@ -520,7 +603,7 @@
         }
 
         function viewEmergency() {
-             const body = `
+            const body = `
                 <div class="space-y-3">
                     <div class="p-3 bg-red-50 rounded-lg border border-red-100">
                         <p class="font-bold text-red-700 text-sm">Property Manager</p>
@@ -543,7 +626,6 @@
         }
 
         function scrollToTab(tabName) {
-            // Scroll to corresponding section
             const element = document.getElementById(tabName);
             if (element) {
                 element.scrollIntoView({ behavior: 'smooth' });
@@ -551,31 +633,39 @@
         }
         
         function clearSession() {
-            // Clear both tenant and generic user sessions for safety
             try {
                 localStorage.removeItem('tenant_user');
             } catch(e) {}
             try {
                 localStorage.removeItem('user');
             } catch(e) {}
-            // Redirect to tenant login to complete logout
             window.location.href = 'tenantlogin.html';
         }
 
-        // --- Razorpay Payment Integration ---
-        async function initiateRazorpayPayment() {
+        function getTenantPaymentContext() {
             const user = JSON.parse(localStorage.getItem('tenant_user') || localStorage.getItem('user') || 'null');
-            if (!user) return alert('User not found');
+            if (!user) return null;
 
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
             const tenantRecord = tenants.find(t => t.loginId === user.loginId);
-            if (!tenantRecord) return alert('Tenant record not found');
+            if (!tenantRecord) return null;
 
-            const rentAmount = tenantRecord.agreedRent || 0;
+            const ownerLoginId = tenantRecord.ownerLoginId || tenantRecord.ownerId || (tenantRecord.owner && (tenantRecord.owner.loginId || tenantRecord.owner.ownerId)) || '';
+            const rentAmount = Number(tenantRecord.agreedRent || 0);
+            const propertyName = typeof tenantRecord.property === 'string'
+                ? tenantRecord.property
+                : (tenantRecord.property && (tenantRecord.property.title || tenantRecord.property.name)) || '';
+
+            return { user, tenants, tenantRecord, ownerLoginId, rentAmount, propertyName };
+        }
+
+        async function initiateRazorpayPayment() {
+            const ctx = getTenantPaymentContext();
+            if (!ctx) return alert('Tenant data not found');
+            const { user, rentAmount } = ctx;
             if (rentAmount <= 0) return alert('Invalid rent amount');
 
             try {
-                // Create order on backend
                 const payload = {
                     amount: rentAmount,
                     tenantId: user.loginId,
@@ -583,7 +673,7 @@
                 };
                 console.log('📤 Sending payment order request:', payload);
                 
-                const orderResponse = await fetch('http://localhost:5001/api/rents/create-order', {
+                const orderResponse = await fetch(`${API_URL}/api/rents/create-order`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -633,8 +723,7 @@
 
         async function recordPaymentSuccess(response, rentAmount, user) {
             try {
-                // Send payment confirmation to backend
-                const paymentRes = await fetch('http://localhost:5001/api/rents/record-payment-by-tenant', {
+                const paymentRes = await fetch(`${API_URL}/api/rents/record-payment-by-tenant`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -650,7 +739,6 @@
                 console.log('💾 Payment response:', paymentData);
 
                 if (paymentRes.ok && paymentData.success) {
-                    // Update localStorage to mark payment as paid
                     const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
                     const tenantIdx = tenants.findIndex(t => t.loginId === user.loginId);
                     if (tenantIdx >= 0) {
@@ -664,13 +752,10 @@
                         localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
                     }
 
-                    // Trigger refresh in other tabs (like rentcollection.html)
                     localStorage.setItem('roomhy_payment_updated', Date.now());
                     localStorage.removeItem('roomhy_payment_updated');
 
-                    // Update UI to reflect paid status
                     updatePaymentStatusUI();
-
                     showPaymentSuccess(paymentData);
                 } else {
                     showPaymentSuccess({ error: paymentData.error || 'Payment recorded but update failed' });
@@ -681,24 +766,109 @@
             }
         }
 
+        async function requestCashPayment() {
+            const ctx = getTenantPaymentContext();
+            if (!ctx) return alert('Tenant data not found');
+            const { user, tenantRecord, ownerLoginId, rentAmount, propertyName } = ctx;
+            if (!ownerLoginId) return alert('Owner login ID missing for this tenant');
+            if (rentAmount <= 0) return alert('Invalid rent amount');
+
+            const statusEl = document.getElementById('cashPaymentStatus');
+            const panelEl = document.getElementById('cashPaymentPanel');
+            if (panelEl) panelEl.classList.remove('hidden');
+            if (statusEl) statusEl.textContent = 'Sending cash request to owner...';
+
+            try {
+                const res = await fetch(`${API_URL}/api/rents/cash/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tenantLoginId: user.loginId,
+                        ownerLoginId: ownerLoginId,
+                        amount: rentAmount,
+                        propertyName: propertyName || '',
+                        roomNumber: tenantRecord.roomNo || '',
+                        tenantName: user.name || '',
+                        tenantEmail: user.email || tenantRecord.email || '',
+                        tenantPhone: user.phone || tenantRecord.phone || ''
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to request cash payment');
+                }
+                if (statusEl) statusEl.textContent = 'Cash request sent. Ask owner to click Received. OTP will come to your Gmail.';
+            } catch (err) {
+                if (statusEl) statusEl.textContent = `Cash request failed: ${err.message}`;
+            }
+        }
+
+        async function verifyCashPaymentOtp() {
+            const ctx = getTenantPaymentContext();
+            if (!ctx) return alert('Tenant data not found');
+            const { user, tenants } = ctx;
+
+            const otpInput = document.getElementById('cashOtpInput');
+            const statusEl = document.getElementById('cashPaymentStatus');
+            const otp = (otpInput && otpInput.value || '').trim();
+            if (!otp) return alert('Enter OTP');
+
+            if (statusEl) statusEl.textContent = 'Verifying OTP...';
+
+            try {
+                const res = await fetch(`${API_URL}/api/rents/cash/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tenantLoginId: user.loginId,
+                        otp
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'OTP verification failed');
+                }
+
+                const idx = tenants.findIndex(t => t.loginId === user.loginId);
+                if (idx >= 0) {
+                    tenants[idx].paymentStatus = 'paid';
+                    tenants[idx].rentInfo = {
+                        ...(tenants[idx].rentInfo || {}),
+                        paymentStatus: 'paid',
+                        paidAmount: ctx.rentAmount,
+                        totalDue: ctx.rentAmount,
+                        paymentMethod: 'cash'
+                    };
+                    localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
+                }
+
+                localStorage.setItem('roomhy_payment_updated', Date.now());
+                localStorage.removeItem('roomhy_payment_updated');
+
+                updatePaymentStatusUI();
+                showPaymentSuccess({ message: 'Cash payment verified and marked as paid.' });
+            } catch (err) {
+                if (statusEl) statusEl.textContent = `OTP verification failed: ${err.message}`;
+            }
+        }
+
         function updatePaymentStatusUI() {
-            // Update the rent banner to show paid status
             const rentBanner = document.querySelector('.rent-banner');
-            const statusBadge = rentBanner.querySelector('.bg-red-500');
+            const statusBadge = rentBanner.querySelector('#paymentStatusBadge');
             if (statusBadge) {
-                statusBadge.className = 'bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-sm';
-                statusBadge.innerHTML = '<i data-lucide="check-circle" class="w-3 h-3 mr-1.5"></i> Paid';
+                statusBadge.className = 'px-4 py-2 bg-green-500 text-white rounded-full text-sm font-bold flex items-center gap-1';
+                statusBadge.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Paid';
             }
 
-            // Update rent amount display if needed
             const rentAmountElement = document.getElementById('rent-amount');
             if (rentAmountElement) {
-                rentAmountElement.textContent = '₹ 0'; // Show 0 as paid
+                rentAmountElement.textContent = '₹ 0';
             }
         }
 
         function showPaymentSuccess(data = {}) {
             closeModal('payRentModal');
+            const successText = data.message || 'Your rent payment has been recorded and confirmed.';
             
             const body = `
                 <div class="text-center">
@@ -706,7 +876,7 @@
                         <i data-lucide="check-circle" class="w-8 h-8 text-green-600"></i>
                     </div>
                     <h4 class="text-lg font-bold text-slate-900 mb-2">Payment Successful!</h4>
-                    <p class="text-sm text-slate-600 mb-4">Your rent payment has been recorded and confirmed.</p>
+                    <p class="text-sm text-slate-600 mb-4">${successText}</p>
                     <div class="p-3 bg-green-50 rounded-lg border border-green-200 text-sm text-left">
                         <p class="text-green-900"><strong>✓ Payment recorded</strong></p>
                         <p class="text-green-800 text-xs mt-1">Check your email for receipt</p>

@@ -10,7 +10,7 @@ class NotificationManager {
             ? 'http://localhost:5001'
             : 'https://roomhy-backend-wqwo.onrender.com';
         
-        this.user = JSON.parse(localStorage.getItem('user') || 'null');
+        this.user = this.resolveCurrentUser();
         this.notificationSound = this.initializeSound();
         this.pollingInterval = null;
         this.pollingFrequency = 5000; // 5 seconds
@@ -19,6 +19,7 @@ class NotificationManager {
             chatMessages: 0,
             complaints: 0
         };
+        this.seenNotificationIds = new Set();
         this.lastCheckedTimestamps = {
             bookingRequests: this.getStoredTimestamp('lastBookingCheck') || new Date(),
             chatMessages: this.getStoredTimestamp('lastChatCheck') || new Date(),
@@ -32,6 +33,23 @@ class NotificationManager {
         
         // Add page interaction listener to enable audio
         document.addEventListener('click', () => this.resumeAudioContext(), { once: true });
+    }
+
+    resolveCurrentUser() {
+        const candidates = ['owner_session', 'owner_user', 'user'];
+        for (const key of candidates) {
+            try {
+                const raw = localStorage.getItem(key) || sessionStorage.getItem(key);
+                if (!raw) continue;
+                const parsed = JSON.parse(raw);
+                if (parsed && (parsed.loginId || parsed.ownerId)) {
+                    return parsed;
+                }
+            } catch (_) {
+                // Ignore malformed storage entries
+            }
+        }
+        return null;
     }
     
     /**
@@ -316,140 +334,67 @@ class NotificationManager {
      * Check all notification types
      */
     async checkNotifications() {
+        this.user = this.resolveCurrentUser();
         if (!this.user) return;
         
         try {
-            await Promise.all([
-                this.checkBookingRequests(),
-                this.checkChatMessages(),
-                this.checkComplaints()
-            ]);
+            await this.checkOwnerPanelNotifications();
         } catch (e) {
             console.error('Error checking notifications:', e);
         }
     }
 
     /**
-     * Check for new booking requests
+     * Poll Notification collection for owner panel events
      */
-    async checkBookingRequests() {
-        try {
-            const response = await fetch(`${this.API_URL}/api/bookings?ownerId=${this.user.loginId}&new=true`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-            
-            // Skip if endpoint doesn't exist (404)
-            if (!response.ok) {
-                if (response.status === 404) {
-                    console.log('ℹ️ Booking notifications endpoint not available');
-                }
-                return;
-            }
-            
-            const data = await response.json();
-            const newBookings = Array.isArray(data) ? data : data.bookings || [];
-                
-                if (newBookings.length > 0) {
-                    const count = newBookings.length;
-                    this.unreadCounts.bookingRequests = count;
-                    
-                    // Only notify if there's new data since last check
-                    if (new Date(newBookings[0].createdAt) > this.lastCheckedTimestamps.bookingRequests) {
-                        this.playSound();
-                        this.sendEmailNotification('Booking Request', 
-                            `You have ${count} new booking request(s)`, 
-                            newBookings[0]);
-                        this.triggerNotification('bookingRequests', {
-                            count: count,
-                            data: newBookings[0]
-                        });
-                        this.updateStoredTimestamp('lastBookingCheck');
-                    }
-                }
-        } catch (e) {
-            console.log('Error checking booking requests:', e.message);
-        }
-    }
+    async checkOwnerPanelNotifications() {
+        const ownerLoginId = (this.user?.loginId || this.user?.ownerId || '').toString().toUpperCase();
+        if (!ownerLoginId) return;
 
-    /**
-     * Check for new chat messages
-     */
-    async checkChatMessages() {
         try {
-            const response = await fetch(`${this.API_URL}/api/messages?receiverId=${this.user.loginId}&unread=true`, {
+            const response = await fetch(`${this.API_URL}/api/notifications?toLoginId=${encodeURIComponent(ownerLoginId)}&unread=true`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
-            // Skip if endpoint doesn't exist (404)
-            if (!response.ok) {
-                if (response.status === 404) {
-                    console.log('ℹ️ Chat messages endpoint not available');
-                }
-                return;
-            }
-            
-            const data = await response.json();
-            const unreadMessages = Array.isArray(data) ? data : data.messages || [];
-                
-                if (unreadMessages.length > 0) {
-                    const count = unreadMessages.length;
-                    this.unreadCounts.chatMessages = count;
-                    
-                    if (new Date(unreadMessages[0].timestamp) > this.lastCheckedTimestamps.chatMessages) {
-                        this.playSound();
-                        this.sendEmailNotification('New Chat Message', 
-                            `You have ${count} new message(s)`, 
-                            unreadMessages[0]);
-                        this.triggerNotification('chatMessages', {
-                            count: count,
-                            data: unreadMessages[0]
-                        });
-                        this.updateStoredTimestamp('lastChatCheck');
-                    }
-                }
-        } catch (e) {
-            console.log('Error checking chat messages:', e.message);
-        }
-    }
+            if (!response.ok) return;
 
-    /**
-     * Check for new complaints
-     */
-    async checkComplaints() {
-        try {
-            const response = await fetch(`${this.API_URL}/api/complaints?ownerId=${this.user.loginId}&new=true`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+            const notifications = await response.json();
+            if (!Array.isArray(notifications)) return;
+
+            let bookingCount = 0;
+            let chatCount = 0;
+            let complaintCount = 0;
+
+            notifications.forEach((note) => {
+                if (!note || !note._id) return;
+
+                if (note.type === 'owner_new_booking_request') bookingCount += 1;
+                if (note.type === 'owner_new_chat') chatCount += 1;
+                if (note.type === 'complaint' || note.type === 'owner_new_complaint') complaintCount += 1;
+
+                if (this.seenNotificationIds.has(note._id)) return;
+                this.seenNotificationIds.add(note._id);
+
+                if (note.type === 'owner_new_booking_request') {
+                    this.playSound();
+                    this.triggerNotification('owner_new_booking_request', note.meta || {});
+                    this.triggerNotification('bookingRequests', note.meta || {});
+                } else if (note.type === 'owner_new_chat') {
+                    this.playSound();
+                    this.triggerNotification('owner_new_chat', note.meta || {});
+                    this.triggerNotification('chatMessages', note.meta || {});
+                } else if (note.type === 'complaint' || note.type === 'owner_new_complaint') {
+                    this.playSound();
+                    this.triggerNotification('complaints', note.meta || {});
                 }
             });
-            
-            if (response.ok) {
-                const data = await response.json();
-                const newComplaints = Array.isArray(data) ? data : data.complaints || [];
-                
-                if (newComplaints.length > 0) {
-                    const count = newComplaints.length;
-                    this.unreadCounts.complaints = count;
-                    
-                    if (new Date(newComplaints[0].createdAt) > this.lastCheckedTimestamps.complaints) {
-                        this.playSound();
-                        this.sendEmailNotification('New Complaint', 
-                            `You have ${count} new complaint(s)`, 
-                            newComplaints[0]);
-                        this.triggerNotification('complaints', {
-                            count: count,
-                            data: newComplaints[0]
-                        });
-                        this.updateStoredTimestamp('lastComplaintCheck');
-                    }
-                }
-            }
+
+            this.unreadCounts.bookingRequests = bookingCount;
+            this.unreadCounts.chatMessages = chatCount;
+            this.unreadCounts.complaints = complaintCount;
         } catch (e) {
-            console.log('Error checking complaints:', e.message);
+            console.log('Error checking owner notifications:', e.message);
         }
     }
 
@@ -466,6 +411,7 @@ class NotificationManager {
                 },
                 body: JSON.stringify({
                     ownerEmail: this.user.email || localStorage.getItem('ownerEmail'),
+                    ownerLoginId: this.user.loginId || this.user.ownerId || '',
                     subject: `🔔 RoomHy Alert: ${subject}`,
                     message: message,
                     data: data,
@@ -549,3 +495,4 @@ class NotificationManager {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = NotificationManager;
 }
+

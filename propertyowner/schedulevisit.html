@@ -10,6 +10,8 @@
     <style>
         body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-slate-800">
     <div class="min-h-screen flex items-center justify-center p-4">
@@ -128,7 +130,7 @@
 
         // Load booking details
         async function loadBookingDetails(bookingId) {
-            const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
             try {
                 const response = await fetch(`${API_URL}/api/booking/requests/${bookingId}`);
                 const data = await response.json();
@@ -191,7 +193,7 @@
             }
 
             try {
-                const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+                const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
                 const response = await fetch(`${API_URL}/api/booking/requests/${currentBookingId}/schedule-visit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -215,3 +217,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+

@@ -3,8 +3,10 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const http = require('http');
+const { Server } = require('socket.io');
 const path = require('path');
 const { startCronJobs } = require('./services/cronJobs');
+const initChatSocket = require('./socket/chatSocket');
 
 console.log('🚀 Starting server...');
 
@@ -12,6 +14,14 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+});
+
+initChatSocket(io);
 
 // Middleware (JSON parsing & Security)
 app.use(express.json({ limit: '500mb' }));
@@ -115,6 +125,8 @@ try {
     console.log('  ✓ chatRoutes');
     app.use('/api/email', require('./routes/emailRoutes'));
     console.log('  ✓ emailRoutes');
+    app.use('/api/checkin', require('./routes/checkinRoutes'));
+    console.log('  ✓ checkinRoutes');
     app.use('/api/rents', require('./routes/rentRoutes'));
     console.log('  ✓ rentRoutes');
     app.use('/api', require('./routes/uploadRoutes'));

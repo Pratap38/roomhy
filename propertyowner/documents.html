@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - Admin Legal Documents & Rules</title>
     <script>
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -79,6 +79,8 @@
             transition: transform 0.3s ease;
         }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-gray-900">
     <div class="flex h-screen bg-gray-100">
@@ -101,16 +103,13 @@
                  <a href="tenantrec.html" class="sidebar-link flex items-center px-6 py-3">
                     <i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records
                 </a>
-                <a href="enquiry.html" class="sidebar-link flex items-center px-6 py-3">
                     <i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry
                 </a>
                  <a href="bookings.html" class="sidebar-link flex items-center px-6 py-3">
                     <i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Bookings
                 </a>
-                 <a href="documents.html" class="sidebar-link active flex items-center px-6 py-3 text-white">
                     <i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Document & Rules 
                 </a>
-                <a href="review.html" class="sidebar-link flex items-center px-6 py-3">
                     <i data-lucide="star" class="w-5 h-5 mr-3"></i> Reviews
                 </a>
                  <a href="payment.html" class="sidebar-link flex items-center px-6 py-3">
@@ -120,7 +119,6 @@
                     <i data-lucide="message-square" class="w-5 h-5 mr-3"></i> Chats
                 </a>
                 <!-- Added Complaints & Location -->
-                <a href="complaints.html" class="sidebar-link flex items-center px-6 py-3">
                     <i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints
                 </a>
                  <a href="location.html" class="sidebar-link flex items-center px-6 py-3">
@@ -187,11 +185,8 @@
                         <a href="tenants.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Tenants</a>
                         <a href="tenantrec.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
                         <a href="bookings.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Bookings</a>
-                        <a href="documents.html" class="sidebar-link active flex items-center px-6 py-3 text-white"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents & Rules</a>
-                        <a href="review.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="star" class="w-5 h-5 mr-3"></i> Reviews</a>
                         <a href="payment.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                         <a href="#" class="sidebar-link disabled flex items-center px-6 py-3" onclick="event.preventDefault();"><i data-lucide="message-square" class="w-5 h-5 mr-3"></i> Chats</a>
-                        <a href="complaints.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                         <a href="location.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> RoomHy Location</a>
                         <a href="settings.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
                     </nav>
@@ -502,3 +497,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+

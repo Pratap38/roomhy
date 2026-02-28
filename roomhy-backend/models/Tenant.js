@@ -5,6 +5,8 @@ const TenantSchema = new mongoose.Schema({
     name: { type: String, required: true },
     phone: { type: String, required: true },
     email: { type: String },
+    dob: { type: String },
+    guardianNumber: { type: String },
     
     // Reference to assigned property & room
     property: { type: mongoose.Schema.Types.ObjectId, ref: 'Property', required: true },
@@ -17,8 +19,10 @@ const TenantSchema = new mongoose.Schema({
     agreedRent: { type: Number },
     
     // Login Credentials (generated during assignment)
-    loginId: { type: String, unique: true, sparse: true }, // e.g., TNT-KO-001
+    loginId: { type: String, unique: true, sparse: true }, // e.g., ROOMHYTNT4821
     tempPassword: { type: String }, // Stored temporarily; user will set own password
+    ownerLoginId: { type: String },
+    propertyTitle: { type: String },
     
     // User Reference
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -26,7 +30,13 @@ const TenantSchema = new mongoose.Schema({
     // KYC Information
     kyc: {
         aadhar: { type: String },
+        aadhaarNumber: { type: String },
+        aadhaarLinkedPhone: { type: String },
         aadharFile: { type: String }, // Data URL or file path
+        aadhaarFront: { type: mongoose.Schema.Types.Mixed },
+        aadhaarBack: { type: mongoose.Schema.Types.Mixed },
+        otpVerified: { type: Boolean, default: false },
+        otpVerifiedAt: { type: Date },
         idProof: { type: String },
         idProofFile: { type: String },
         addressProof: { type: String },
@@ -37,6 +47,35 @@ const TenantSchema = new mongoose.Schema({
     // Rental Agreement
     agreementSigned: { type: Boolean, default: false },
     agreementSignedAt: { type: Date },
+    agreementESignName: { type: String },
+
+    // Tenant Digital Check-In (owner flow parity)
+    digitalCheckin: {
+        profile: {
+            name: { type: String },
+            dob: { type: String },
+            guardianNumber: { type: String },
+            moveInDate: { type: String },
+            email: { type: String },
+            propertyName: { type: String },
+            roomNo: { type: String },
+            agreedRent: { type: Number },
+            submittedAt: { type: Date }
+        },
+        kyc: {
+            aadhaarLinkedPhone: { type: String },
+            aadhaarNumber: { type: String },
+            aadhaarFront: { type: mongoose.Schema.Types.Mixed },
+            aadhaarBack: { type: mongoose.Schema.Types.Mixed },
+            otpVerified: { type: Boolean, default: false },
+            otpVerifiedAt: { type: Date }
+        },
+        agreement: {
+            eSignName: { type: String },
+            acceptedAt: { type: Date }
+        },
+        submittedAt: { type: Date }
+    },
     
     // Status Tracking
     status: { 

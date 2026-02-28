@@ -53,6 +53,9 @@ const bookingRequestSchema = new mongoose.Schema({
         required: true 
     },
     bid_amount: { type: Number, default: 0 },
+    bid_min: { type: Number, default: null },
+    bid_max: { type: Number, default: null },
+    filter_criteria: { type: mongoose.Schema.Types.Mixed, default: {} },
     message: { type: String },
 
     status: { 

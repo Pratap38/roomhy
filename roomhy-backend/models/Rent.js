@@ -36,16 +36,33 @@ const rentSchema = new mongoose.Schema({
     paymentDate: Date,
     paymentMethod: { type: String, enum: ['cash', 'razorpay', 'bank_transfer', 'other'] },
     razorpayPaymentId: String,
+
+    // Cash collection workflow
+    cashRequestStatus: {
+        type: String,
+        enum: ['none', 'requested', 'received', 'otp_sent', 'paid'],
+        default: 'none'
+    },
+    cashRequestedAt: Date,
+    cashReceivedAt: Date,
+    cashOtpCode: String,
+    cashOtpExpiry: Date,
+    cashOtpSentAt: Date,
     
     // Reminder Tracking
     reminders: [
         {
             sentAt: Date,
-            type: { type: String, enum: ['initial', 'delayed_1', 'delayed_2', 'delayed_3'] },
+            type: { type: String, enum: ['initial', 'delayed_1', 'delayed_2', 'delayed_3', 'auto_daily'] },
             status: { type: String, enum: ['sent', 'failed'], default: 'sent' },
             message: String
         }
     ],
+
+    // Auto reminder control (enabled manually from rent collection panel)
+    autoReminderEnabled: { type: Boolean, default: false },
+    autoReminderStartedAt: Date,
+    autoReminderLastSentAt: Date,
     
     // Timestamps
     createdAt: { type: Date, default: Date.now },

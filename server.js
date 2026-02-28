@@ -14,7 +14,8 @@ const io = new Server(server, {
 });
 
 // Middleware (JSON parsing & Security)
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
 // Serve Static Files (HTML, CSS, JS, Images)
@@ -47,7 +48,7 @@ app.use('/api/auth', require('./roomhy-backend/routes/authRoutes'));
 app.use('/api/properties', require('./roomhy-backend/routes/propertyRoutes'));
 app.use('/api/admin', require('./roomhy-backend/routes/adminRoutes'));
 app.use('/api/tenants', require('./roomhy-backend/routes/tenantRoutes'));
-app.use('/api/visits', require('./roomhy-backend/routes/visitRoutes'));
+app.use('/api/visits', require('./roomhy-backend/routes/visitDataRoutes'));
 app.use('/api/rooms', require('./roomhy-backend/routes/roomRoutes'));
 app.use('/api/notifications', require('./roomhy-backend/routes/notificationRoutes'));
 app.use('/api/owners', require('./roomhy-backend/routes/ownerRoutes'));
@@ -62,6 +63,7 @@ app.use('/api/cities', require('./roomhy-backend/routes/citiesRoutes'));
 app.use('/api/approved-properties', require('./roomhy-backend/routes/approvedPropertyRoutes'));
 app.use('/api/approvals', require('./roomhy-backend/routes/approvedPropertyRoutes'));
 app.use('/api', require('./roomhy-backend/routes/uploadRoutes'));
+app.use('/api/email', require('./roomhy-backend/routes/emailRoutes'));
 
 // NEW: Website Enquiry Routes (for property enquiries from website form)
 app.use('/api/website-enquiry', require('./roomhy-backend/routes/websiteEnquiryRoutes'));
@@ -74,6 +76,23 @@ app.use('/api/data', require('./roomhy-backend/routes/dataSync'));
 
 // Chat API Routes
 app.use('/api/chat', require('./roomhy-backend/routes/chatRoutes'));
+
+// Debug checkin route
+app.use((req, res, next) => {
+    if (req.path.includes('/checkin')) {
+        console.log(`📋 CHECKIN REQUEST: ${req.method} ${req.path}`);
+    }
+    next();
+});
+
+try {
+    const checkinRoutes = require('./roomhy-backend/routes/checkinRoutes');
+    console.log('✅ checkinRoutes loaded successfully');
+    app.use('/api/checkin', checkinRoutes);
+} catch (err) {
+    console.error('❌ Error loading checkinRoutes:', err.message);
+    console.error(err.stack);
+}
 
 // Test endpoint: seed a test owner for development
 app.post('/api/test/seed-owner', async (req, res) => {
@@ -278,4 +297,3 @@ app.use((req, res, next) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => console.log(`\n✅ API Server running on http://localhost:${PORT}\n`));
-

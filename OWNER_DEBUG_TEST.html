@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Name Display Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .section h2 { border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .debug-item { background: #f9f9f9; padding: 10px; margin: 10px 0; border-left: 3px solid #007bff; }
+        .debug-key { color: #666; font-weight: bold; }
+        .debug-value { color: #000; word-break: break-all; }
+        .success { color: #28a745; }
+        .warning { color: #ffc107; }
+        .error { color: #dc3545; }
+        button { 
+            background: #007bff; 
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover { background: #0056b3; }
+        .button-clear { background: #dc3545; }
+        .button-clear:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Owner Name Display Debug Test</h1>
+        <p>This page helps debug the owner name display issue by showing what data is available.</p>
+        
+        <div class="section">
+            <h2>Storage Data</h2>
+            <div id="storage-debug"></div>
+            <div style="margin-top: 20px;">
+                <button onclick="refreshStorage()">Refresh Storage Data</button>
+                <button class="button-clear" onclick="clearAllStorage()">Clear All Storage</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Context Sync Status</h2>
+            <div id="context-sync"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Window Objects</h2>
+            <div id="window-objects"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Test Login Data</h2>
+            <div id="test-login"></div>
+            <div style="margin-top: 20px;">
+                <button onclick="seedTestData()">Create Test Data</button>
+                <button onclick="generateTestCredentials()">Generate Test Credentials</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Console Output</h2>
+            <div id="console-output" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 4px; font-family: monospace; max-height: 400px; overflow-y: auto;"></div>
+            <button onclick="clearConsole()">Clear Console</button>
+        </div>
+    </div>
+
+    <script>
+        // Capture console logs
+        const consoleLogs = [];
+        const originalLog = console.log;
+        console.log = function(...args) {
+            consoleLogs.push(args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' '));
+            originalLog.apply(console, args);
+            updateConsoleOutput();
+        };
+
+        function updateConsoleOutput() {
+            const output = document.getElementById('console-output');
+            output.innerHTML = consoleLogs.slice(-50).map(log => 
+                `<div>${escapeHtml(log)}</div>`
+            ).join('');
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function clearConsole() {
+            consoleLogs.length = 0;
+            document.getElementById('console-output').innerHTML = '';
+        }
+
+        function refreshStorage() {
+            const debug = document.getElementById('storage-debug');
+            debug.innerHTML = '';
+
+            // Check localStorage
+            const lStorageObject = (key) => {
+                const item = localStorage.getItem(key);
+                return item ? { raw: item, parsed: tryParse(item) } : null;
+            };
+
+            // Check sessionStorage
+            const sStorageObject = (key) => {
+                const item = sessionStorage.getItem(key);
+                return item ? { raw: item, parsed: tryParse(item) } : null;
+            };
+
+            const tryParse = (str) => {
+                try { return JSON.parse(str); } catch (e) { return null; }
+            };
+
+            const items = [
+                { name: 'localStorage.user', getter: () => lStorageObject('user') },
+                { name: 'localStorage.owner_user', getter: () => lStorageObject('owner_user') },
+                { name: 'localStorage.ownerUser', getter: () => lStorageObject('ownerUser') },
+                { name: 'localStorage.owner_session', getter: () => lStorageObject('owner_session') },
+                { name: 'localStorage.roomhy_visits (first visit)', getter: () => {
+                    const visits = tryParse(localStorage.getItem('roomhy_visits'));
+                    return visits && visits[0] ? { name: visits[0].name, ownerName: visits[0].ownerName, propertyInfo: visits[0].propertyInfo } : null;
+                }},
+                { name: 'localStorage.roomhy_owners_db (all keys)', getter: () => {
+                    const db = tryParse(localStorage.getItem('roomhy_owners_db'));
+                    return db ? Object.keys(db) : null;
+                }},
+                { name: 'sessionStorage.user', getter: () => sStorageObject('user') },
+                { name: 'sessionStorage.owner_session', getter: () => sStorageObject('owner_session') }
+            ];
+
+            items.forEach(item => {
+                const value = item.getter();
+                const html = document.createElement('div');
+                html.className = 'debug-item';
+                const status = value ? (value.parsed?.name || value.name || 'stored') : 'empty';
+                const statusClass = value ? 'success' : 'warning';
+                html.innerHTML = `
+                    <span class="debug-key">${item.name}</span>: 
+                    <span class="debug-value ${statusClass}">${value ? JSON.stringify(value).substring(0, 200) : '(empty)'}</span>
+                `;
+                debug.appendChild(html);
+            });
+        }
+
+        function refreshContextSync() {
+            const debug = document.getElementById('context-sync');
+            debug.innerHTML = '';
+
+            const items = [
+                { name: 'window.__ownerContext exists', value: window.__ownerContext ? 'YES' : 'NO', status: window.__ownerContext ? 'success' : 'warning' },
+                { name: 'window.__ownerContext.name', value: window.__ownerContext?.name || 'undefined', status: window.__ownerContext?.name ? 'success' : 'warning' },
+                { name: 'window.getCurrentOwner exists', value: typeof window.getCurrentOwner === 'function' ? 'YES' : 'NO', status: typeof window.getCurrentOwner === 'function' ? 'success' : 'warning' },
+                { name: 'window.getCurrentOwner() result', value: window.getCurrentOwner ? JSON.stringify(window.getCurrentOwner()).substring(0, 100) : 'N/A', status: window.getCurrentOwner?.() ? 'success' : 'warning' }
+            ];
+
+            items.forEach(item => {
+                const html = document.createElement('div');
+                html.className = 'debug-item';
+                html.innerHTML = `
+                    <span class="debug-key">${item.name}</span>: 
+                    <span class="debug-value ${item.status}">${escapeHtml(String(item.value))}</span>
+                `;
+                debug.appendChild(html);
+            });
+        }
+
+        function refreshWindowObjects() {
+            const debug = document.getElementById('window-objects');
+            debug.innerHTML = '';
+
+            const items = [
+                { name: 'document readyState', value: document.readyState },
+                { name: 'ownerContextSync.js loaded', value: 'Check for console logs starting with [ownerContextSync]' },
+                { name: '#headerName element', value: document.getElementById('headerName') ? 'Found' : 'Not found' },
+                { name: '#headerOwnerId element', value: document.getElementById('headerOwnerId') ? 'Found' : 'Not found' },
+                { name: 'window location.href', value: window.location.href }
+            ];
+
+            items.forEach(item => {
+                const html = document.createElement('div');
+                html.className = 'debug-item';
+                html.innerHTML = `
+                    <span class="debug-key">${item.name}</span>: 
+                    <span class="debug-value">${escapeHtml(String(item.value))}</span>
+                `;
+                debug.appendChild(html);
+            });
+        }
+
+        function seedTestData() {
+            // Create a test visit with proper owner name
+            const testVisit = {
+                id: 'test-' + Date.now(),
+                name: 'Test Property',
+                status: 'approved',
+                submittedAt: new Date().toISOString(),
+                generatedCredentials: {
+                    loginId: 'TESTOWNER001',
+                    tempPassword: 'temp123'
+                },
+                ownerName: 'Test Owner Name',
+                propertyInfo: {
+                    name: 'Test Property Location',
+                    ownerName: 'Test Owner Name',
+                    contactPhone: '9999999999',
+                    contactName: 'Test Contact',
+                    address: '123 Test Street',
+                    area: 'Test Area',
+                    locationCode: 'TA-001'
+                },
+                contactPerson: 'Test Contact',
+                email: 'testowner@roomhy.com',
+                phone: '9999999999'
+            };
+
+            const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
+            visits.push(testVisit);
+            localStorage.setItem('roomhy_visits', JSON.stringify(visits));
+
+            console.log('✓ Test visit created:', testVisit);
+            alert('Test visit created!\nLogin ID: TESTOWNER001\nPassword: temp123');
+            refreshStorage();
+        }
+
+        function generateTestCredentials() {
+            const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
+            if (visits.length === 0) {
+                alert('No visits found. Click "Create Test Data" first.');
+                return;
+            }
+            const latest = visits.filter(v => v.generatedCredentials).sort((a, b) => 
+                new Date(b.submittedAt) - new Date(a.submittedAt)
+            )[0];
+            
+            if (!latest) {
+                alert('No approved visits found.');
+                return;
+            }
+
+            const html = document.getElementById('test-login');
+            html.innerHTML = `
+                <div class="debug-item success">
+                    <div class="debug-key">Login ID:</div>
+                    <div class="debug-value">${latest.generatedCredentials.loginId}</div>
+                    <div class="debug-key" style="margin-top: 10px;">Password:</div>
+                    <div class="debug-value">${latest.generatedCredentials.tempPassword}</div>
+                    <div class="debug-key" style="margin-top: 10px;">Owner Name:</div>
+                    <div class="debug-value">${latest.ownerName || latest.propertyInfo?.ownerName}</div>
+                </div>
+            `;
+        }
+
+        function clearAllStorage() {
+            if (confirm('Clear ALL localStorage and sessionStorage? This cannot be undone.')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('Storage cleared!');
+                refreshStorage();
+            }
+        }
+
+        // Refresh on load and periodically
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshStorage();
+            refreshContextSync();
+            refreshWindowObjects();
+            generateTestCredentials();
+            setInterval(() => {
+                refreshStorage();
+                refreshContextSync();
+            }, 1000);
+        });
+
+        // Also refresh manually
+        refreshStorage();
+        refreshContextSync();
+        refreshWindowObjects();
+    </script>
+</body>
+</html>

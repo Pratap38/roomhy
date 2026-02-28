@@ -1,27 +1,22 @@
 const Tenant = require('../models/Tenant');
 
 /**
- * Generate a unique tenant loginId based on locationCode prefix.
- * Format: TNT-<LOC>-NNN e.g., TNT-KO-001, TNT-CH-012
+ * Generate a unique tenant loginId.
+ * Format: ROOMHYTNT#### (e.g., ROOMHYTNT4821)
  */
-async function generateTenantId(locationCode) {
-    if (!locationCode) throw new Error('locationCode required');
+async function generateTenantId() {
+    const prefix = 'ROOMHYTNT';
+    let attempts = 0;
 
-    // Find existing tenants whose loginId starts with TNT-<LOC>
-    const prefix = `TNT-${locationCode.toUpperCase()}-`;
-    const last = await Tenant.find({ loginId: { $regex: `^${prefix}` } })
-        .sort({ loginId: -1 })
-        .limit(1)
-        .lean();
-
-    let nextNum = 1;
-    if (last && last.length > 0 && last[0].loginId) {
-        const match = last[0].loginId.match(/(\d{3,})$/);
-        if (match) nextNum = parseInt(match[1], 10) + 1;
+    while (attempts < 30) {
+        const suffix = String(Math.floor(1000 + Math.random() * 9000));
+        const candidate = `${prefix}${suffix}`;
+        const exists = await Tenant.exists({ loginId: candidate });
+        if (!exists) return candidate;
+        attempts += 1;
     }
 
-    const suffix = String(nextNum).padStart(3, '0');
-    return `${prefix}${suffix}`.toUpperCase();
+    throw new Error('Unable to generate unique tenant login ID');
 }
 
 module.exports = generateTenantId;

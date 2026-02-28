@@ -1,6 +1,9 @@
 <script>
     // API base URL
-    const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+    const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:5001'
+        : 'https://roomhy-backend-wqwo.onrender.com';
+    const API_BASE = API_URL;
 </script>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,6 +27,8 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-slate-800">
     <script>
@@ -49,22 +54,52 @@
             }
         }
 
-        // Role Validation
-        const ownerSessionStr = sessionStorage.getItem('owner_session');
-        const userStr = localStorage.getItem('user');
-        
-        let currentUser = null;
-        if (ownerSessionStr) {
-            try { currentUser = JSON.parse(ownerSessionStr); } catch(e) {}
-        } else if (userStr) {
-            try { currentUser = JSON.parse(userStr); } catch(e) {}
+        function safeReadJson(raw) {
+            if (!raw) return null;
+            try { return JSON.parse(raw); } catch (e) { return null; }
         }
+
+        function applyOwnerHeader(owner) {
+            if (!owner) return;
+            const displayName = owner.name || owner.ownerName || 'Owner';
+            const headerNameEl = document.getElementById('headerName');
+            const welcomeNameEl = document.getElementById('welcomeName');
+            const headerAvatarEl = document.getElementById('headerAvatar');
+            const headerAccountEl = document.getElementById('headerAccountId');
+            if (headerNameEl) headerNameEl.innerText = displayName;
+            if (welcomeNameEl) welcomeNameEl.innerText = displayName;
+            if (headerAvatarEl) headerAvatarEl.innerText = displayName.charAt(0).toUpperCase();
+            if (headerAccountEl && owner.loginId) headerAccountEl.innerText = `Account: ${owner.loginId}`;
+        }
+
+        window.addEventListener('owner-session-updated', (ev) => {
+            const owner = ev && ev.detail ? ev.detail : null;
+            applyOwnerHeader(owner);
+        });
+
+        // Role Validation (owner-first keys + URL fallback)
+        const ownerSessionStr = (() => { try { return sessionStorage.getItem('owner_session'); } catch(e) { return null; } })();
+        const ownerUserStr = (() => { try { return localStorage.getItem('owner_user'); } catch(e) { return null; } })();
+        const legacyUserStr = (() => { try { return localStorage.getItem('user'); } catch(e) { return null; } })();
+        const urlLoginId = (new URLSearchParams(window.location.search)).get('loginId') || '';
+        
+        let currentUser = safeReadJson(ownerSessionStr) || safeReadJson(ownerUserStr) || safeReadJson(legacyUserStr);
+        if ((!currentUser || currentUser.role !== 'owner') && urlLoginId) {
+            currentUser = { loginId: urlLoginId.toUpperCase(), ownerId: urlLoginId.toUpperCase(), role: 'owner', name: 'Owner' };
+            try { localStorage.setItem('owner_user', JSON.stringify(currentUser)); } catch(e) {}
+            try { sessionStorage.setItem('owner_session', JSON.stringify(currentUser)); } catch(e) {}
+        }
+        window.__ownerContext = currentUser;
         
         if (!currentUser || currentUser.role !== 'owner') {
              // Check if staff user is logged in and redirect them appropriately
-             const staffUser = JSON.parse(localStorage.getItem('manager_user') || localStorage.getItem('user') || 'null');
+             const staffUser = (() => {
+                 const m = (() => { try { return localStorage.getItem('manager_user'); } catch(e) { return null; } })();
+                 const u = (() => { try { return localStorage.getItem('user'); } catch(e) { return null; } })();
+                 return safeReadJson(m || u);
+             })();
              if (staffUser && (staffUser.role === 'areamanager' || staffUser.role === 'employee')) {
-                 safeRedirect('../Areamanager/areaadmin.html');
+                 safeRedirect('../superadmin/areaadmin.html');
              } else if (staffUser && staffUser.role === 'superadmin') {
                  safeRedirect('../superadmin/superadmin.html');
              } else {
@@ -91,10 +126,8 @@
 
                 <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                 <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
                 <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                 <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
-                <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                 <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                 <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
                 
@@ -178,12 +211,9 @@
 
                         <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                         <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                        <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
-                        <a href="documents.html" class="sidebar-link"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents</a>
                         <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                         <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                         <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
-                        <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                         <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
                         <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                         <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
@@ -322,7 +352,10 @@
 
         // 1. Load User Profile & Data (with onboarding enforcement)
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            const user = window.__ownerContext
+                || safeReadJson((() => { try { return sessionStorage.getItem('owner_session'); } catch(e) { return null; } })())
+                || safeReadJson((() => { try { return localStorage.getItem('owner_user'); } catch(e) { return null; } })())
+                || null;
 
             if (!user || user.role !== 'owner') {
                 // Should have been caught by the script in head, but as a fallback:
@@ -417,25 +450,37 @@
             const profileIncomplete = !hasProfileFlag && !hasProfileFields;
 
             if (profileIncomplete) {
-                console.warn('Profile incomplete, redirecting to profile setup');
-                safeRedirect('ownerprofile.html');
-                return;
+                console.warn('Profile incomplete, staying on dashboard (profile setup page not present in propertyowner module)');
             }
 
             // KYC: allow dashboard if backend says submitted/verified OR local flag is set
             const kycDone = (kycStatus === 'submitted' || kycStatus === 'verified') || localKycDone;
             if (!kycDone) {
-                console.warn('KYC incomplete, redirecting to KYC');
-                safeRedirect('ownerkyc.html');
-                return;
+                console.warn('KYC incomplete, staying on dashboard (KYC page not present in propertyowner module)');
             }
 
-            // Show name (prefer backend profile name)
-            const displayName = (profile.name) || user.name || 'Owner';
-            document.getElementById('headerName').innerText = displayName;
-            document.getElementById('welcomeName').innerText = displayName;
-            document.getElementById('headerAvatar').innerText = displayName.charAt(0).toUpperCase();
-            document.getElementById('headerAccountId').innerText = `Account: ${user.loginId}`;
+            // Show name (prefer backend owner record; fallback to approved visits if owner profile is sparse)
+            let displayName = (profile.name) || ownerRecord.name || ownerRecord.ownerName || user.name || 'Owner';
+            if (!displayName || displayName === 'Owner') {
+                try {
+                    const vr = await fetch(`${API_BASE}/api/visits/approved`);
+                    if (vr.ok) {
+                        const vd = await vr.json();
+                        const visits = vd.visits || [];
+                        const match = visits.find(v => {
+                            const gid = (v.generatedCredentials && v.generatedCredentials.loginId) || '';
+                            return String(gid).toUpperCase() === String(user.loginId || '').toUpperCase();
+                        });
+                        if (match) {
+                            displayName = match.ownerName
+                                || (match.propertyInfo && match.propertyInfo.ownerName)
+                                || (match.propertyInfo && match.propertyInfo.name)
+                                || displayName;
+                        }
+                    }
+                } catch (_) {}
+            }
+            applyOwnerHeader({ ...user, name: displayName });
 
             // Fetch properties from backend (new endpoint). If unavailable, fallback to localStorage.
             let myProperties = [];
@@ -565,6 +610,16 @@
                 console.warn('⚠️ Failed to load commission data:', err);
                 // Use fallback values
                 displayCommissionCards(0, 10, 0);
+            }
+        }
+
+        // Render commission cards safely (some templates don't include dedicated ids)
+        function displayCommissionCards(totalRevenue, commissionRate, pendingPayouts) {
+            try {
+                const rentEl = document.getElementById('statRent');
+                if (rentEl) rentEl.innerText = `?${Number(totalRevenue || 0).toLocaleString()}`;
+            } catch (e) {
+                console.warn('displayCommissionCards render warning:', e && e.message);
             }
         }
 
@@ -811,3 +866,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+

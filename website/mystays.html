@@ -587,15 +587,28 @@
             // Then try API
             if (bookings.length === 0) {
                 try {
-                    const response = await fetch(`${API_URL}/api/bookings/user/${userId}`, {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
+                    const bookingEndpoints = [
+                        `${API_URL}/api/booking/user/${userId}`,
+                        `${API_URL}/api/bookings/user/${userId}`
+                    ];
 
-                    if (response.ok) {
+                    let response = null;
+                    for (const endpoint of bookingEndpoints) {
+                        const attempt = await fetch(endpoint, {
+                            method: 'GET',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+
+                        if (attempt.ok || attempt.status !== 404) {
+                            response = attempt;
+                            break;
+                        }
+                    }
+
+                    if (response && response.ok) {
                         const data = await response.json();
                         bookings = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-                    } else {
+                    } else if (response) {
                         console.warn('API returned status:', response.status);
                     }
                 } catch (apiError) {
@@ -629,15 +642,86 @@
         
         // Render all bookings
         container.innerHTML = userBookings.map((booking, index) => {
-            // Get photos from booking confirmation first (handle both camelCase and snake_case)
-            const photos = (booking.propertyPhotos && booking.propertyPhotos.length) ? 
-                booking.propertyPhotos : 
-                (booking.property_photos && booking.property_photos.length ? booking.property_photos : 
-                (booking.photos || []));
-            
-            // Try to get main image from various sources
-            const mainImage = booking.propertyImage || 
-                booking.property_image ||
+            const isValidImageUrl = (value) => {
+                if (!value || typeof value !== 'string') return false;
+                const url = value.trim();
+                if (!url) return false;
+                const lowered = url.toLowerCase();
+                if (lowered === 'null' || lowered === 'undefined' || lowered === '[object object]') return false;
+                return /^https?:\/\//.test(url) || url.startsWith('/') || url.startsWith('./') || url.startsWith('../');
+            };
+
+            const extractImageUrls = (value) => {
+                if (!value) return [];
+
+                if (Array.isArray(value)) {
+                    return value
+                        .map((item) => {
+                            if (typeof item === 'string') return item.trim();
+                            if (item && typeof item === 'object') {
+                                return item.url || item.secure_url || item.src || item.image || '';
+                            }
+                            return '';
+                        })
+                        .filter(isValidImageUrl);
+                }
+
+                if (typeof value === 'string') {
+                    const trimmed = value.trim();
+                    if (!trimmed) return [];
+                    if (isValidImageUrl(trimmed)) return [trimmed];
+
+                    // Support JSON strings and comma-separated image values from different APIs.
+                    try {
+                        const parsed = JSON.parse(trimmed);
+                        return extractImageUrls(parsed);
+                    } catch (_) {
+                        return trimmed
+                            .split(',')
+                            .map((item) => item.trim())
+                            .filter(isValidImageUrl);
+                    }
+                }
+
+                if (typeof value === 'object') {
+                    return [value.url || value.secure_url || value.src || value.image || ''].filter(isValidImageUrl);
+                }
+
+                return [];
+            };
+
+            // Collect photos from all common backend key variants.
+            const photos = [
+                ...extractImageUrls(booking.propertyPhotos),
+                ...extractImageUrls(booking.property_photos),
+                ...extractImageUrls(booking.propertyImages),
+                ...extractImageUrls(booking.property_images),
+                ...extractImageUrls(booking.photos),
+                ...extractImageUrls(booking.images)
+            ].filter((url, i, arr) => arr.indexOf(url) === i);
+
+            // Choose main image from explicit keys first, then first photo.
+            const mainImageCandidates = [
+                booking.propertyImage,
+                booking.property_image,
+                booking.property_photo,
+                booking.image,
+                booking.thumbnail,
+                booking?.property?.image,
+                booking?.property?.property_image,
+                booking?.propertyDetails?.image
+            ];
+
+            let mainImage = null;
+            for (const candidate of mainImageCandidates) {
+                const extracted = extractImageUrls(candidate);
+                if (extracted.length > 0) {
+                    mainImage = extracted[0];
+                    break;
+                }
+            }
+
+            mainImage = mainImage ||
                 (photos && photos.length > 0 ? photos[0] : null) ||
                 `https://images.unsplash.com/photo-1567016432779-1fee749a1532?q=80&w=1974&auto=format&fit=crop&property=${booking.propertyId || booking.property_id || 'default'}`;
             
@@ -658,17 +742,6 @@
 
             return `
                 <div class="light-card rounded-xl overflow-hidden h-full flex flex-col">
-                    <!-- Image Section with Professional Photo -->
-                    <a href="#" class="group block relative overflow-hidden bg-gray-200" style="height: 250px;">
-                        <img src="${mainImage}" alt="${booking.property_name || 'Property'}" 
-                             class="w-full h-full object-cover group-hover:opacity-90 transition-opacity duration-300"
-                             onerror="this.src='https://images.unsplash.com/photo-1567016432779-1fee749a1532?q=80&w=1974&auto=format&fit=crop'">
-                        <div class="status-badge ${statusClass}">
-                            <span>${statusText}</span>
-                        </div>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    </a>
-
                     <!-- Content Section -->
                     <div class="p-5 flex-grow flex flex-col">
                         <!-- Title & Location -->

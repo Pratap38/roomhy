@@ -111,6 +111,43 @@ router.get('/:loginId/properties', async (req, res) => {
     }
 });
 
+// 7b. Create property for owner by loginId (used by owner panel rooms/properties sync)
+router.post('/:loginId/properties', async (req, res) => {
+    try {
+        const loginId = String(req.params.loginId || '').toUpperCase();
+        const { title, address, locationCode, city, area, description } = req.body || {};
+
+        if (!title || !String(title).trim()) {
+            return res.status(400).json({ success: false, message: 'Property title is required' });
+        }
+
+        const normalizedTitle = String(title).trim();
+        const normalizedLocationCode = String(locationCode || area || city || loginId.slice(0, 3) || 'GEN').toUpperCase();
+
+        let property = await Property.findOne({
+            ownerLoginId: loginId,
+            title: { $regex: `^${normalizedTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+        });
+
+        if (!property) {
+            property = await Property.create({
+                title: normalizedTitle,
+                address: address || '',
+                locationCode: normalizedLocationCode,
+                ownerLoginId: loginId,
+                description: description || '',
+                status: 'active',
+                isPublished: true
+            });
+        }
+
+        return res.status(201).json({ success: true, property });
+    } catch (err) {
+        console.error('❌ Error creating owner property:', err.message);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // 8. Get rent collected for owner by loginId
 router.get('/:loginId/rent', async (req, res) => {
     try {

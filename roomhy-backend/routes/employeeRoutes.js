@@ -77,18 +77,42 @@ router.post('/', async (req, res) => {
             parentLoginId
         });
 
-        // Send credentials email if email provided (non-blocking)
+        // Send credentials email if email provided
+        let emailAttempted = false;
+        let emailSent = false;
+        let emailError = '';
         try {
             const mailer = require('../utils/mailer');
             if (email) {
+                emailAttempted = true;
                 console.log('Sending email to', email, 'with loginId', loginId, 'password length', password ? password.length : 0);
-                mailer.sendCredentials(email, loginId, password, role === 'areamanager' ? 'Area Manager' : 'Employee').catch(e => console.warn('Mail send failed:', e && e.message));
+                emailSent = await mailer.sendCredentials(
+                    email,
+                    loginId,
+                    password,
+                    role === 'areamanager' ? 'Area Manager' : 'Employee'
+                );
+                if (!emailSent) {
+                    emailError = 'Credential email delivery failed (Mailjet not configured or provider rejected request)';
+                    console.warn('Mail send failed for employee:', loginId, email);
+                }
             } else {
                 console.log('No email provided for employee', name);
             }
-        } catch (e) { console.warn('Mailer init failed:', e && e.message); }
+        } catch (e) {
+            emailError = e && e.message ? e.message : 'Unknown mailer error';
+            console.warn('Mailer init/send failed:', emailError);
+        }
 
-        return res.status(201).json({ success: true, data: employee });
+        return res.status(201).json({
+            success: true,
+            data: employee,
+            email: {
+                attempted: emailAttempted,
+                sent: emailSent,
+                error: emailError || undefined
+            }
+        });
     } catch (err) {
         console.error('Create employee error:', err);
         return res.status(500).json({ error: 'Failed to create employee', details: err.message });

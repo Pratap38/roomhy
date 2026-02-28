@@ -1,4 +1,46 @@
 const Notification = require('../models/Notification');
+const User = require('../models/user');
+const Owner = require('../models/Owner');
+const Employee = require('../models/Employee');
+const AreaManager = require('../models/AreaManager');
+const Tenant = require('../models/Tenant');
+const mailer = require('../utils/mailer');
+
+async function resolveEmailByLoginId(loginId) {
+  const id = (loginId || '').toString().trim().toUpperCase();
+  if (!id) return '';
+
+  const [user, owner, emp, mgr, tenant] = await Promise.all([
+    User.findOne({ loginId: id }).select('email').lean(),
+    Owner.findOne({ loginId: id }).select('email profile.email').lean(),
+    Employee.findOne({ loginId: id }).select('email').lean(),
+    AreaManager.findOne({ loginId: id }).select('email').lean(),
+    Tenant.findOne({ loginId: id }).select('email').lean()
+  ]);
+
+  return (
+    (user && user.email) ||
+    (owner && owner.email) ||
+    (owner && owner.profile && owner.profile.email) ||
+    (emp && emp.email) ||
+    (mgr && mgr.email) ||
+    (tenant && tenant.email) ||
+    ''
+  );
+}
+
+async function resolveEmailsByRole(role) {
+  const r = (role || '').toString().trim().toLowerCase();
+  if (!r) return [];
+
+  if (r === 'superadmin') {
+    const users = await User.find({ role: 'superadmin' }).select('email').lean();
+    const emails = users.map((u) => u.email).filter(Boolean);
+    if (process.env.SUPERADMIN_EMAIL) emails.push(process.env.SUPERADMIN_EMAIL);
+    return [...new Set(emails)];
+  }
+  return [];
+}
 
 exports.createNotification = async (req, res) => {
   try {
@@ -6,6 +48,34 @@ exports.createNotification = async (req, res) => {
     if (!from || !type) return res.status(400).json({ message: 'from and type required' });
 
     const n = await Notification.create({ toRole: toRole || '', toLoginId: toLoginId || '', from, type, meta: meta || {}, read: false });
+
+    // Mirror panel notification to email when recipient email can be resolved
+    try {
+      let recipients = [];
+      if (toLoginId) {
+        const email = await resolveEmailByLoginId(toLoginId);
+        if (email) recipients.push(email);
+      } else if (toRole) {
+        recipients = await resolveEmailsByRole(toRole);
+      }
+
+      if (recipients.length) {
+        const subject = `RoomHy Notification - ${type}`;
+        const message = (meta && (meta.message || meta.title)) || 'You have a new panel notification in RoomHy.';
+        const html = `
+          <div style="font-family: Arial, sans-serif; font-size: 14px;">
+            <h2>RoomHy Notification</h2>
+            <p><strong>Type:</strong> ${type}</p>
+            <p><strong>From:</strong> ${from}</p>
+            <p>${message}</p>
+          </div>
+        `;
+        await mailer.sendMail(recipients, subject, message, html);
+      }
+    } catch (emailErr) {
+      console.warn('createNotification email mirror failed:', emailErr.message);
+    }
+
     return res.status(201).json({ success: true, notification: n });
   } catch (err) {
     console.error('createNotification error', err);
@@ -57,17 +127,29 @@ exports.listNotifications = async (req, res) => {
 exports.sendChatMessageNotification = async (req, res) => {
     try {
         const { ownerId, tenantName, message, chatId } = req.body;
+        const ownerLoginId = (ownerId || '').toString().trim().toUpperCase();
 
-        if (!ownerId) {
+        if (!ownerLoginId) {
             return res.status(400).json({ success: false, message: 'Owner ID is required' });
         }
 
-        // Find owner by loginId
-        const User = require('../models/user');
-        const owner = await User.findOne({ loginId: ownerId });
+        // Create in-app owner notification for panel sound alerts.
+        await Notification.create({
+            toRole: 'owner',
+            toLoginId: ownerLoginId,
+            from: tenantName || 'Tenant',
+            type: 'owner_new_chat',
+            meta: {
+                senderName: tenantName || 'Tenant',
+                senderRole: 'tenant',
+                message: message || '',
+                chatId: chatId || ''
+            },
+            read: false
+        });
 
-        if (owner && owner.email) {
-            const mailer = require('../utils/mailer');
+        const ownerEmail = await resolveEmailByLoginId(ownerLoginId);
+        if (ownerEmail) {
             const subject = `New Message from ${tenantName}`;
             const html = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -80,7 +162,7 @@ exports.sendChatMessageNotification = async (req, res) => {
                     <p>Please check your chat in the owner panel to respond.</p>
                 </div>
             `;
-            await mailer.sendMail(owner.email, subject, '', html);
+            await mailer.sendMail(ownerEmail, subject, '', html);
         }
 
         res.status(200).json({ success: true, message: 'Notification sent' });
@@ -197,21 +279,23 @@ exports.sendBookingAcceptNotification = async (req, res) => {
  */
 exports.sendEmailNotification = async (req, res) => {
     try {
-        const { ownerEmail, subject, message, data, type } = req.body;
+        const { ownerEmail, ownerLoginId, subject, message, data, type } = req.body;
+        const normalizedOwnerLoginId = (ownerLoginId || '').toString().trim().toUpperCase();
+        const resolvedOwnerEmail = (normalizedOwnerLoginId ? await resolveEmailByLoginId(normalizedOwnerLoginId) : '') || ownerEmail;
 
-        if (!ownerEmail) {
-            return res.status(400).json({ error: 'Owner email is required' });
+        if (!resolvedOwnerEmail) {
+            return res.status(400).json({ error: 'Owner email/loginId is required' });
         }
 
         // Build email HTML based on type
         // Build email HTML based on type and send via shared SMTP mailer
         const emailHTML = buildNotificationEmail(type, message, data);
         const mailer = require('../utils/mailer');
-        const sent = await mailer.sendMail(ownerEmail, subject || 'RoomHy Notification', message || '', emailHTML);
+        const sent = await mailer.sendMail(resolvedOwnerEmail, subject || 'RoomHy Notification', message || '', emailHTML);
         if (!sent) {
             return res.status(500).json({ error: 'Email transporter is not configured or delivery failed' });
         }
-        console.log(`✅ Email notification sent to ${ownerEmail} for ${type}`);
+        console.log(`✅ Email notification sent to ${resolvedOwnerEmail} for ${type}`);
         
         res.status(200).json({ success: true, message: 'Email sent successfully' });
 
@@ -385,6 +469,27 @@ exports.sendSuperAdminNewBookingNotification = async (req, res) => {
         });
         
         console.log(`📢 New booking notification created: ${bookingId}`);
+
+        try {
+            const adminEmails = await resolveEmailsByRole('superadmin');
+            if (adminEmails.length) {
+                const subject = `New Booking Received - ${propertyName || 'RoomHy'}`;
+                const html = `
+                    <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                        <h2>New Booking Notification</h2>
+                        <p><strong>Booking ID:</strong> ${bookingId || 'N/A'}</p>
+                        <p><strong>Property:</strong> ${propertyName || 'N/A'}</p>
+                        <p><strong>Guest:</strong> ${guestName || 'N/A'}</p>
+                        <p><strong>Owner:</strong> ${ownerName || 'N/A'}</p>
+                        <p><strong>Amount:</strong> INR ${amount || 0}</p>
+                        <p><strong>Check-in:</strong> ${checkInDate || 'N/A'}</p>
+                    </div>
+                `;
+                await mailer.sendMail(adminEmails, subject, '', html);
+            }
+        } catch (mailErr) {
+            console.warn('sendSuperAdminNewBookingNotification email failed:', mailErr.message);
+        }
         
         res.status(201).json({ 
             success: true, 
@@ -415,6 +520,25 @@ exports.sendSuperAdminNewEnquiryNotification = async (req, res) => {
         });
         
         console.log(`📢 New enquiry notification created: ${enquiryId}`);
+
+        try {
+            const adminEmails = await resolveEmailsByRole('superadmin');
+            if (adminEmails.length) {
+                const subject = `New Enquiry - ${propertyName || 'RoomHy'}`;
+                const html = `
+                    <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                        <h2>New Enquiry Notification</h2>
+                        <p><strong>Enquiry ID:</strong> ${enquiryId || 'N/A'}</p>
+                        <p><strong>User:</strong> ${userName || 'N/A'} (${userEmail || 'N/A'})</p>
+                        <p><strong>Property:</strong> ${propertyName || 'N/A'}</p>
+                        <p><strong>Message:</strong> ${message || 'N/A'}</p>
+                    </div>
+                `;
+                await mailer.sendMail(adminEmails, subject, '', html);
+            }
+        } catch (mailErr) {
+            console.warn('sendSuperAdminNewEnquiryNotification email failed:', mailErr.message);
+        }
         
         res.status(201).json({ 
             success: true, 
@@ -435,11 +559,13 @@ exports.sendSuperAdminNewEnquiryNotification = async (req, res) => {
 exports.sendOwnerNewBookingRequestNotification = async (req, res) => {
     try {
         const { ownerLoginId, ownerEmail, bookingId, propertyName, guestName, checkInDate, amount } = req.body;
+        const normalizedOwnerLoginId = (ownerLoginId || '').toString().trim().toUpperCase();
+        const resolvedOwnerEmail = (normalizedOwnerLoginId ? await resolveEmailByLoginId(normalizedOwnerLoginId) : '') || ownerEmail || '';
         
         // Create in-app notification
         const notification = await Notification.create({
             toRole: 'owner',
-            toLoginId: ownerLoginId,
+            toLoginId: normalizedOwnerLoginId || ownerLoginId,
             from: 'system',
             type: 'owner_new_booking_request',
             meta: { bookingId, propertyName, guestName, checkInDate, amount },
@@ -447,7 +573,7 @@ exports.sendOwnerNewBookingRequestNotification = async (req, res) => {
         });
         
         // Send email notification
-        if (ownerEmail) {
+        if (resolvedOwnerEmail) {
             const mailer = require('../utils/mailer');
             const subject = `📅 New Booking Request for ${propertyName}`;
             const html = `
@@ -463,7 +589,7 @@ exports.sendOwnerNewBookingRequestNotification = async (req, res) => {
                     <p>Please check your owner panel to accept or reject this booking.</p>
                 </div>
             `;
-            await mailer.sendMail(ownerEmail, subject, '', html);
+            await mailer.sendMail(resolvedOwnerEmail, subject, '', html);
         }
         
         console.log(`📢 New booking request notification sent to owner: ${ownerLoginId}`);
@@ -485,11 +611,13 @@ exports.sendOwnerNewBookingRequestNotification = async (req, res) => {
 exports.sendOwnerNewChatNotification = async (req, res) => {
     try {
         const { ownerLoginId, ownerEmail, senderName, senderRole, message, chatId } = req.body;
+        const normalizedOwnerLoginId = (ownerLoginId || '').toString().trim().toUpperCase();
+        const resolvedOwnerEmail = (normalizedOwnerLoginId ? await resolveEmailByLoginId(normalizedOwnerLoginId) : '') || ownerEmail || '';
         
         // Create in-app notification
         const notification = await Notification.create({
             toRole: 'owner',
-            toLoginId: ownerLoginId,
+            toLoginId: normalizedOwnerLoginId || ownerLoginId,
             from: senderName,
             type: 'owner_new_chat',
             meta: { senderName, senderRole, message, chatId },
@@ -497,7 +625,7 @@ exports.sendOwnerNewChatNotification = async (req, res) => {
         });
         
         // Send email notification
-        if (ownerEmail) {
+        if (resolvedOwnerEmail) {
             const mailer = require('../utils/mailer');
             const subject = `💬 New Message from ${senderName}`;
             const html = `
@@ -511,7 +639,7 @@ exports.sendOwnerNewChatNotification = async (req, res) => {
                     <p>Please check your chat in the owner panel to respond.</p>
                 </div>
             `;
-            await mailer.sendMail(ownerEmail, subject, '', html);
+            await mailer.sendMail(resolvedOwnerEmail, subject, '', html);
         }
         
         console.log(`📢 New chat notification sent to owner: ${ownerLoginId}`);
@@ -533,11 +661,13 @@ exports.sendOwnerNewChatNotification = async (req, res) => {
 exports.sendOwnerNewBiddingNotification = async (req, res) => {
     try {
         const { ownerLoginId, ownerEmail, propertyName, bidderName, bidAmount, bidId } = req.body;
+        const normalizedOwnerLoginId = (ownerLoginId || '').toString().trim().toUpperCase();
+        const resolvedOwnerEmail = (normalizedOwnerLoginId ? await resolveEmailByLoginId(normalizedOwnerLoginId) : '') || ownerEmail || '';
         
         // Create in-app notification
         const notification = await Notification.create({
             toRole: 'owner',
-            toLoginId: ownerLoginId,
+            toLoginId: normalizedOwnerLoginId || ownerLoginId,
             from: 'system',
             type: 'owner_new_bidding',
             meta: { propertyName, bidderName, bidAmount, bidId },
@@ -545,7 +675,7 @@ exports.sendOwnerNewBiddingNotification = async (req, res) => {
         });
         
         // Send email notification
-        if (ownerEmail) {
+        if (resolvedOwnerEmail) {
             const mailer = require('../utils/mailer');
             const subject = `💰 New Bid for ${propertyName}`;
             const html = `
@@ -560,7 +690,7 @@ exports.sendOwnerNewBiddingNotification = async (req, res) => {
                     <p>Please check your owner panel to review and respond to this bid.</p>
                 </div>
             `;
-            await mailer.sendMail(ownerEmail, subject, '', html);
+            await mailer.sendMail(resolvedOwnerEmail, subject, '', html);
         }
         
         console.log(`📢 New bidding notification sent to owner: ${ownerLoginId}`);
@@ -637,3 +767,5 @@ exports.deleteReadNotifications = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+

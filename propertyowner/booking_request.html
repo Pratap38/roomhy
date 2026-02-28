@@ -49,6 +49,8 @@
         .badge-confirmed { background: #dcfce7; color: #15803d; }
         .badge-paid { background: #dbeafe; color: #1e40af; }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-slate-800">
     <div class="flex h-screen overflow-hidden">
@@ -65,10 +67,8 @@
 
                 <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                 <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
                 <a href="booking_request.html" class="sidebar-link active"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                 <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
-                <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                 <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                 <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
             </nav>
@@ -140,12 +140,9 @@
 
                         <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                         <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                        <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
-                        <a href="documents.html" class="sidebar-link"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents</a>
                         <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                         <a href="booking_request.html" class="sidebar-link active"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                         <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
-                        <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                         <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
                         <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                         <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
@@ -243,14 +240,15 @@
                                         <th class="px-4 py-3 whitespace-nowrap">Property ID</th>
                                         <th class="px-4 py-3 whitespace-nowrap">Property Name</th>
                                         <th class="px-4 py-3 whitespace-nowrap">Owner Name</th>
-                                        <th class="px-4 py-3 whitespace-nowrap">User Name</th>
-                                        <th class="px-4 py-3 whitespace-nowrap">Contact</th>
-                                        <th class="px-4 py-3 whitespace-nowrap">Phone</th>
-                                        <th class="px-4 py-3 whitespace-nowrap">Email</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Full Name</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Gmail</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Gender</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">City</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Area</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Min Price</th>
+                                        <th class="px-4 py-3 whitespace-nowrap">Max Price</th>
                                         <th class="px-4 py-3 whitespace-nowrap">Property Type</th>
-                                        <th class="px-4 py-3 whitespace-nowrap">Location</th>
                                         <th class="px-4 py-3 whitespace-nowrap">Budget Range</th>
-                                        <th class="px-4 py-3 whitespace-nowrap">Special Requirements</th>
                                         <th class="px-4 py-3 whitespace-nowrap">Status</th>
                                         <th class="px-4 py-3 whitespace-nowrap">Submitted</th>
                                         <th class="px-4 py-3 whitespace-nowrap">Actions</th>
@@ -258,7 +256,7 @@
                                 </thead>
                                 <tbody id="biddingTableBody" class="divide-y divide-gray-200">
                                     <tr class="text-center py-8 text-gray-500">
-                                        <td colspan="12" class="py-8">
+                                        <td colspan="16" class="py-8">
                                             <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
                                             <p>No bidding requests received</p>
                                         </td>
@@ -705,7 +703,7 @@
             if (!allBiddingRequests || allBiddingRequests.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="15" class="py-8 text-center text-gray-500">
+                        <td colspan="16" class="py-8 text-center text-gray-500">
                             <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
                             <p>No bidding requests received yet</p>
                         </td>
@@ -716,30 +714,49 @@
             }
 
             tableBody.innerHTML = allBiddingRequests.map((bid, index) => {
-                // Map fields from booking format to display
-                const budgetRange = bid.bid_min && bid.bid_max 
-                    ? `₹${bid.bid_min} - ₹${bid.bid_max}` 
-                    : bid.budget_min && bid.budget_max
-                    ? `₹${bid.budget_min} - ₹${bid.budget_max}`
-                    : 'N/A';
-                const submittedDate = bid.created_at 
-                    ? new Date(bid.created_at).toLocaleDateString() 
+                // Extract data with proper fallbacks
+                const bidId = bid._id ? bid._id.substring(0, 8) : index + 1;
+                const propertyId = bid.property_id || 'N/A';
+                const propertyName = bid.property_name || 'N/A';
+                const ownerName = bid.owner_name || bid.ownerName || 'N/A';
+                const bidderName = bid.name || bid.fullName || bid.contactName || bid.user_name || 'N/A';
+                const bidderEmail = bid.email || bid.gmail || bid.contactEmail || bid.user_email || 'N/A';
+                
+                // Extract gender from either top-level or filter_criteria
+                const gender = bid.gender || (bid.filter_criteria && bid.filter_criteria.gender) || 'Any';
+                
+                // Extract city and area from filter_criteria (this is where they're stored from fast-bidding)
+                const city = bid.city || (bid.filter_criteria && bid.filter_criteria.city) || 'N/A';
+                const area = bid.area || (bid.filter_criteria && bid.filter_criteria.area) || 'N/A';
+                
+                // Extract min and max budgets
+                const minBudget = bid.bid_min || bid.budget_min || (bid.filter_criteria && bid.filter_criteria.min_price) || bid.min_price || '';
+                const maxBudget = bid.bid_max || bid.budget_max || (bid.filter_criteria && bid.filter_criteria.max_price) || bid.max_price || '';
+                const budgetRange = (minBudget && maxBudget) ? `Rs ${minBudget} - Rs ${maxBudget}` : (minBudget || maxBudget) ? `Rs ${minBudget || maxBudget}` : 'Any';
+                
+                // Extract property type
+                const propertyType = bid.property_type || (bid.filter_criteria && bid.filter_criteria.property_type) || 'Any';
+                
+                // Format submitted date
+                const submittedDate = bid.created_at
+                    ? new Date(bid.created_at).toLocaleDateString()
                     : 'N/A';
 
                 return `
                     <tr class="hover:bg-gray-50 text-sm border-b border-gray-200">
-                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${bid._id ? bid._id.substring(0, 8) : index + 1}</td>
-                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${bid.property_id || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-900 whitespace-nowrap">${bid.property_name || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">${bid.owner_name || bid.ownerName || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${bid.name || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${bid.name || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${bid.phone || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${bid.email || 'N/A'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${bid.property_type || 'Any'}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${bid.area || bid.city || 'N/A'}</td>
+                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${bidId}</td>
+                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${propertyId}</td>
+                        <td class="px-4 py-3 text-gray-900 whitespace-nowrap">${propertyName}</td>
+                        <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">${ownerName}</td>
+                        <td class="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">${bidderName}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${bidderEmail}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${gender}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${city}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${area}</td>
+                        <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">${minBudget ? `Rs ${minBudget}` : 'Any'}</td>
+                        <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">${maxBudget ? `Rs ${maxBudget}` : 'Any'}</td>
+                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${propertyType}</td>
                         <td class="px-4 py-3 text-gray-900 font-semibold whitespace-nowrap">${budgetRange}</td>
-                        <td class="px-4 py-3 text-gray-600 whitespace-nowrap max-w-xs truncate" title="${bid.message || ''}">${bid.message || 'None'}</td>
                         <td class="px-4 py-3 whitespace-nowrap">
                             <span class="px-3 py-1 rounded-full text-xs font-semibold ${bid.status === 'accepted' ? 'bg-green-100 text-green-800' : bid.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
                                 ${(bid.status || 'pending').charAt(0).toUpperCase() + (bid.status || 'pending').slice(1)}
@@ -748,7 +765,7 @@
                         <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${submittedDate}</td>
                         <td class="px-4 py-3 whitespace-nowrap space-x-1">
                             ${bid.status === 'pending' ? `
-                                <button onclick="acceptBid('${bid._id || index}', '${bid.name}', '${bid.email}')" class="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200">Accept</button>
+                                <button onclick="acceptBid('${bid._id || index}', '${bidderName}', '${bidderEmail}')" class="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200">Accept</button>
                                 <button onclick="rejectBid('${bid._id || index}')" class="px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-medium hover:bg-red-200">Reject</button>
                                 <button onclick="confirmBid('${bid._id || index}')" class="px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium hover:bg-blue-200">Confirm</button>
                             ` : bid.status === 'accepted' ? `
@@ -762,6 +779,41 @@
             }).join('');
 
             lucide.createIcons();
+        }
+
+        function generateWebsiteUserIdFromEmail(email) {
+            const safeEmail = String(email || '').trim().toLowerCase();
+            if (!safeEmail) return '';
+            let hash = 0;
+            for (let i = 0; i < safeEmail.length; i += 1) {
+                hash = (hash * 31 + safeEmail.charCodeAt(i)) % 1000000;
+            }
+            return `roomhyweb${String(hash).padStart(6, '0')}`;
+        }
+
+        async function notifyWebsiteUserAndEmail(userId, email, title, message, type) {
+            try {
+                if (userId) {
+                    await fetch(`${API_URL}/api/notifications/website/create`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId, title, message, type })
+                    });
+                }
+                if (email) {
+                    await fetch(`${API_URL}/api/email/send`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            to: email,
+                            subject: `RoomHy: ${title}`,
+                            html: `<p>${message}</p>`
+                        })
+                    });
+                }
+            } catch (e) {
+                console.warn('notifyWebsiteUserAndEmail failed:', e.message);
+            }
         }
 
         // Accept a bidding request
@@ -808,6 +860,14 @@
                         id: bidId,
                         bookingId: bidId,
                         status: 'accepted',
+                        name: bid.name || bid.fullName || bid.contactName || bidderName || 'User',
+                        email: bid.email || bid.gmail || bid.contactEmail || bidderEmail || '',
+                        user_id: bid.user_id || bid.signup_user_id || '',
+                        signup_user_id: bid.signup_user_id || bid.user_id || '',
+                        property_name: bid.property_name || '',
+                        property_id: bid.property_id || '',
+                        owner_name: bid.owner_name || bid.ownerName || '',
+                        owner_id: bid.owner_id || bid.ownerId || '',
                         responseDate: bid.responseDate,
                         acceptedAt: new Date().toISOString(),
                         acceptedBy: 'owner',
@@ -841,6 +901,14 @@
                 await loadBiddingRequests();
 
                 renderBiddingTable();
+                const bidUserId = (bid.user_id || bid.signup_user_id || '').toString().trim().toLowerCase() || generateWebsiteUserIdFromEmail(bidderEmail);
+                await notifyWebsiteUserAndEmail(
+                    bidUserId,
+                    bidderEmail,
+                    'Booking Accepted',
+                    `${bidderName || 'User'}, your bidding request has been accepted.`,
+                    'booking_accept'
+                );
                 alert('✅ Bidding request accepted! Chat room created.');
                 
                 // Optionally send email notification
@@ -1009,6 +1077,7 @@
                     id: chatRoomId,  // Use booking_id
                     bookingId: bookingId,
                     ownerId: ownerId,
+                    userId: bookingData?.signup_user_id || bookingData?.user_id || bookingData?.userId || '',
                     userName: userName || 'User',
                     userEmail: userEmail || 'no-email@example.com',
                     createdAt: new Date().toISOString(),
@@ -1048,6 +1117,7 @@
                     acceptedBookings.push({
                         bookingId: bookingId,
                         chatRoomId: chatRoomId,
+                        userId: chatRoom.userId || '',
                         userName: userName,
                         userEmail: userEmail,
                         createdAt: new Date().toISOString()
@@ -1071,8 +1141,7 @@
             const ownerFullName = currentOwner.name || ownerName || 'Owner';
             
             // Generate booking form link with all parameters
-            const repoPath = '/roomhy';
-            const bookingFormLink = `${window.location.origin}${repoPath}/booking-form.html?bookingId=${bookingId}&ownerName=${encodeURIComponent(ownerFullName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
+                        const bookingFormLink = `${window.location.origin}/booking-form.html?bookingId=${bookingId}&ownerName=${encodeURIComponent(ownerFullName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
             
             console.log('📋 Booking link data:', {
                 bookingId, tenantName, tenantEmail, propertyId, propertyName, ownerFullName
@@ -1200,6 +1269,14 @@
                 await loadBookingRequests();
 
                 renderBookingTable();
+                const reqUserId = (request.user_id || request.signup_user_id || '').toString().trim().toLowerCase() || generateWebsiteUserIdFromEmail(requestEmail);
+                await notifyWebsiteUserAndEmail(
+                    reqUserId,
+                    requestEmail,
+                    'Booking Accepted',
+                    `${requestName || 'User'}, your booking request has been accepted.`,
+                    'booking_accept'
+                );
                 alert('✅ Request accepted! Chat room created.\n\nThe tenant will see this in their chats.');
             } catch (error) {
                 console.error('Error accepting request:', error);
@@ -1703,3 +1780,12 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+

@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - Owner Login</title>
     <script>
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -16,6 +18,8 @@
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
@@ -146,7 +150,7 @@
                 const manager = managers.find(m => m.loginId === loginId && m.password === password);
                 if (manager) {
                     localStorage.setItem('manager_user', JSON.stringify(manager));
-                    window.location.href = '../Areamanager/areaadmin.html'; 
+                    window.location.href = '../superadmin/areaadmin.html'; 
                     return;
                 }
             }
@@ -165,15 +169,30 @@
 
             if (visitMatch) {
                 console.log("✅ Match found in Visits DB (First Time Login)");
+                // Extract name from multiple sources in propertyInfo
+                const pInfo = visitMatch.propertyInfo || {};
+                const ownerName = 
+                    visitMatch.ownerName || 
+                    pInfo.ownerName || 
+                    pInfo.contactName ||
+                    pInfo.owner ||
+                    visitMatch.contactPerson ||
+                    visitMatch.submittedBy ||
+                    visitMatch.name ||
+                    'Owner';
+                
                 currentUserPayload = {
                     loginId: loginId,
                     ownerId: loginId,
-                    name: visitMatch.propertyInfo.ownerName,
-                    phone: visitMatch.propertyInfo.contactPhone,
-                    address: visitMatch.propertyInfo.address,
-                    locationCode: visitMatch.propertyInfo.locationCode,
+                    name: ownerName,
+                    phone: pInfo.contactPhone || pInfo.phone || visitMatch.phone || '',
+                    address: pInfo.address || visitMatch.address || '',
+                    locationCode: pInfo.locationCode || visitMatch.locationCode || '',
+                    area: pInfo.area || visitMatch.area || '',
+                    email: pInfo.ownerEmail || pInfo.email || visitMatch.email || '',
                     role: 'owner'
                 };
+                console.log("✅ Created payload:", { name: currentUserPayload.name, loginId, sources: { visit: visitMatch.ownerName, pInfo: pInfo.ownerName }});
                 
                 // Ensure entry exists in Owners DB for future use
                 if(!db[loginId]) {
@@ -216,13 +235,41 @@
             document.getElementById('test-creds-box').classList.add('hidden'); // Hide hint box
         }
 
-        function proceedToDashboard(loginId, ownerData) {
-            const user = { loginId: loginId, ownerId: loginId, ...ownerData.profile, role: 'owner' };
+        async function buildOwnerSessionFromBackend(loginId, fallback = {}) {
+            const normalizedLoginId = String(loginId || '').trim().toUpperCase();
+            const base = {
+                loginId: normalizedLoginId,
+                ownerId: normalizedLoginId,
+                role: 'owner',
+                name: fallback.name || 'Owner'
+            };
+            if (!normalizedLoginId) return base;
+            try {
+                const res = await fetch(`${API_URL}/api/owners/${encodeURIComponent(normalizedLoginId)}`);
+                if (!res.ok) return base;
+                const owner = await res.json();
+                return {
+                    ...base,
+                    name: owner?.name || owner?.profile?.name || base.name,
+                    email: owner?.email || owner?.profile?.email || '',
+                    phone: owner?.phone || owner?.profile?.phone || '',
+                    locationCode: owner?.locationCode || owner?.profile?.locationCode || '',
+                    area: owner?.checkinArea || owner?.area || ''
+                };
+            } catch (_) {
+                return base;
+            }
+        }
+
+        async function proceedToDashboard(loginId, ownerData) {
+            const user = await buildOwnerSessionFromBackend(loginId, ownerData.profile || {});
             
             // Set Session - store in both keys to avoid conflicts with staff/admin logins
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('ownerUser', JSON.stringify(user));
+            localStorage.setItem('owner_user', JSON.stringify(user));
             sessionStorage.setItem('owner_session', JSON.stringify(user));
+            sessionStorage.setItem('user', JSON.stringify(user));
 
             // Check Onboarding Status
             const hasProfile = ownerData.profileFilled;
@@ -238,7 +285,7 @@
         }
 
         // Finalize: Set Password -> Go to Profile
-        function finalizeOwnerLogin() {
+        async function finalizeOwnerLogin() {
             const newPass = document.getElementById('new-password').value.trim();
             const confirm = document.getElementById('confirm-password').value.trim();
 
@@ -264,10 +311,12 @@
             localStorage.setItem('roomhy_owners_db', JSON.stringify(db));
 
             // Set Session & Redirect
-            const user = { loginId: loginId, ownerId: loginId, ...currentUserPayload, role: 'owner' };
+            const user = await buildOwnerSessionFromBackend(loginId, currentUserPayload || {});
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('ownerUser', JSON.stringify(user));
+            localStorage.setItem('owner_user', JSON.stringify(user));
             sessionStorage.setItem('owner_session', JSON.stringify(user));
+            sessionStorage.setItem('user', JSON.stringify(user));
 
             alert("🎉 Password Set Successfully! Proceeding to Profile Setup...");
             window.location.href = 'ownerprofile.html';
@@ -275,3 +324,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+

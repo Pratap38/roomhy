@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner Digital Check-In - Profile</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6fb; margin: 0; }
+    .wrap { max-width: 820px; margin: 30px auto; background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+    h1 { margin: 0 0 6px; font-size: 24px; }
+    p { color: #555; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .full { grid-column: 1 / -1; }
+    label { font-size: 13px; font-weight: 700; display: block; margin-bottom: 6px; }
+    input { width: 100%; padding: 10px; border: 1px solid #ccd2e0; border-radius: 8px; box-sizing: border-box; }
+    button { margin-top: 16px; background: #1f4fd6; color: #fff; border: 0; border-radius: 8px; padding: 11px 16px; cursor: pointer; font-weight: 700; }
+    .hint { color: #666; font-size: 12px; margin-top: 4px; }
+    @media (max-width: 760px){ .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Owner Check-In Profile</h1>
+    <p>Fill owner details exactly as shared during onboarding.</p>
+    
+    <!-- Display Auto-Fetched Values -->
+    <div id="autoFetchedInfo" style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: none;">
+      <p style="margin: 0 0 8px; font-weight: bold; color: #1976d2;">Auto-Fetched Information:</p>
+      <div style="font-size: 13px; color: #555;">
+        <p style="margin: 4px 0;"><strong>Email:</strong> <span id="autoEmail">-</span></p>
+        <p style="margin: 4px 0;"><strong>Area:</strong> <span id="autoArea">-</span></p>
+        <p style="margin: 4px 0;"><strong>Password:</strong> <span id="autoPassword" style="font-family: monospace;">-</span></p>
+      </div>
+    </div>
+
+    <form id="ownerProfileForm">
+      <div class="grid">
+        <div>
+          <label>Login ID (given in message)</label>
+          <input id="loginId" required>
+        </div>
+        <div>
+          <label>Name</label>
+          <input id="name" required>
+        </div>
+        <div>
+          <label>Gmail</label>
+          <input id="email" type="email" required>
+        </div>
+        <div>
+          <label>Area</label>
+          <input id="area" required>
+        </div>
+        <div>
+          <label>Date of Birth</label>
+          <input id="dob" type="date" required>
+        </div>
+        <div>
+          <label>Phone Number</label>
+          <input id="phone" type="tel" required>
+        </div>
+        <div>
+          <label>Address</label>
+          <input id="address" required>
+        </div>
+        <div>
+          <label>Bank Name</label>
+          <input id="bankName" required>
+        </div>
+        <div>
+          <label>Branch Name</label>
+          <input id="branchName" required>
+        </div>
+        <div>
+          <label>Bank Account Number</label>
+          <input id="bankAccountNumber" required>
+        </div>
+        <div>
+          <label>IFSC Code</label>
+          <input id="ifscCode" required>
+        </div>
+        <div>
+          <label>Account Holder Name</label>
+          <input id="accountHolderName" required>
+        </div>
+        <div>
+          <label>UPI ID (optional)</label>
+          <input id="upiId">
+        </div>
+      </div>
+      <button type="submit">Save & Continue to Owner KYC</button>
+    </form>
+  </div>
+
+  <script>
+    const API_BASES = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? ['http://localhost:5001', 'http://localhost:5000']
+      : ['https://roomhy-backend-wqwo.onrender.com'];
+    const params = new URLSearchParams(location.search);
+    const hashQuery = location.hash && location.hash.includes('?')
+      ? new URLSearchParams(location.hash.split('?')[1])
+      : new URLSearchParams('');
+
+    function getParamValue(names) {
+      const allEntries = [...params.entries(), ...hashQuery.entries()];
+      for (const key of names) {
+        const direct = params.get(key) || hashQuery.get(key);
+        if (direct) return direct.trim();
+        const ciMatch = allEntries.find(([k, v]) => k.toLowerCase() === key.toLowerCase() && v);
+        if (ciMatch && ciMatch[1]) return ciMatch[1].trim();
+      }
+      return '';
+    }
+    
+    // Auto-fetch from URL parameters (supports aliases and case differences)
+    const loginId = getParamValue(['loginId', 'loginid', 'staffId']);
+    const email = getParamValue(['email', 'ownerEmail', 'mail']);
+    const area = getParamValue(['area', 'assignedArea', 'location']);
+    const password = getParamValue(['password', 'tempPassword', 'pass']);
+    
+    if (loginId) document.getElementById('loginId').value = loginId;
+    
+    // Display auto-fetched values
+    const infoDiv = document.getElementById('autoFetchedInfo');
+    if (email || area || password) {
+      infoDiv.style.display = 'block';
+      if (email) document.getElementById('autoEmail').textContent = email;
+      if (area) document.getElementById('autoArea').textContent = area;
+      if (password) document.getElementById('autoPassword').textContent = password;
+    } else {
+      infoDiv.style.display = 'none';
+    }
+
+
+
+    async function postWithFallback(path, payload) {
+      let lastErr = null;
+      for (const base of API_BASES) {
+        try {
+          const res = await fetch(`${base}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) return res.json();
+          const data = await res.json().catch(() => ({}));
+          lastErr = new Error(data.message || `HTTP ${res.status}`);
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Request failed');
+    }
+
+    document.getElementById('ownerProfileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        // Validate auto-fetched required fields
+        // Email, area, and password come from URL parameters (not form inputs)
+        if (!email) return alert('Error: Email not provided in URL. Please use the correct link from enquiry.html');
+        if (!area) return alert('Error: Area not provided in URL. Please use the correct link from enquiry.html');
+        if (!password) return alert('Error: Password not provided in URL. Please use the correct link from enquiry.html');
+        
+        const payload = {
+          loginId: loginId || document.getElementById('loginId').value.trim(),
+          name: document.getElementById('name').value.trim(),
+          dob: document.getElementById('dob').value,
+          email: email, // From URL parameter
+          phone: document.getElementById('phone').value.trim(),
+          address: document.getElementById('address').value.trim(),
+          area: area, // From URL parameter
+          password: password, // From URL parameter
+          payment: {
+            bankName: document.getElementById('bankName').value.trim(),
+            branchName: document.getElementById('branchName').value.trim(),
+            bankAccountNumber: document.getElementById('bankAccountNumber').value.trim(),
+            ifscCode: document.getElementById('ifscCode').value.trim(),
+            accountHolderName: document.getElementById('accountHolderName').value.trim(),
+            upiId: document.getElementById('upiId').value.trim()
+          }
+        };
+
+        const data = await postWithFallback('/api/checkin/owner/profile', payload);
+        if (!data.success) return alert(data.message || 'Failed to save profile');
+        location.href = `ownerkyc.html?loginId=${encodeURIComponent(payload.loginId)}&email=${encodeURIComponent(payload.email)}`;
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
+

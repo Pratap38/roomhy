@@ -152,9 +152,11 @@ function checkOwnerSession() {
 function getCurrentOwner() {
     try {
         const ownerSession = JSON.parse(sessionStorage.getItem('owner_session') || 'null');
+        const ownerUserSession = JSON.parse(sessionStorage.getItem('owner_user') || 'null');
+        const ownerUserLocal = JSON.parse(localStorage.getItem('owner_user') || 'null');
         const sessionUser = JSON.parse(sessionStorage.getItem('user') || 'null');
         const localUser = JSON.parse(localStorage.getItem('user') || 'null');
-        const candidate = ownerSession || sessionUser || localUser || null;
+        const candidate = ownerSession || ownerUserSession || ownerUserLocal || sessionUser || localUser || null;
         if (candidate && candidate.role === 'owner') return candidate;
     } catch (err) {
         console.warn('getCurrentOwner parse error', err);

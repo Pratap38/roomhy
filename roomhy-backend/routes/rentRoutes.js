@@ -16,6 +16,7 @@ router.post('/reminders/send', rentController.sendRentReminder);
 
 // Send delayed payment reminders (3x daily after 15th) - BEFORE parameterized routes
 router.post('/reminders/delayed', rentController.sendDelayedPaymentReminder);
+router.post('/reminders/start-unpaid', rentController.startManualUnpaidReminders);
 
 // Create Razorpay order for rent payment - BEFORE parameterized routes
 router.post('/create-order', rentController.createRazorpayOrder);
@@ -23,6 +24,9 @@ router.post('/create-order', rentController.createRazorpayOrder);
 // Record payment by tenant (for Razorpay callback) - BEFORE parameterized routes
 router.post('/record-payment', rentController.recordPaymentByTenant);
 router.post('/record-payment-by-tenant', rentController.recordPaymentByTenant);
+router.post('/cash/request', rentController.requestCashPayment);
+router.post('/cash/owner-received', rentController.markCashReceivedByOwner);
+router.post('/cash/verify-otp', rentController.verifyCashPaymentOtp);
 
 // Get single rent
 router.get('/:rentId', rentController.getRent);

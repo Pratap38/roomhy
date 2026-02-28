@@ -5,7 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - Admin Tenant Management</title>
     <script>
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+        const API_BASES = Array.from(new Set([
+            API_URL,
+            'http://localhost:5000',
+            'http://localhost:5001',
+            'https://roomhy-backend-wqwo.onrender.com',
+            'https://roomhy-backend.onrender.com'
+        ]));
+        let activeApiBase = API_URL;
+
+        async function apiFetch(path, options = {}) {
+            const attempts = [activeApiBase, ...API_BASES.filter((b) => b !== activeApiBase)];
+            let lastError = null;
+
+            for (const base of attempts) {
+                try {
+                    const res = await fetch(`${base}${path}`, options);
+                    if (res.status === 404) {
+                        lastError = new Error(`404 for ${path} at ${base}`);
+                        continue;
+                    }
+                    if (res.ok) activeApiBase = base;
+                    return res;
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+
+            if (lastError) throw lastError;
+            throw new Error(`API request failed for ${path}`);
+        }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -121,6 +151,8 @@
              overflow-y: auto;
         }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-gray-900">
     <div class="flex h-screen bg-gray-100">
@@ -146,10 +178,8 @@
                  <a href="bookings.html" class="sidebar-link flex items-center px-6 py-3">
                     <i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Bookings
                 </a>
-                 <a href="documents.html" class="sidebar-link flex items-center px-6 py-3">
                     <i data-lucide="file-text" class="w-5 h-5 mr-3"></i>Document & Rules 
                 </a>
-                <a href="review.html" class="sidebar-link flex items-center px-6 py-3">
                     <i data-lucide="star" class="w-5 h-5 mr-3"></i> Reviews
                 </a>
                  <a href="payment.html" class="sidebar-link flex items-center px-6 py-3">
@@ -159,7 +189,6 @@
                     <i data-lucide="message-square" class="w-5 h-5 mr-3"></i> Chats
                 </a>
                 <!-- Added New Sidebar Items -->
-                <a href="complaints.html" class="sidebar-link flex items-center px-6 py-3">
                     <i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints
                 </a>
                  <a href="location.html" class="sidebar-link flex items-center px-6 py-3">
@@ -227,10 +256,8 @@
                         <a href="tenants.html" class="sidebar-link active flex items-center px-6 py-3 text-white"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Tenants</a>
                         <a href="tenantrec.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
                         <a href="bookings.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Bookings</a>
-                        <a href="review.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="star" class="w-5 h-5 mr-3"></i> Reviews</a>
                         <a href="payment.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                         <a href="#" class="sidebar-link disabled flex items-center px-6 py-3" onclick="event.preventDefault();"><i data-lucide="message-square" class="w-5 h-5 mr-3"></i> Chats</a>
-                        <a href="complaints.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                         <a href="location.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> RoomHy Location</a>
                         <a href="settings.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
                     </nav>
@@ -242,7 +269,7 @@
                 <div class="mb-8 flex flex-col sm:flex-row justify-between items-center"> <!-- Increased margin bottom -->
                     <div>
                         <h2 class="text-3xl font-bold text-gray-800">Tenant List</h2>
-                        <p class="text-gray-500 mt-1">You have total of 2 tenants</p>
+                        <p id="tenantCountText" class="text-gray-500 mt-1">Loading tenants...</p>
                     </div>
                     <!-- ADDED: Add New Tenant Button -->
                     <button id="add-new-tenant-button" class="bg-purple-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-purple-700 flex items-center mt-4 sm:mt-0 shadow hover:shadow-md transition">
@@ -274,7 +301,7 @@
                                     <th class="text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="tenantTableBody">
                                 <!-- Tenant 1 (Active) -->
                                 <tr class="tenant-row" data-status="active" data-tenant-id="1" data-name="Rohan Sharma" data-email="rohan@example.com" data-phone="9876543210" data-property="big_hostel" data-room="101" data-rent="2500" data-date="2025-08-18" data-aadhaar="XXXX-XXXX-1234">
                                     <td>
@@ -467,32 +494,163 @@
     <script>
         lucide.createIcons();
         
-        // --- Auth Guard (prefer per-tab owner session)---
-        const _ownerInit = () => {
-            const owner = typeof getCurrentOwner === 'function' ? getCurrentOwner() : null;
-            if (!owner) {
-                window.location.href = 'ownerlogin.html';
-                return null;
-            }
-            return owner;
-        };
+        let owner = null;
+        let ownerId = null;
 
-        const owner = _ownerInit();
-        if (owner) var ownerId = owner.ownerId || owner.loginId;
-        
-        // --- Header Population ---
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!owner) return;
-            if (document.getElementById('headerName')) {
-                document.getElementById('headerName').innerText = owner.name;
-            }
-            if (document.getElementById('headerAvatar')) {
-                document.getElementById('headerAvatar').innerText = owner.name.charAt(0).toUpperCase();
-            }
-            if (document.getElementById('headerAccountId')) {
-                document.getElementById('headerAccountId').innerText = `Account: ${owner.loginId || owner.ownerId}`;
+        // --- Listen for owner context updates from ownerContextSync.js ---
+        // ownerContextSync.js will both update the DOM AND fire this event
+        window.addEventListener('owner-session-updated', (event) => {
+            owner = event.detail || window.__ownerContext;
+            if (owner) {
+                ownerId = owner.ownerId || owner.loginId;
+                loadTenantsFromBackend();
             }
         });
+
+        // --- Fallback: If no context by DOMContentLoaded, redirect ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!owner) {
+                owner = window.__ownerContext || (typeof getCurrentOwner === 'function' ? getCurrentOwner() : null);
+                if (owner) {
+                    ownerId = owner.ownerId || owner.loginId;
+                } else {
+                    // Give ownerContextSync a moment to complete
+                    setTimeout(() => {
+                        owner = window.__ownerContext;
+                        if (!owner) {
+                            window.location.href = 'ownerlogin.html';
+                        }
+                    }, 500);
+                }
+            }
+            setTimeout(loadTenantsFromBackend, 600);
+        });
+
+        let tenantTableData = [];
+        let activeTenantFilter = 'all';
+
+        function escapeHtml(text) {
+            return String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function maskAadhaar(value) {
+            const digits = String(value || '').replace(/\D/g, '');
+            if (digits.length < 4) return '-';
+            return `XXXX-XXXX-${digits.slice(-4)}`;
+        }
+
+        function normalizeStatus(value) {
+            const v = String(value || '').toLowerCase();
+            if (v === 'active' || v === 'verified') return 'active';
+            return 'inactive';
+        }
+
+        async function getOwnerPropertyIds() {
+            if (!ownerId) return [];
+            try {
+                const res = await apiFetch(`/api/owners/${encodeURIComponent(ownerId)}/rooms`);
+                if (!res.ok) return [];
+                const data = await res.json();
+                const props = Array.isArray(data?.properties) ? data.properties : [];
+                return props.map((p) => String(p?._id || p?.id || p?.propertyId || '')).filter(Boolean);
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function renderTenantRows(tenants) {
+            const tbody = document.getElementById('tenantTableBody');
+            if (!tbody) return;
+            if (!Array.isArray(tenants) || tenants.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-gray-500 py-8">No tenants found for this owner.</td></tr>`;
+                const c = document.getElementById('tenantCountText');
+                if (c) c.textContent = 'You have total of 0 tenants';
+                return;
+            }
+
+            tbody.innerHTML = tenants.map((t) => {
+                const status = normalizeStatus(t.status);
+                const prop = t.property?.title || t.property?.name || t.propertyName || '-';
+                const room = t.roomNo || t.room?.number || '-';
+                const aadhaar = t.kyc?.aadhaarNumber || t.kyc?.aadhar || t.digitalCheckin?.kyc?.aadhaarNumber || '';
+                const kycAvailable = !!aadhaar;
+                return `
+                    <tr class="tenant-row" data-status="${status}" data-tenant-id="${escapeHtml(t._id || t.id || t.loginId || '')}">
+                        <td>
+                            <div class="flex items-center">
+                                <img class="h-10 w-10 rounded-full object-cover mr-3" src="https://i.pravatar.cc/150?u=${encodeURIComponent(t.loginId || t.name || 'tenant')}" alt="${escapeHtml(t.name || 'Tenant')}">
+                                <div>
+                                    <div class="font-medium text-gray-900">${escapeHtml(t.name || 'Tenant')}</div>
+                                    <div class="text-xs text-gray-500">ID: ${escapeHtml(t.loginId || '-')}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${escapeHtml(maskAadhaar(aadhaar))}</td>
+                        <td>${escapeHtml(t.phone || '-')}</td>
+                        <td>${escapeHtml(prop)}</td>
+                        <td>${escapeHtml(room)}</td>
+                        <td data-status="${status}">
+                            <select class="status-select ${status === 'active' ? 'status-select-active' : 'status-select-inactive'}">
+                                <option value="active" ${status === 'active' ? 'selected' : ''}>Active</option>
+                                <option value="inactive" ${status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                            </select>
+                        </td>
+                        <td>
+                            <span class="text-xs font-medium ${kycAvailable ? 'text-green-700' : 'text-gray-500'}">
+                                ${kycAvailable ? 'Submitted' : 'Pending'}
+                            </span>
+                        </td>
+                        <td class="text-right">
+                            <div class="text-xs text-gray-500">${escapeHtml(t.email || '-')}</div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const c = document.getElementById('tenantCountText');
+            if (c) c.textContent = `You have total of ${tenants.length} tenants`;
+            applyTenantFilter();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        async function loadTenantsFromBackend() {
+            try {
+                owner = owner || window.__ownerContext || (typeof getCurrentOwner === 'function' ? getCurrentOwner() : null);
+                ownerId = ownerId || owner?.ownerId || owner?.loginId || '';
+                if (!ownerId) return;
+
+                const [propIds, res] = await Promise.all([
+                    getOwnerPropertyIds(),
+                    apiFetch(`/api/tenants`)
+                ]);
+
+                if (!res.ok) throw new Error(`Tenant API failed: ${res.status}`);
+                const payload = await res.json();
+                const tenants = Array.isArray(payload) ? payload : (payload.tenants || []);
+                const ownerLoginId = String(ownerId).toUpperCase();
+
+                tenantTableData = tenants.filter((t) => {
+                    const propObj = t.property || {};
+                    const propId = String(propObj._id || propObj.id || t.propertyId || '');
+                    const propOwnerLogin = String(propObj.ownerLoginId || '').toUpperCase();
+                    return (
+                        (propIds.length > 0 && propIds.includes(propId)) ||
+                        (propOwnerLogin && propOwnerLogin === ownerLoginId)
+                    );
+                });
+
+                renderTenantRows(tenantTableData);
+            } catch (err) {
+                console.error('Failed to load tenants:', err);
+                const tbody = document.getElementById('tenantTableBody');
+                if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="text-center text-red-600 py-8">Failed to load tenants from backend.</td></tr>`;
+            }
+        }
         
         // --- Logout Handler (per-tab) ---
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
@@ -681,61 +839,56 @@
         });
 
 
-        // --- Filter Tabs Logic ---
-        const filterTabs = document.querySelectorAll('.filter-tab');
-        const tenantRows = document.querySelectorAll('.tenant-row');
-
-        filterTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                // Update tab styles
-                filterTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                const filterValue = tab.dataset.filter;
-
-                // Filter rows
-                tenantRows.forEach(row => {
-                    if (filterValue === 'all') {
-                        row.style.display = 'table-row'; // Show all
-                    } else {
-                        if (row.dataset.status === filterValue) {
-                            row.style.display = 'table-row'; // Show matching
-                        } else {
-                            row.style.display = 'none'; // Hide non-matching
-                        }
-                    }
-                });
-            });
-        });
-        
-        // --- Status Select Color Changer ---
-        document.querySelectorAll('.status-select').forEach(select => {
-            select.addEventListener('change', (event) => {
-                const newStatus = event.target.value;
-                // Update the row's data-status for filtering
-                const row = event.target.closest('tr.tenant-row');
-                row.dataset.status = newStatus;
-                
-                // Update the select's color
-                if (newStatus === 'active') {
-                    event.target.classList.add('status-select-active');
-                    event.target.classList.remove('status-select-inactive');
+        function applyTenantFilter() {
+            const rows = document.querySelectorAll('.tenant-row');
+            rows.forEach((row) => {
+                if (activeTenantFilter === 'all' || row.dataset.status === activeTenantFilter) {
+                    row.style.display = 'table-row';
                 } else {
-                    event.target.classList.add('status-select-inactive');
-                    event.target.classList.remove('status-select-active');
-                }
-
-                // In a real app, you would also send an API call here to update the backend
-                console.log(`Tenant ID ${row.dataset.tenantId} status changed to ${newStatus}`);
-                
-                // Manually re-apply filter if needed
-                const activeFilter = document.querySelector('.filter-tab.active').dataset.filter;
-                if (activeFilter !== 'all' && newStatus !== activeFilter) {
                     row.style.display = 'none';
                 }
             });
+        }
+
+        // --- Filter Tabs Logic ---
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                filterTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                activeTenantFilter = tab.dataset.filter || 'all';
+                applyTenantFilter();
+            });
         });
+
+        // --- Status Select Color Changer (delegated) ---
+        const tenantTableBody = document.getElementById('tenantTableBody');
+        if (tenantTableBody) {
+            tenantTableBody.addEventListener('change', async (event) => {
+                const select = event.target;
+                if (!select.classList.contains('status-select')) return;
+                const row = select.closest('tr.tenant-row');
+                if (!row) return;
+                const newStatus = select.value;
+                row.dataset.status = newStatus;
+                if (newStatus === 'active') {
+                    select.classList.add('status-select-active');
+                    select.classList.remove('status-select-inactive');
+                } else {
+                    select.classList.add('status-select-inactive');
+                    select.classList.remove('status-select-active');
+                }
+                applyTenantFilter();
+                console.log(`Tenant ID ${row.dataset.tenantId} status changed to ${newStatus}`);
+            });
+        }
 
     </script>
 </body>
 </html>
+
+
+
+
+
+

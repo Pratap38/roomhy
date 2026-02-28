@@ -236,12 +236,13 @@
                                 <thead>
                                     <tr>
                                         <th>Property Owner</th>
-                                        <th>Total Rent Collected</th>
+                                        <th>Property</th>
+                                        <th>Assigned Tenant</th>
+                                        <th>Rent</th>
                                         <th>Commission (10%)</th>
                                         <th>Service Fee</th>
-                                        <th>Owner Payout</th>
+                                        <th>To Be Paid</th>
                                         <th>Status</th>
-                                        <th class="text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="commissionTableBody">
@@ -333,9 +334,8 @@
     <script>
         lucide.createIcons();
 
-        let commissionData = [];
+                let commissionData = [];
 
-        // Sidebar Logic
         function toggleSubmenu(id, element) {
             const submenu = document.getElementById(id);
             const chevron = element.querySelector('.lucide-chevron-down');
@@ -348,12 +348,10 @@
             }
         }
 
-        // Mobile Menu
         function toggleMobileMenu() {
             const mobileSidebar = document.getElementById('mobile-sidebar');
             const mobileOverlay = document.getElementById('mobile-overlay');
             const isClosed = mobileSidebar.classList.contains('-translate-x-full');
-            
             if (isClosed) {
                 mobileSidebar.classList.remove('-translate-x-full');
                 mobileOverlay.classList.remove('hidden');
@@ -364,10 +362,9 @@
         }
         document.getElementById('mobile-menu-open').addEventListener('click', toggleMobileMenu);
 
-        // Modal Logic
-        function toggleModal(modalID){
+        function toggleModal(modalID) {
             const modal = document.getElementById(modalID);
-            if(modal.classList.contains('hidden')){
+            if (modal.classList.contains('hidden')) {
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
             } else {
@@ -376,171 +373,139 @@
             }
         }
 
-        // ===== COMMISSION CALCULATION =====
-        // First Month: 10% commission + ₹50 service fee
-        // Subsequent Months: ₹50 service fee only
+        function monthKey(dateLike) {
+            const d = new Date(dateLike || Date.now());
+            if (Number.isNaN(d.getTime())) return new Date().toISOString().slice(0, 7);
+            return d.toISOString().slice(0, 7);
+        }
 
-        function calculateCommission(paidData) {
-            const commissions = {};
+        function calcToBePaid(rentAmount, isFirstMonth) {
+            const rent = Number(rentAmount || 0);
+            const commission = isFirstMonth ? (rent * 0.10) : 0;
+            const serviceFee = 50;
+            const toBePaid = Math.max(rent - commission - serviceFee, 0);
+            return { rent, commission, serviceFee, toBePaid };
+        }
 
-            paidData.forEach(payment => {
-                const ownerName = payment.ownerName || payment.owner_name || 'Unknown';
-                const ownerLoginId = payment.ownerLoginId || payment.owner_id || payment.loginId;
-                const rentAmount = payment.rentAmount || payment.rent_amount || 0;
-                const monthKey = payment.month || new Date().toISOString().slice(0, 7);
-                const collectionDate = new Date(payment.createdAt || payment.date || Date.now());
+        async function fetchJson(path) {
+            const res = await fetch(`${API_URL}${path}`, { headers: { 'Content-Type': 'application/json' } });
+            if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
+            return res.json();
+        }
 
-                if (!commissions[ownerLoginId]) {
-                    commissions[ownerLoginId] = {
-                        ownerName: ownerName,
-                        ownerLoginId: ownerLoginId,
-                        totalRentCollected: 0,
-                        totalCommission: 0,
-                        serviceFee: 0,
-                        ownerPayout: 0,
-                        payments: [],
-                        status: 'pending'
-                    };
-                }
-
-                // Determine if this is first month or subsequent month
-                const isFirstMonth = commissions[ownerLoginId].payments.length === 0;
-                
-                let monthlyCommission = 0;
-                let monthlyServiceFee = 50; // Always ₹50 service fee
-
-                if (isFirstMonth) {
-                    // First month: 10% of rent + ₹50 service fee
-                    monthlyCommission = rentAmount * 0.10;
-                } else {
-                    // Subsequent months: only ₹50 service fee
-                    monthlyCommission = 0;
-                }
-
-                const totalDeduction = monthlyCommission + monthlyServiceFee;
-                const ownerReceives = rentAmount - totalDeduction;
-
-                commissions[ownerLoginId].totalRentCollected += rentAmount;
-                commissions[ownerLoginId].totalCommission += monthlyCommission;
-                commissions[ownerLoginId].serviceFee += monthlyServiceFee;
-                commissions[ownerLoginId].ownerPayout = commissions[ownerLoginId].totalRentCollected - 
-                                                       commissions[ownerLoginId].totalCommission - 
-                                                       commissions[ownerLoginId].serviceFee;
-
-                commissions[ownerLoginId].payments.push({
-                    month: monthKey,
-                    rentAmount: rentAmount,
-                    commission: monthlyCommission,
-                    serviceFee: monthlyServiceFee,
-                    ownerReceives: ownerReceives,
-                    isFirstMonth: isFirstMonth,
-                    collectionDate: collectionDate
-                });
+        function buildOwnerMap(owners) {
+            const map = {};
+            owners.forEach(o => {
+                const key = String(o.loginId || o.ownerLoginId || o._id || '').trim().toUpperCase();
+                if (key) map[key] = o;
             });
-
-            return Object.values(commissions);
+            return map;
         }
 
-        // Fetch paid tenant data from MongoDB
-        async function loadPaidData() {
-            try {
-                console.log('📡 Fetching paid tenant data...');
-                const response = await fetch(`${API_URL}/api/rents`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+        function getTenantPropertyName(tenant, rent) {
+            const fromRent = rent && rent.propertyName ? String(rent.propertyName).trim() : '';
+            if (fromRent && fromRent.toLowerCase() !== 'new property' && fromRent.toLowerCase() !== 'new') return fromRent;
+            if (tenant && typeof tenant.property === 'object' && tenant.property) {
+                return tenant.property.title || tenant.property.name || 'Unknown Property';
+            }
+            const p = String((tenant && tenant.property) || '').trim();
+            if (p && p.toLowerCase() !== 'new property' && p.toLowerCase() !== 'new') return p;
+            return 'Unknown Property';
+        }
 
-                if (response.ok) {
-                    const responseData = await response.json();
-                    // Handle both array and object responses
-                    const paidData = responseData.rents || responseData;
-                    console.log('✅ Paid data received:', paidData);
-                    
-                    // Filter only paid/completed payments
-                    const paidPayments = paidData.filter(p => 
-                        p.paymentStatus === 'completed' || 
-                        p.paymentStatus === 'paid' || 
-                        p.paidAmount > 0
+        async function loadCommissionRows() {
+            try {
+                const [tenantRes, ownerRes, rentRes] = await Promise.all([
+                    fetchJson('/api/tenants').catch(() => ({ tenants: [] })),
+                    fetchJson('/api/owners').catch(() => ({ owners: [] })),
+                    fetchJson('/api/rents').catch(() => ({ rents: [] }))
+                ]);
+
+                const tenants = Array.isArray(tenantRes) ? tenantRes : (tenantRes.tenants || []);
+                const owners = Array.isArray(ownerRes) ? ownerRes : (ownerRes.owners || ownerRes.data || []);
+                const rents = Array.isArray(rentRes) ? rentRes : (rentRes.rents || []);
+
+                const ownerMap = buildOwnerMap(owners);
+                const currentMonth = new Date().toISOString().slice(0, 7);
+
+                commissionData = tenants.map((tenant) => {
+                    const tenantLoginId = String(tenant.loginId || '').trim().toUpperCase();
+                    const rent = rents.find(r => String(r.tenantLoginId || '').trim().toUpperCase() === tenantLoginId) || null;
+                    const ownerId = String(
+                        tenant.ownerLoginId || tenant.ownerId || tenant.owner_id ||
+                        (tenant.property && tenant.property.ownerLoginId) ||
+                        (rent && rent.ownerLoginId) || ''
+                    ).trim().toUpperCase();
+
+                    const owner = ownerMap[ownerId] || {};
+                    const ownerName = owner.name || owner.ownerName || (owner.profile && owner.profile.name) || ownerId || 'Unknown Owner';
+                    const propertyName = getTenantPropertyName(tenant, rent);
+                    const tenantName = tenant.name || 'Tenant';
+                    const tenantId = tenant.loginId || '-';
+
+                    const moveInMonth = monthKey(tenant.moveInDate || tenant.createdAt || Date.now());
+                    const isFirstMonth = moveInMonth === currentMonth;
+
+                    const rentAmount = Number(
+                        (rent && (rent.rentAmount || rent.totalDue)) || tenant.agreedRent || 0
                     );
+                    const calc = calcToBePaid(rentAmount, isFirstMonth);
 
-                    console.log('✅ Filtered paid payments:', paidPayments.length);
+                    return {
+                        ownerName,
+                        ownerId,
+                        propertyName,
+                        tenantName,
+                        tenantId,
+                        firstMonth: isFirstMonth,
+                        rent: calc.rent,
+                        commission: calc.commission,
+                        serviceFee: calc.serviceFee,
+                        toBePaid: calc.toBePaid,
+                        status: calc.toBePaid > 0 ? 'pending' : 'settled'
+                    };
+                }).filter(row => row.rent > 0);
 
-                    // Calculate commissions
-                    commissionData = calculateCommission(paidPayments);
-                    console.log('✅ Commission calculated:', commissionData);
-
-                    renderTable();
-                    updateDashboard();
-                } else {
-                    console.warn('⚠️ API returned:', response.status);
-                    // Use localStorage fallback
-                    loadFromLocalStorage();
-                }
+                renderTable();
+                updateDashboard();
             } catch (err) {
-                console.warn('⚠️ Fetch failed, using localStorage:', err);
-                loadFromLocalStorage();
+                console.error('Failed loading commission rows:', err);
+                const tbody = document.getElementById('commissionTableBody');
+                if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-red-500">${err.message}</td></tr>`;
             }
         }
 
-        // Fallback: Load from localStorage
-        function loadFromLocalStorage() {
-            try {
-                const savedData = localStorage.getItem('roomhy_commission_data');
-                if (savedData) {
-                    commissionData = JSON.parse(savedData);
-                    renderTable();
-                    updateDashboard();
-                } else {
-                    console.log('📋 No commission data found');
-                }
-            } catch (err) {
-                console.error('Error loading from localStorage:', err);
-            }
-        }
-
-        // Render commission table
         function renderTable() {
             const tbody = document.getElementById('commissionTableBody');
             if (!tbody) return;
-
             tbody.innerHTML = '';
 
-            if (commissionData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-gray-500">No commission data available</td></tr>';
+            if (!commissionData.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-gray-500">No commission data available</td></tr>';
                 return;
             }
 
             commissionData.forEach(item => {
+                const statusClass = item.status === 'settled' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                const statusLabel = item.status === 'settled' ? 'Settled' : 'Pending';
                 const row = `
-                    <tr>
+                    <tr data-status="${item.status}">
                         <td>
-                            <div class="flex items-center">
-                                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs mr-3">
-                                    ${item.ownerName.charAt(0)}
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">${item.ownerName}</p>
-                                    <p class="text-xs text-gray-500">${item.ownerLoginId}</p>
-                                </div>
-                            </div>
+                            <p class="text-sm font-medium text-gray-900">${item.ownerName}</p>
+                            <p class="text-xs text-gray-500">${item.ownerId}</p>
                         </td>
-                        <td class="text-sm text-gray-800 font-medium">₹${item.totalRentCollected.toLocaleString()}</td>
-                        <td class="text-sm text-purple-600 font-bold">₹${item.totalCommission.toLocaleString()}</td>
-                        <td class="text-sm text-blue-600 font-bold">₹${item.serviceFee.toLocaleString()}</td>
-                        <td class="text-sm text-green-600 font-bold">₹${item.ownerPayout.toLocaleString()}</td>
+                        <td class="text-sm text-gray-700">${item.propertyName}</td>
                         <td>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                item.status === 'settled' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-yellow-100 text-yellow-800'
-                            }">
-                                ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                            </span>
+                            <p class="text-sm text-gray-800">${item.tenantName}</p>
+                            <p class="text-xs text-gray-500">${item.tenantId}</p>
                         </td>
-                        <td class="text-right">
-                            <button class="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs font-medium shadow-sm transition-colors">
-                                Mark Settled
-                            </button>
+                        <td class="text-sm font-semibold text-gray-800">INR ${item.rent.toLocaleString('en-IN')}</td>
+                        <td class="text-sm text-purple-700 font-semibold">INR ${item.commission.toLocaleString('en-IN')}</td>
+                        <td class="text-sm text-blue-700 font-semibold">INR ${item.serviceFee.toLocaleString('en-IN')}</td>
+                        <td class="text-sm text-green-700 font-bold">INR ${item.toBePaid.toLocaleString('en-IN')}</td>
+                        <td>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${statusLabel}</span>
+                            <p class="text-[11px] text-gray-500 mt-1">${item.firstMonth ? 'First month: 10% + 50' : 'Next month: 50 only'}</p>
                         </td>
                     </tr>
                 `;
@@ -548,44 +513,26 @@
             });
         }
 
-        // Update dashboard cards
         function updateDashboard() {
-            const totalRevenue = commissionData.reduce((sum, item) => sum + item.totalCommission, 0);
-            const totalServiceFee = commissionData.reduce((sum, item) => sum + item.serviceFee, 0);
-            const totalPayout = commissionData.reduce((sum, item) => sum + item.ownerPayout, 0);
-
-            // Update revenue card (1st card)
+            const totalRevenue = commissionData.reduce((sum, item) => sum + item.commission + item.serviceFee, 0);
+            const totalPendingPayout = commissionData.reduce((sum, item) => sum + item.toBePaid, 0);
             const revenueCards = document.querySelectorAll('.grid.grid-cols-1.md\\:grid-cols-3 > div h3');
-            if (revenueCards[0]) {
-                revenueCards[0].textContent = `₹${totalRevenue.toLocaleString()}`;
-            }
-
-            // Update payout card (3rd card)
-            if (revenueCards[2]) {
-                revenueCards[2].textContent = `₹${totalPayout.toLocaleString()}`;
-            }
-
-            console.log('📊 Dashboard updated - Revenue: ₹' + totalRevenue.toLocaleString() + ', Payout: ₹' + totalPayout.toLocaleString());
+            if (revenueCards[0]) revenueCards[0].textContent = `INR ${totalRevenue.toLocaleString('en-IN')}`;
+            if (revenueCards[2]) revenueCards[2].textContent = `INR ${totalPendingPayout.toLocaleString('en-IN')}`;
         }
 
-        // Initialize on page load
         window.addEventListener('load', () => {
-            console.log('🔄 Initializing platform.html...');
             lucide.createIcons();
-            loadPaidData();
+            loadCommissionRows();
         });
 
-        // Search and filter
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.querySelector('input[placeholder*="Search"]');
             if (searchInput) {
                 searchInput.addEventListener('input', (e) => {
                     const searchText = e.target.value.toLowerCase();
-                    const rows = document.querySelectorAll('#commissionTableBody tr');
-                    
-                    rows.forEach(row => {
-                        const text = row.textContent.toLowerCase();
-                        row.style.display = text.includes(searchText) ? '' : 'none';
+                    document.querySelectorAll('#commissionTableBody tr').forEach(row => {
+                        row.style.display = row.textContent.toLowerCase().includes(searchText) ? '' : 'none';
                     });
                 });
             }
@@ -594,19 +541,20 @@
             if (statusFilter) {
                 statusFilter.addEventListener('change', (e) => {
                     const status = e.target.value;
-                    const rows = document.querySelectorAll('#commissionTableBody tr');
-                    
-                    rows.forEach(row => {
-                        if (!status || row.textContent.includes(status)) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
-                        }
+                    document.querySelectorAll('#commissionTableBody tr').forEach(row => {
+                        if (!status || row.dataset.status === status) row.style.display = '';
+                        else row.style.display = 'none';
                     });
                 });
             }
         });
     </script>
+        <script src="./mobile-sidebar.js"></script>
 </body>
 </html>
+
+
+
+
+
 

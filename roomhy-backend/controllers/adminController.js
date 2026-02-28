@@ -105,10 +105,26 @@ exports.approveVisit = async (req, res) => {
         try {
             const mailer = require('../utils/mailer');
             const ownerEmail = info.ownerGmail || info.email || null;
+            const ownerArea = visit.area || (visit.propertyInfo && visit.propertyInfo.area) || '';
             console.log('Approving visit:', visitId, 'ownerEmail:', ownerEmail, 'loginId:', finalLoginId);
             if (ownerEmail) {
+                const baseWebUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+                const mainCheckinLink = `${baseWebUrl}/digital-checkin/index.html`;
+                const directCheckinLink = `${baseWebUrl}/digital-checkin/ownerprofile.html?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
+                const subject = 'RoomHy Property Approved - Complete Digital Check-In';
+                const html = `
+                    <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111">
+                        <h3>Your owner account is ready</h3>
+                        <p><strong>Login ID:</strong> ${finalLoginId}</p>
+                        <p><strong>Password:</strong> ${finalPassword}</p>
+                        <p><strong>Area:</strong> ${ownerArea || 'N/A'}</p>
+                        <p><strong>Digital Check-In (Main):</strong><br><a href="${mainCheckinLink}">${mainCheckinLink}</a></p>
+                        <p><strong>Owner Check-In (Direct):</strong><br><a href="${directCheckinLink}">${directCheckinLink}</a></p>
+                    </div>
+                `;
+                const text = `Owner credentials\nLogin ID: ${finalLoginId}\nPassword: ${finalPassword}\nArea: ${ownerArea || 'N/A'}\nDigital Check-In: ${mainCheckinLink}\nDirect Link: ${directCheckinLink}`;
                 // do not await - send in background and do not affect workflow
-                mailer.sendCredentials(ownerEmail, finalLoginId, finalPassword, 'Owner').catch(e => console.warn('Mail send failed:', e && e.message));
+                mailer.sendMail(ownerEmail, subject, text, html).catch(e => console.warn('Mail send failed:', e && e.message));
             } else {
                 console.log('No owner email found for visit', visitId);
             }

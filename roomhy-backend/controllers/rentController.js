@@ -1,16 +1,9 @@
-const Rent = require('../models/Rent');
+﻿const Rent = require('../models/Rent');
 const Tenant = require('../models/Tenant');
 const Property = require('../models/Property');
-const nodemailer = require('nodemailer');
-
-// Configure email transporter (using Gmail SMTP)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.GMAIL_APP_PASSWORD || 'your-app-password'
-    }
-});
+const { sendMail } = require('../utils/mailer');
+const Notification = require('../models/Notification');
+const Owner = require('../models/Owner');
 
 // Create rent record for tenant
 exports.createRent = async (req, res) => {
@@ -113,6 +106,8 @@ exports.recordPayment = async (req, res) => {
 
         if (rent.paidAmount >= rent.totalDue) {
             rent.paymentStatus = 'paid';
+            rent.autoReminderEnabled = false;
+            rent.autoReminderLastSentAt = undefined;
         } else if (rent.paidAmount > 0) {
             rent.paymentStatus = 'partially_paid';
         }
@@ -134,7 +129,7 @@ exports.recordPaymentByTenant = async (req, res) => {
     try {
         const { tenantId, razorpayPaymentId, paidAmount, paymentMethod } = req.body;
 
-        console.log(`🔍 [recordPaymentByTenant] Searching for rent - tenantId: ${tenantId}, amount: ${paidAmount}`);
+        console.log(`ðŸ” [recordPaymentByTenant] Searching for rent - tenantId: ${tenantId}, amount: ${paidAmount}`);
 
         if (!tenantId || !paidAmount) {
             return res.status(400).json({ error: 'tenantId and paidAmount required' });
@@ -159,11 +154,11 @@ exports.recordPaymentByTenant = async (req, res) => {
             ]
         }).sort({ dueDate: -1 });
 
-        console.log(`📊 [recordPaymentByTenant] Rent found:`, rent ? 'YES' : 'NO');
+        console.log(`ðŸ“Š [recordPaymentByTenant] Rent found:`, rent ? 'YES' : 'NO');
 
         if (!rent) {
             // If not found, try to create a minimal rent record for this first payment
-            console.log(`⚠️ [recordPaymentByTenant] No rent found. Attempting to create one...`);
+            console.log(`âš ï¸ [recordPaymentByTenant] No rent found. Attempting to create one...`);
             
             rent = new Rent({
                 tenantLoginId: tenantId,
@@ -180,7 +175,7 @@ exports.recordPaymentByTenant = async (req, res) => {
             });
             
             await rent.save();
-            console.log(`✅ [recordPaymentByTenant] Created new rent record: ${rent._id}`);
+            console.log(`âœ… [recordPaymentByTenant] Created new rent record: ${rent._id}`);
             
             // Send confirmation
             await sendPaymentConfirmationEmail(rent);
@@ -194,7 +189,7 @@ exports.recordPaymentByTenant = async (req, res) => {
             });
         }
         
-        console.log(`✅ [recordPaymentByTenant] Found rent: ${rent._id}`);
+        console.log(`âœ… [recordPaymentByTenant] Found rent: ${rent._id}`);
 
         rent.paidAmount = (rent.paidAmount || 0) + paidAmount;
         rent.razorpayPaymentId = razorpayPaymentId;
@@ -204,10 +199,12 @@ exports.recordPaymentByTenant = async (req, res) => {
         // Update payment status
         if (rent.paidAmount >= rent.totalDue) {
             rent.paymentStatus = 'paid';
-            console.log(`💳 [recordPaymentByTenant] Payment complete: ₹${rent.paidAmount} >= ₹${rent.totalDue}`);
+            rent.autoReminderEnabled = false;
+            rent.autoReminderLastSentAt = undefined;
+            console.log(`ðŸ’³ [recordPaymentByTenant] Payment complete: â‚¹${rent.paidAmount} >= â‚¹${rent.totalDue}`);
         } else if (rent.paidAmount > 0) {
             rent.paymentStatus = 'partially_paid';
-            console.log(`💳 [recordPaymentByTenant] Partial payment: ₹${rent.paidAmount} of ₹${rent.totalDue}`);
+            console.log(`ðŸ’³ [recordPaymentByTenant] Partial payment: â‚¹${rent.paidAmount} of â‚¹${rent.totalDue}`);
         }
 
         await rent.save();
@@ -215,7 +212,7 @@ exports.recordPaymentByTenant = async (req, res) => {
         // Send payment confirmation email
         await sendPaymentConfirmationEmail(rent);
 
-        console.log(`✅ Payment recorded for tenant ${tenantId}: ₹${paidAmount}`);
+        console.log(`âœ… Payment recorded for tenant ${tenantId}: â‚¹${paidAmount}`);
 
         res.json({ 
             success: true, 
@@ -224,19 +221,16 @@ exports.recordPaymentByTenant = async (req, res) => {
             paymentStatus: rent.paymentStatus
         });
     } catch (err) {
-        console.error('❌ Record payment by tenant error:', err.message);
+        console.error('âŒ Record payment by tenant error:', err.message);
         res.status(500).json({ error: err.message || 'Failed to record payment' });
     }
-};;
+};
 
 // Send payment confirmation email
 async function sendPaymentConfirmationEmail(rent) {
     try {
-        const mailOptions = {
-            from: process.env.GMAIL_USER || 'roomhy@gmail.com',
-            to: rent.tenantEmail,
-            subject: `Payment Confirmation - ${rent.propertyName}`,
-            html: `
+        const subject = `Payment Confirmation - ${rent.propertyName}`;
+        const html = `
                 <h2>Payment Confirmation</h2>
                 <p>Dear ${rent.tenantName},</p>
                 <p>Your rent payment has been recorded successfully.</p>
@@ -244,19 +238,24 @@ async function sendPaymentConfirmationEmail(rent) {
                 <p><strong>Payment Details:</strong></p>
                 <ul>
                     <li>Property: ${rent.propertyName}</li>
-                    <li>Amount Paid: ₹${rent.paidAmount}</li>
-                    <li>Total Due: ₹${rent.totalDue}</li>
+                    <li>Amount Paid: â‚¹${rent.paidAmount}</li>
+                    <li>Total Due: â‚¹${rent.totalDue}</li>
                     <li>Payment Status: ${rent.paymentStatus}</li>
                     <li>Payment Date: ${new Date(rent.paymentDate).toLocaleDateString()}</li>
                 </ul>
                 <p>Thank you for your payment!</p>
-            `
-        };
+            `;
 
-        await transporter.sendMail(mailOptions);
-        console.log('✅ Payment confirmation email sent to', rent.tenantEmail);
+        if (rent.tenantEmail) {
+            await sendMail(rent.tenantEmail, subject, '', html);
+        }
+        if (process.env.ADMIN_EMAIL) {
+            await sendMail(process.env.ADMIN_EMAIL, `[Copy] ${subject}`, '', html);
+        }
+
+        console.log('Payment confirmation email attempted for', rent.tenantEmail || 'no-tenant-email');
     } catch (err) {
-        console.error('❌ Failed to send payment email:', err.message);
+        console.error('Failed to send payment email:', err.message);
     }
 }
 
@@ -352,12 +351,8 @@ exports.sendDelayedPaymentReminder = async (req, res) => {
 // Email function for rent reminder
 async function sendRentReminderEmail(rent, type = 'initial') {
     try {
-        const mailOptions = {
-            from: process.env.GMAIL_USER || 'roomhy@gmail.com',
-            to: rent.tenantEmail,
-            cc: process.env.ADMIN_EMAIL || '',
-            subject: `Rent Due Reminder - ${rent.propertyName}`,
-            html: `
+        const subject = `Rent Due Reminder - ${rent.propertyName}`;
+        const html = `
                 <h2>Rent Due Reminder</h2>
                 <p>Dear ${rent.tenantName},</p>
                 <p>This is a reminder that rent is due between <strong>10th to 15th</strong> of the month.</p>
@@ -366,21 +361,26 @@ async function sendRentReminderEmail(rent, type = 'initial') {
                 <ul>
                     <li>Property: ${rent.propertyName}</li>
                     <li>Room: ${rent.roomNumber}</li>
-                    <li>Rent Amount: ₹${rent.rentAmount}</li>
+                    <li>Rent Amount: â‚¹${rent.rentAmount}</li>
                     <li>Collection Period: 10th - 15th of the month</li>
                     <li>Current Month: ${rent.collectionMonth}</li>
                 </ul>
                 <p style="color: #d32f2f;"><strong>Please complete your payment by 15th to avoid late fees.</strong></p>
                 <p>Click the button below to pay online:</p>
                 <a href="http://localhost:5001/tenant/tenantsign-in.html" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay Now</a>
-            `
-        };
+            `;
 
-        await transporter.sendMail(mailOptions);
-        console.log('✅ Rent reminder email sent to', rent.tenantEmail);
+        if (rent.tenantEmail) {
+            await sendMail(rent.tenantEmail, subject, '', html);
+        }
+        if (process.env.ADMIN_EMAIL) {
+            await sendMail(process.env.ADMIN_EMAIL, `[Copy] ${subject}`, '', html);
+        }
+
+        console.log('Rent reminder email attempted for', rent.tenantEmail || 'no-tenant-email');
         return true;
     } catch (err) {
-        console.error('❌ Failed to send rent reminder:', err.message);
+        console.error('Failed to send rent reminder:', err.message);
         return false;
     }
 }
@@ -390,13 +390,9 @@ async function sendDelayedReminderEmail(rent, reminderType) {
     try {
         const reminderNumber = reminderType.split('_')[1];
         const urgency = ['', 'URGENT', 'VERY URGENT', 'FINAL NOTICE'];
-        
-        const mailOptions = {
-            from: process.env.GMAIL_USER || 'roomhy@gmail.com',
-            to: rent.tenantEmail,
-            cc: process.env.ADMIN_EMAIL || '',
-            subject: `${urgency[reminderNumber]} - Overdue Rent Payment - ${rent.propertyName}`,
-            html: `
+
+        const subject = `${urgency[reminderNumber]} - Overdue Rent Payment - ${rent.propertyName}`;
+        const html = `
                 <h2 style="color: #d32f2f;">${urgency[reminderNumber]}</h2>
                 <p>Dear ${rent.tenantName},</p>
                 <p style="color: #d32f2f; font-weight: bold;">Your rent payment is overdue!</p>
@@ -405,7 +401,7 @@ async function sendDelayedReminderEmail(rent, reminderType) {
                 <ul>
                     <li>Property: ${rent.propertyName}</li>
                     <li>Room: ${rent.roomNumber}</li>
-                    <li>Amount Due: ₹${rent.totalDue - rent.paidAmount}</li>
+                    <li>Amount Due: â‚¹${rent.totalDue - rent.paidAmount}</li>
                     <li>Due Date: 15th of ${rent.collectionMonth}</li>
                     <li>Days Overdue: ${getDaysOverdue(rent.overdueStartDate)}</li>
                 </ul>
@@ -413,14 +409,19 @@ async function sendDelayedReminderEmail(rent, reminderType) {
                     <strong>Reminder #${reminderNumber}:</strong> Please arrange payment immediately to avoid late fees and legal action.
                 </p>
                 <a href="http://localhost:5001/tenant/tenantsign-in.html" style="background-color: #d32f2f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay Now</a>
-            `
-        };
+            `;
 
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ Delayed payment reminder #${reminderNumber} sent to`, rent.tenantEmail);
+        if (rent.tenantEmail) {
+            await sendMail(rent.tenantEmail, subject, '', html);
+        }
+        if (process.env.ADMIN_EMAIL) {
+            await sendMail(process.env.ADMIN_EMAIL, `[Copy] ${subject}`, '', html);
+        }
+
+        console.log(`Delayed payment reminder #${reminderNumber} attempted for`, rent.tenantEmail || 'no-tenant-email');
         return true;
     } catch (err) {
-        console.error('❌ Failed to send delayed reminder:', err.message);
+        console.error('Failed to send delayed reminder:', err.message);
         return false;
     }
 }
@@ -474,7 +475,7 @@ exports.createRazorpayOrder = async (req, res) => {
         const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
         if (!keyId || !keySecret || keySecret === 'your_key_secret_here') {
-            console.error('⚠️  Razorpay credentials not configured. Add to .env file:');
+            console.error('âš ï¸  Razorpay credentials not configured. Add to .env file:');
             console.error('RAZORPAY_KEY_ID=rzp_test_xxxxx');
             console.error('RAZORPAY_KEY_SECRET=your_actual_key_secret');
             return res.status(500).json({ 
@@ -514,5 +515,277 @@ exports.createRazorpayOrder = async (req, res) => {
     } catch (err) {
         console.error('Razorpay order creation error:', err);
         res.status(500).json({ error: err.message || 'Failed to create payment order' });
+    }
+};
+
+
+// Tenant requests cash payment collection by owner
+exports.requestCashPayment = async (req, res) => {
+    try {
+        const {
+            tenantLoginId,
+            ownerLoginId,
+            amount,
+            propertyName,
+            roomNumber,
+            tenantName,
+            tenantEmail,
+            tenantPhone
+        } = req.body || {};
+
+        if (!tenantLoginId || !ownerLoginId || !amount) {
+            return res.status(400).json({ success: false, message: 'tenantLoginId, ownerLoginId and amount are required' });
+        }
+
+        const loginId = String(tenantLoginId).trim().toUpperCase();
+        const ownerId = String(ownerLoginId).trim().toUpperCase();
+        const rentAmount = Number(amount || 0);
+        if (!Number.isFinite(rentAmount) || rentAmount <= 0) {
+            return res.status(400).json({ success: false, message: 'Invalid amount' });
+        }
+
+        const month = new Date().toISOString().slice(0, 7);
+
+        let rent = await Rent.findOne({
+            tenantLoginId: loginId,
+            ownerLoginId: ownerId,
+            collectionMonth: month
+        }).sort({ createdAt: -1 });
+
+        if (!rent) {
+            rent = await Rent.create({
+                tenantLoginId: loginId,
+                ownerLoginId: ownerId,
+                tenantName: tenantName || '',
+                tenantEmail: tenantEmail || '',
+                tenantPhone: tenantPhone || '',
+                propertyName: propertyName || '',
+                roomNumber: roomNumber || '',
+                rentAmount,
+                totalDue: rentAmount,
+                paidAmount: 0,
+                paymentStatus: 'pending',
+                paymentMethod: 'cash',
+                collectionMonth: month
+            });
+        } else {
+            rent.paymentMethod = 'cash';
+            rent.paymentStatus = rent.paymentStatus === 'paid' ? 'paid' : 'pending';
+            rent.rentAmount = rentAmount || rent.rentAmount;
+            rent.totalDue = rent.totalDue || rentAmount;
+            rent.tenantName = tenantName || rent.tenantName;
+            rent.tenantEmail = tenantEmail || rent.tenantEmail;
+            rent.tenantPhone = tenantPhone || rent.tenantPhone;
+            rent.propertyName = propertyName || rent.propertyName;
+            rent.roomNumber = roomNumber || rent.roomNumber;
+        }
+
+        rent.cashRequestStatus = 'requested';
+        rent.cashRequestedAt = new Date();
+        rent.cashOtpCode = undefined;
+        rent.cashOtpExpiry = undefined;
+        rent.cashOtpSentAt = undefined;
+        await rent.save();
+
+        await Notification.create({
+            toLoginId: ownerId,
+            from: loginId,
+            type: 'cash_payment_requested',
+            meta: {
+                title: 'Cash Payment Request',
+                message: `${tenantName || loginId} requested cash payment collection`,
+                rentId: String(rent._id),
+                tenantLoginId: loginId,
+                amount: rentAmount
+            },
+            read: false
+        });
+
+        try {
+            const owner = await Owner.findOne({ loginId: ownerId }).select('email profile.email').lean();
+            const ownerEmail = (owner && (owner.email || (owner.profile && owner.profile.email))) || '';
+            if (ownerEmail) {
+                const appBaseUrl = process.env.APP_BASE_URL || 'http://localhost:5001';
+                const receivedUrl = `${appBaseUrl}/propertyowner/payment-received.html?rentId=${encodeURIComponent(String(rent._id))}&ownerLoginId=${encodeURIComponent(ownerId)}`;
+                const html = `
+                    <div style="font-family:Arial,sans-serif;">
+                        <h3>Cash Payment Request</h3>
+                        <p>Tenant has requested to pay rent by cash.</p>
+                        <p><strong>Tenant:</strong> ${tenantName || loginId}</p>
+                        <p><strong>Login ID:</strong> ${loginId}</p>
+                        <p><strong>Amount:</strong> INR ${rentAmount}</p>
+                        <p><strong>Property:</strong> ${propertyName || '-'}</p>
+                        <p><strong>Room:</strong> ${roomNumber || '-'}</p>
+                        <p style="margin:16px 0;">
+                            <a href="${receivedUrl}" style="background:#16a34a;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;font-weight:600;">
+                                Payment Received
+                            </a>
+                        </p>
+                        <p style="font-size:12px;color:#666;">If button does not open, copy this link:<br>${receivedUrl}</p>
+                    </div>
+                `;
+                await sendMail(ownerEmail, 'RoomHy Cash Payment Request', '', html);
+            }
+        } catch (e) {
+            console.warn('cash request owner email failed:', e.message);
+        }
+
+        return res.json({ success: true, message: 'Cash payment request sent to owner', rent });
+    } catch (err) {
+        console.error('requestCashPayment error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// Start reminder campaign for all unpaid rents and send immediate reminder
+exports.startManualUnpaidReminders = async (req, res) => {
+    try {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const unpaidRents = await Rent.find({
+            collectionMonth: currentMonth,
+            paymentStatus: { $in: ['pending', 'partially_paid', 'overdue', 'defaulted'] }
+        });
+
+        if (!unpaidRents.length) {
+            return res.json({ success: true, sent: 0, enabled: 0, message: 'No unpaid tenants found' });
+        }
+
+        let sent = 0;
+        let enabled = 0;
+        for (const rent of unpaidRents) {
+            const sentNow = await sendRentReminderEmail(rent, 'initial');
+
+            rent.autoReminderEnabled = true;
+            if (!rent.autoReminderStartedAt) {
+                rent.autoReminderStartedAt = new Date();
+            }
+            if (sentNow) {
+                rent.autoReminderLastSentAt = new Date();
+                rent.reminders.push({
+                    sentAt: new Date(),
+                    type: 'auto_daily',
+                    status: 'sent',
+                    message: 'Manual trigger + daily auto reminder enabled'
+                });
+                sent++;
+            }
+            enabled++;
+            await rent.save();
+        }
+
+        return res.json({
+            success: true,
+            sent,
+            enabled,
+            message: `Reminder sent to ${sent} unpaid tenant(s). Daily auto reminders enabled until payment.`
+        });
+    } catch (err) {
+        console.error('startManualUnpaidReminders error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// Owner marks cash received -> send OTP to tenant email
+exports.markCashReceivedByOwner = async (req, res) => {
+    try {
+        const { rentId, ownerLoginId } = req.body || {};
+        if (!rentId || !ownerLoginId) {
+            return res.status(400).json({ success: false, message: 'rentId and ownerLoginId are required' });
+        }
+
+        const ownerId = String(ownerLoginId).trim().toUpperCase();
+        const rent = await Rent.findById(rentId);
+        if (!rent) return res.status(404).json({ success: false, message: 'Rent record not found' });
+        if (String(rent.ownerLoginId || '').toUpperCase() !== ownerId) {
+            return res.status(403).json({ success: false, message: 'Not authorized for this rent record' });
+        }
+
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        const expiry = new Date(Date.now() + 10 * 60 * 1000);
+
+        rent.cashRequestStatus = 'otp_sent';
+        rent.cashReceivedAt = new Date();
+        rent.cashOtpCode = otp;
+        rent.cashOtpExpiry = expiry;
+        rent.cashOtpSentAt = new Date();
+        rent.paymentMethod = 'cash';
+        await rent.save();
+
+        if (!rent.tenantEmail) {
+            return res.status(400).json({ success: false, message: 'Tenant email missing in rent record' });
+        }
+
+        const html = `
+            <div style="font-family:Arial,sans-serif;">
+                <h3>RoomHy Cash Payment OTP</h3>
+                <p>Your owner marked cash as received.</p>
+                <p>Enter this OTP in tenant panel to complete payment:</p>
+                <p style="font-size:26px;font-weight:700;letter-spacing:3px;">${otp}</p>
+                <p style="font-size:12px;color:#666;">Expires in 10 minutes.</p>
+            </div>
+        `;
+        await sendMail(rent.tenantEmail, 'RoomHy Cash Payment OTP', '', html);
+
+        return res.json({ success: true, message: 'OTP sent to tenant email', rentId: String(rent._id) });
+    } catch (err) {
+        console.error('markCashReceivedByOwner error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// Tenant verifies cash OTP -> mark payment paid
+exports.verifyCashPaymentOtp = async (req, res) => {
+    try {
+        const { tenantLoginId, otp } = req.body || {};
+        if (!tenantLoginId || !otp) {
+            return res.status(400).json({ success: false, message: 'tenantLoginId and otp are required' });
+        }
+        const loginId = String(tenantLoginId).trim().toUpperCase();
+        const rent = await Rent.findOne({
+            tenantLoginId: loginId,
+            cashRequestStatus: { $in: ['otp_sent', 'received', 'requested'] }
+        }).sort({ updatedAt: -1 });
+
+        if (!rent) return res.status(404).json({ success: false, message: 'No pending cash payment found' });
+        if (!rent.cashOtpCode || !rent.cashOtpExpiry) {
+            return res.status(400).json({ success: false, message: 'OTP not sent yet by owner' });
+        }
+        if (new Date() > new Date(rent.cashOtpExpiry)) {
+            return res.status(400).json({ success: false, message: 'OTP expired' });
+        }
+        if (String(otp).trim() !== String(rent.cashOtpCode).trim()) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+
+        rent.cashRequestStatus = 'paid';
+        rent.paymentStatus = 'paid';
+        rent.paymentMethod = 'cash';
+        rent.paidAmount = rent.totalDue || rent.rentAmount || rent.paidAmount || 0;
+        rent.paymentDate = new Date();
+        rent.autoReminderEnabled = false;
+        rent.autoReminderLastSentAt = undefined;
+        rent.cashOtpCode = undefined;
+        rent.cashOtpExpiry = undefined;
+        await rent.save();
+
+        try {
+            await Notification.create({
+                toLoginId: String(rent.ownerLoginId || '').toUpperCase(),
+                from: loginId,
+                type: 'cash_payment_completed',
+                meta: {
+                    title: 'Cash Payment Completed',
+                    message: `${rent.tenantName || loginId} verified cash OTP and payment marked paid`,
+                    rentId: String(rent._id),
+                    amount: rent.paidAmount
+                },
+                read: false
+            });
+        } catch (_) {}
+
+        return res.json({ success: true, message: 'Cash payment marked as paid', rent });
+    } catch (err) {
+        console.error('verifyCashPaymentOtp error:', err);
+        return res.status(500).json({ success: false, message: err.message });
     }
 };

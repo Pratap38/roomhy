@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <!-- 
     ========================================
@@ -114,7 +114,7 @@
                             type="password" 
                             class="input-focus w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 transition-colors outline-none" 
                             id="login-password" 
-                            placeholder=""¢"¢"¢"¢"¢"¢"¢"¢" 
+                            placeholder=""Â¢"Â¢"Â¢"Â¢"Â¢"Â¢"Â¢"Â¢" 
                             required
                             autocomplete="off"
                         >
@@ -291,6 +291,18 @@
                 console.warn('Could not parse roomhy_owners_db', e);
             }
 
+            // Check Tenants DB
+            try {
+                const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+                if (Array.isArray(tenants) && tenants.find(t => (t.loginId || '').toUpperCase() === up)) {
+                    console.log('[Login] Found in Tenants DB');
+                    loginTenant(loginId, password, errorMsg);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Could not parse roomhy_tenants', e);
+            }
+
             // Priority 2: Format-based detection for new IDs or non-database matches
             console.log('[Login] Using format-based detection for ID:', loginId);
             if (loginId.includes('@')) {
@@ -313,6 +325,11 @@
                 console.log('[Login] Detected Employee (RY/EMP prefix)');
                 loginEmployee(loginId, password, errorMsg);
                 return;
+            } else if (up.startsWith('ROOMHYTNT') || up.startsWith('TNT')) {
+                // Tenant ID format
+                console.log('[Login] Detected Tenant (ROOMHYTNT/TNT prefix)');
+                loginTenant(loginId, password, errorMsg);
+                return;
             }
 
             // If no match found anywhere
@@ -330,7 +347,7 @@
             
             // Check hardcoded default credentials first (fastest)
             if (!db && email === 'roomhyadmin@gmail.com' && password === 'admin@123') {
-                console.log('[Staff Login] ✅ SuperAdmin login with default credentials');
+                console.log('[Staff Login] âœ… SuperAdmin login with default credentials');
                 const user = { id: 'SUPER_ADMIN', loginId: 'SUPER_ADMIN', email, name: 'Super Admin', role: 'superadmin' };
                 sessionStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('staff_user', JSON.stringify(user));
@@ -344,7 +361,7 @@
 
             // Check local database (stored by seeder)
             if (db && db.email === email && db.password === password) {
-                console.log('[Staff Login] ✅ SuperAdmin login with stored credentials');
+                console.log('[Staff Login] âœ… SuperAdmin login with stored credentials');
                 const user = { ...db, loginId: db.loginId || db.id || 'SUPER_ADMIN', role: 'superadmin' };
                 sessionStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('staff_user', JSON.stringify(user));
@@ -375,7 +392,7 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.token && data.user) {
-                        console.log('[Staff Login] ✅ SuperAdmin login via backend API');
+                        console.log('[Staff Login] âœ… SuperAdmin login via backend API');
                         // Store user and token from backend
                         localStorage.setItem('staff_user', JSON.stringify(data.user));
                         localStorage.setItem('staff_token', data.token);
@@ -426,7 +443,7 @@
                     return;
                 }
 
-                console.log('[Owner Login] ✅ Owner login successful:', ownerId);
+                console.log('[Owner Login] âœ… Owner login successful:', ownerId);
                 // Clear STAFF sessions to prevent crosstalk
                 sessionStorage.removeItem('manager_user');
                 sessionStorage.removeItem('user');
@@ -458,7 +475,7 @@
             
             const mgr = db.find(m => (m.loginId || '').toUpperCase() === loginId.toUpperCase() && m.password === password);
             if (mgr) {
-                console.log('[Staff Login] ✅ Area Manager login successful:', loginId);
+                console.log('[Staff Login] âœ… Area Manager login successful:', loginId);
                 const user = { ...mgr, role: 'areamanager' };
                 user.areaCode = user.areaCode || user.area || user.areaName || '';
                 user.areaName = user.areaName || user.area || '';
@@ -470,7 +487,7 @@
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = 'Areamanager/areaadmin.html';
+                window.location.href = 'superadmin/areaadmin.html';
             } else {
                 console.warn('[Staff Login] Area Manager not found or password mismatch for:', loginId);
                 showError('Invalid credentials.', errorMsg);
@@ -504,7 +521,7 @@
                  return;
              }
 
-             console.log('[Staff Login] ✅ Employee login successful:', loginId);
+             console.log('[Staff Login] âœ… Employee login successful:', loginId);
 
              const user = {
                  loginId: emp.loginId,
@@ -526,7 +543,86 @@
              // Clear owner sessions to prevent crosstalk
              sessionStorage.removeItem('owner_session');
              localStorage.removeItem('owner_user');
-             window.location.href = 'Areamanager/areaadmin.html';
+             window.location.href = 'superadmin/areaadmin.html';
+        }
+
+        // Tenant Login
+        function loginTenant(loginId, password, errorMsg) {
+            const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+            const tenantIdx = tenants.findIndex(t => (t.loginId || '').toUpperCase() === String(loginId || '').toUpperCase());
+
+            if (tenantIdx === -1) {
+                showError('Tenant ID not found.', errorMsg);
+                return;
+            }
+
+            const tenant = tenants[tenantIdx];
+
+            // Existing tenant password login
+            if (tenant.password && tenant.password === password) {
+                createTenantSessionAndRedirect(tenant);
+                return;
+            }
+
+            // First-time login with temporary password: force new password setup
+            const isFirstTime = (tenant.tempPassword && tenant.tempPassword === password) &&
+                (tenant.status === 'pending' || !tenant.passwordSet);
+
+            if (isFirstTime) {
+                const newPassword = prompt('Set your new password (minimum 6 characters):');
+                if (newPassword === null) {
+                    showError('Password setup cancelled.', errorMsg);
+                    return;
+                }
+                if (String(newPassword).trim().length < 6) {
+                    showError('New password must be at least 6 characters.', errorMsg);
+                    return;
+                }
+
+                const confirmPassword = prompt('Confirm your new password:');
+                if (confirmPassword === null) {
+                    showError('Password setup cancelled.', errorMsg);
+                    return;
+                }
+                if (newPassword !== confirmPassword) {
+                    showError('Passwords do not match.', errorMsg);
+                    return;
+                }
+
+                tenants[tenantIdx].password = newPassword;
+                tenants[tenantIdx].tempPassword = null;
+                tenants[tenantIdx].passwordSet = true;
+                localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
+
+                createTenantSessionAndRedirect(tenants[tenantIdx]);
+                return;
+            }
+
+            showError('Invalid credentials.', errorMsg);
+        }
+
+        function createTenantSessionAndRedirect(tenant) {
+            // Clear staff and owner sessions to prevent crosstalk
+            sessionStorage.removeItem('manager_user');
+            sessionStorage.removeItem('user');
+            localStorage.removeItem('staff_user');
+            localStorage.removeItem('staff_token');
+            sessionStorage.removeItem('owner_session');
+            localStorage.removeItem('owner_user');
+
+            const tenantUser = {
+                name: tenant.name || 'Tenant',
+                phone: tenant.phone || '',
+                email: tenant.email || '',
+                loginId: tenant.loginId,
+                role: 'tenant',
+                tenantId: tenant.id || tenant._id || tenant.loginId,
+                passwordSet: true
+            };
+
+            localStorage.setItem('tenant_user', JSON.stringify(tenantUser));
+            localStorage.setItem('user', JSON.stringify(tenantUser));
+            window.location.href = 'tenant/tenantdashboard.html';
         }
 
         function showError(msg, errorMsg) {
@@ -710,7 +806,7 @@
                 if (['superadmin', 'areamanager', 'employee'].includes(staffType)) {
                     const localOtp = String(Math.floor(100000 + Math.random() * 900000));
                     forgotPasswordState.localOtp = localOtp;
-                    console.log('[ForgotPassword] ⚠️  EMAIL FOUND LOCALLY ONLY');
+                    console.log('[ForgotPassword] âš ï¸  EMAIL FOUND LOCALLY ONLY');
                     console.log('[ForgotPassword] Generated Local OTP:', localOtp);
                     console.log('[ForgotPassword] Enter this OTP in the form to proceed');
                 }
@@ -741,14 +837,14 @@
             if (forgotPasswordState.localOtp) {
                 console.log('[ForgotPassword] Verifying OTP locally...');
                 if (otp === forgotPasswordState.localOtp) {
-                    console.log('[ForgotPassword] ✅ OTP verified successfully!');
+                    console.log('[ForgotPassword] âœ… OTP verified successfully!');
                     // Generate a fake token for local handling
                     forgotPasswordState.token = 'local_' + Date.now();
                     document.getElementById('step-otp').classList.add('hidden');
                     document.getElementById('step-password').classList.remove('hidden');
                     return;
                 } else {
-                    console.log('[ForgotPassword] ❌ OTP mismatch. Expected:', forgotPasswordState.localOtp, 'Got:', otp);
+                    console.log('[ForgotPassword] âŒ OTP mismatch. Expected:', forgotPasswordState.localOtp, 'Got:', otp);
                     otpError.textContent = 'Invalid OTP. Please try again.';
                     otpError.classList.remove('hidden');
                     return;
@@ -817,11 +913,11 @@
                     if (employee) {
                         employee.password = newPassword;
                         localStorage.setItem('roomhy_employees', JSON.stringify(employees));
-                        console.log('[ForgotPassword] ✅ Password updated in localStorage for:', forgotPasswordState.email);
+                        console.log('[ForgotPassword] âœ… Password updated in localStorage for:', forgotPasswordState.email);
                         
                         // Close modal and redirect
                         closeForgotPasswordModal();
-                        alert('✅ Password reset successfully! Please login with your new password.', 'success');
+                        alert('âœ… Password reset successfully! Please login with your new password.', 'success');
                         return;
                     } else {
                         passwordError.textContent = 'Employee record not found';
@@ -884,3 +980,4 @@
     </script>
 </body>
 </html>
+

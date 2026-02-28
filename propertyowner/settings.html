@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - Owner Settings</title>
     <script>
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -22,6 +22,8 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-slate-800">
     <div class="flex h-screen overflow-hidden">
@@ -38,10 +40,7 @@
 
                 <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                 <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
-                <a href="documents.html" class="sidebar-link"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents</a>
                 <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
-                <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                 <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
                 <a href="#" class="sidebar-link disabled" onclick="event.preventDefault();"><i data-lucide="message-square" class="w-5 h-5 mr-3"></i> Chat</a>
                 <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
@@ -93,12 +92,9 @@
 
                         <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                         <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                        <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
-                        <a href="documents.html" class="sidebar-link"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents</a>
                         <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                         <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                         <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
-                        <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                         <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
                         <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                         <a href="settings.html" class="sidebar-link active"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
@@ -170,28 +166,41 @@
     <script>
         lucide.createIcons();
         
-        // Auth check (prefer per-tab owner session)
-        const owner = typeof getCurrentOwner === 'function' ? getCurrentOwner() : null;
-        if (!owner) {
-            window.location.href = 'ownerlogin.html';
-        }
+        let owner = null;
 
-        // Header Population
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!owner) return;
+        // Listen for owner context updates from ownerContextSync.js
+        window.addEventListener('owner-session-updated', (event) => {
+            owner = event.detail || window.__ownerContext;
+            updateHeader(owner);
+        });
+
+        function updateHeader(ownerData) {
+            if (!ownerData) return;
             if (document.getElementById('headerName')) {
-                document.getElementById('headerName').innerText = owner.name;
+                document.getElementById('headerName').innerText = ownerData.name;
             }
             if (document.getElementById('headerAvatar')) {
-                document.getElementById('headerAvatar').innerText = owner.name.charAt(0).toUpperCase();
+                document.getElementById('headerAvatar').innerText = ownerData.name.charAt(0).toUpperCase();
             }
             if (document.getElementById('headerAccountId')) {
-                document.getElementById('headerAccountId').innerText = `Account: ${owner.loginId || owner.ownerId}`;
+                document.getElementById('headerAccountId').innerText = `Account: ${ownerData.loginId || ownerData.ownerId}`;
             }
+        }
+
+        // Auth check (prefer per-tab owner session)
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!owner) {
+                owner = window.__ownerContext || (typeof getCurrentOwner === 'function' ? getCurrentOwner() : null);
+            }
+            if (!owner) {
+                window.location.href = 'ownerlogin.html';
+                return;
+            }
+            updateHeader(owner);
         });
 
         // Mobile menu handlers
-        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+        document.getElementById('mobile-menu-open').addEventListener('click', () => {
             document.getElementById('mobile-menu').classList.remove('hidden');
         });
 
@@ -213,3 +222,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+

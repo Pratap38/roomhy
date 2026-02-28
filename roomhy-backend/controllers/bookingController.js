@@ -1,6 +1,10 @@
 const BookingRequest = require('../models/BookingRequest');
 const RefundRequest = require('../models/RefundRequest');
+const Notification = require('../models/Notification');
 const User = require('../models/user');
+const Owner = require('../models/Owner');
+const mailer = require('../utils/mailer');
+const { notifySuperadmin } = require('../utils/superadminNotifier');
 
 // ==================== BOOKING REQUEST OPERATIONS ====================
 
@@ -15,7 +19,7 @@ exports.createBookingRequest = async (req, res) => {
         const { 
             property_id, property_name, area, property_type, rent_amount,
             user_id, owner_id, name, phone, email, request_type, bid_amount, message,
-            whatsapp_enabled, chat_enabled
+            bid_min, bid_max, filter_criteria, whatsapp_enabled, chat_enabled
         } = req.body;
 
         // Validation
@@ -41,9 +45,14 @@ exports.createBookingRequest = async (req, res) => {
         // Find area manager by area (for notifications)
         const manager = await User.findOne({ role: 'area_manager', area: area });
         
-        // Find owner to get owner name
-        const owner = await User.findOne({ loginId: owner_id });
-        const ownerName = owner ? owner.fullName || owner.name || owner.loginId : owner_id;
+        // Find owner to get owner name/email (supports both User and Owner collections)
+        const ownerLoginId = String(owner_id || '').toUpperCase();
+        const owner = await User.findOne({ loginId: ownerLoginId });
+        const ownerProfile = await Owner.findOne({ loginId: ownerLoginId });
+        const ownerName = owner
+            ? owner.fullName || owner.name || owner.loginId
+            : (ownerProfile?.profile?.name || ownerProfile?.name || ownerLoginId);
+        const ownerEmail = owner?.email || ownerProfile?.email || ownerProfile?.profile?.email || '';
         console.log(`📍 Owner found: ${ownerName}`);
         
         // Generate unique chat room ID
@@ -64,6 +73,9 @@ exports.createBookingRequest = async (req, res) => {
             owner_name: ownerName,          // ✅ SET OWNER NAME FROM USER DB
             request_type,
             bid_amount: request_type === 'bid' ? (bid_amount || 500) : 0,
+            bid_min: request_type === 'bid' ? (bid_min || null) : null,
+            bid_max: request_type === 'bid' ? (bid_max || null) : null,
+            filter_criteria: filter_criteria || {},
             message,
             whatsapp_enabled: whatsapp_enabled || true,
             area_manager_id: manager ? manager._id : null,
@@ -73,6 +85,26 @@ exports.createBookingRequest = async (req, res) => {
 
         await newRequest.save();
         console.log(`✅ Booking saved with ID: ${newRequest._id}`);
+
+        // Create owner in-app notification for real-time panel alerts.
+        try {
+            await Notification.create({
+                toRole: 'owner',
+                toLoginId: ownerLoginId,
+                from: 'system',
+                type: 'owner_new_booking_request',
+                meta: {
+                    bookingId: String(newRequest._id || ''),
+                    propertyName: property_name || '',
+                    guestName: name || '',
+                    checkInDate: newRequest.check_in_date || '',
+                    amount: rent_amount || bid_amount || 0
+                },
+                read: false
+            });
+        } catch (notifyErr) {
+            console.warn('Failed to create owner booking notification:', notifyErr.message);
+        }
         
         if (request_type === 'bid') {
             const holdExpiry = new Date();
@@ -86,7 +118,7 @@ exports.createBookingRequest = async (req, res) => {
 
         // Send email notification to owner
         try {
-            if (owner && owner.email) {
+            if (ownerEmail) {
                 const mailer = require('../utils/mailer');
                 const subject = `New ${request_type.charAt(0).toUpperCase() + request_type.slice(1)} Request`;
                 const html = `
@@ -105,36 +137,32 @@ exports.createBookingRequest = async (req, res) => {
                         <p>Please review this request in your booking requests panel.</p>
                     </div>
                 `;
-                await mailer.sendMail(owner.email, subject, '', html);
+                await mailer.sendMail(ownerEmail, subject, '', html);
             }
         } catch (emailError) {
             console.error('Failed to send booking request notification email:', emailError);
         }
 
-        // Send email notification to superadmin
+        // Send superadmin in-app + email notification
         try {
-            const mailer = require('../utils/mailer');
-            const superadminEmail = 'roomhy01@gmail.com';
-            const subject = `New ${request_type.charAt(0).toUpperCase() + request_type.slice(1)} Submitted`;
-            const html = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #333;">New Booking Request</h2>
-                    <p>A new ${request_type} has been submitted.</p>
-                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                        <p><strong>Property:</strong> ${property_name}</p>
-                        <p><strong>Owner ID:</strong> ${owner_id}</p>
-                        <p><strong>Tenant:</strong> ${name}</p>
-                        <p><strong>Type:</strong> ${request_type.charAt(0).toUpperCase() + request_type.slice(1)}</p>
-                        ${request_type === 'bid' ? `<p><strong>Bid Amount:</strong> ₹${bid_amount || 0}</p>` : ''}
-                    </div>
-                    <p>Please review this request in the superadmin booking panel.</p>
-                </div>
-            `;
-            await mailer.sendMail(superadminEmail, subject, '', html);
+            await notifySuperadmin({
+                type: 'new_booking',
+                from: 'website',
+                subject: `New ${request_type.charAt(0).toUpperCase() + request_type.slice(1)} Submitted`,
+                message: 'A new booking request is waiting for review in Superadmin.',
+                meta: {
+                    bookingId: String(newRequest._id || ''),
+                    propertyName: property_name || '',
+                    ownerId: owner_id || '',
+                    guestName: name || '',
+                    guestEmail: email || '',
+                    requestType: request_type || 'request',
+                    bidAmount: request_type === 'bid' ? (bid_amount || 0) : ''
+                }
+            });
         } catch (emailError) {
             console.error('Failed to send booking request notification to superadmin:', emailError);
         }
-
         res.status(201).json({
             success: true,
             message: `${request_type.charAt(0).toUpperCase() + request_type.slice(1)} submitted successfully`,
@@ -236,28 +264,26 @@ exports.createBulkBookingRequest = async (req, res) => {
             }
         }
 
-        // Send email notification to superadmin
+        // Send superadmin in-app + email notification
         try {
-            const superadminEmail = 'roomhy01@gmail.com';
-            const subject = `New Bulk Booking Request Submitted`;
-            const html = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #333;">New Bulk Booking Request</h2>
-                    <p>A new bulk booking request has been submitted to ${owner_ids.length} property owners.</p>
-                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                        <p><strong>Tenant:</strong> ${name}</p>
-                        <p><strong>Owner Count:</strong> ${owner_ids.length}</p>
-                        <p><strong>Bid Amount:</strong> ₹${bid_amount || 0}</p>
-                        <p><strong>Filters:</strong> ${property_filters ? JSON.stringify(property_filters, null, 2) : 'All properties'}</p>
-                    </div>
-                    <p>Email notifications sent to ${successCount} owners (${failureCount} failed).</p>
-                </div>
-            `;
-            await mailer.sendMail(superadminEmail, subject, '', html);
+            await notifySuperadmin({
+                type: 'new_booking',
+                from: 'website',
+                subject: 'New Bulk Booking Request Submitted',
+                message: 'A new bulk booking request is waiting for review in Superadmin.',
+                meta: {
+                    bookingId: String(newRequest._id || ''),
+                    guestName: name || '',
+                    guestEmail: email || '',
+                    ownerCount: owner_ids.length || 0,
+                    bidAmount: bid_amount || 0,
+                    filters: property_filters ? JSON.stringify(property_filters) : 'All properties',
+                    notifiedOwners: `${successCount} success / ${failureCount} failed`
+                }
+            });
         } catch (emailError) {
             console.error('Failed to send bulk booking notification to superadmin:', emailError);
         }
-
         res.status(201).json({
             success: true,
             message: `Bulk booking request created successfully. Notifications sent to ${successCount} property owners.`,
@@ -1000,6 +1026,77 @@ exports.confirmBooking = async (req, res) => {
 
         await booking.save();
 
+        // Email notifications: tenant + owner + superadmin (booking confirmation / transaction)
+        try {
+            const paymentRef = normalizedPaymentId || 'N/A';
+            const amountValue = normalizedPaymentAmount || 0;
+            const propertyLabel = normalizedPropertyName || normalizedPropertyId || 'Property';
+
+            // Tenant confirmation
+            if (email) {
+                const tenantHtml = `
+                    <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                        <h2>Booking Confirmed</h2>
+                        <p>Hi ${normalizedName || 'Guest'},</p>
+                        <p>Your booking is confirmed for <strong>${propertyLabel}</strong>.</p>
+                        <p><strong>Transaction ID:</strong> ${paymentRef}</p>
+                        <p><strong>Amount:</strong> INR ${amountValue}</p>
+                    </div>
+                `;
+                await mailer.sendMail(email, `Booking Confirmed - ${propertyLabel}`, '', tenantHtml);
+            }
+
+            // Owner confirmation
+            let ownerEmail = '';
+            if (finalOwnerId && finalOwnerId !== 'owner_unknown') {
+                const ownerUser = await User.findOne({ loginId: finalOwnerId }).lean();
+                const ownerRecord = await Owner.findOne({ loginId: finalOwnerId }).lean();
+                ownerEmail =
+                    (ownerUser && ownerUser.email) ||
+                    (ownerRecord && ownerRecord.email) ||
+                    (ownerRecord && ownerRecord.profile && ownerRecord.profile.email) ||
+                    '';
+            }
+
+            if (ownerEmail) {
+                const ownerHtml = `
+                    <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                        <h2>New Booking Confirmed</h2>
+                        <p>Property: <strong>${propertyLabel}</strong></p>
+                        <p>Tenant: <strong>${normalizedName || 'N/A'}</strong></p>
+                        <p>Transaction ID: <strong>${paymentRef}</strong></p>
+                        <p>Amount: <strong>INR ${amountValue}</strong></p>
+                    </div>
+                `;
+                await mailer.sendMail(ownerEmail, `New Booking - ${propertyLabel}`, '', ownerHtml);
+            }
+
+            // Superadmin copy
+            const superadminEmails = [];
+            const superadminUsers = await User.find({ role: 'superadmin' }).select('email').lean();
+            for (const u of superadminUsers) {
+                if (u && u.email) superadminEmails.push(u.email);
+            }
+            if (process.env.SUPERADMIN_EMAIL) superadminEmails.push(process.env.SUPERADMIN_EMAIL);
+            const uniqueAdminEmails = [...new Set(superadminEmails.filter(Boolean))];
+            if (uniqueAdminEmails.length) {
+                const adminHtml = `
+                    <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                        <h2>Booking Transaction Update</h2>
+                        <p>Property: <strong>${propertyLabel}</strong></p>
+                        <p>Tenant: <strong>${normalizedName || 'N/A'}</strong> (${email || 'N/A'})</p>
+                        <p>Owner ID: <strong>${finalOwnerId}</strong></p>
+                        <p>Transaction ID: <strong>${paymentRef}</strong></p>
+                        <p>Amount: <strong>INR ${amountValue}</strong></p>
+                        <p>Status: <strong>${booking.booking_status || booking.status || 'confirmed'}</strong></p>
+                    </div>
+                `;
+                await mailer.sendMail(uniqueAdminEmails, `Booking Transaction - ${propertyLabel}`, '', adminHtml);
+            }
+        } catch (mailErr) {
+            console.warn('Booking confirmation email dispatch failed:', mailErr.message);
+        }
+
         res.status(201).json({
             success: true,
             message: 'Booking confirmed successfully',
@@ -1413,3 +1510,5 @@ exports.processRefundPayment = async (req, res) => {
         });
     }
 };
+
+

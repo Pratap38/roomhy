@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10,8 +10,8 @@
             ? 'http://localhost:5001'
             : 'https://roomhy-backend-wqwo.onrender.com';
         
-        console.log(`🔗 Using API_URL: ${API_URL}`);
-        console.log(`📍 Current hostname: ${window.location.hostname}`);
+        console.log(`?? Using API_URL: ${API_URL}`);
+        console.log(`?? Current hostname: ${window.location.hostname}`);
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -37,12 +37,19 @@
         
         .status-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
         .status-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        
+        /* Mobile Menu Icon - Transparent Background */
+        #mobile-menu-open { background-color: transparent !important; padding: 0.5rem !important; border-radius: 0.375rem; transition: all 0.2s ease; }
+        #mobile-menu-open:hover { background-color: transparent !important; color: #64748b; }
     </style>
 </head>
 <body class="text-slate-800">
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden" onclick="closeMobileMenu()"></div>
+    
     <div class="flex h-screen overflow-hidden">
                 <!-- Sidebar -->
-        <aside class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar">
+        <aside id="mobile-sidebar" class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827] z-10">
                  <div class="flex items-center gap-3">
                      <div class="bg-purple-600 p-1.5 rounded-lg"><i data-lucide="building-2" class="w-5 h-5 text-white"></i></div>
@@ -86,10 +93,34 @@
 
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="bg-white h-16 shadow-sm flex items-center justify-between px-8 border-b border-gray-200">
-                <h1 class="text-xl font-bold text-gray-800">Pending Approvals</h1>
+                <div class="flex items-center gap-4">
+                    <button id="mobile-menu-open" class="md:hidden text-slate-500"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <h1 class="text-xl font-bold text-gray-800">Pending Approvals</h1>
+                </div>
                 <div class="flex items-center gap-4">
                     <button onclick="fetchEnquiries()" class="text-sm text-purple-600 hover:underline flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3 h-3"></i> Refresh</button>
-                    <button onclick="exportVisitsExcel()" class="text-sm text-gray-600 hover:underline flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Export</button>
+                                        <button onclick="exportVisitsExcel()" class="text-sm text-gray-600 hover:underline flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Export</button>
+                    <div class="relative">
+                        <button id="notificationBellBtn" class="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-lg transition-colors">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+                        </button>
+                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg py-2 ring-1 ring-black ring-opacity-5 z-50">
+                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                <h3 class="font-semibold text-gray-800">Notifications</h3>
+                                <div class="flex gap-2">
+                                    <button onclick="markAllRead()" class="text-xs text-purple-600 hover:text-purple-800">Mark all read</button>
+                                    <button onclick="clearAll()" class="text-xs text-gray-400 hover:text-gray-600">Clear</button>
+                                </div>
+                            </div>
+                            <div id="notificationList" class="max-h-96 overflow-y-auto custom-scrollbar">
+                                <div class="px-4 py-8 text-center text-gray-400">
+                                    <i data-lucide="bell-off" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                                    <p>No notifications yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -146,6 +177,7 @@
                                             <th class="px-4 py-3">Nearby Location</th>
                                             <th class="px-4 py-3">Owner Name</th>
                                             <th class="px-4 py-3">Owner Contact</th>
+                                            <th class="px-4 py-3">Owner Gmail</th>
                                             <th class="px-4 py-3">Gender</th>
                                             <th class="px-4 py-3">Student Reviews</th>
                                             <th class="px-4 py-3">Employee Rating</th>
@@ -254,11 +286,11 @@
         }
 
         async function fetchEnquiries() {
-            console.log('ðŸ”„ fetchEnquiries() called - Super Admin Enquiry Page');
+            console.log('🔄 fetchEnquiries() called - Super Admin Enquiry Page');
             const tbody = document.getElementById('enquiryBody');
             
             if (!tbody) {
-                console.error('âŒ Table body element not found! ID: enquiryBody');
+                console.error('❌ Table body element not found! ID: enquiryBody');
                 return;
             }
             
@@ -269,7 +301,7 @@
                 const token = sessionStorage.getItem('token') || localStorage.getItem('token');
                 const apiUrl = API_URL + '/api/visits/pending';
 
-                console.log('ðŸ”— Fetching from API:', apiUrl);
+                console.log('🔗 Fetching from API:', apiUrl);
                 const response = await fetch(apiUrl, {
                     method: 'GET'
                 });
@@ -279,13 +311,13 @@
                 }
 
                 const data = await response.json();
-                console.log('ðŸ“¡ API response:', data);
+                console.log('📡 API response:', data);
                 const allVisits = data.visits || data || [];
-                console.log('✅ Loaded from API:', allVisits.length, 'visits');
+                console.log('? Loaded from API:', allVisits.length, 'visits');
 
                 // Filter for pending/submitted visits
                 visits = allVisits.filter(v => ['submitted', 'pending', 'pending_review'].includes(v.status));
-                console.log('✅ Filtered to pending/submitted:', visits.length, 'visits');
+                console.log('? Filtered to pending/submitted:', visits.length, 'visits');
 
                 if (visits.length > 0) {
                     console.log('   First visit:', {
@@ -296,16 +328,16 @@
                 }
                 
             } catch (apiErr) {
-                console.warn('âš ï¸ API fetch failed, falling back to localStorage:', apiErr.message);
+                console.warn('⚠️ API fetch failed, falling back to localStorage:', apiErr.message);
                 
                 // Fallback to localStorage
                 try {
                     const raw = localStorage.getItem('roomhy_visits');
-                    console.log('ðŸ“¦ Fallback - localStorage roomhy_visits exists:', !!raw);
+                    console.log('📦 Fallback - localStorage roomhy_visits exists:', !!raw);
                     visits = JSON.parse(raw || '[]');
-                    console.log('ðŸ“¦ Loaded from localStorage:', visits.length, 'visits');
+                    console.log('📦 Loaded from localStorage:', visits.length, 'visits');
                 } catch (err) {
-                    console.error('âŒ Failed to parse localStorage visits:', err);
+                    console.error('❌ Failed to parse localStorage visits:', err);
                     visits = [];
                 }
                 
@@ -313,11 +345,11 @@
                 try {
                     if (visits.length === 0) {
                         const sessionVisits = JSON.parse(sessionStorage.getItem('roomhy_visits') || '[]');
-                        console.log('ðŸ“¦ Supplemented from sessionStorage:', sessionVisits.length, 'visits');
+                        console.log('📦 Supplemented from sessionStorage:', sessionVisits.length, 'visits');
                         visits = sessionVisits;
                     }
                 } catch (err) {
-                    console.error('âŒ Failed to parse sessionStorage visits:', err);
+                    console.error('❌ Failed to parse sessionStorage visits:', err);
                 }
             }
             
@@ -325,22 +357,22 @@
             const filtered = visits.filter(v => {
                 const hasStatus = ['pending', 'submitted'].includes(v.status);
                 if (!hasStatus) {
-                    console.warn('â­ï¸ Skipping visit (non-pending status):', v._id, 'Status:', v.status);
+                    console.warn('⏭️ Skipping visit (non-pending status):', v._id, 'Status:', v.status);
                 }
                 return hasStatus;
             });
             
             visits = filtered;
-            console.log('✅ Filtered to pending/submitted:', visits.length, 'visits');
+            console.log('? Filtered to pending/submitted:', visits.length, 'visits');
 
             if(visits.length === 0) {
-                console.warn('âš ï¸ No pending visits found. Showing empty message.');
-                tbody.innerHTML = '<tr><td colspan="25" class="px-6 py-12 text-center text-gray-400">No pending reports found. <a href="javascript:location.reload()" class="text-purple-600 underline">Refresh</a></td></tr>';
+                console.warn('⚠️ No pending visits found. Showing empty message.');
+                tbody.innerHTML = '<tr><td colspan="28" class="px-6 py-12 text-center text-gray-400">No pending reports found. <a href="javascript:location.reload()" class="text-purple-600 underline">Refresh</a></td></tr>';
                 renderStatusCounters();
                 return;
             }
             
-            console.log('ðŸ“‹ Rendering', visits.length, 'visits to table');
+            console.log('📋 Rendering', visits.length, 'visits to table');
 
             tbody.innerHTML = visits.map((v, idx) => {
                 console.log(`   Rendering ${idx + 1}/${visits.length}: ${v._id}`);
@@ -357,6 +389,7 @@
                     nearbyLocation: v.nearbyLocation,
                     ownerName: v.ownerName,
                     contactPhone: v.contactPhone,
+                    ownerEmail: v.ownerEmail,
                     monthlyRent: v.monthlyRent,
                     amenities: v.amenities
                 };
@@ -387,18 +420,19 @@
                     <td class="px-4 py-3">${v.nearbyLocation || prop.nearbyLocation || '-'}</td>
                     <td class="px-4 py-3">${v.ownerName || prop.ownerName || '-'}</td>
                     <td class="px-4 py-3">${v.contactPhone || prop.contactPhone || '-'}</td>
+                    <td class="px-4 py-3">${v.ownerEmail || prop.ownerEmail || '-'}</td>
                     <td class="px-4 py-3">${v.gender || '-'}</td>
                     <td class="px-4 py-3 text-center bg-amber-50 border-x border-amber-200">
                         <div class="flex items-center justify-center">
-                            <span class="text-lg font-bold text-amber-600">${v.studentReviewsRating ? `${'★'.repeat(Math.floor(v.studentReviewsRating))}${`☆`.repeat(5-Math.floor(v.studentReviewsRating))}` : '-'}</span>
+                            <span class="text-lg font-bold text-amber-600">${v.studentReviewsRating ? `${'★'.repeat(Math.floor(v.studentReviewsRating))}${'☆'.repeat(5-Math.floor(v.studentReviewsRating))}` : '-'}</span>
                         </div>
                     </td>
                     <td class="px-4 py-3 text-center bg-emerald-50 border-x border-emerald-200">
                         <div class="flex items-center justify-center">
-                            <span class="text-lg font-bold text-emerald-600">${v.employeeRating ? `${'★'.repeat(Math.floor(v.employeeRating))}${`☆`.repeat(5-Math.floor(v.employeeRating))}` : '-'}</span>
+                            <span class="text-lg font-bold text-emerald-600">${v.employeeRating ? `${'★'.repeat(Math.floor(v.employeeRating))}${'☆'.repeat(5-Math.floor(v.employeeRating))}` : '-'}</span>
                         </div>
                     </td>
-                    <td class="px-4 py-3 text-center font-bold">₹${v.monthlyRent || prop.monthlyRent || 0}</td>
+                    <td class="px-4 py-3 text-center font-bold">?${v.monthlyRent || prop.monthlyRent || 0}</td>
                     <td class="px-4 py-3 text-sm">${amenities}</td>
                     <td class="px-4 py-3">${cleanliness}</td>
                     <td class="px-4 py-3">${ownerBehaviour}</td>
@@ -428,10 +462,10 @@
                 </tr>`;
             }).join('');
             
-            console.log('✅ Table rendered successfully with', visits.length, 'rows');
+            console.log('? Table rendered successfully with', visits.length, 'rows');
             lucide.createIcons();
             renderStatusCounters();
-            console.log('✅ fetchEnquiries() completed');
+            console.log('? fetchEnquiries() completed');
         }
 
         function toggleWebStatus(id) {
@@ -467,14 +501,14 @@
             try {
                 visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
             } catch (err) {
-                console.error('âŒ Failed to parse localStorage visits:', err);
+                console.error('❌ Failed to parse localStorage visits:', err);
             }
             
             let sessionVisits = [];
             try {
                 sessionVisits = JSON.parse(sessionStorage.getItem('roomhy_visits') || '[]');
             } catch (err) {
-                console.error('âŒ Failed to parse sessionStorage visits:', err);
+                console.error('❌ Failed to parse sessionStorage visits:', err);
             }
             
             // Merge both sources
@@ -516,7 +550,7 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 text-sm">${owner}</td>
                     <td class="px-6 py-4 text-sm font-mono">${roomNo}</td>
-                    <td class="px-6 py-4 text-right font-bold">₹${rent}</td>
+                    <td class="px-6 py-4 text-right font-bold">?${rent}</td>
                     <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end gap-2">
                             <button onclick="approveRoomNotification('${n._id}')" class="px-3 py-1 bg-green-100 text-green-700 rounded text-sm">Approve</button>
@@ -566,7 +600,7 @@
                 try { sessionStorage.setItem('roomhy_visits', JSON.stringify(visits)); } catch(e){}
                 fetchRoomApprovals();
                 fetchEnquiries();
-                alert('✅ Approved');
+                alert('? Approved');
             } catch (err) { console.error('approveRoomNotification error:', err); alert('Error approving notification'); }
         }
 
@@ -587,7 +621,7 @@
                 try { sessionStorage.setItem('roomhy_visits', JSON.stringify(visits)); } catch(e){}
                 fetchRoomApprovals();
                 fetchEnquiries();
-                alert('â›” Rejected');
+                alert('⛔ Rejected');
             } catch (err) { console.error('rejectRoomNotification error:', err); alert('Error rejecting notification'); }
         }
 
@@ -601,14 +635,16 @@
          * SEND OWNER CREDENTIALS EMAIL
          * Sends generated login credentials to the property owner
          */
-        async function sendOwnerCredentialsEmail(email, name, loginId, password) {
+        async function sendOwnerCredentialsEmail(email, name, loginId, password, area = '') {
             try {
+                const checkinLink = `${window.location.origin}/digital-checkin/ownerprofile.html?loginId=${encodeURIComponent(loginId)}&email=${encodeURIComponent(email)}&area=${encodeURIComponent(area)}&password=${encodeURIComponent(password)}`;
+                const mainCheckinLink = `${window.location.origin}/digital-checkin/index.html`;
                 const response = await fetch(API_URL + '/api/email/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         to: email,
-                        subject: '🎉 Your Property Approved! Login Credentials Inside',
+                        subject: '?? Your Property Approved! Login Credentials Inside',
                         html: `
                             <!DOCTYPE html>
                             <html>
@@ -623,13 +659,14 @@
                                     .credentials { background: white; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0; border-radius: 4px; }
                                     .credentials p { margin: 10px 0; }
                                     .label { font-weight: bold; color: #2563eb; }
+                                    .button { display: inline-block; background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin: 10px 5px 10px 0; }
                                     .footer { text-align: center; padding: 20px; font-size: 12px; color: #999; border-top: 1px solid #eee; }
                                 </style>
                             </head>
                             <body>
                                 <div class="container">
                                     <div class="header">
-                                        <h1>🏠 Your Property is Approved!</h1>
+                                        <h1>?? Your Property is Approved!</h1>
                                     </div>
                                     <div class="content">
                                         <p>Hi <strong>${name}</strong>,</p>
@@ -638,9 +675,16 @@
                                         <div class="credentials">
                                             <p><span class="label">Login ID:</span> <strong>${loginId}</strong></p>
                                             <p><span class="label">Temporary Password:</span> <strong>${password}</strong></p>
+                                            <p><span class="label">Area:</span> <strong>${area || 'N/A'}</strong></p>
                                         </div>
 
-                                        <p style="color: #d32f2f; font-weight: bold;">⚠️ Important: Please change your password on first login for security.</p>
+                                        <p style="margin-top: 20px;"><strong>?? Digital Check-In Links:</strong></p>
+                                        <p>
+                                            <a href="${mainCheckinLink}" class="button">Digital Check-In (Main)</a><br>
+                                            <a href="${checkinLink}" class="button">Owner Check-In (Direct)</a>
+                                        </p>
+
+                                        <p style="color: #d32f2f; font-weight: bold;">?? Important: Please change your password on first login for security.</p>
 
                                         <p>You can now log in to your property owner dashboard to manage bookings, view inquiries, and track your property performance.</p>
 
@@ -653,24 +697,24 @@
                             </body>
                             </html>
                         `,
-                        text: `Your Property Approved!\n\nHi ${name},\n\nYour property has been approved and is now live on Roomhy.\n\nLogin Credentials:\nLogin ID: ${loginId}\nTemporary Password: ${password}\n\nPlease change your password on first login for security.\n\nQuestions? Contact us at hello@roomhy.com\n\n© 2025 Roomhy. All rights reserved.`
+                        text: `Your Property Approved!\n\nHi ${name},\n\nYour property has been approved and is now live on Roomhy.\n\nLogin Credentials:\nLogin ID: ${loginId}\nTemporary Password: ${password}\nArea: ${area || 'N/A'}\n\nDigital Check-In Link:\n${checkinLink}\n\nPlease change your password on first login for security.\n\nQuestions? Contact us at hello@roomhy.com\n\n� 2025 Roomhy. All rights reserved.`
                     })
                 });
                 if (response.ok) {
-                    console.log('✅ Owner credentials email sent successfully');
+                    console.log('? Owner credentials email sent successfully');
                 } else {
-                    console.warn('⚠️ Failed to send owner credentials email');
+                    console.warn('?? Failed to send owner credentials email');
                 }
             } catch (err) {
-                console.warn('⚠️ Email sending error:', err.message);
+                console.warn('?? Email sending error:', err.message);
             }
         }
 
         async function confirmApproval(shouldUpload) {
-            console.log('🔘 confirmApproval called with shouldUpload:', shouldUpload, 'currentApprovingId:', currentApprovingId);
+            console.log('?? confirmApproval called with shouldUpload:', shouldUpload, 'currentApprovingId:', currentApprovingId);
             
             if(!currentApprovingId) {
-                console.error('❌ No visit ID to approve');
+                console.error('? No visit ID to approve');
                 return;
             }
             
@@ -697,9 +741,9 @@
             
             if(idx !== -1) {
                 visitData = visits[idx];
-                console.log('✅ Visit found at index', idx, '- Setting status to approved');
+                console.log('? Visit found at index', idx, '- Setting status to approved');
             } else {
-                console.warn('⚠️ Visit not found in storage - will proceed with API call only');
+                console.warn('?? Visit not found in storage - will proceed with API call only');
                 // Create a minimal visit object for API call
                 visitData = { _id: currentApprovingId, visitId: currentApprovingId };
             }
@@ -708,26 +752,50 @@
             const password = Math.random().toString(36).slice(-8);
             let finalLoginId = loginId;
             let finalPassword = password;
+            let backendEmailSent = false;
+            let approvedVisitFromBackend = null;
 
             // Update status in storage if found
             if (idx !== -1) {
                 visits[idx].status = 'approved';
                 visits[idx].isLiveOnWebsite = shouldUpload;
                 visits[idx].generatedCredentials = { loginId, tempPassword: password };
+                // Also store the owner name for quick retrieval by the owner
+                if (!visits[idx].ownerName) {
+                    visits[idx].ownerName = visitData?.ownerName || 
+                                           (visitData?.propertyInfo && visitData.propertyInfo.ownerName) || 
+                                           visitData?.owner ||
+                                           visitData?.contactPerson ||
+                                           visitData?.name ||
+                                           visitData?.submittedBy ||
+                                           'Owner';
+                }
                 if (window.safeStorage) { window.safeStorage.setVisits(visits); } else { localStorage.setItem('roomhy_visits', JSON.stringify(visits)); }
+                try { sessionStorage.setItem('roomhy_visits', JSON.stringify(visits)); } catch(e){}
             }
             
             // Always sync approval with backend API
-            console.log('🌐 Syncing to backend API:', API_URL + '/api/visits/approve');
+            console.log('?? Syncing to backend API:', API_URL + '/api/visits/approve');
             try {
+                // Extract owner name from visit data
+                const ownerName = visitData?.ownerName || 
+                                 (visitData?.propertyInfo && visitData.propertyInfo.ownerName) || 
+                                 visitData?.owner ||
+                                 visitData?.contactPerson ||
+                                 visitData?.name ||
+                                 visitData?.submittedBy ||
+                                 'Owner';
+                
                 const payload = {
                     visitId: currentApprovingId,
                     status: 'approved',
                     isLiveOnWebsite: shouldUpload,
                     loginId: loginId,
-                    tempPassword: password
+                    tempPassword: password,
+                    ownerName: ownerName, // ADD OWNER NAME TO PAYLOAD
+                    name: ownerName // Also send as 'name' for backend flexibility
                 };
-                console.log('📤 Sending payload:', payload);
+                console.log('?? Sending payload:', payload);
                 
                 const response = await fetch(API_URL + '/api/visits/approve', {
                     method: 'POST',
@@ -738,21 +806,23 @@
                     body: JSON.stringify(payload)
                 });
                 
-                console.log('📥 Backend response status:', response.status, response.statusText);
+                console.log('?? Backend response status:', response.status, response.statusText);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error(`❌ API Error ${response.status}: ${errorText}`);
+                    console.error(`? API Error ${response.status}: ${errorText}`);
                     console.warn(`API Error ${response.status}: ${response.statusText} from ${API_URL}/api/visits/approve`);
                 } else {
                     const data = await response.json();
-                    console.log('✅ Visit approved and synced to backend:', data);
+                    console.log('? Visit approved and synced to backend:', data);
                     // Prefer backend-returned credentials (backend enforces uniqueness/format)
                     finalLoginId = data?.credentials?.loginId || finalLoginId;
                     finalPassword = data?.credentials?.tempPassword || finalPassword;
+                    backendEmailSent = !!(data?.email && data.email.sent);
+                    approvedVisitFromBackend = data?.visit || null;
                 }
             } catch (err) {
-                console.error('❌ Backend sync error:', err);
+                console.error('? Backend sync error:', err);
                 console.warn('Backend sync failed:', err.message);
             }
             
@@ -760,19 +830,46 @@
             if (idx !== -1) {
                 visits[idx].generatedCredentials = { loginId: finalLoginId, tempPassword: finalPassword };
                 if (window.safeStorage) { window.safeStorage.setVisits(visits); } else { localStorage.setItem('roomhy_visits', JSON.stringify(visits)); }
+                try { sessionStorage.setItem('roomhy_visits', JSON.stringify(visits)); } catch(e){}
+            } else {
+                // If not present locally, add backend visit data (not minimal shadow) to preserve identity fields.
+                const shadow = approvedVisitFromBackend ? {
+                    ...approvedVisitFromBackend,
+                    _id: approvedVisitFromBackend.visitId || approvedVisitFromBackend._id || currentApprovingId,
+                    visitId: approvedVisitFromBackend.visitId || currentApprovingId,
+                    status: 'approved',
+                    isLiveOnWebsite: shouldUpload,
+                    generatedCredentials: { loginId: finalLoginId, tempPassword: finalPassword }
+                } : {
+                    _id: currentApprovingId,
+                    visitId: currentApprovingId,
+                    status: 'approved',
+                    isLiveOnWebsite: shouldUpload,
+                    generatedCredentials: { loginId: finalLoginId, tempPassword: finalPassword },
+                    approvedAt: new Date().toISOString(),
+                    submittedAt: new Date().toISOString()
+                };
+                visits.push(shadow);
+                if (window.safeStorage) { window.safeStorage.setVisits(visits); } else { localStorage.setItem('roomhy_visits', JSON.stringify(visits)); }
+                try { sessionStorage.setItem('roomhy_visits', JSON.stringify(visits)); } catch(e){}
             }
 
             document.getElementById('modalLoginId').innerText = finalLoginId;
             document.getElementById('modalPassword').innerText = finalPassword;
             
             // Send email with owner credentials
-            const ownerEmail = visitData.ownerEmail || visitData.email;
+            const ownerEmail =
+                visitData.ownerEmail ||
+                (visitData.propertyInfo && (visitData.propertyInfo.ownerEmail || visitData.propertyInfo.ownerGmail)) ||
+                visitData.email;
             const ownerName = visitData.ownerName || visitData.name || 'Owner';
-            if (ownerEmail) {
-                console.log('📧 Sending credentials email to:', ownerEmail);
-                sendOwnerCredentialsEmail(ownerEmail, ownerName, finalLoginId, finalPassword);
+            const ownerArea = visitData.area || (visitData.propertyInfo && visitData.propertyInfo.area) || '';
+            if (ownerEmail && !backendEmailSent) {
+                console.log('?? Sending credentials email (fallback) to:', ownerEmail);
+                sendOwnerCredentialsEmail(ownerEmail, ownerName, finalLoginId, finalPassword, ownerArea);
             } else {
-                console.warn('⚠️ No owner email found for', currentApprovingId);
+                if (!ownerEmail) console.warn('?? No owner email found for', currentApprovingId);
+                if (backendEmailSent) console.log('? Backend already sent credentials email');
             }
             
             document.getElementById('approveModal').classList.add('hidden');
@@ -850,12 +947,64 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('ðŸ“„ Super Admin Enquiry Page Loaded');
-            console.log('ðŸ“ URL:', window.location.href);
-            fetchEnquiries();
+            console.log('📄 Super Admin Enquiry Page Loaded');
+            console.log('📍 URL:', window.location.href);
+            fetchEnquiries();            
+            // Auto-refresh enquiries every 15 seconds to show newly created visits
+            const refreshInterval = setInterval(() => {
+                console.log('? Auto-refresh: fetching latest enquiries');
+                fetchEnquiries();
+            }, 15000); // 15 seconds
+            
+            // Clean up interval on page unload
+            window.addEventListener('beforeunload', () => clearInterval(refreshInterval));
         });
     </script>
     <script src="../website/js/safe-storage.js"></script>
+        <script src="./mobile-sidebar.js"></script>
+    <script src="js/SuperAdminNotificationManager.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.superAdminNotificationManager = new SuperAdminNotificationManager();
+            window.superAdminNotificationManager.requestNotificationPermission();
+            window.superAdminNotificationManager.startPolling();
+
+            const bellBtn = document.getElementById('notificationBellBtn');
+            const dropdown = document.getElementById('notificationDropdown');
+            if (bellBtn && dropdown) {
+                bellBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                });
+                document.addEventListener('click', (e) => {
+                    if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
+        function markAllRead() {
+            if (window.superAdminNotificationManager) {
+                window.superAdminNotificationManager.markAllAsRead();
+            }
+        }
+
+        function clearAll() {
+            if (window.superAdminNotificationManager) {
+                window.superAdminNotificationManager.clearAll();
+            }
+        }
+    </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
 

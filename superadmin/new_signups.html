@@ -165,7 +165,27 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <button class="text-slate-400 hover:text-slate-600"><i data-lucide="bell" class="w-5 h-5"></i></button>
+                    <div class="relative">
+                        <button id="notificationBellBtn" class="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-lg transition-colors">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+                        </button>
+                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg py-2 ring-1 ring-black ring-opacity-5 z-50">
+                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                <h3 class="font-semibold text-gray-800">Notifications</h3>
+                                <div class="flex gap-2">
+                                    <button onclick="markAllRead()" class="text-xs text-purple-600 hover:text-purple-800">Mark all read</button>
+                                    <button onclick="clearAll()" class="text-xs text-gray-400 hover:text-gray-600">Clear</button>
+                                </div>
+                            </div>
+                            <div id="notificationList" class="max-h-96 overflow-y-auto custom-scrollbar">
+                                <div class="px-4 py-8 text-center text-gray-400">
+                                    <i data-lucide="bell-off" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                                    <p>No notifications yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="relative group">
                         <button class="flex items-center gap-3 hover:bg-gray-50 p-1.5 rounded-full transition-colors">
                             <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-xs">SA</div>
@@ -769,7 +789,8 @@
                                         <p>&copy; 2025 Roomhy. All rights reserved. | Made for students, with love</p>
                                     </div>
                                 </div>
-                            </body>
+                                
+</body>
                             </html>
                         `,
                         text: `Welcome to Roomhy!\n\nHi ${userData.firstName},\n\nCongratulations! Your account has been verified and approved.\n\nYour User ID: ${userData.id}\nEmail: ${userData.email}\n\nYou can now start exploring properties and connecting with owners.\n\nQuestions? Contact us at hello@roomhy.com\n\n© 2025 Roomhy. All rights reserved.`
@@ -963,6 +984,47 @@
             } catch (e) { console.error('loadPendingTenantKyc', e); }
         }
     </script>
+
+    <script src="js/SuperAdminNotificationManager.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.superAdminNotificationManager = new SuperAdminNotificationManager();
+            window.superAdminNotificationManager.requestNotificationPermission();
+            window.superAdminNotificationManager.startPolling();
+
+            const bellBtn = document.getElementById('notificationBellBtn');
+            const dropdown = document.getElementById('notificationDropdown');
+            if (bellBtn && dropdown) {
+                bellBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                });
+                document.addEventListener('click', (e) => {
+                    if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
+        function markAllRead() {
+            if (window.superAdminNotificationManager) {
+                window.superAdminNotificationManager.markAllAsRead();
+            }
+        }
+
+        function clearAll() {
+            if (window.superAdminNotificationManager) {
+                window.superAdminNotificationManager.clearAll();
+            }
+        }
+    </script>
+    <script src="./mobile-sidebar.js"></script>
 </body>
 </html>
+
+
+
+
+
 

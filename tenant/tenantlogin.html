@@ -291,21 +291,8 @@
             }
         }
 
-        // 1. Check if already logged in and redirect based on state
-        document.addEventListener('DOMContentLoaded', () => {
-            const user = JSON.parse(localStorage.getItem('tenant_user') || localStorage.getItem('user') || 'null');
-            if(user && user.role === 'tenant') {
-                // Check progress
-                const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-                const me = tenants.find(t => t.loginId === user.loginId);
-                if(me) {
-                    if(!me.profileFilled) window.location.href = 'tenantprofile.html';
-                    else if(me.kycStatus === 'pending') window.location.href = 'tenantkyc.html';
-                    else if(!me.agreementSigned) window.location.href = 'tenantagreement.html';
-                    else window.location.href = 'tenantdashboard.html';
-                }
-            }
-        });
+        // Keep tenant login page stable: do not auto-redirect on page load
+        // even if an older tenant session exists in localStorage.
 
         // 2. Verify Credentials
         async function verifyTenantTemp() {
@@ -314,24 +301,23 @@
 
             // Fallback: Check localStorage (Demo Mode)
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-            
-            // Active Tenant Login (case-insensitive ID match)
-            const activeTenant = tenants.find(t => (t.loginId && t.loginId.toUpperCase() === loginId) && (t.password === tempPassword));
-            if(activeTenant) {
-                createSession(activeTenant);
+
+            // First-time/temp-password flow should always take precedence.
+            const firstTimeTenant = tenants.find(t =>
+                t.loginId && t.loginId.toUpperCase() === loginId &&
+                t.tempPassword === tempPassword
+            );
+
+            if (firstTimeTenant) {
+                tenantPayload = firstTimeTenant;
+                showStep2();
                 return;
             }
 
-            // First Time Login
-            const pendingTenant = tenants.find(t => 
-                t.loginId && t.loginId.toUpperCase() === loginId && 
-                t.tempPassword === tempPassword &&
-                (t.status === 'pending' || !t.passwordSet)
-            );
-
-            if (pendingTenant) {
-                tenantPayload = pendingTenant;
-                showStep2();
+            // Active tenant login with already-set password
+            const activeTenant = tenants.find(t => (t.loginId && t.loginId.toUpperCase() === loginId) && (t.password === tempPassword));
+            if(activeTenant) {
+                createSession(activeTenant);
             } else {
                 showError('Invalid Tenant ID or Password.');
             }
@@ -365,9 +351,9 @@
                 };
                 localStorage.setItem('tenant_user', JSON.stringify(user));
 
-                // Redirect to Step 1 of Onboarding
-                alert("Password Set! Proceeding to Profile Setup.");
-                window.location.href = 'tenantprofile.html';
+                // Redirect straight to dashboard after first-time password setup.
+                alert("Password Set! Redirecting to Dashboard.");
+                window.location.href = 'tenantdashboard.html';
             } else {
                 showError('System error: Tenant record not found.');
             }
@@ -386,9 +372,9 @@
             localStorage.setItem('tenant_user', JSON.stringify(user));
             
             // Redirect to where they left off
-            if(!tenant.profileFilled) window.location.href = 'tenantprofile.html';
-            else if(tenant.kycStatus === 'pending') window.location.href = 'tenantkyc.html';
-            else if(!tenant.agreementSigned) window.location.href = 'tenantagreement.html';
+            if(!tenant.profileFilled) window.location.href = `../digital-checkin/tenantprofile.html?loginId=${encodeURIComponent(tenant.loginId || '')}`;
+            else if(tenant.kycStatus === 'pending') window.location.href = `../digital-checkin/tenantkyc.html?loginId=${encodeURIComponent(tenant.loginId || '')}`;
+            else if(!tenant.agreementSigned) window.location.href = `../digital-checkin/tenantagreement.html?loginId=${encodeURIComponent(tenant.loginId || '')}`;
             else window.location.href = 'tenantdashboard.html';
         }
 

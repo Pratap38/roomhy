@@ -1,4 +1,5 @@
 const Enquiry = require('../models/Enquiry');
+const { notifySuperadmin } = require('../utils/superadminNotifier');
 
 // Create a new enquiry
 exports.createEnquiry = async (req, res) => {
@@ -9,6 +10,24 @@ exports.createEnquiry = async (req, res) => {
       payload.status = 'request to connect';
     }
     const enquiry = await Enquiry.create(payload);
+
+    try {
+      await notifySuperadmin({
+        type: 'new_enquiry',
+        from: 'owner',
+        subject: `New Property Enquiry - ${payload.propertyName || 'Property'}`,
+        message: 'A new property enquiry was submitted and is pending review.',
+        meta: {
+          enquiryId: enquiry._id?.toString?.() || '',
+          userName: payload.ownerName || payload.studentName || '',
+          userEmail: payload.email || payload.studentEmail || '',
+          propertyName: payload.propertyName || '',
+          location: payload.location || ''
+        }
+      });
+    } catch (notifyErr) {
+      console.warn('enquiry notification failed:', notifyErr.message);
+    }
 
     // Send email notification to superadmin
     try {

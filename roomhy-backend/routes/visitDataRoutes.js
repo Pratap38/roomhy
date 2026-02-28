@@ -3,6 +3,8 @@ const router = express.Router();
 const VisitData = require('../models/VisitData');
 const User = require('../models/user');
 const Owner = require('../models/Owner');
+const mailer = require('../utils/mailer');
+const { notifySuperadmin } = require('../utils/superadminNotifier');
 
 // Helper function to convert string to boolean
 function stringToBoolean(value) {
@@ -56,7 +58,7 @@ async function generateUniqueOwnerLoginId(maxAttempts = 100) {
 router.post('/', async (req, res) => {
     try {
         const visitData = req.body;
-        console.log('📨 [visits/POST] Received data visitId:', visitData._id || visitData.visitId);
+        console.log('?? [visits/POST] Received data visitId:', visitData._id || visitData.visitId);
 
         // Process the data to handle type conversions
         const processedData = { ...visitData };
@@ -82,11 +84,30 @@ router.post('/', async (req, res) => {
             status: processedData.status || 'submitted'
         });
 
-        console.log('💾 [visits/POST] Saving visit with visitId:', visitId);
-        console.log('📋 [visits/POST] Visit fields:', Object.keys(newVisit.toObject()).slice(0, 10).join(', '));
+        console.log('?? [visits/POST] Saving visit with visitId:', visitId);
+        console.log('?? [visits/POST] Visit fields:', Object.keys(newVisit.toObject()).slice(0, 10).join(', '));
         await newVisit.save();
 
-        console.log('✅ [visits/POST] Visit saved to MongoDB:', newVisit._id, 'visitId:', visitId);
+        try {
+            await notifySuperadmin({
+                type: 'new_enquiry',
+                from: 'area_manager',
+                subject: `New Visit Enquiry - ${newVisit.propertyName || 'Property'}`,
+                message: 'A new visit enquiry was submitted and is pending review.',
+                meta: {
+                    enquiryId: newVisit.visitId || String(newVisit._id || ''),
+                    userName: newVisit.ownerName || newVisit.visitorName || '',
+                    userEmail: newVisit.ownerEmail || newVisit.visitorEmail || '',
+                    propertyName: newVisit.propertyName || '',
+                    city: newVisit.city || '',
+                    area: newVisit.area || ''
+                }
+            });
+        } catch (notifyErr) {
+            console.warn('visit create notification failed:', notifyErr.message);
+        }
+
+        console.log('? [visits/POST] Visit saved to MongoDB:', newVisit._id, 'visitId:', visitId);
 
         res.status(201).json({
             success: true,
@@ -95,12 +116,12 @@ router.post('/', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ [visits/POST] Error saving visit:', error.message);
-        console.error('❌ [visits/POST] Error stack:', error.stack);
+        console.error('? [visits/POST] Error saving visit:', error.message);
+        console.error('? [visits/POST] Error stack:', error.stack);
         
         // Check for duplicate visitId error
         if (error.code === 11000) {
-            console.error('❌ [visits/POST] Duplicate key error. Field:', Object.keys(error.keyValue || {}));
+            console.error('? [visits/POST] Duplicate key error. Field:', Object.keys(error.keyValue || {}));
             return res.status(409).json({
                 success: false,
                 message: 'Visit with this ID already exists',
@@ -124,18 +145,39 @@ router.post('/', async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const staffId = req.query.staffId;
-        
+        const staffName = (req.query.staffName || '').toString().trim();
+
         let query = {};
-        if (staffId) {
-            query.staffId = staffId;
-            console.log(`📥 [visits/GET] Fetching visits for staffId: ${staffId}`);
+        if (staffId || staffName) {
+            const or = [];
+            if (staffId) {
+                const escapedId = String(staffId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const idRegex = new RegExp(`^${escapedId}$`, 'i');
+                or.push(
+                    { staffId: idRegex },
+                    { submittedById: idRegex },
+                    { submittedByLoginId: idRegex },
+                    { ownerLoginId: idRegex }
+                );
+            }
+            if (staffName) {
+                const escapedName = staffName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const nameRegex = new RegExp(`^${escapedName}$`, 'i');
+                or.push(
+                    { staffName: nameRegex },
+                    { submittedBy: nameRegex },
+                    { visitorName: nameRegex }
+                );
+            }
+            query = or.length ? { $or: or } : {};
+            console.log('[visits/GET] Fetching visits for staff filter:', { staffId, staffName });
         } else {
-            console.log('📥 [visits/GET] Fetching all visits');
+            console.log('[visits/GET] Fetching all visits');
         }
         
         const visits = await VisitData.find(query).sort({ submittedAt: -1 });
         
-        console.log(`✅ [visits/GET] Returning ${visits.length} visits`);
+        console.log(`? [visits/GET] Returning ${visits.length} visits`);
         
         res.json({
             success: true,
@@ -161,7 +203,7 @@ router.get('/pending', async (req, res) => {
             status: { $in: ['submitted', 'pending_review'] }
         }).sort({ submittedAt: -1 });
 
-        console.log(`✅ [visits/pending] Returning ${visits.length} pending visits`);
+        console.log(`? [visits/pending] Returning ${visits.length} pending visits`);
 
         res.json({
             success: true,
@@ -184,10 +226,10 @@ router.get('/pending', async (req, res) => {
 router.post('/approve', async (req, res) => {
     try {
         const { visitId, status, isLiveOnWebsite, loginId, tempPassword } = req.body;
-        console.log('📨 [visits/approve] Received request:', { visitId, status, isLiveOnWebsite });
+        console.log('?? [visits/approve] Received request:', { visitId, status, isLiveOnWebsite });
 
         if (!visitId) {
-            console.error('❌ [visits/approve] Missing visitId in request body');
+            console.error('? [visits/approve] Missing visitId in request body');
             return res.status(400).json({
                 success: false,
                 message: 'Missing visitId'
@@ -202,7 +244,7 @@ router.post('/approve', async (req, res) => {
         }
         const finalPassword = tempPassword || Math.random().toString(36).slice(-8);
 
-        console.log('🔍 [visits/approve] Finding visit by visitId:', visitId);
+        console.log('?? [visits/approve] Finding visit by visitId:', visitId);
         
         // Build query - check if visitId is a valid MongoDB ObjectId or a timestamp-based ID
         const mongoose = require('mongoose');
@@ -231,14 +273,14 @@ router.post('/approve', async (req, res) => {
         );
 
         if (!visit) {
-            console.error('❌ [visits/approve] Visit not found:', visitId);
+            console.error('? [visits/approve] Visit not found:', visitId);
             return res.status(404).json({
                 success: false,
                 message: 'Visit not found'
             });
         }
 
-        console.log('✅ [visits/approve] Visit found and updated:', visit._id);
+        console.log('? [visits/approve] Visit found and updated:', visit._id);
 
         // Always save/update approved visit to ApprovedProperty collection
         try {
@@ -278,13 +320,55 @@ router.post('/approve', async (req, res) => {
                 propData,
                 { upsert: true, new: true }
             );
-            console.log('✅ [visits/approve] Saved to ApprovedProperty collection:', approvedProp._id);
+            console.log('? [visits/approve] Saved to ApprovedProperty collection:', approvedProp._id);
         } catch (approvedErr) {
-            console.warn('⚠️ [visits/approve] Warning saving to ApprovedProperty:', approvedErr.message);
+            console.warn('?? [visits/approve] Warning saving to ApprovedProperty:', approvedErr.message);
             // Don't fail the approval if ApprovedProperty save fails
         }
 
-        console.log('✅ [visits/approve] Visit approved successfully:', visitId);
+        console.log('? [visits/approve] Visit approved successfully:', visitId);
+
+        // Send owner credentials email with Digital Check-In links (not index.html) 
+        let emailAttempted = false;
+        let emailSent = false;
+        try {
+            const ownerEmail =
+                visit.ownerEmail ||
+                (visit.propertyInfo && (visit.propertyInfo.ownerEmail || visit.propertyInfo.ownerGmail)) ||
+                '';
+            const ownerName =
+                visit.ownerName ||
+                (visit.propertyInfo && visit.propertyInfo.ownerName) ||
+                'Owner';
+            const ownerArea =
+                visit.area ||
+                (visit.propertyInfo && visit.propertyInfo.area) ||
+                '';
+
+            if (ownerEmail) {
+                emailAttempted = true;
+                const baseWebUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'http://localhost:5000';
+                const mainCheckinLink = `${baseWebUrl}/digital-checkin/index.html`;
+                const directCheckinLink = `${baseWebUrl}/digital-checkin/ownerprofile.html?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
+                const subject = 'RoomHy Property Approved - Complete Digital Check-In';
+                const text = `Property approved\nLogin ID: ${finalLoginId}\nTemporary Password: ${finalPassword}\nDigital Check-In: ${mainCheckinLink}\nDirect Link: ${directCheckinLink}`;
+                const html = `
+                    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #111;">
+                        <h2>Property Approved</h2>
+                        <p>Hi ${ownerName},</p>
+                        <p>Your property has been approved on RoomHy. Please complete your digital check-in.</p>
+                        <p><strong>Login ID:</strong> ${finalLoginId}</p>
+                        <p><strong>Temporary Password:</strong> ${finalPassword}</p>
+                        <p><strong>Area:</strong> ${ownerArea || 'N/A'}</p>
+                        <p><strong>Digital Check-In (Main):</strong><br><a href="${mainCheckinLink}">${mainCheckinLink}</a></p>
+                        <p><strong>Owner Check-In (Direct):</strong><br><a href="${directCheckinLink}">${directCheckinLink}</a></p>
+                    </div>
+                `;
+                emailSent = await mailer.sendMail(ownerEmail, subject, text, html);
+            }
+        } catch (emailErr) {
+            console.warn('[visits/approve] Email send failed:', emailErr.message);
+        }
 
         res.json({
             success: true,
@@ -293,11 +377,15 @@ router.post('/approve', async (req, res) => {
             credentials: {
                 loginId: finalLoginId,
                 tempPassword: finalPassword
+            },
+            email: {
+                attempted: emailAttempted,
+                sent: emailSent
             }
         });
     } catch (error) {
-        console.error('❌ [visits/approve] Error approving visit:', error.message);
-        console.error('❌ [visits/approve] Error stack:', error.stack);
+        console.error('? [visits/approve] Error approving visit:', error.message);
+        console.error('? [visits/approve] Error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Error approving visit',
@@ -338,7 +426,7 @@ router.post('/hold', async (req, res) => {
             });
         }
 
-        console.log('✅ [visits/hold] Visit held:', visitId);
+        console.log('? [visits/hold] Visit held:', visitId);
 
         res.json({
             success: true,
@@ -346,7 +434,7 @@ router.post('/hold', async (req, res) => {
             visit: visit
         });
     } catch (error) {
-        console.error('❌ [visits/hold] Error holding visit:', error);
+        console.error('? [visits/hold] Error holding visit:', error);
         res.status(500).json({
             success: false,
             message: 'Error holding visit',
@@ -494,6 +582,25 @@ router.post('/submit', async (req, res) => {
 
         // Save to MongoDB
         await visit.save();
+
+        try {
+            await notifySuperadmin({
+                type: 'new_enquiry',
+                from: 'area_manager',
+                subject: `New Visit Submission - ${propertyName || 'Property'}`,
+                message: 'A new visit submission is waiting for superadmin approval.',
+                meta: {
+                    enquiryId: visitId,
+                    userName: ownerName || visitorName || staffName || '',
+                    userEmail: ownerEmail || visitorEmail || '',
+                    propertyName: propertyName || '',
+                    city: city || '',
+                    area: area || ''
+                }
+            });
+        } catch (notifyErr) {
+            console.warn('visit submit notification failed:', notifyErr.message);
+        }
 
         res.status(201).json({
             success: true,

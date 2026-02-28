@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const WebsiteEnquiry = require('../models/WebsiteEnquiry');
 const Owner = require('../models/Owner');
+const { notifySuperadmin } = require('../utils/superadminNotifier');
 
 // ============================================================
 // POST: Submit a new website enquiry
@@ -60,6 +61,25 @@ router.post('/submit', async (req, res) => {
 
         // Save to MongoDB
         await enquiry.save();
+
+        try {
+            await notifySuperadmin({
+                type: 'new_enquiry',
+                from: 'website',
+                subject: `New Website Enquiry - ${property_name || 'Property'}`,
+                message: 'A new website property enquiry is waiting for review.',
+                meta: {
+                    enquiryId: enquiry_id,
+                    userName: owner_name || '',
+                    userEmail: owner_email || '',
+                    propertyName: property_name || '',
+                    city: city || '',
+                    ownerPhone: owner_phone || ''
+                }
+            });
+        } catch (notifyErr) {
+            console.warn('website enquiry notification failed:', notifyErr.message);
+        }
 
         res.status(201).json({
             success: true,

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoomHy - Payment Received</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen">
+    <div class="max-w-2xl mx-auto px-4 py-10">
+        <div class="bg-white rounded-xl shadow border border-slate-200 p-6">
+            <h1 class="text-2xl font-bold text-slate-900 mb-2">Payment Received</h1>
+            <p class="text-sm text-slate-600 mb-6">Confirm cash collection and send OTP to tenant Gmail.</p>
+
+            <div id="statusBox" class="hidden mb-4 rounded-lg px-4 py-3 text-sm"></div>
+
+            <div id="detailsCard" class="space-y-3 text-sm text-slate-700">
+                <div><span class="font-semibold">Tenant Name:</span> <span id="tenantName">-</span></div>
+                <div><span class="font-semibold">Tenant Login ID:</span> <span id="tenantLoginId">-</span></div>
+                <div><span class="font-semibold">Tenant Email:</span> <span id="tenantEmail">-</span></div>
+                <div><span class="font-semibold">Property:</span> <span id="propertyName">-</span></div>
+                <div><span class="font-semibold">Room Number:</span> <span id="roomNumber">-</span></div>
+                <div><span class="font-semibold">Amount:</span> <span id="amount">-</span></div>
+                <div><span class="font-semibold">Status:</span> <span id="status">-</span></div>
+            </div>
+
+            <button id="receivedBtn" class="mt-6 w-full bg-green-600 text-white font-semibold py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed">
+                Payment Received
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend-wqwo.onrender.com';
+
+        const params = new URLSearchParams(window.location.search);
+        const rentId = params.get('rentId') || '';
+        const ownerLoginId = (params.get('ownerLoginId') || '').toUpperCase();
+
+        const statusBox = document.getElementById('statusBox');
+        const receivedBtn = document.getElementById('receivedBtn');
+
+        function setStatus(message, type) {
+            statusBox.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+            if (type === 'success') statusBox.classList.add('bg-green-100', 'text-green-800');
+            else if (type === 'error') statusBox.classList.add('bg-red-100', 'text-red-800');
+            else statusBox.classList.add('bg-yellow-100', 'text-yellow-800');
+            statusBox.textContent = message;
+        }
+
+        function fillDetails(rent) {
+            document.getElementById('tenantName').textContent = rent.tenantName || '-';
+            document.getElementById('tenantLoginId').textContent = rent.tenantLoginId || '-';
+            document.getElementById('tenantEmail').textContent = rent.tenantEmail || '-';
+            document.getElementById('propertyName').textContent = rent.propertyName || '-';
+            document.getElementById('roomNumber').textContent = rent.roomNumber || '-';
+            document.getElementById('amount').textContent = `INR ${Number(rent.totalDue || rent.rentAmount || 0).toLocaleString('en-IN')}`;
+            document.getElementById('status').textContent = rent.cashRequestStatus || rent.paymentStatus || 'pending';
+        }
+
+        async function loadRentDetails() {
+            if (!rentId || !ownerLoginId) {
+                setStatus('Invalid link. rentId or ownerLoginId missing.', 'error');
+                receivedBtn.disabled = true;
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/api/rents/${encodeURIComponent(rentId)}`);
+                const data = await res.json();
+                if (!res.ok || !data.success || !data.rent) {
+                    throw new Error(data.error || 'Unable to load payment details');
+                }
+                const rent = data.rent;
+                fillDetails(rent);
+                if ((rent.ownerLoginId || '').toUpperCase() !== ownerLoginId) {
+                    setStatus('This link is not authorized for this owner.', 'error');
+                    receivedBtn.disabled = true;
+                    return;
+                }
+                if (rent.cashRequestStatus === 'paid' || rent.paymentStatus === 'paid') {
+                    setStatus('This payment is already marked as paid.', 'success');
+                    receivedBtn.disabled = true;
+                }
+            } catch (err) {
+                setStatus(err.message || 'Failed to load details', 'error');
+                receivedBtn.disabled = true;
+            }
+        }
+
+        receivedBtn.addEventListener('click', async () => {
+            receivedBtn.disabled = true;
+            setStatus('Sending OTP to tenant Gmail...', 'info');
+            try {
+                const res = await fetch(`${API_URL}/api/rents/cash/owner-received`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rentId, ownerLoginId })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to mark as received');
+                }
+                setStatus('OTP sent to tenant Gmail successfully.', 'success');
+                await loadRentDetails();
+            } catch (err) {
+                setStatus(err.message || 'Failed to send OTP', 'error');
+                receivedBtn.disabled = false;
+            }
+        });
+
+        loadRentDetails();
+    </script>
+</body>
+</html>
+
+

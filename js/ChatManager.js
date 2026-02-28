@@ -14,8 +14,8 @@ const ChatManager = {
         // Generate a 6-digit random number for uniqueness
         const sixDigit = Math.floor(Math.random() * 900000) + 100000;
 
-        // Create login ID as "roomhyweb" followed by 6 digits
-        const loginId = `roomhyweb${sixDigit}`;
+        // Create login ID as "ROOMHYWEB" followed by 6 digits
+        const loginId = `ROOMHYWEB${sixDigit}`;
 
         return loginId;
     },

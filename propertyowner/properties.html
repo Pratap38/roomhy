@@ -45,6 +45,8 @@
             background-color: #f0f0f0;
         }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-gray-900">
     <div class="flex h-screen bg-gray-100">
@@ -61,12 +63,9 @@
 
                 <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                 <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
-                <a href="documents.html" class="sidebar-link"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents</a>
                 <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                 <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                 <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
-                <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                 <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
                 <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                 <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
@@ -141,7 +140,6 @@
                         <a href="tenantrec.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
                         <a href="bookings.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Bookings</a>
                         <a href="booking_request.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
-                        <a href="review.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="star" class="w-5 h-5 mr-3"></i> Reviews</a>
                         <a href="payment.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                         <a href="ownerchat.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="message-square" class="w-5 h-5 mr-3"></i> Chats</a>
                         <a href="location.html" class="sidebar-link flex items-center px-6 py-3"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> RoomHy Location</a>
@@ -156,10 +154,10 @@
                     <p class="text-gray-500 mt-1">All properties that are listed on the roomhy are listed here.</p>
                 </div>
 
-                <!-- Bidding Filter Form & Properties Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Properties Section -->
+                <div class="grid grid-cols-1 gap-6 mb-6">
                     <!-- Left: Bidding Filter Form -->
-                    <div class="lg:col-span-1">
+                    <div class="hidden">
                         <div class="bg-white p-6 rounded-xl shadow sticky top-6">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                                 <i data-lucide="filter" class="w-5 h-5 text-purple-600"></i>
@@ -269,7 +267,7 @@
                     </div>
 
                     <!-- Right: Properties List with Search -->
-                    <div class="lg:col-span-2">
+                    <div class="lg:col-span-1">
                         <div class="bg-white p-6 rounded-xl shadow mb-6">
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
                                  <h3 class="text-lg font-semibold text-gray-700">Your Properties <span class="text-gray-500 font-normal" id="propertyCount">(Loading...)</span></h3>
@@ -287,8 +285,13 @@
                             </div>
                         </div>
 
-                        <!-- Properties Table -->
-                        <div class="bg-white rounded-xl shadow overflow-x-auto">
+                        <!-- Mobile Cards -->
+                        <div id="propertiesCards" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 md:hidden">
+                            <div class="bg-white rounded-xl shadow p-4 text-sm text-gray-500">Loading properties...</div>
+                        </div>
+
+                        <!-- Desktop Table -->
+                        <div class="bg-white rounded-xl shadow overflow-x-auto hidden md:block">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead>
                                     <tr>
@@ -347,7 +350,7 @@
             }
         }
         
-        const ownerId = user.ownerId || user.loginId;
+        const ownerId = (user.ownerId || user.loginId || '').toUpperCase();
         let allProperties = [];
 
         // --- Header Population & Data Load ---
@@ -362,72 +365,193 @@
                 document.getElementById('headerAccountId').innerText = `Account: ${user.loginId || user.ownerId}`;
             }
 
-            // Load properties
+            // Load properties (backend first)
             loadProperties();
             
-            // Setup bidding form handler
-            document.getElementById('biddingFilterForm').addEventListener('submit', handleBiddingFormSubmit);
+            // Setup bidding form handler (if section enabled in future)
+            const biddingForm = document.getElementById('biddingFilterForm');
+            if (biddingForm) biddingForm.addEventListener('submit', handleBiddingFormSubmit);
             
             // Setup property search
             document.getElementById('searchProperties').addEventListener('input', filterProperties);
         });
 
-        // Load and display properties
-        function loadProperties() {
-            allProperties = JSON.parse(localStorage.getItem('roomhy_properties') || '[]');
-            const myProperties = allProperties.filter(p => {
-                return (p.ownerId && p.ownerId === ownerId) || (p.ownerLoginId && p.ownerLoginId === ownerId);
+        // Load and display properties (MongoDB backend + local fallback)
+        async function loadProperties() {
+            let backendProperties = [];
+            try {
+                const res = await fetch(`${API_URL}/api/owners/${encodeURIComponent(ownerId)}/properties`);
+                if (res.ok) {
+                    const data = await res.json();
+                    backendProperties = Array.isArray(data?.properties) ? data.properties : [];
+                }
+            } catch (e) {
+                console.warn('Failed to fetch backend owner properties:', e);
+            }
+
+            // Fallback/merge from local cache for older data
+            const localProperties = JSON.parse(localStorage.getItem('roomhy_properties') || '[]');
+            const localOwnerProperties = localProperties.filter(p =>
+                String(p.ownerId || p.ownerLoginId || '').toUpperCase() === ownerId
+            );
+
+            // owner.html-compatible source: visits (backend)
+            let visitProperties = [];
+            try {
+                const vres = await fetch(`${API_URL}/api/visits`);
+                if (vres.ok) {
+                    const vdata = await vres.json();
+                    const visits = Array.isArray(vdata?.visits) ? vdata.visits : [];
+                    visitProperties = visits
+                        .filter(v => String(v?.generatedCredentials?.loginId || '').toUpperCase() === ownerId)
+                        .map(v => {
+                            const p = v.propertyInfo || {};
+                            return {
+                                _id: p._id || v.propertyId || '',
+                                title: p.name || v.propertyName || p.title || 'Untitled',
+                                name: p.name || v.propertyName || p.title || 'Untitled',
+                                ownerName: p.ownerName || v.ownerName || user.name || 'Owner',
+                                city: p.city || v.city || '',
+                                area: p.area || v.area || '',
+                                address: p.address || v.address || '',
+                                description: p.description || '',
+                                locationCode: p.locationCode || user.locationCode || user.area || ''
+                            };
+                        });
+                }
+            } catch (e) {
+                console.warn('Failed to fetch properties from visits API:', e);
+            }
+
+            // owner.html-compatible source: visits (local fallback)
+            try {
+                const localVisits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
+                const localVisitProps = localVisits
+                    .filter(v => String(v?.generatedCredentials?.loginId || '').toUpperCase() === ownerId)
+                    .map(v => {
+                        const p = v.propertyInfo || {};
+                        return {
+                            _id: p._id || v.propertyId || '',
+                            title: p.name || v.propertyName || p.title || 'Untitled',
+                            name: p.name || v.propertyName || p.title || 'Untitled',
+                            ownerName: p.ownerName || v.ownerName || user.name || 'Owner',
+                            city: p.city || v.city || '',
+                            area: p.area || v.area || '',
+                            address: p.address || v.address || '',
+                            description: p.description || '',
+                            locationCode: p.locationCode || user.locationCode || user.area || ''
+                        };
+                    });
+                visitProperties = [...visitProperties, ...localVisitProps];
+            } catch (_) {}
+
+            const merged = [];
+            const seen = new Set();
+            [...backendProperties, ...localOwnerProperties, ...visitProperties].forEach((p) => {
+                const key = String(
+                    p._id
+                    || p.id
+                    || p.propertyId
+                    || (String(p.title || p.name || '').toLowerCase() + '::' + String(p.area || p.city || '').toLowerCase() + '::' + ownerId)
+                );
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    merged.push(p);
+                }
             });
-            
-            renderPropertiesTable(myProperties);
-            document.getElementById('propertyCount').textContent = `(Total of ${myProperties.length} ${myProperties.length === 1 ? 'property' : 'properties'})`;
+
+            // If none in backend but owner context has a property name, keep a virtual row
+            if (merged.length === 0 && window.__ownerContext?.propertyName) {
+                merged.push({
+                    _id: '',
+                    title: window.__ownerContext.propertyName,
+                    name: window.__ownerContext.propertyName,
+                    area: window.__ownerContext.area || window.__ownerContext.locationCode || '',
+                    city: window.__ownerContext.propertyLocation || '',
+                    ownerLoginId: ownerId
+                });
+            }
+
+            allProperties = merged;
+            renderPropertiesTable(merged);
+            document.getElementById('propertyCount').textContent = `(Total of ${merged.length} ${merged.length === 1 ? 'property' : 'properties'})`;
         }
 
         // Render properties table
         function renderPropertiesTable(properties) {
             const tbody = document.getElementById('propertiesTableBody');
+            const cards = document.getElementById('propertiesCards');
             
             if (!properties || properties.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-gray-500">No properties found.</td></tr>`;
+                if (cards) cards.innerHTML = `<div class="bg-white rounded-xl shadow p-4 text-sm text-gray-500">No properties found.</div>`;
                 return;
             }
 
-            tbody.innerHTML = properties.map(p => `
+            const allRooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
+            if (cards) {
+                cards.innerHTML = properties.map(p => {
+                    const pid = p._id || p.id || p.propertyId || '';
+                    const pTitle = p.title || p.name || p.propertyName || 'Untitled';
+                    const roomCount = allRooms.filter(r =>
+                        (pid && String(r.propertyId) === String(pid)) ||
+                        (!pid && String(r.propertyTitle || '').toLowerCase().includes(String(pTitle).toLowerCase()))
+                    ).length;
+                    return `
+                        <div class="bg-white rounded-xl shadow p-4">
+                            <div class="font-semibold text-gray-900">${pTitle}</div>
+                            <div class="text-xs text-gray-500 mt-1">${p.area || p.city || p.locationCode || '-'}</div>
+                            <div class="text-xs text-gray-600 mt-2">Owner: ${p.ownerName || user.name || 'Owner'}</div>
+                            <div class="text-xs text-gray-600">Rooms: ${roomCount}</div>
+                            <a href="rooms.html?propertyId=${pid}&propertyTitle=${encodeURIComponent(pTitle)}" class="inline-block mt-3 text-xs font-medium text-purple-700 border border-purple-200 px-3 py-1.5 rounded hover:bg-purple-50">Manage Rooms</a>
+                        </div>
+                    `;
+                }).join('');
+            }
+            tbody.innerHTML = properties.map(p => {
+                const pid = p._id || p.id || p.propertyId || '';
+                const pTitle = p.title || p.name || p.propertyName || 'Untitled';
+                const roomCount = allRooms.filter(r =>
+                    (pid && String(r.propertyId) === String(pid)) ||
+                    (!pid && String(r.propertyTitle || '').toLowerCase().includes(String(pTitle).toLowerCase()))
+                ).length;
+                return `
                 <tr class="hover:bg-gray-50">
                     <td class="px-4 py-4 whitespace-nowrap">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 h-10 w-10">
-                                <img class="h-10 w-10 rounded-lg object-cover" src="${p.image || 'https://via.placeholder.com/80'}" alt="${p.name}">
+                                <img class="h-10 w-10 rounded-lg object-cover" src="${p.image || 'https://via.placeholder.com/80'}" alt="${pTitle}">
                             </div>
                             <div class="ml-4">
-                                <div class="text-sm font-medium text-gray-900">${p.name || p.propertyName || 'Untitled'}</div>
+                                <div class="text-sm font-medium text-gray-900">${pTitle}</div>
+                                <div class="text-xs text-gray-500">Rooms: ${roomCount}</div>
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 py-4">${p.ownerName || user.name}</td>
-                    <td class="px-4 py-4">${p.city || p.location || '-'}</td>
+                    <td class="px-4 py-4">${p.ownerName || user.name || 'Owner'}</td>
+                    <td class="px-4 py-4">${p.city || p.location || p.locationCode || '-'}</td>
                     <td class="px-4 py-4">${p.area || '-'}</td>
                     <td class="px-4 py-4">${p.size || p.propertySize || '-'}</td>
                     <td class="px-4 py-4 max-w-xs truncate">${p.description || '-'}</td>
                     <td class="px-4 py-4">${p.address || '-'}</td>
                     <td class="px-4 py-4 text-right">
-                        <a href="rooms.html?propertyId=${p._id || p.id || p.propertyId}&propertyTitle=${encodeURIComponent(p.name || '')}" class="text-purple-600 hover:text-purple-800 text-xs font-medium border border-purple-200 px-3 py-1.5 rounded hover:bg-purple-50 transition-colors">
+                        <a href="rooms.html?propertyId=${pid}&propertyTitle=${encodeURIComponent(pTitle)}" class="text-purple-600 hover:text-purple-800 text-xs font-medium border border-purple-200 px-3 py-1.5 rounded hover:bg-purple-50 transition-colors">
                             Manage Rooms
                         </a>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Filter properties
         function filterProperties() {
             const searchTerm = document.getElementById('searchProperties').value.toLowerCase();
             const myProperties = allProperties.filter(p => {
-                const isOwner = (p.ownerId && p.ownerId === ownerId) || (p.ownerLoginId && p.ownerLoginId === ownerId);
-                const matchesSearch = (p.name || '').toLowerCase().includes(searchTerm) || 
-                                     (p.propertyName || '').toLowerCase().includes(searchTerm) ||
-                                     (p.city || '').toLowerCase().includes(searchTerm);
-                return isOwner && matchesSearch;
+                const title = (p.title || p.name || p.propertyName || '').toLowerCase();
+                const city = (p.city || p.location || p.locationCode || '').toLowerCase();
+                const area = (p.area || '').toLowerCase();
+                return title.includes(searchTerm) || city.includes(searchTerm) || area.includes(searchTerm);
             });
             renderPropertiesTable(myProperties);
         }
@@ -613,4 +737,8 @@
     </script>
 </body>
 </html>
+
+
+
+
 

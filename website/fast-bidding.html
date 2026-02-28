@@ -815,7 +815,15 @@
                             continue;
                         }
 
-                        // Prepare bid data in same format as property.html booking requests
+                        const selectedCityOption = document.querySelector('#city option:checked');
+                        const selectedAreaOption = document.querySelector('#area option:checked');
+                        const bidMinValue = parseInt(document.getElementById('minPrice').value || 0);
+                        const bidMaxValue = parseInt(document.getElementById('maxPrice').value || 0);
+                        const selectedGender = document.getElementById('gender').value || '';
+                        const selectedCityId = document.getElementById('city').value || '';
+                        const selectedAreaId = document.getElementById('area').value || '';
+
+                        // Prepare bid data for MongoDB booking requests collection
                         const bidData = {
                             property_id: propertyId,
                             property_name: property.property_name || property.propertyInfo?.name || 'Property',
@@ -827,8 +835,20 @@
                             name: document.getElementById('fullName').value,
                             email: emailFromForm,
                             phone: '',
-                            request_type: 'bid', // Mark as bid instead of request
-                            message: `Looking for property with rent ₹${document.getElementById('minPrice').value}-${document.getElementById('maxPrice').value}, Gender: ${document.getElementById('gender').value}`
+                            request_type: 'bid',
+                            bid_min: Number.isFinite(bidMinValue) && bidMinValue > 0 ? bidMinValue : null,
+                            bid_max: Number.isFinite(bidMaxValue) && bidMaxValue > 0 ? bidMaxValue : null,
+                            filter_criteria: {
+                                gender: selectedGender,
+                                city_id: selectedCityId,
+                                city: selectedCityOption ? selectedCityOption.textContent.trim() : '',
+                                area_id: selectedAreaId,
+                                area: selectedAreaOption ? selectedAreaOption.textContent.trim() : '',
+                                min_price: Number.isFinite(bidMinValue) && bidMinValue > 0 ? bidMinValue : null,
+                                max_price: Number.isFinite(bidMaxValue) && bidMaxValue > 0 ? bidMaxValue : null,
+                                property_type: property.propertyType || property.propertyInfo?.propertyType || 'Property'
+                            },
+                            message: 'Looking for property with rent Rs ' + document.getElementById('minPrice').value + '-' + document.getElementById('maxPrice').value + ', Gender: ' + selectedGender
                         };
 
                         console.log('📤 Submitting bid for property:', propertyId);
@@ -980,3 +1000,4 @@
     </div>
 </body>
 </html>
+

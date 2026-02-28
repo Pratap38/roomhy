@@ -31,6 +31,8 @@
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
@@ -148,25 +150,27 @@
                 <button type="button" onclick="verifyOwnerOtp()" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition-colors">Verify OTP</button>
             </div>
             <div id="forgot-step-3" class="hidden space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-                    <div class="relative">
-                        <input type="password" id="forgot-new-password" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="Min 6 characters" autocomplete="new-password">
-                        <button type="button" onclick="togglePasswordVisibility('forgot-new-password', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-                            <i data-lucide="eye" class="w-5 h-5"></i>
-                        </button>
+                <form onsubmit="event.preventDefault(); resetOwnerPassword();">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                        <div class="relative">
+                            <input type="password" id="forgot-new-password" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="Min 6 characters" autocomplete="new-password" required>
+                            <button type="button" onclick="togglePasswordVisibility('forgot-new-password', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <i data-lucide="eye" class="w-5 h-5"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
-                    <div class="relative">
-                        <input type="password" id="forgot-confirm-password" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="Re-enter password" autocomplete="new-password">
-                        <button type="button" onclick="togglePasswordVisibility('forgot-confirm-password', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-                            <i data-lucide="eye" class="w-5 h-5"></i>
-                        </button>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                        <div class="relative">
+                            <input type="password" id="forgot-confirm-password" class="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-blue-500 transition-colors" placeholder="Re-enter password" autocomplete="new-password" required>
+                            <button type="button" onclick="togglePasswordVisibility('forgot-confirm-password', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <i data-lucide="eye" class="w-5 h-5"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <button type="button" onclick="resetOwnerPassword()" class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition-colors">Set New Password</button>
+                    <button type="submit" class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition-colors">Set New Password</button>
+                </form>
             </div>
         </div>
     </div>
@@ -189,6 +193,68 @@
         let currentUserPayload = null;
         let forgotLoginId = '';
         let forgotResetToken = '';
+        let ownerMemoryStore = {};
+
+        function getJsonStorage(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                return raw ? JSON.parse(raw) : fallback;
+            } catch (e) {
+                if (Object.prototype.hasOwnProperty.call(ownerMemoryStore, key)) return ownerMemoryStore[key];
+                return fallback;
+            }
+        }
+
+        function setJsonStorage(key, value) {
+            ownerMemoryStore[key] = value;
+            try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+        }
+
+        function removeStorageKey(key) {
+            try { localStorage.removeItem(key); } catch (e) {}
+            try { sessionStorage.removeItem(key); } catch (e) {}
+            delete ownerMemoryStore[key];
+        }
+
+        function setSessionKey(key, value) {
+            try { sessionStorage.setItem(key, value); } catch (e) {}
+        }
+
+        async function buildOwnerSessionFromBackend(loginId, fallback = {}) {
+            const normalizedLoginId = String(loginId || '').trim().toUpperCase();
+            const base = {
+                loginId: normalizedLoginId,
+                ownerId: normalizedLoginId,
+                role: 'owner',
+                name: fallback.name || 'Owner',
+                email: fallback.email || '',
+                phone: fallback.phone || '',
+                address: fallback.address || '',
+                locationCode: fallback.locationCode || '',
+                area: fallback.area || '',
+                propertyName: fallback.propertyName || '',
+                propertyLocation: fallback.propertyLocation || ''
+            };
+            if (!normalizedLoginId) return base;
+            try {
+                const res = await fetch(`${API_URL}/api/owners/${encodeURIComponent(normalizedLoginId)}`);
+                if (!res.ok) return base;
+                const owner = await res.json();
+                return {
+                    ...base,
+                    name: owner?.name || owner?.profile?.name || base.name,
+                    email: owner?.email || owner?.profile?.email || base.email,
+                    phone: owner?.phone || owner?.profile?.phone || base.phone,
+                    address: owner?.address || owner?.profile?.address || base.address,
+                    locationCode: owner?.locationCode || owner?.profile?.locationCode || base.locationCode,
+                    area: owner?.checkinArea || owner?.area || base.area,
+                    kycStatus: owner?.kyc?.status || owner?.kycStatus || 'pending'
+                    // Note: propertyName & propertyLocation are kept from base (fallback)
+                };
+            } catch (_) {
+                return base;
+            }
+        }
 
         function togglePasswordVisibility(inputId, btn) {
             const input = document.getElementById(inputId);
@@ -307,17 +373,41 @@
             }
         }
 
-        // Auto-fill hint logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
-            const recent = visits
-                .filter(v => v.status === 'approved' && v.generatedCredentials)
-                .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0];
+        // Helper function to get URL parameters
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name) || '';
+        }
 
-            if (recent) {
-                document.getElementById('hint-id').innerText = recent.generatedCredentials.loginId;
-                document.getElementById('hint-pass').innerText = recent.generatedCredentials.tempPassword;
-                document.getElementById('test-creds-box').classList.remove('hidden');
+        // Auto-fill hint logic + URL parameter handling
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Check for URL parameters from email link (highest priority)
+            const urlLoginId = getUrlParameter('loginId');
+            const urlPassword = getUrlParameter('password');
+            const urlEmail = getUrlParameter('email');
+            const urlArea = getUrlParameter('area');
+
+            if (urlLoginId) {
+                // User came from email link - auto-fill form
+                document.getElementById('login-id').value = urlLoginId.toUpperCase();
+                if (urlPassword) {
+                    document.getElementById('password').value = urlPassword;
+                }
+                console.log('[Owner Login] Auto-filled from email link - LoginId:', urlLoginId, 'Email:', urlEmail, 'Area:', urlArea);
+                // Optionally, you can auto-submit the form here:
+                // setTimeout(() => verifyCredentials(), 1000);
+            } else {
+                // 2. Fall back to hint logic from localStorage
+                const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
+                const recent = visits
+                    .filter(v => v.status === 'approved' && v.generatedCredentials)
+                    .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0];
+
+                if (recent) {
+                    document.getElementById('hint-id').innerText = recent.generatedCredentials.loginId;
+                    document.getElementById('hint-pass').innerText = recent.generatedCredentials.tempPassword;
+                    document.getElementById('test-creds-box').classList.remove('hidden');
+                }
             }
         });
 
@@ -339,9 +429,81 @@
                 return;
             }
 
+            // 1A. Tenant login support from owner index page (ROOMHYTNT####)
+            if (loginId.startsWith('ROOMHYTNT') || loginId.startsWith('TNT')) {
+                const tenants = getJsonStorage('roomhy_tenants', []);
+                const tenantIdx = Array.isArray(tenants)
+                    ? tenants.findIndex(t => String(t.loginId || '').toUpperCase() === loginId)
+                    : -1;
+
+                if (tenantIdx === -1) {
+                    alert("Invalid Credentials! Please check the ID and Password.");
+                    return;
+                }
+
+                const tenant = tenants[tenantIdx];
+
+                // Normal tenant login
+                if (tenant.password && tenant.password === password) {
+                    const tenantUser = {
+                        name: tenant.name || 'Tenant',
+                        phone: tenant.phone || '',
+                        email: tenant.email || '',
+                        loginId: tenant.loginId,
+                        role: 'tenant',
+                        tenantId: tenant.id || tenant._id || tenant.loginId,
+                        passwordSet: true
+                    };
+                    localStorage.setItem('tenant_user', JSON.stringify(tenantUser));
+                    localStorage.setItem('user', JSON.stringify(tenantUser));
+                    window.location.href = '../tenant/tenantdashboard.html';
+                    return;
+                }
+
+                // First time login with temp password
+                const firstTime = tenant.tempPassword && tenant.tempPassword === password && (tenant.status === 'pending' || !tenant.passwordSet);
+                if (firstTime) {
+                    const newPassword = prompt('Set your new password (minimum 6 characters):');
+                    if (newPassword === null) return;
+                    if (String(newPassword).trim().length < 6) {
+                        alert('Password must be at least 6 characters.');
+                        return;
+                    }
+
+                    const confirmPassword = prompt('Confirm your new password:');
+                    if (confirmPassword === null) return;
+                    if (newPassword !== confirmPassword) {
+                        alert('Passwords do not match.');
+                        return;
+                    }
+
+                    tenants[tenantIdx].password = newPassword;
+                    tenants[tenantIdx].tempPassword = null;
+                    tenants[tenantIdx].passwordSet = true;
+                    setJsonStorage('roomhy_tenants', tenants);
+
+                    const tenantUser = {
+                        name: tenants[tenantIdx].name || 'Tenant',
+                        phone: tenants[tenantIdx].phone || '',
+                        email: tenants[tenantIdx].email || '',
+                        loginId: tenants[tenantIdx].loginId,
+                        role: 'tenant',
+                        tenantId: tenants[tenantIdx].id || tenants[tenantIdx]._id || tenants[tenantIdx].loginId,
+                        passwordSet: true
+                    };
+                    localStorage.setItem('tenant_user', JSON.stringify(tenantUser));
+                    localStorage.setItem('user', JSON.stringify(tenantUser));
+                    window.location.href = '../tenant/tenantdashboard.html';
+                    return;
+                }
+
+                alert("Invalid Credentials! Please check the ID and Password.");
+                return;
+            }
+
             // 2. CHECK OWNER CREDENTIALS
-            const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
-            const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
+            const db = getJsonStorage('roomhy_owners_db', {});
+            const visits = getJsonStorage('roomhy_visits', []);
 
             // A. Check Visits (If just approved but not fully set up)
             // This handles the "generated ID from enquiry" part perfectly
@@ -354,12 +516,32 @@
 
             if (visitMatch) {
                 // First Time Login Detected from Visit Report
+                // Extract name from multiple sources in propertyInfo
+                const pInfo = visitMatch.propertyInfo || {};
+                const ownerName = 
+                    visitMatch.ownerName || 
+                    pInfo.ownerName || 
+                    pInfo.contactName ||
+                    pInfo.owner ||
+                    visitMatch.contactPerson ||
+                    visitMatch.submittedBy ||
+                    visitMatch.name ||
+                    'Owner';
+                
                 currentUserPayload = {
                     loginId: loginId,
                     ownerId: loginId,
-                    name: visitMatch.propertyInfo.ownerName,
+                    name: ownerName,
+                    phone: pInfo.contactPhone || pInfo.phone || visitMatch.phone || '',
+                    address: pInfo.address || visitMatch.address || '',
+                    locationCode: pInfo.locationCode || visitMatch.locationCode || '',
+                    area: pInfo.area || visitMatch.area || '',
+                    email: pInfo.ownerEmail || pInfo.email || visitMatch.email || '',
+                    propertyName: pInfo.name || visitMatch.propertyName || visitMatch.name || '',
+                    propertyLocation: pInfo.area || pInfo.city || pInfo.address || visitMatch.area || '',
                     role: 'owner'
                 };
+                console.log("✅ Created payload:", { name: currentUserPayload.name, loginId, propertyName: currentUserPayload.propertyName, sources: { visit: visitMatch.ownerName, pInfo: pInfo.ownerName }});
                 
                 // Initialize in DB if missing
                 if(!db[loginId]) {
@@ -369,16 +551,16 @@
                         kyc: { status: 'pending' },
                         profileFilled: false
                     };
-                    localStorage.setItem('roomhy_owners_db', JSON.stringify(db));
+                    setJsonStorage('roomhy_owners_db', db);
                     // Try to persist owner to backend (API-first). This helps KYC and later PATCH requests.
                     (async () => {
                         try {
                             const payload = {
                                 loginId: loginId,
-                                name: visitMatch.propertyInfo.ownerName || visitMatch.propertyInfo.name || 'Owner',
-                                phone: visitMatch.propertyInfo.contactPhone || '',
-                                address: visitMatch.propertyInfo.address || '',
-                                locationCode: visitMatch.propertyInfo.locationCode || '',
+                                name: visitMatch.propertyInfo?.ownerName || visitMatch.propertyInfo?.name || visitMatch.name || 'Owner',
+                                phone: visitMatch.propertyInfo?.contactPhone || visitMatch.phone || '',
+                                address: visitMatch.propertyInfo?.address || '',
+                                locationCode: visitMatch.propertyInfo?.locationCode || '',
                                 credentials: { password: password, firstTime: true },
                                 kyc: { status: 'pending' }
                             };
@@ -404,7 +586,7 @@
                                             credentials: { password: password, firstTime: true },
                                             kyc: { status: 'pending' }
                                         };
-                                        const patchRes = await fetch(`/api/owners/${encodeURIComponent(loginId)}`, {
+                                        const patchRes = await fetch(`${API_URL}/api/owners/${encodeURIComponent(loginId)}`, {
                                             method: 'PATCH',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify(patchPayload)
@@ -436,7 +618,18 @@
                     
                     // Check if it's still first time (e.g. refreshed page before setting password)
                     if (db[loginId].credentials.firstTime) {
-                        currentUserPayload = { loginId: loginId, role: 'owner' };
+                        currentUserPayload = { 
+                            loginId: loginId, 
+                            role: 'owner',
+                            name: db[loginId].profile?.name || 'Owner',
+                            propertyName: db[loginId].profile?.propertyName || '',
+                            propertyLocation: db[loginId].profile?.propertyLocation || '',
+                            phone: db[loginId].profile?.phone || '',
+                            address: db[loginId].profile?.address || '',
+                            email: db[loginId].profile?.email || '',
+                            area: db[loginId].profile?.area || '',
+                            locationCode: db[loginId].profile?.locationCode || ''
+                        };
                         showSetPasswordScreen();
                     } else {
                         // Normal Login Flow
@@ -444,6 +637,61 @@
                     }
                     return;
                 }
+            }
+
+            // C. Backend fallback (important for email-link login on fresh devices)
+            try {
+                const res = await fetch(`${API_URL}/api/owners/${encodeURIComponent(loginId)}`);
+                if (res.ok) {
+                    const owner = await res.json();
+                    const backendPassword =
+                        owner?.checkinPassword ||
+                        owner?.password ||
+                        owner?.credentials?.password ||
+                        '';
+
+                    if (backendPassword && backendPassword === password) {
+                        const firstTime = owner?.credentials?.firstTime === true || owner?.passwordSet === false;
+
+                        db[loginId] = db[loginId] || {};
+                        db[loginId].profile = {
+                            loginId,
+                            name: owner?.name || owner?.profile?.name || 'Owner',
+                            phone: owner?.phone || owner?.profile?.phone || '',
+                            address: owner?.address || owner?.profile?.address || '',
+                            locationCode: owner?.locationCode || owner?.profile?.locationCode || ''
+                        };
+                        db[loginId].credentials = {
+                            password: backendPassword,
+                            firstTime: firstTime
+                        };
+                        db[loginId].kyc = owner?.kyc || db[loginId].kyc || { status: 'pending' };
+                        db[loginId].profileFilled = owner?.profileFilled !== false;
+                        db[loginId].passwordSet = owner?.passwordSet !== false;
+                        setJsonStorage('roomhy_owners_db', db);
+
+                        if (firstTime) {
+                            currentUserPayload = { 
+                                loginId: loginId, 
+                                role: 'owner', 
+                                name: db[loginId].profile.name,
+                                phone: db[loginId].profile?.phone || '',
+                                address: db[loginId].profile?.address || '',
+                                email: db[loginId].profile?.email || '',
+                                area: db[loginId].profile?.area || '',
+                                locationCode: db[loginId].profile?.locationCode || '',
+                                propertyName: db[loginId].profile?.propertyName || '',
+                                propertyLocation: db[loginId].profile?.propertyLocation || ''
+                            };
+                            showSetPasswordScreen();
+                        } else {
+                            proceedToDashboard(loginId, db[loginId]);
+                        }
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('[Owner Login] Backend fallback failed:', err && err.message);
             }
 
             alert("Invalid Credentials! Please check the ID and Password.");
@@ -455,14 +703,14 @@
             document.getElementById('test-creds-box').classList.add('hidden');
         }
 
-        function finalizeOwnerLogin() {
+        async function finalizeOwnerLogin() {
             const newPass = document.getElementById('new-password').value.trim();
             const confirm = document.getElementById('confirm-password').value.trim();
 
             if (newPass.length < 6) return alert("Password too short.");
             if (newPass !== confirm) return alert("Passwords do not match");
 
-            const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
+            const db = getJsonStorage('roomhy_owners_db', {});
             const loginId = currentUserPayload && currentUserPayload.loginId;
 
             if (!loginId) {
@@ -488,12 +736,12 @@
                 db[loginId].passwordSet = true;
             }
 
-            localStorage.setItem('roomhy_owners_db', JSON.stringify(db));
+            setJsonStorage('roomhy_owners_db', db);
 
             // Try to update backend owner record as well. If PATCH fails (404/400), try creating the owner then retry PATCH once.
             (async () => {
                 const patchPayload = { credentials: { password: newPass, firstTime: false }, passwordSet: true };
-                const patchUrl = `/api/owners/${encodeURIComponent(loginId)}`;
+                const patchUrl = `${API_URL}/api/owners/${encodeURIComponent(loginId)}`;
 
                 async function doPatch() {
                     try {
@@ -520,7 +768,7 @@
                 if (!firstTry.ok && (firstTry.status === 404 || firstTry.status === 400)) {
                     // Attempt to create owner using the local record as payload, then retry PATCH once
                     try {
-                        const localDb = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
+                        const localDb = getJsonStorage('roomhy_owners_db', {});
                         const localOwner = localDb[loginId] || {};
                         const createPayload = {
                             loginId: loginId,
@@ -571,10 +819,20 @@
             })();
 
             // Set Session - Store multiple accounts
-            const user = { loginId: loginId, ownerId: loginId, role: 'owner', name: db[loginId].profile?.name || 'Owner' };
+            const userFallback = {
+                name: db[loginId].profile?.name || currentUserPayload?.name || 'Owner',
+                email: db[loginId].profile?.email || currentUserPayload?.email || '',
+                phone: db[loginId].profile?.phone || currentUserPayload?.phone || '',
+                address: db[loginId].profile?.address || currentUserPayload?.address || '',
+                locationCode: db[loginId].profile?.locationCode || currentUserPayload?.locationCode || '',
+                area: db[loginId].profile?.area || currentUserPayload?.area || '',
+                propertyName: db[loginId].profile?.propertyName || currentUserPayload?.propertyName || '',
+                propertyLocation: db[loginId].profile?.propertyLocation || currentUserPayload?.propertyLocation || ''
+            };
+            const user = await buildOwnerSessionFromBackend(loginId, userFallback);
             
             // Get existing accounts or initialize empty array
-            let ownerAccounts = JSON.parse(localStorage.getItem('owner_accounts') || '[]');
+            let ownerAccounts = getJsonStorage('owner_accounts', []);
             
             // Check if this account already exists
             const existingAccountIndex = ownerAccounts.findIndex(acc => acc.loginId === loginId);
@@ -588,29 +846,59 @@
             }
             
             // Store all accounts
-            localStorage.setItem('owner_accounts', JSON.stringify(ownerAccounts));
+            setJsonStorage('owner_accounts', ownerAccounts);
             
             // Clear STAFF sessions to prevent crosstalk
-            sessionStorage.removeItem('manager_user');
-            sessionStorage.removeItem('user');
-            localStorage.removeItem('staff_user');
-            localStorage.removeItem('staff_token');
+            removeStorageKey('manager_user');
+            removeStorageKey('user');
+            removeStorageKey('staff_user');
+            removeStorageKey('staff_token');
             
             // Set current active account with OWNER-specific key
-            localStorage.setItem('owner_user', JSON.stringify(user));
-            sessionStorage.setItem('owner_session', JSON.stringify(user));
+            setJsonStorage('owner_user', user);
+            setSessionKey('owner_session', JSON.stringify(user));
+            // Legacy compatibility: many owner pages still read `user`
+            setJsonStorage('user', user);
+            setSessionKey('user', JSON.stringify(user));
 
-            alert("?? Password Set! Starting Onboarding...");
+            alert("Password set successfully. Redirecting to dashboard...");
             
-            // 1st Time Flow: Go to Profile
-            window.location.href = 'ownerprofile.html';
+            // Set current active account with OWNER-specific key
+            setJsonStorage('owner_user', user);
+            setSessionKey('owner_session', JSON.stringify(user));
+            // Legacy compatibility: many owner pages still read `user`
+            setJsonStorage('user', user);
+            setSessionKey('user', JSON.stringify(user));
+
+            console.log('✅ User session stored after password set:', {
+                name: user.name,
+                loginId: user.loginId,
+                propertyName: user.propertyName,
+                email: user.email
+            });
+            
+            // 1st Time Flow: Go to Dashboard with name in URL (bypass Tracking Prevention)
+            const nameParam = encodeURIComponent(user.name || 'Owner');
+            const propParam = encodeURIComponent(user.propertyName || '');
+            const emailParam = encodeURIComponent(user.email || '');
+            window.location.href = `admin.html?loginId=${encodeURIComponent(loginId)}&name=${nameParam}&propertyName=${propParam}&email=${emailParam}`;
         }
 
-        function proceedToDashboard(loginId, ownerData) {
-            const user = { loginId: loginId, ownerId: loginId, role: 'owner', name: ownerData.profile?.name || 'Owner' };
+        async function proceedToDashboard(loginId, ownerData) {
+            const userFallback = {
+                name: ownerData.profile?.name || ownerData?.name || 'Owner',
+                email: ownerData.profile?.email || ownerData?.email || '',
+                phone: ownerData.profile?.phone || ownerData?.phone || '',
+                address: ownerData.profile?.address || ownerData?.address || '',
+                locationCode: ownerData.profile?.locationCode || ownerData?.locationCode || '',
+                area: ownerData.profile?.area || ownerData?.area || '',
+                propertyName: ownerData.profile?.propertyName || ownerData?.propertyName || '',
+                propertyLocation: ownerData.profile?.propertyLocation || ownerData?.propertyLocation || ''
+            };
+            const user = await buildOwnerSessionFromBackend(loginId, userFallback);
             
             // Get existing accounts or initialize empty array
-            let ownerAccounts = JSON.parse(localStorage.getItem('owner_accounts') || '[]');
+            let ownerAccounts = getJsonStorage('owner_accounts', []);
             
             // Check if this account already exists
             const existingAccountIndex = ownerAccounts.findIndex(acc => acc.loginId === loginId);
@@ -624,34 +912,44 @@
             }
             
             // Store all accounts
-            localStorage.setItem('owner_accounts', JSON.stringify(ownerAccounts));
+            setJsonStorage('owner_accounts', ownerAccounts);
             
             // Clear STAFF sessions to prevent crosstalk
-            sessionStorage.removeItem('manager_user');
-            sessionStorage.removeItem('user');
-            localStorage.removeItem('staff_user');
-            localStorage.removeItem('staff_token');
+            removeStorageKey('manager_user');
+            removeStorageKey('user');
+            removeStorageKey('staff_user');
+            removeStorageKey('staff_token');
             
             // Set current active account with OWNER-specific key
-            localStorage.setItem('owner_user', JSON.stringify(user));
-            sessionStorage.setItem('owner_session', JSON.stringify(user));
+            setJsonStorage('owner_user', user);
+            setSessionKey('owner_session', JSON.stringify(user));
+            // Legacy compatibility: many owner pages still read `user`
+            setJsonStorage('user', user);
+            setSessionKey('user', JSON.stringify(user));
 
-            // ENFORCE ONBOARDING SEQUENCE
-            const hasProfile = ownerData.profileFilled;
-            // Check KYC status: 'submitted' or 'verified' allows Dashboard. 'pending' does not.
-            const kycDone = (ownerData.kyc?.status === 'submitted' || ownerData.kyc?.status === 'verified');
+            console.log('✅ User session stored for dashboard:', {
+                name: user.name,
+                loginId: user.loginId,
+                propertyName: user.propertyName,
+                email: user.email
+            });
 
-            if (!hasProfile) {
-                window.location.href = 'ownerprofile.html';
-            } else if (!kycDone) {
-                window.location.href = 'ownerkyc.html';
-            } else {
-                window.location.href = 'admin.html';
-            }
+            // Direct dashboard access after successful login with name in URL (bypass Tracking Prevention)
+            const nameParam = encodeURIComponent(user.name || 'Owner');
+            const propParam = encodeURIComponent(user.propertyName || '');
+            const emailParam = encodeURIComponent(user.email || '');
+            window.location.href = `admin.html?loginId=${encodeURIComponent(loginId)}&name=${nameParam}&propertyName=${propParam}&email=${emailParam}`;
         }
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
 
 
 

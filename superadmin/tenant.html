@@ -37,17 +37,27 @@
         .doc-tab-btn { border-bottom: 2px solid transparent; color: #6b7280; }
         .doc-tab-btn.active { border-bottom-color: #9333ea; color: #9333ea; font-weight: 600; }
         .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+        
+        /* Mobile Menu Icon - Transparent Background */
+        #mobile-menu-open { background-color: transparent !important; padding: 0.5rem !important; border-radius: 0.375rem; transition: all 0.2s ease; }
+        #mobile-menu-open:hover { background-color: transparent !important; color: #64748b; }
     </style>
 </head>
 <body class="text-slate-800">
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+    
     <div class="flex h-screen overflow-hidden">
                 <!-- Sidebar -->
-        <aside class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar">
+        <aside id="mobile-sidebar" class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827] z-10">
                  <div class="flex items-center gap-3">
                      <div class="bg-purple-600 p-1.5 rounded-lg"><i data-lucide="building-2" class="w-5 h-5 text-white"></i></div>
                      <div><h1 class="text-xl font-bold text-white">RoomHy</h1><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
                  </div>
+                 <button id="mobile-sidebar-close" class="md:hidden ml-auto p-2 text-gray-400 hover:text-white">
+                     <i data-lucide="x" class="w-5 h-5"></i>
+                 </button>
             </div>
             <nav class="flex-1 py-6 space-y-1">
                 <div class="px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Overview</div>
@@ -139,7 +149,6 @@
                                     <tr>
                                         <th>Tenant Info</th>
                                         <th>Property Details</th>
-                                        <th>Location Code</th>
                                         <th>KYC Status</th>
                                         <th>Move In/Out</th>
                                         <th class="text-right">Actions</th>
@@ -322,24 +331,67 @@
             loadTenants();
         });
 
+        function getImageDataUrl(fileLike) {
+            if (!fileLike) return '';
+            if (typeof fileLike === 'string') return fileLike;
+            if (typeof fileLike === 'object' && fileLike.dataUrl) return fileLike.dataUrl;
+            return '';
+        }
+
+        function normalizeTenantRecord(t) {
+            const profile = (t && t.digitalCheckin && t.digitalCheckin.profile) || {};
+            const kyc = (t && t.digitalCheckin && t.digitalCheckin.kyc) || {};
+            const propertyObj = (t && t.property && typeof t.property === 'object') ? t.property : null;
+            const propertyTitle = (propertyObj && (propertyObj.title || propertyObj.name)) || t.propertyTitle || profile.propertyName || t.propertyName || '';
+            const aadhaarNumber = (t.kyc && (t.kyc.aadhaarNumber || t.kyc.aadhar)) || kyc.aadhaarNumber || '';
+            const aadhaarFront = (t.kyc && (t.kyc.idProofFile || t.kyc.aadhaarFront || t.kyc.aadharFile)) || kyc.aadhaarFront || '';
+            const aadhaarBack = (t.kyc && t.kyc.aadhaarBack) || kyc.aadhaarBack || '';
+
+            return {
+                ...t,
+                name: t.name || profile.name || '',
+                email: t.email || profile.email || '',
+                phone: t.phone || profile.aadhaarLinkedPhone || '',
+                dob: t.dob || profile.dob || '',
+                guardianNumber: t.guardianNumber || profile.guardianNumber || t.emergencyContact || '',
+                moveInDate: t.moveInDate || profile.moveInDate || '',
+                roomNo: t.roomNo || profile.roomNo || '',
+                agreedRent: (t.agreedRent !== undefined && t.agreedRent !== null) ? t.agreedRent : (profile.agreedRent || 0),
+                property: propertyObj || propertyTitle || t.property || '',
+                kycStatus: t.kycStatus || ((t.kyc && t.kyc.otpVerified) || kyc.otpVerified ? 'verified' : 'pending'),
+                kyc: {
+                    ...(t.kyc || {}),
+                    aadhar: aadhaarNumber,
+                    aadhaarNumber: aadhaarNumber,
+                    aadhaarLinkedPhone: (t.kyc && t.kyc.aadhaarLinkedPhone) || kyc.aadhaarLinkedPhone || '',
+                    idProofFile: getImageDataUrl(aadhaarFront),
+                    aadhaarFront: aadhaarFront,
+                    aadhaarBack: aadhaarBack
+                }
+            };
+        }
+
         function loadTenants() {
             // Try backend first (requires superadmin token), fallback to localStorage
             let tenants = [];
             (async () => {
                 try {
                     const token = localStorage.getItem('token');
-                    if (token) {
-                        const res = await fetch(API_URL + '/api/tenants', { headers: { 'Authorization': 'Bearer ' + token } });
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data && data.success && Array.isArray(data.tenants)) tenants = data.tenants;
-                        }
+                    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                    const res = await fetch(API_URL + '/api/tenants', { headers });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const raw = Array.isArray(data) ? data : (Array.isArray(data.tenants) ? data.tenants : []);
+                        tenants = raw.map(normalizeTenantRecord);
+                        if (tenants.length > 0) localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
                     }
                 } catch (err) {
                     console.warn('Failed to fetch tenants from API, falling back to localStorage', err);
                 }
 
-                if (!tenants || tenants.length === 0) tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+                if (!tenants || tenants.length === 0) {
+                    tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]').map(normalizeTenantRecord);
+                }
 
                 const tbody = document.getElementById('all-tenants-body');
                 tbody.innerHTML = '';
@@ -405,7 +457,6 @@
                                     <span class="text-xs text-gray-500">Room ${t.roomNo || '-'}, Bed ${t.bedNo || '-'}</span>
                                 </div>
                             </td>
-                            <td class="font-mono text-sm text-gray-700">${(typeof t.property === 'object' && t.property !== null) ? (t.property.locationCode || '-') : (t.locationCode || '-')}</td>
                             <td>${kycBadge}</td>
                             <td>
                                 <div class="text-xs text-gray-600">
@@ -497,7 +548,7 @@
                 document.getElementById('detailPhone').innerText = tenant.phone;
                 document.getElementById('detailLoginId').innerText = tenant.loginId;
                 document.getElementById('detailAadhaar').innerText = (tenant.kyc && tenant.kyc.aadhar) ? tenant.kyc.aadhar : 'N/A';
-                document.getElementById('detailGuardian').innerText = tenant.emergencyContact || 'Not Provided';
+                document.getElementById('detailGuardian').innerText = tenant.guardianNumber || tenant.emergencyContact || 'Not Provided';
                 document.getElementById('detailJoinDate').innerText = tenant.moveInDate ? new Date(tenant.moveInDate).toLocaleDateString() : '-';
                 const propDisplay = (typeof tenant.property === 'object' && tenant.property !== null) ? (tenant.property.title || tenant.property.name || JSON.stringify(tenant.property)) : (tenant.property || 'Unknown Property');
                 document.getElementById('detailProperty').innerText = `${propDisplay} (Rm ${tenant.roomNo})`;
@@ -527,7 +578,9 @@
             let imgSrc = null;
             if (tabName === 'aadhaar_front' && currentTenantData.kyc && currentTenantData.kyc.idProofFile) {
                 imgSrc = currentTenantData.kyc.idProofFile;
-            } 
+            } else if (tabName === 'aadhaar_back' && currentTenantData.kyc && currentTenantData.kyc.aadhaarBack) {
+                imgSrc = getImageDataUrl(currentTenantData.kyc.aadhaarBack);
+            }
             // Add logic for other docs if implemented
 
             if (imgSrc) {
@@ -568,7 +621,12 @@
         }
 
     </script>
+        <script src="./mobile-sidebar.js"></script>
 </body>
 </html>
+
+
+
+
 
 

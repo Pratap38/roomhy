@@ -49,6 +49,7 @@ exports.getOwnerRent = async (req, res) => {
 const Owner = require('../models/Owner');
 const Notification = require('../models/Notification');
 const Property = require('../models/Property');
+const CheckinRecord = require('../models/CheckinRecord');
 
 // List Owners with Filtering (Area, KYC Status)
 exports.getAllOwners = async (req, res) => {
@@ -96,17 +97,33 @@ exports.getAllOwners = async (req, res) => {
         }
 
         // ✅ NEW: Ensure all owners have merged profile data at top level for easy frontend access
+        const checkins = ownerLoginIds.length > 0
+            ? await CheckinRecord.find({ role: 'owner', loginId: { $in: ownerLoginIds } }).lean()
+            : [];
+        const checkinMap = {};
+        checkins.forEach(c => { checkinMap[c.loginId] = c; });
+
         const enrichedOwners = owners.map(o => ({
             ...o,
+            checkinDob: checkinMap[o.loginId]?.ownerProfile?.dob || '',
+            checkinEmail: checkinMap[o.loginId]?.ownerProfile?.email || '',
+            checkinAccountHolderName: checkinMap[o.loginId]?.ownerProfile?.payment?.accountHolderName || '',
+            checkinBankAccountNumber: checkinMap[o.loginId]?.ownerProfile?.payment?.bankAccountNumber || '',
+            checkinIfscCode: checkinMap[o.loginId]?.ownerProfile?.payment?.ifscCode || '',
+            checkinUpiId: checkinMap[o.loginId]?.ownerProfile?.payment?.upiId || '',
+            checkinAadhaarLinkedPhone: checkinMap[o.loginId]?.ownerKyc?.aadhaarLinkedPhone || '',
+            checkinAadhaarNumber: checkinMap[o.loginId]?.ownerKyc?.aadhaarNumber || '',
+            checkinOtpVerified: !!checkinMap[o.loginId]?.ownerKyc?.otpVerified,
+            checkinSubmittedAt: checkinMap[o.loginId]?.ownerSubmittedAt || null,
             // Merge profile data to top level (profile takes priority, then top-level field)
             name: o.profile?.name || o.name || 'Unknown',
-            email: o.profile?.email || o.email || '',
+            email: o.profile?.email || o.email || (checkinMap[o.loginId]?.ownerProfile?.email || ''),
             phone: o.profile?.phone || o.phone || '',
             address: o.profile?.address || o.address || '',
             locationCode: o.profile?.locationCode || o.locationCode || '',
             bankName: o.profile?.bankName || '',
-            accountNumber: o.profile?.accountNumber || '',
-            ifscCode: o.profile?.ifscCode || '',
+            accountNumber: o.profile?.accountNumber || (checkinMap[o.loginId]?.ownerProfile?.payment?.bankAccountNumber || ''),
+            ifscCode: o.profile?.ifscCode || (checkinMap[o.loginId]?.ownerProfile?.payment?.ifscCode || ''),
             branchName: o.profile?.branchName || '',
             aadharNumber: o.kyc?.aadharNumber || '',
             kycStatus: o.kyc?.status || 'pending',
@@ -169,22 +186,33 @@ exports.getOwnerById = async (req, res) => {
     try {
         const owner = await Owner.findOne({ loginId: req.params.loginId }).lean();
         if (!owner) return res.status(404).json({ message: 'Owner not found' });
+        const checkin = await CheckinRecord.findOne({ role: 'owner', loginId: req.params.loginId.toUpperCase() }).lean();
         res.json({
             ...owner,
             name: owner.profile?.name || owner.name || 'Unknown',
-            email: owner.profile?.email || owner.email || '',
+            email: owner.profile?.email || owner.email || (checkin?.ownerProfile?.email || ''),
             phone: owner.profile?.phone || owner.phone || '',
             address: owner.profile?.address || owner.address || '',
             locationCode: owner.profile?.locationCode || owner.locationCode || '',
             bankName: owner.profile?.bankName || '',
-            accountNumber: owner.profile?.accountNumber || '',
-            ifscCode: owner.profile?.ifscCode || '',
+            accountNumber: owner.profile?.accountNumber || (checkin?.ownerProfile?.payment?.bankAccountNumber || ''),
+            ifscCode: owner.profile?.ifscCode || (checkin?.ownerProfile?.payment?.ifscCode || ''),
             branchName: owner.profile?.branchName || '',
             aadharNumber: owner.kyc?.aadharNumber || '',
             kycStatus: owner.kyc?.status || 'pending',
             documentImage: owner.kyc?.documentImage || '',
             profileFilled: !!owner.profileFilled,
-            password: owner.credentials?.password || ''
+            password: owner.credentials?.password || '',
+            checkinDob: checkin?.ownerProfile?.dob || '',
+            checkinEmail: checkin?.ownerProfile?.email || '',
+            checkinAccountHolderName: checkin?.ownerProfile?.payment?.accountHolderName || '',
+            checkinBankAccountNumber: checkin?.ownerProfile?.payment?.bankAccountNumber || '',
+            checkinIfscCode: checkin?.ownerProfile?.payment?.ifscCode || '',
+            checkinUpiId: checkin?.ownerProfile?.payment?.upiId || '',
+            checkinAadhaarLinkedPhone: checkin?.ownerKyc?.aadhaarLinkedPhone || '',
+            checkinAadhaarNumber: checkin?.ownerKyc?.aadhaarNumber || '',
+            checkinOtpVerified: !!checkin?.ownerKyc?.otpVerified,
+            checkinSubmittedAt: checkin?.ownerSubmittedAt || null
         });
     } catch (err) {
         res.status(500).json({ message: err.message });

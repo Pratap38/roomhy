@@ -1,12 +1,14 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - All Properties</title>
     <script>
-        // API Configuration
-        const API_URL = 'https://roomhy-backend.onrender.com';
+        // Dynamic API configuration
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -41,14 +43,20 @@
     </style>
 </head>
 <body class="text-slate-800">
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+    
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar (Standard Super Admin) -->
-          <aside class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar">
+          <aside id="mobile-sidebar" class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827] z-10">
                  <div class="flex items-center gap-3">
                      <div class="bg-purple-600 p-1.5 rounded-lg"><i data-lucide="building-2" class="w-5 h-5 text-white"></i></div>
                      <div><h1 class="text-xl font-bold text-white">RoomHy</h1><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
                  </div>
+                 <button id="mobile-sidebar-close" class="md:hidden ml-auto p-2 text-gray-400 hover:text-white">
+                     <i data-lucide="x" class="w-5 h-5"></i>
+                 </button>
             </div>
             <nav class="flex-1 py-6 space-y-1">
                 <div class="px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Overview</div>
@@ -228,6 +236,57 @@
         if (isPreview) document.getElementById('demoMode').classList.remove('hidden');
 
         let currentPropertiesData = [];
+        const API_BASES = Array.from(new Set([
+            API_URL,
+            'https://roomhy-backend-wqwo.onrender.com',
+            'https://roomhy-backend.onrender.com',
+            'http://localhost:5001'
+        ]));
+        let activeApiBase = API_URL;
+
+        function getStoredToken() {
+            return (
+                localStorage.getItem('token') ||
+                sessionStorage.getItem('token') ||
+                localStorage.getItem('authToken') ||
+                sessionStorage.getItem('authToken') ||
+                localStorage.getItem('jwt') ||
+                sessionStorage.getItem('jwt') ||
+                ''
+            );
+        }
+
+        function getAuthHeaders(extraHeaders = {}) {
+            const t = getStoredToken();
+            const headers = { ...extraHeaders };
+            if (t) headers.Authorization = `Bearer ${t}`;
+            return headers;
+        }
+
+        async function fetchFromAnyApi(path, options = {}) {
+            const attempts = [activeApiBase, ...API_BASES.filter(base => base !== activeApiBase)];
+            let lastError = null;
+
+            for (const base of attempts) {
+                try {
+                    const res = await fetch(`${base}${path}`, options);
+                    if (res.ok) {
+                        activeApiBase = base;
+                        return res;
+                    }
+                    if (res.status === 401 || res.status === 404) {
+                        lastError = new Error(`HTTP ${res.status} for ${path} at ${base}`);
+                        continue;
+                    }
+                    return res;
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+
+            if (lastError) throw lastError;
+            throw new Error(`API request failed: ${path}`);
+        }
 
         // --- Sidebar Functions ---
         function toggleSubmenu(id, element) {
@@ -256,32 +315,102 @@
         document.getElementById('mobile-menu-open').addEventListener('click', toggleMobileMenu);
 
         // --- Load Data ---
-        async function loadProperties() {
-            // Try backend properties endpoint first (prefers MongoDB Atlas)
-            let props = [];
+        // Fetch owners data from API (same as owner.html does)
+        async function loadOwners() {
+            let owners = [];
+            console.log('ðŸ“¥ Fetching owners data from backend...');
             try {
-                const token = localStorage.getItem('token');
-                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-                const res = await fetch(API_URL + '/api/properties', { headers });
+                const res = await fetchFromAnyApi('/api/owners', {
+                    headers: getAuthHeaders()
+                });
                 if (res.ok) {
                     const data = await res.json();
-                    if (data && data.success && Array.isArray(data.properties)) {
-                        props = data.properties.map(p => ({
-                            id: p._id || p.id,
-                            title: p.title || p.name || p.propertyName || 'Untitled',
-                            locationCode: p.locationCode || '-',
-                            address: p.address || '-',
-                            city: p.city || p.locationCity || '-',
-                            ownerName: p.owner ? (p.owner.name || '-') : (p.ownerName || '-'),
-                            ownerPhone: p.owner ? (p.owner.phone || '-') : (p.ownerPhone || '-'),
-                            ownerLoginId: p.owner ? (p.owner.loginId || null) : (p.ownerLoginId || null),
-                            photos: p.photos || (p.image ? [p.image] : []),
-                            imageBase64: p.imageBase64 || null,
-                            status: p.status || 'active'
-                        }));
-                    }
+                    // Handle both array response and {data: [...]} response
+                    owners = Array.isArray(data) ? data : (data.data || data.owners || []);
+                    console.log(`âœ… Loaded ${owners.length} owners from backend`);
                 } else {
-                    console.warn('Properties API returned', res.status);
+                    console.warn('âš ï¸ Owners API returned', res.status);
+                }
+            } catch (err) {
+                console.warn('âš ï¸ Failed to fetch owners from backend, falling back to localStorage', err);
+            }
+
+            // Fallback to localStorage shaped data
+            if (!owners || !Array.isArray(owners) || owners.length === 0) {
+                const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
+                owners = Object.keys(db).map(id => ({ loginId: id, ...db[id] }));
+                console.log(`ðŸ“¦ Loaded ${owners.length} owners from localStorage`);
+            }
+
+            return owners;
+        }
+
+        // Create a map of owners for quick lookup by loginId
+        let ownerMap = {};
+        function buildOwnerMap(owners) {
+            ownerMap = {};
+            owners.forEach(owner => {
+                const loginId = (owner.loginId || owner.login_id || '').toUpperCase();
+                if (loginId) {
+                    ownerMap[loginId] = {
+                        name: owner.name || owner.fullName || '-',
+                        email: owner.email || owner.gmail || '-',
+                        phone: owner.phone || owner.phoneNumber || '-',
+                        address: owner.address || '-',
+                        areaCode: owner.areaCode || owner.locationCode || '-'
+                    };
+                }
+            });
+            console.log(`ðŸ—ºï¸ Built owner map with ${Object.keys(ownerMap).length} entries`);
+            return ownerMap;
+        }
+
+        // Enrich property with owner details
+        function enrichPropertyWithOwnerData(property, ownerMap) {
+            const ownerLoginId = (property.ownerLoginId || '').toUpperCase();
+            const ownerData = ownerMap[ownerLoginId] || {};
+            
+            return {
+                ...property,
+                ownerEmail: ownerData.email || property.ownerEmail || '-',
+                ownerAddress: ownerData.address || property.ownerAddress || '-',
+                areaCode: ownerData.areaCode || property.areaCode || property.locationCode || '-'
+            };
+        }
+
+        async function loadProperties() {
+            // Load owners data first to enrich properties
+            const allOwners = await loadOwners();
+            buildOwnerMap(allOwners);
+
+            // Try backend properties endpoint first only when auth token exists.
+            // Without token this endpoint returns 401 on hosted backend.
+            let props = [];
+            try {
+                if (getStoredToken()) {
+                    const res = await fetchFromAnyApi('/api/properties', {
+                        headers: getAuthHeaders()
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.success && Array.isArray(data.properties)) {
+                            props = data.properties.map(p => ({
+                                id: p._id || p.id,
+                                title: p.title || p.name || p.propertyName || 'Untitled',
+                                locationCode: p.locationCode || '-',
+                                address: p.address || '-',
+                                city: p.city || p.locationCity || '-',
+                                ownerName: p.owner ? (p.owner.name || '-') : (p.ownerName || '-'),
+                                ownerPhone: p.owner ? (p.owner.phone || '-') : (p.ownerPhone || '-'),
+                                ownerLoginId: p.owner ? (p.owner.loginId || null) : (p.ownerLoginId || null),
+                                photos: p.photos || (p.image ? [p.image] : []),
+                                imageBase64: p.imageBase64 || null,
+                                status: p.status || 'active'
+                            })).map(p => enrichPropertyWithOwnerData(p, ownerMap));
+                        }
+                    } else {
+                        console.warn('Properties API returned', res.status);
+                    }
                 }
             } catch (err) {
                 console.warn('Failed to fetch properties from backend, falling back to visits/localStorage', err);
@@ -291,10 +420,24 @@
             try {
                 let visits = [];
                 try {
-                    const res = await fetch(API_URL + '/api/admin/visits?status=approved');
+                    // Prefer public visits endpoint first
+                    const res = await fetchFromAnyApi('/api/visits', {
+                        headers: getAuthHeaders()
+                    });
                     if (res.ok) visits = await res.json();
+                    if (visits && visits.visits) visits = visits.visits;
                 } catch (err) {
                     // ignore backend error
+                }
+
+                // Fallback to admin endpoint if needed
+                if (!Array.isArray(visits) || visits.length === 0) {
+                    try {
+                        const adminRes = await fetchFromAnyApi('/api/admin/visits?status=approved', {
+                            headers: getAuthHeaders()
+                        });
+                        if (adminRes.ok) visits = await adminRes.json();
+                    } catch (_) {}
                 }
 
                 if (!visits || visits.length === 0) {
@@ -314,7 +457,7 @@
                     photos: v.photos || (v.imageBase64 ? [v.imageBase64] : []),
                     imageBase64: v.imageBase64,
                     status: 'active'
-                }));
+                })).map(p => enrichPropertyWithOwnerData(p, ownerMap));
 
                 // Merge visitProps into props, avoiding duplicates by id or title+locationCode
                 visitProps.forEach(vp => {
@@ -331,6 +474,14 @@
                 props = props.filter(p => p.city === filterByCity);
                 document.querySelector('h1').textContent = `Properties in ${filterByCity}`;
                 sessionStorage.removeItem('filterByCity');
+            }
+
+            // Cache merged properties so owner pages can resolve propertyId consistently
+            // from the same data source shown in this superadmin list.
+            try {
+                localStorage.setItem('roomhy_properties', JSON.stringify(props));
+            } catch (e) {
+                console.warn('Failed to cache roomhy_properties', e);
             }
 
             renderProperties(props);
@@ -426,7 +577,9 @@
             // Try backend first: GET /api/owners/:ownerId/rooms
             let propRooms = [];
             try {
-                const roomsRes = await fetch(`${API_URL}/api/owners/${encodeURIComponent(ownerId)}/rooms`);
+                const roomsRes = await fetchFromAnyApi(`/api/owners/${encodeURIComponent(ownerId)}/rooms`, {
+                    headers: getAuthHeaders()
+                });
                 if (roomsRes.ok) {
                     const payload = await roomsRes.json();
                     propRooms = payload.rooms || [];
@@ -440,7 +593,7 @@
             if (!propRooms || propRooms.length === 0) {
                 const allRooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
                 propRooms = allRooms.filter(r => (r.ownerId === ownerId || r.ownerLoginId === ownerId));
-                if (propRooms.length > 0) console.log('📦 Loaded rooms from localStorage for owner:', ownerId);
+                if (propRooms.length > 0) console.log('ðŸ“¦ Loaded rooms from localStorage for owner:', ownerId);
             }
             
             const container = document.getElementById('rooms-container');
@@ -595,6 +748,12 @@
 
         loadProperties();
     </script>
+        <script src="./mobile-sidebar.js"></script>
 </body>
 </html>
+
+
+
+
+
 

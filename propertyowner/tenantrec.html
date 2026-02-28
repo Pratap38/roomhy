@@ -5,7 +5,7 @@
     <title>Roomhy - Tenant Records</title>
     <script>
         // API Configuration
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -34,6 +34,8 @@
         .data-table th { background-color: #f9fafb; padding: 12px; font-size: 0.75rem; text-transform: uppercase; color: #6b7280; font-weight: 600; text-align: left; }
         .data-table td { border-bottom: 1px solid #e5e7eb; padding: 12px; font-size: 0.875rem; vertical-align: middle; }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-slate-800">
     <div class="flex h-screen overflow-hidden">
@@ -52,8 +54,6 @@
                 <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                 <a href="tenantrec.html" class="sidebar-link active text-white"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
                 <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
-                <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
-                <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
                 <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
                 <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                 <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
@@ -114,12 +114,9 @@
 
                         <a href="rooms.html" class="sidebar-link"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                         <a href="tenantrec.html" class="sidebar-link active"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
-                        <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
-                        <a href="documents.html" class="sidebar-link"><i data-lucide="file-text" class="w-5 h-5 mr-3"></i> Documents</a>
                         <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
                         <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
                         <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
-                        <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
                         <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
                         <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                         <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
@@ -182,34 +179,45 @@
     <script>
         lucide.createIcons();
         
-        // --- Auth Guard (prefer per-tab owner session) ---
-        const _tenantRecInit = () => {
-            const owner = typeof getCurrentOwner === 'function' ? getCurrentOwner() : null;
-            if (!owner) {
-                window.location.href = 'ownerlogin.html';
-                return null;
-            }
-            return owner;
-        };
+        let user = null;
+        let ownerId = null;
+        let currentOwnerId = null;
 
-        const user = _tenantRecInit();
-        if (!user) {
-            // redirected
-        }
-        const ownerId = user ? (user.ownerId || user.loginId) : null;
-        let currentOwnerId = ownerId;
-        
-        // --- Header Population ---
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!user) return;
+        // Listen for owner context updates from ownerContextSync.js
+        window.addEventListener('owner-session-updated', (event) => {
+            user = event.detail || window.__ownerContext;
+            if (user) {
+                ownerId = user.ownerId || user.loginId;
+                currentOwnerId = ownerId;
+                updateHeader(user);
+            }
+        });
+
+        function updateHeader(userData) {
+            if (!userData) return;
             if (document.getElementById('headerName')) {
-                document.getElementById('headerName').innerText = user.name;
+                document.getElementById('headerName').innerText = userData.name;
             }
             if (document.getElementById('headerAvatar')) {
-                document.getElementById('headerAvatar').innerText = user.name.charAt(0).toUpperCase();
+                document.getElementById('headerAvatar').innerText = userData.name.charAt(0).toUpperCase();
             }
             if (document.getElementById('headerAccountId')) {
-                document.getElementById('headerAccountId').innerText = `Account: ${user.loginId || user.ownerId}`;
+                document.getElementById('headerAccountId').innerText = `Account: ${userData.loginId || userData.ownerId}`;
+            }
+        }
+
+        // --- Header Population & Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!user) {
+                user = window.__ownerContext || (typeof getCurrentOwner === 'function' ? getCurrentOwner() : null);
+                if (user) {
+                    ownerId = user.ownerId || user.loginId;
+                    currentOwnerId = ownerId;
+                    updateHeader(user);
+                } else {
+                    window.location.href = 'ownerlogin.html';
+                    return;
+                }
             }
         });
         
@@ -246,8 +254,75 @@
             loadTenantRecords();
         });
 
+        function normalizeTenantRecord(t) {
+            const profile = (t && t.digitalCheckin && t.digitalCheckin.profile) || {};
+            const kyc = (t && t.digitalCheckin && t.digitalCheckin.kyc) || {};
+            const propertyObj = (t && t.property && typeof t.property === 'object') ? t.property : null;
+            const propertyName = (propertyObj && (propertyObj.title || propertyObj.name)) || t.propertyTitle || profile.propertyName || t.propertyName || '';
+
+            return {
+                ...t,
+                name: t.name || profile.name || '',
+                email: t.email || profile.email || '',
+                dob: t.dob || profile.dob || '',
+                guardianNumber: t.guardianNumber || profile.guardianNumber || t.emergencyContact || '',
+                moveInDate: t.moveInDate || profile.moveInDate || '',
+                roomNo: t.roomNo || profile.roomNo || '',
+                agreedRent: (t.agreedRent !== undefined && t.agreedRent !== null) ? t.agreedRent : (profile.agreedRent || 0),
+                propertyTitle: t.propertyTitle || propertyName,
+                property: propertyObj || propertyName || t.property || '',
+                kycStatus: t.kycStatus || ((t.kyc && t.kyc.otpVerified) || kyc.otpVerified ? 'verified' : 'pending')
+            };
+        }
+
         async function loadTenantRecords() {
-            const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+            let tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]').map(normalizeTenantRecord);
+            // Pull latest tenants from backend and merge into local cache.
+            try {
+                const res = await fetch(API_URL + '/api/tenants');
+                if (res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    const backendList = Array.isArray(data) ? data : (Array.isArray(data.tenants) ? data.tenants : []);
+                    if (backendList.length > 0) {
+                        const normalizedBackend = backendList.map((t) => normalizeTenantRecord({
+                            _id: t._id || t.id || '',
+                            dbId: t._id || t.id || '',
+                            id: t.id || t._id || t.loginId || '',
+                            name: t.name || '',
+                            phone: t.phone || '',
+                            email: t.email || '',
+                            loginId: t.loginId || '',
+                            tempPassword: t.tempPassword || '',
+                            password: t.password || t.tempPassword || '',
+                            ownerLoginId: t.ownerLoginId || (t.property && t.property.ownerLoginId) || '',
+                            assignedBy: t.ownerLoginId || (t.property && t.property.ownerLoginId) || t.assignedBy || '',
+                            propertyId: (t.property && (t.property._id || t.property.id || t.property.propertyId)) || t.propertyId || '',
+                            propertyTitle: t.propertyTitle || (t.property && (t.property.title || t.property.name)) || '',
+                            property: t.property || (t.propertyTitle ? { title: t.propertyTitle } : null),
+                            roomNo: t.roomNo || '',
+                            bedNo: t.bedNo || '',
+                            agreedRent: t.agreedRent || 0,
+                            moveInDate: t.moveInDate || '',
+                            status: t.status || 'pending',
+                            kycStatus: t.kycStatus || 'pending',
+                            dob: t.dob || (t.digitalCheckin && t.digitalCheckin.profile && t.digitalCheckin.profile.dob) || '',
+                            guardianNumber: t.guardianNumber || (t.digitalCheckin && t.digitalCheckin.profile && t.digitalCheckin.profile.guardianNumber) || '',
+                            digitalCheckin: t.digitalCheckin || {},
+                            kyc: t.kyc || {}
+                        }));
+                        const merged = [...tenants];
+                        normalizedBackend.forEach((bt) => {
+                            const idx = merged.findIndex((lt) => String(lt.loginId || '').toUpperCase() === String(bt.loginId || '').toUpperCase());
+                            if (idx > -1) merged[idx] = { ...merged[idx], ...bt };
+                            else merged.push(bt);
+                        });
+                        tenants = merged;
+                        localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
+                    }
+                }
+            } catch (err) {
+                console.warn('tenantrec backend sync failed, using local cache only', err && err.message);
+            }
             // Build a property map so we can resolve property IDs to names/location codes
             let propMap = {};
             try {
@@ -283,7 +358,9 @@
             const filteredTenants = tenants.filter(t => {
                 // 1. Filter by Owner (Assigned By)
                 // If currentOwnerId is set, only show tenants assigned by them
-                const isMyTenant = currentOwnerId ? t.assignedBy === currentOwnerId : true;
+                const tOwner = String(t.ownerLoginId || t.assignedBy || '').toUpperCase();
+                const myId = String(currentOwnerId || '').toUpperCase();
+                const isMyTenant = currentOwnerId ? (tOwner === myId) : true;
 
                 // 2. Search Filter
                 const matchesSearch = (t.name || '').toLowerCase().includes(search) ||
@@ -337,7 +414,7 @@
                     `<span class="text-gray-400 italic">Blocked/Not Set</span>`;
 
                 // Guardian Info
-                const guardian = t.emergencyContact || '<span class="text-gray-400">-</span>';
+                const guardian = t.guardianNumber || t.emergencyContact || '<span class="text-gray-400">-</span>';
 
                 // Status Badge
                 let statusBadge = '<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">Active</span>';
@@ -359,7 +436,7 @@
                         <!-- 1. Tenant Identity -->
                         <td>
                             <div class="flex items-center">
-                                <div class="h-9 w-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold mr-3 text-sm border border-purple-200">${t.name.charAt(0)}</div>
+                                <div class="h-9 w-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold mr-3 text-sm border border-purple-200">${(t.name || '?').charAt(0)}</div>
                                 <div>
                                     <div class="font-semibold text-gray-900 text-sm">${t.name}</div>
                                     <div class="text-xs text-gray-500">${t.phone}</div>
@@ -483,7 +560,7 @@
                 "Login ID": t.loginId,
                 "Phone": t.phone,
                 "Email": t.email || '-',
-                "Guardian Contact": t.emergencyContact || '-',
+                "Guardian Contact": t.guardianNumber || t.emergencyContact || '-',
                 "DOB": t.dob || '-',
                 "Address": t.address || '-',
                 "Property": (typeof t.property === 'object' && t.property !== null) ? (t.property.title || t.property.name) : (t.property || '-'),
@@ -505,3 +582,8 @@
     </script>
 </body>
 </html>
+
+
+
+
+

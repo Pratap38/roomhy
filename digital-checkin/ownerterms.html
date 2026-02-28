@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Owner Terms & Conditions</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6fb; margin: 0; }
+    .wrap { max-width: 900px; margin: 30px auto; background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+    h1 { margin-top: 0; }
+    .terms { border: 1px solid #d7ddea; border-radius: 8px; padding: 16px; max-height: 420px; overflow: auto; background: #fbfcff; }
+    .line { margin-bottom: 12px; line-height: 1.45; }
+    button { margin-top: 14px; background: #1f4fd6; color: #fff; border: 0; border-radius: 8px; padding: 11px 16px; cursor: pointer; font-weight: 700; }
+    .row { margin-top: 14px; }
+    input[type="checkbox"] { transform: scale(1.2); margin-right: 8px; }
+    .details { margin-top: 20px; border: 1px solid #d7ddea; border-radius: 8px; background: #fbfcff; padding: 14px; }
+    .details h3 { margin: 0 0 10px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+    .kv { font-size: 13px; color: #374151; }
+    .kv strong { color: #111827; }
+    .edit-row { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-muted { background: #334155; }
+    .status { margin-top: 10px; font-size: 13px; color: #334155; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Owner Terms & Conditions</h1>
+    <p>Please read and accept before final submission.</p>
+    <div class="details">
+      <h3>Owner Details Summary</h3>
+      <div class="grid">
+        <div class="kv"><strong>Login ID:</strong> <span id="dLoginId">-</span></div>
+        <div class="kv"><strong>Name:</strong> <span id="dName">-</span></div>
+        <div class="kv"><strong>Email:</strong> <span id="dEmail">-</span></div>
+        <div class="kv"><strong>Phone:</strong> <span id="dPhone">-</span></div>
+        <div class="kv"><strong>Area:</strong> <span id="dArea">-</span></div>
+        <div class="kv"><strong>Address:</strong> <span id="dAddress">-</span></div>
+        <div class="kv"><strong>Aadhaar Linked Phone:</strong> <span id="dKycPhone">-</span></div>
+        <div class="kv"><strong>Aadhaar Number:</strong> <span id="dAadhaar">-</span></div>
+        <div class="kv"><strong>OTP Verified:</strong> <span id="dOtpVerified">-</span></div>
+        <div class="kv"><strong>Terms Accepted:</strong> <span id="dTermsAccepted">-</span></div>
+      </div>
+      <div class="edit-row">
+        <button type="button" class="btn-muted" id="editProfileBtn">Edit Profile</button>
+        <button type="button" class="btn-muted" id="editKycBtn">Edit KYC</button>
+      </div>
+      <div class="status" id="loadStatus"></div>
+    </div>
+    <div class="terms">
+      <div class="line"><strong>1. Introduction</strong><br>By registering as a Property Owner/Landlord on Roomhy ("Platform"), you agree to comply with and be bound by these Terms & Conditions. These terms govern your access to and use of the Platform to list properties, manage tenants, and receive payments.</div>
+      <div class="line"><strong>2. Eligibility</strong><br>You confirm that: You are the legal owner or authorized representative of the property listed. The property details shared are accurate and lawful. You have the legal right to rent/lease the property.</div>
+      <div class="line"><strong>3. Property Listing & Content</strong><br>You are responsible for the accuracy of property details, rent amount, photos, availability, and house rules. Any misleading or false information may lead to suspension or removal from the platform. Roomhy may review, edit, or remove listings that violate policies or laws.</div>
+      <div class="line"><strong>4. Tenant Interaction</strong><br>All communications with tenants must be professional and lawful. You agree not to discriminate based on religion, gender, caste, or any protected category. Roomhy is not responsible for disputes between owners and tenants.</div>
+      <div class="line"><strong>5. Payments & Payouts</strong><br>Rent payments collected through the Platform may be routed directly to the Owner's registered bank account or UPI as per the selected payout method. Owners are responsible for providing correct and up-to-date bank/UPI details. Any delays caused by incorrect details or bank issues are not the responsibility of Roomhy. Roomhy may deduct agreed service fees or commissions before or after payouts, as per the commercial agreement.</div>
+      <div class="line"><strong>6. Service Fees / Commission</strong><br>Roomhy may charge a platform service fee or commission for facilitating bookings, tenant management, or payments. The applicable fees will be displayed or communicated before activation. Fees are non-refundable once a transaction is completed.</div>
+      <div class="line"><strong>7. KYC & Verification</strong><br>Owners must complete KYC verification as required by law or platform policy. Documents such as ID proof, address proof, and bank verification may be required. Failure to complete verification may result in restricted access or payout suspension.</div>
+      <div class="line"><strong>8. Compliance with Laws</strong><br>You agree to comply with all applicable local, state, and national laws related to renting property, taxation, and tenant rights. Any legal issues arising from the property, tenancy, or disputes are the Owner's responsibility.</div>
+      <div class="line"><strong>9. Termination & Suspension</strong><br>Roomhy reserves the right to suspend or terminate owner accounts for policy violations, fraud, or misuse of the platform. Owners may request account deactivation, subject to settlement of any pending dues or obligations.</div>
+      <div class="line"><strong>10. Limitation of Liability</strong><br>Roomhy acts only as a technology platform connecting owners and tenants. Roomhy is not responsible for tenant behavior, property damage, payment defaults, or disputes. The Owner agrees to indemnify Roomhy against claims arising from property listings or tenant interactions.</div>
+      <div class="line"><strong>11. Data & Privacy</strong><br>Owner data will be handled as per Roomhy's Privacy Policy. You consent to receive notifications, reminders, and transaction updates via WhatsApp, SMS, Email, or other channels.</div>
+      <div class="line"><strong>12. Changes to Terms</strong><br>Roomhy may update these Terms & Conditions from time to time. Continued use of the Platform after updates implies acceptance of the revised terms.</div>
+      <div class="line"><strong>13. Governing Law</strong><br>These Terms shall be governed by and interpreted in accordance with the laws of India. Any disputes shall be subject to the jurisdiction of the courts in India.</div>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="acceptTerms">I accept the Terms & Conditions.</label>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="finalVerify">Final verify before submit.</label>
+    </div>
+    <button id="acceptBtn">Accept Terms</button>
+    <button id="submitBtn">Final Verify & Submit</button>
+  </div>
+
+  <script>
+    const API_BASES = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? ['http://localhost:5001', 'http://localhost:5000']
+      : ['https://roomhy-backend-wqwo.onrender.com'];
+    const query = new URLSearchParams(location.search);
+    const loginId = query.get('loginId') || '';
+    const queryEmail = query.get('email') || '';
+
+    async function postWithFallback(path, payload) {
+      let lastErr = null;
+      for (const base of API_BASES) {
+        try {
+          const res = await fetch(`${base}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) return res.json();
+          const data = await res.json().catch(() => ({}));
+          lastErr = new Error(data.message || `HTTP ${res.status}`);
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Request failed');
+    }
+
+    async function getWithFallback(path) {
+      let lastErr = null;
+      for (const base of API_BASES) {
+        try {
+          const res = await fetch(`${base}${path}`);
+          if (res.ok) return res.json();
+          const data = await res.json().catch(() => ({}));
+          lastErr = new Error(data.message || `HTTP ${res.status}`);
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Request failed');
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value || '-';
+    }
+
+    function showFinalConfirmation(dashboardUrl) {
+      const wrap = document.querySelector('.wrap');
+      if (!wrap) return;
+      wrap.innerHTML = `
+        <div style="position:relative;overflow:hidden;border-radius:18px;background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 55%,#22c55e 120%);padding:28px;color:#fff;box-shadow:0 18px 40px rgba(15,23,42,.25);">
+          <div style="position:absolute;top:-80px;right:-60px;width:220px;height:220px;border-radius:9999px;background:rgba(255,255,255,.15);"></div>
+          <div style="position:absolute;bottom:-90px;left:-70px;width:240px;height:240px;border-radius:9999px;background:rgba(255,255,255,.1);"></div>
+          <div style="position:relative;z-index:2;">
+            <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.18);padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.03em;">CHECK-IN COMPLETED</div>
+            <h1 style="margin:14px 0 8px;font-size:34px;line-height:1.1;font-weight:800;">Welcome to RoomHy</h1>
+            <p style="margin:0 0 14px;font-size:16px;color:#dbeafe;max-width:620px;">All login credentials have been sent to your Gmail account.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;">
+              <div style="background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);padding:10px 14px;border-radius:10px;font-size:13px;">
+                <strong style="color:#e2e8f0;">Login ID:</strong> <span style="font-family:monospace;">${loginId || '-'}</span>
+              </div>
+            </div>
+            <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
+              <button type="button" onclick="location.reload()" style="background:#fff;color:#1e3a8a;border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;">Back to Summary</button>
+              ${dashboardUrl ? `<a href="${dashboardUrl}" style="display:inline-block;background:#22c55e;color:#052e16;text-decoration:none;border-radius:10px;padding:10px 16px;font-weight:700;">Open Owner Dashboard</a>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function maskAadhaar(aadhaar) {
+      const clean = String(aadhaar || '').replace(/\D/g, '');
+      if (clean.length !== 12) return aadhaar || '-';
+      return `XXXX XXXX ${clean.slice(-4)}`;
+    }
+
+    async function loadOwnerDetails() {
+      if (!loginId) {
+        setText('loadStatus', 'Missing loginId in URL.');
+        return;
+      }
+      try {
+        const [checkinResp, ownerResp] = await Promise.all([
+          getWithFallback(`/api/checkin/owner/${encodeURIComponent(loginId)}`),
+          getWithFallback(`/api/owners/${encodeURIComponent(loginId)}`)
+        ]);
+
+        const record = checkinResp && checkinResp.record ? checkinResp.record : {};
+        const owner = ownerResp || {};
+        const profile = record.ownerProfile || {};
+        const kyc = record.ownerKyc || {};
+
+        const email = owner.email || profile.email || queryEmail || '';
+        const area = owner.checkinArea || owner.locationCode || profile.area || '';
+
+        setText('dLoginId', loginId);
+        setText('dName', owner.name || profile.name || '-');
+        setText('dEmail', email || '-');
+        setText('dPhone', owner.checkinPhone || owner.phone || profile.phone || '-');
+        setText('dArea', area || '-');
+        setText('dAddress', owner.checkinAddress || owner.address || profile.address || '-');
+        setText('dKycPhone', owner.checkinAadhaarLinkedPhone || kyc.aadhaarLinkedPhone || '-');
+        setText('dAadhaar', maskAadhaar(owner.checkinAadhaarNumber || kyc.aadhaarNumber || ''));
+        setText('dOtpVerified', (kyc.otpVerified || (owner.kyc && owner.kyc.status === 'submitted')) ? 'Yes' : 'No');
+        setText('dTermsAccepted', record.ownerTermsAcceptedAt ? 'Yes' : 'No');
+        setText('loadStatus', 'Details loaded. Please verify and edit if needed.');
+
+        document.getElementById('editProfileBtn').onclick = () => {
+          const areaPart = area ? `&area=${encodeURIComponent(area)}` : '';
+          const emailPart = email ? `&email=${encodeURIComponent(email)}` : '';
+          location.href = `ownerprofile.html?loginId=${encodeURIComponent(loginId)}${emailPart}${areaPart}`;
+        };
+
+        document.getElementById('editKycBtn').onclick = () => {
+          const emailPart = email ? `&email=${encodeURIComponent(email)}` : '';
+          location.href = `ownerkyc.html?loginId=${encodeURIComponent(loginId)}${emailPart}`;
+        };
+      } catch (err) {
+        setText('loadStatus', `Failed to load details: ${err.message}`);
+      }
+    }
+
+    document.getElementById('acceptBtn').onclick = async () => {
+      if (!document.getElementById('acceptTerms').checked) return alert('Please accept terms first');
+      try {
+        const data = await postWithFallback('/api/checkin/owner/terms-accept', { loginId, accepted: true });
+        if (!data.success) return alert(data.message || 'Failed to accept terms');
+        alert('Terms accepted');
+        loadOwnerDetails();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    };
+
+    document.getElementById('submitBtn').onclick = async () => {
+      if (!document.getElementById('finalVerify').checked) return alert('Please check final verify');
+      try {
+        const data = await postWithFallback('/api/checkin/owner/final-submit', { loginId, finalVerified: true });
+        if (!data.success) return alert(data.message || 'Submit failed');
+        showFinalConfirmation(data.dashboardUrl || '');
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    };
+
+    loadOwnerDetails();
+  </script>
+</body>
+</html>

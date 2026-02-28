@@ -37,6 +37,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../sessionManager.js"></script>
     <script src="../js/cloudinary-upload.js"></script>
+<script>
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://roomhy-backend-wqwo.onrender.com';
+    </script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         
@@ -97,6 +102,10 @@
 
         /* Modal Transitions */
         .modal { transition: opacity 0.25s ease; }
+        
+        /* Mobile Menu Icon - Transparent Background */
+        #mobile-menu-open { background-color: transparent !important; padding: 0.5rem !important; border-radius: 0.375rem; transition: all 0.2s ease; }
+        #mobile-menu-open:hover { background-color: transparent !important; color: #64748b; }
     </style>
 </head>
 <body class="text-slate-800">
@@ -155,7 +164,7 @@
         <div class="flex-1 flex flex-col overflow-hidden bg-[#f3f4f6]">
             <header class="bg-white h-16 flex items-center justify-between px-6 shadow-sm z-10">
                 <div class="flex items-center">
-                    <button class="md:hidden mr-4 text-slate-500"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <button id="mobile-menu-open" class="md:hidden mr-4 text-slate-500"><i data-lucide="menu" class="w-6 h-6"></i></button>
                     <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
                         Team Management <span class="text-gray-400">/</span> <span id="currentTeamLabel" class="text-purple-600">All Employees</span>
                     </h2>
@@ -438,11 +447,23 @@
         let areasData = [];
 
         const allPermissions = [
-            { id: 'dashboard', label: 'Dashboard' }, { id: 'properties', label: 'Properties' }, { id: 'visits', label: 'Visits' },
-            { id: 'tenants', label: 'Tenants' }, { id: 'owners', label: 'Owners' }, { id: 'bookings', label: 'Booking Requests' },
-            { id: 'payments', label: 'Payments' }, { id: 'complaints', label: 'Complaints' }, { id: 'kyc', label: 'KYC Verify' },
-            { id: 'enquiries', label: 'Enquiries' }, { id: 'chat', label: 'Chat Access' }, { id: 'reports', label: 'View Reports' },
-            { id: 'finance', label: 'Finance Access' }, { id: 'view_all_details', label: 'View All Details' }, { id: 'show_by_area', label: 'Show by Area' }
+            { id: 'dashboard', label: 'Dashboard' },
+            { id: 'teams', label: 'Teams' },
+            { id: 'owners', label: 'Property Owners' },
+            { id: 'properties', label: 'Properties' },
+            { id: 'tenants', label: 'Tenants' },
+            { id: 'new_signups', label: 'New Signups' },
+            { id: 'web_enquiry', label: 'Web Enquiry' },
+            { id: 'enquiries', label: 'Enquiries' },
+            { id: 'bookings', label: 'Bookings' },
+            { id: 'reviews', label: 'Reviews' },
+            { id: 'complaint_history', label: 'Complaint History' },
+            { id: 'live_properties', label: 'Live Properties' },
+            { id: 'rent_collections', label: 'Rent Collections' },
+            { id: 'commissions', label: 'Commissions' },
+            { id: 'refunds', label: 'Refunds' },
+            { id: 'locations', label: 'Locations' },
+            { id: 'visits', label: 'Visit Reports' }
         ];
         let selectedPermissions = new Set();
 
@@ -511,7 +532,7 @@
             try {
                 // First try to fetch from MongoDB API
                 const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                    ? 'http://localhost:5000'
+                    ? 'http://localhost:5001'
                     : 'https://roomhy-backend.onrender.com';
                 
                 // Fetch cities from MongoDB
@@ -641,7 +662,7 @@
         async function syncEmployeesFromBackend() {
             try {
                 console.log('Starting employee sync from backend...');
-                const res = await fetch('https://roomhy-backend-wqwo.onrender.com/api/employees');
+                const res = await fetch(`${API_BASE}/api/employees`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.data && Array.isArray(data.data)) {
@@ -713,7 +734,7 @@
                         }));
                         try { 
                             localStorage.setItem('roomhy_employees', JSON.stringify(loginCredsArray));
-                            console.log('✅ Updated roomhy_employees with', loginCredsArray.length, 'credentials for login');
+                            console.log('? Updated roomhy_employees with', loginCredsArray.length, 'credentials for login');
                         } catch(e) { 
                             console.warn('Could not update roomhy_employees:', e); 
                         }
@@ -855,7 +876,7 @@
             const formData = new FormData();
             formData.append('profilePhoto', file);
             try {
-                const res = await fetch('https://roomhy-backend-wqwo.onrender.com/api/upload-profile-photo', {
+                const res = await fetch(`${API_BASE}/api/upload-profile-photo`, {
                     method: 'POST',
                     body: formData
                 });
@@ -934,6 +955,39 @@
             const finalRole = (role === 'Custom' && document.getElementById('empCustomRole').value.trim()) ? document.getElementById('empCustomRole').value.trim() : role;
             const payload = { name, email, phone, password, role: finalRole, loginId: finalLoginId, area, areaCode, city, locationCode: areaCode, permissions: Array.from(selectedPermissions), photoDataUrl };
 
+            async function sendEmployeeCredentialsEmailFallback() {
+                if (!email) return { ok: false, message: 'No email provided' };
+                try {
+                    const emailHtml = `
+                        <div style="font-family: Arial, sans-serif; font-size: 14px; color: #111;">
+                            <h2>RoomHy Employee Credentials</h2>
+                            <p>Hi ${name},</p>
+                            <p>Your employee account has been created.</p>
+                            <p><strong>Login ID:</strong> ${finalLoginId}</p>
+                            <p><strong>Password:</strong> ${password}</p>
+                            <p>Please change your password after first login.</p>
+                        </div>
+                    `;
+                    const emailRes = await fetch(`${API_BASE}/api/email/send`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            to: email,
+                            subject: 'RoomHy Employee Login Credentials',
+                            html: emailHtml
+                        })
+                    });
+                    const emailData = await emailRes.json().catch(() => ({}));
+                    return {
+                        ok: !!(emailRes.ok && emailData.success),
+                        message: emailData.message || emailData.error || `HTTP ${emailRes.status}`
+                    };
+                } catch (err) {
+                    console.warn('Fallback credential email failed:', err.message);
+                    return { ok: false, message: err.message };
+                }
+            }
+
             if (editingEmployeeId) {
                 // Update existing employee in-memory
                 const prevEditingId = editingEmployeeId;
@@ -947,7 +1001,7 @@
                 }
                 // Try to update on backend
                 try {
-                    const res = await fetch(`https://roomhy-backend-wqwo.onrender.com/api/employees/${encodeURIComponent(finalLoginId)}`, {
+                    const res = await fetch(`${API_BASE}/api/employees/${encodeURIComponent(finalLoginId)}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -976,12 +1030,22 @@
                 db.push(newEmp);
                 // Try backend create
                 try {
-                    const res = await fetch('https://roomhy-backend-wqwo.onrender.com/api/employees', {
+                    const res = await fetch(`${API_BASE}/api/employees`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
                     if (res.ok) {
+                        const createdData = await res.json().catch(() => ({}));
+                        const emailAttempted = !!(createdData && createdData.email && createdData.email.attempted);
+                        const emailSent = !!(createdData && createdData.email && createdData.email.sent);
+
+                        if (email && (!emailAttempted || !emailSent)) {
+                            const fallback = await sendEmployeeCredentialsEmailFallback();
+                            if (!fallback.ok) {
+                                alert(`Employee created, but credentials email was not sent. Reason: ${fallback.message}. Check Mailjet keys on backend.`);
+                            }
+                        }
                         await syncEmployeesFromBackend();
                         console.log('Employee created on backend and cache refreshed');
                     } else {
@@ -1029,7 +1093,7 @@
                     };
                     filtered.push(newEmployee);
                     localStorage.setItem('roomhy_employees', JSON.stringify(filtered));
-                    console.log('✅ Credentials saved to roomhy_employees (for index.html login):', finalLoginId, 'with plain password');
+                    console.log('? Credentials saved to roomhy_employees (for index.html login):', finalLoginId, 'with plain password');
                 } catch (e) {
                     console.warn('Could not save to localStorage:', e);
                 }
@@ -1113,7 +1177,7 @@
             try { localStorage.setItem('roomhy_employees_cache', JSON.stringify(employeesCache)); } catch(e){ console.warn('Could not persist employees cache after deactivate:', e); }
             applyFilters();
             try {
-                const res = await fetch(`https://roomhy-backend-wqwo.onrender.com/api/employees/${encodeURIComponent(loginId)}/deactivate`, { method: 'POST' });
+                const res = await fetch(`${API_BASE}/api/employees/${encodeURIComponent(loginId)}/deactivate`, { method: 'POST' });
                 if (res.ok) await syncEmployeesFromBackend();
             } catch (err) {
                 console.warn('Failed to notify backend about logout:', err.message);
@@ -1133,7 +1197,7 @@
             try { localStorage.setItem('roomhy_employees_cache', JSON.stringify(employeesCache)); } catch(e){ console.warn('Could not persist employees cache after reactivate:', e); }
             applyFilters();
             try {
-                const res = await fetch(`https://roomhy-backend-wqwo.onrender.com/api/employees/${encodeURIComponent(loginId)}/reactivate`, { method: 'POST' });
+                const res = await fetch(`${API_BASE}/api/employees/${encodeURIComponent(loginId)}/reactivate`, { method: 'POST' });
                 if (res.ok) await syncEmployeesFromBackend();
             } catch (err) {
                 console.warn('Failed to notify backend about reactivate:', err.message);
@@ -1184,11 +1248,23 @@
             updateCounts();
             try {
                 // Use loginId for the DELETE request as expected by backend
-                const res = await fetch(`https://roomhy-backend-wqwo.onrender.com/api/employees/${encodeURIComponent(emp.loginId)}`, { method: 'DELETE' });
+                const res = await fetch(`${API_BASE}/api/employees/${encodeURIComponent(emp.loginId)}`, { method: 'DELETE' });
                 if (res.ok) await syncEmployeesFromBackend();
             } catch (err) {
                 console.warn('Failed to delete employee on backend:', err.message);
             }
+        }
+
+        function deleteAllEmployees() {
+            if(!confirm("Are you sure you want to delete ALL employees? This cannot be undone.")) return;
+            // Clear the employees cache
+            employeesCache = [];
+            // Clear localStorage
+            try { localStorage.removeItem('roomhy_employees_cache'); } catch(e){ console.warn('Could not clear employees cache:', e); }
+            // Refresh the display
+            applyFilters();
+            updateCounts();
+            console.log('All employees deleted from local cache');
         }
 
         function openEmployeeModal() {
@@ -1239,6 +1315,16 @@
             alert("Copied!");
         }
     </script>
+        <script src="./mobile-sidebar.js"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
 

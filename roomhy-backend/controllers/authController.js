@@ -5,7 +5,7 @@ const Employee = require('../models/Employee');
 const Owner = require('../models/Owner');
 const KYCVerification = require('../models/KYCVerification');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+const mailer = require('../utils/mailer');
 const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
 
 // OTP storage (in production, use Redis or database)
@@ -20,38 +20,21 @@ function generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Setup nodemailer
-function getMailer() {
-    return nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-        }
-    });
-}
-
 // Send email
 async function sendEmail(to, subject, html) {
     try {
-        // Check if SMTP credentials are configured (not placeholder values)
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS || 
-            process.env.SMTP_USER.includes('your-') || 
-            process.env.SMTP_PASS.includes('your-')) {
-            console.warn('[Email] SMTP credentials not configured (placeholder values). Skipping email in development.');
+        if (!to) {
+            console.warn('[Email] No recipient email provided');
             return true; // Allow to continue in development
         }
-        
-        const mailer = getMailer();
-        await mailer.sendMail({
-            from: process.env.FROM_EMAIL || process.env.SMTP_USER,
-            to,
-            subject,
-            html
-        });
-        console.log('[Email] Successfully sent email to:', to);
+
+        const sent = await mailer.sendMail(to, subject, '', html);
+        if (!sent) {
+            console.warn('[Email] Mailjet delivery failed or not configured; continuing request flow.');
+            return true; // Keep auth flow non-blocking in development
+        }
+
+        console.log('[Email] Successfully sent email via Mailjet to:', to);
         return true;
     } catch (err) {
         console.warn('[Email] Failed to send email - continuing anyway for development:', err.message);

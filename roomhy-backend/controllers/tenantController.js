@@ -13,24 +13,57 @@ const mailer = require('../utils/mailer');
  */
 exports.assignTenant = async (req, res) => {
     try {
-        const { name, phone, email, propertyId, roomNo, bedNo, moveInDate, agreedRent } = req.body;
+        const { name, phone, email, propertyId, roomNo, bedNo, moveInDate, agreedRent, ownerLoginId, propertyTitle, locationCode } = req.body;
 
         // Validation
-        if (!name || !phone || !propertyId || !agreedRent) {
-            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        if (!name || !phone || !email || !agreedRent) {
+            return res.status(400).json({ success: false, message: 'Missing required fields (name, phone, email, agreedRent)' });
         }
 
-        // Check if property exists
-        const property = await Property.findById(propertyId).populate('owner');
+        // Resolve property. If raw propertyId is not a Mongo id, fallback by owner/title.
+        let property = null;
+        if (propertyId && /^[a-f\d]{24}$/i.test(String(propertyId).trim())) {
+            try {
+                property = await Property.findById(String(propertyId).trim()).populate('owner');
+            } catch (e) {
+                // continue to fallback resolution
+                property = null;
+            }
+        }
+
+        if (!property && ownerLoginId) {
+            const normalizedOwnerId = String(ownerLoginId).toUpperCase();
+            // Prefer exact property title match from assignment payload first.
+            if (propertyTitle) {
+                property = await Property.findOne({
+                    ownerLoginId: normalizedOwnerId,
+                    title: { $regex: `^${String(propertyTitle).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+                }).populate('owner');
+            }
+            if (!property) {
+                property = await Property.findOne({ ownerLoginId: normalizedOwnerId }).populate('owner');
+            }
+        }
+
         if (!property) {
-            return res.status(404).json({ success: false, message: 'Property not found' });
+            // Last fallback: create a minimal property so tenant assignment can proceed.
+            const normalizedOwnerId = String(ownerLoginId || '').toUpperCase();
+            const derivedLocationCode = String(locationCode || normalizedOwnerId.slice(0, 3) || 'GEN').toUpperCase();
+            const derivedTitle = propertyTitle || `Property ${normalizedOwnerId || 'GEN'}`;
+            property = await Property.create({
+                title: derivedTitle,
+                locationCode: derivedLocationCode,
+                ownerLoginId: normalizedOwnerId || undefined,
+                status: 'active'
+            });
+            property = await Property.findById(property._id).populate('owner');
         }
 
         // Get location code from property
-        const locationCode = property.locationCode || 'GEN';
+        const effectiveLocationCode = property.locationCode || String(locationCode || '').toUpperCase() || 'GEN';
 
         // Generate unique tenant login ID
-        const loginId = await generateTenantId(locationCode);
+        const loginId = await generateTenantId();
 
         // Generate temporary password (8 chars: mix of alphanumeric)
         const tempPassword = crypto.randomBytes(4).toString('hex').toUpperCase();
@@ -43,7 +76,7 @@ exports.assignTenant = async (req, res) => {
             password: tempPassword, // Will be hashed by pre-save hook
             role: 'tenant',
             loginId,
-            locationCode,
+            locationCode: effectiveLocationCode,
             status: 'active'
         });
 
@@ -52,7 +85,7 @@ exports.assignTenant = async (req, res) => {
             name,
             phone,
             email,
-            property: propertyId,
+            property: property._id,
             roomNo,
             bedNo,
             moveInDate: moveInDate ? new Date(moveInDate) : null,
@@ -60,7 +93,9 @@ exports.assignTenant = async (req, res) => {
             loginId,
             tempPassword, // Store for now; will be displayed once, then forgotten
             user: user._id,
-            assignedBy: req.user ? req.user.id : property.owner._id, // Owner who assigned
+            ownerLoginId: String(ownerLoginId || property.ownerLoginId || '').toUpperCase() || undefined,
+            propertyTitle: property.title || propertyTitle || '',
+            assignedBy: req.user ? req.user.id : (property.owner && property.owner._id ? property.owner._id : undefined), // Owner who assigned
             status: 'pending',
             kycStatus: 'pending'
         });
@@ -91,10 +126,37 @@ exports.assignTenant = async (req, res) => {
         console.log(`[TENANT ASSIGNED] ${name} (${loginId}) assigned to ${property.title}, Room ${roomNo}`);
         console.log(`[RENT RECORD CREATED] Rent ID: ${rent._id}, Amount: ₹${rentAmount}`);
 
-        // Send email to tenant with loginId & tempPassword (non-blocking)
+        // Send email to tenant with loginId, tempPassword and digital check-in link (non-blocking)
+        const baseWebUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+        const tenantCheckinLink = `${baseWebUrl}/digital-checkin/tenantprofile.html?loginId=${encodeURIComponent(tenant.loginId)}`;
         try {
             if (tenant.email) {
-                mailer.sendCredentials(tenant.email, tenant.loginId, tenant.tempPassword, 'Tenant');
+                const subject = 'Your RoomHy Tenant Login Credentials + Digital Check-In Link';
+                const html = `
+                    <div style="font-family: Arial, Helvetica, sans-serif; color:#111; font-size:14px;">
+                        <h3>Tenant Account Created</h3>
+                        <p>Your tenant account has been created successfully.</p>
+                        <p><strong>Property:</strong> ${property.title || propertyTitle || '-'}</p>
+                        <p><strong>Room Number:</strong> ${roomNo || '-'}</p>
+                        <p><strong>Rent:</strong> INR ${parseInt(agreedRent || 0, 10)}</p>
+                        <p><strong>Login ID:</strong> ${tenant.loginId}</p>
+                        <p><strong>Password:</strong> ${tenant.tempPassword}</p>
+                        <p><strong>Digital Check-In Form:</strong><br>
+                           <a href="${tenantCheckinLink}">${tenantCheckinLink}</a></p>
+                        <p>Please complete profile, KYC, OTP verification, and agreement e-sign.</p>
+                    </div>
+                `;
+                const text = `Tenant account created.\nProperty: ${property.title || propertyTitle || '-'}\nRoom Number: ${roomNo || '-'}\nRent: INR ${parseInt(agreedRent || 0, 10)}\nLogin ID: ${tenant.loginId}\nPassword: ${tenant.tempPassword}\nDigital Check-In: ${tenantCheckinLink}`;
+                mailer.sendMail(tenant.email, subject, text, html);
+            }
+
+            // Also send a copy to owner email (if available)
+            const ownerEmail =
+                (property.owner && property.owner.email) ||
+                (property.owner && property.owner.profile && property.owner.profile.email) ||
+                '';
+            if (ownerEmail) {
+                mailer.sendCredentials(ownerEmail, tenant.loginId, tenant.tempPassword, 'Tenant (Owner Copy)');
             }
         } catch (err) {
             console.warn('Failed to queue tenant credential email:', err && err.message);
@@ -113,11 +175,14 @@ exports.assignTenant = async (req, res) => {
                 phone: tenant.phone,
                 email: tenant.email,
                 property: tenant.property,
+                propertyTitle: tenant.propertyTitle || property.title || '',
+                ownerLoginId: tenant.ownerLoginId || '',
                 roomNo: tenant.roomNo,
                 bedNo: tenant.bedNo,
                 moveInDate: tenant.moveInDate,
                 agreedRent: tenant.agreedRent
-            }
+            },
+            tenantCheckinLink
         });
 
     } catch (error) {

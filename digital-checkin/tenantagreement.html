@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tenant Rental Agreement & E-sign</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6fb; margin: 0; }
+    .wrap { max-width: 900px; margin: 30px auto; background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+    .box { border: 1px solid #d7ddea; border-radius: 8px; padding: 16px; background: #fbfcff; }
+    label { font-size: 13px; font-weight: 700; display: block; margin: 10px 0 6px; }
+    input { width: 100%; padding: 10px; border: 1px solid #ccd2e0; border-radius: 8px; box-sizing: border-box; }
+    button { margin-top: 14px; background: #1f4fd6; color: #fff; border: 0; border-radius: 8px; padding: 11px 16px; cursor: pointer; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Tenant Rental Agreement</h2>
+    <div class="box">
+      <p>This digital e-sign confirms the tenant accepts RoomHy rental terms, monthly rent obligations, property rules, and legal compliance requirements.</p>
+      <p>By signing, tenant confirms information submitted in profile and KYC is accurate.</p>
+    </div>
+
+    <label>Login ID</label>
+    <input id="loginId" required>
+
+    <label>E-sign Full Name</label>
+    <input id="eSignName" required>
+
+    <label><input type="checkbox" id="accepted" style="width:auto;"> I accept the rental agreement and provide my e-sign consent.</label>
+
+    <button id="submitBtn">Final Submit</button>
+  </div>
+
+  <script>
+    const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:5001'
+      : 'https://roomhy-backend-wqwo.onrender.com';
+    const params = new URLSearchParams(location.search);
+    if (params.get('loginId')) document.getElementById('loginId').value = params.get('loginId');
+
+    document.getElementById('submitBtn').onclick = async () => {
+      const submitBtn = document.getElementById('submitBtn');
+      const loginId = document.getElementById('loginId').value.trim();
+      const eSignName = document.getElementById('eSignName').value.trim();
+      const accepted = document.getElementById('accepted').checked;
+      if (!loginId || !eSignName || !accepted) return alert('Login ID, e-sign and acceptance are required');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const agreeRes = await fetch(`${API_BASE}/api/checkin/tenant/agreement`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ loginId, eSignName, accepted: true })
+        });
+        const agreeData = await agreeRes.json();
+        if (!agreeRes.ok || !agreeData.success) {
+          throw new Error(agreeData.message || 'Agreement submit failed');
+        }
+
+        const submitRes = await fetch(`${API_BASE}/api/checkin/tenant/final-submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ loginId })
+        });
+        const submitData = await submitRes.json();
+        if (!submitRes.ok || !submitData.success) {
+          throw new Error(submitData.message || 'Final submit failed');
+        }
+
+        const confirmationUrl = `tenant-confirmation.html?loginId=${encodeURIComponent(loginId)}`;
+        window.location.href = confirmationUrl;
+      } catch (err) {
+        alert(err.message || 'Unable to submit tenant agreement');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Final Submit';
+      }
+    };
+  </script>
+</body>
+</html>

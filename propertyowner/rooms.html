@@ -76,6 +76,8 @@
             border-color: #d8b4fe;
         }
     </style>
+        <script src="./ownerContextSync.js"></script>
+    <script src="./owner-notification-bootstrap.js"></script>
 </head>
 <body class="text-slate-800 h-screen overflow-hidden flex flex-col">
 
@@ -94,8 +96,6 @@
                 <a href="rooms.html" class="sidebar-link active"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
                 <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
                 <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
-                <a href="complaints.html" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaints</a>
-                <a href="enquiry.html" class="sidebar-link"><i data-lucide="mail" class="w-5 h-5 mr-3"></i> Enquiry</a>
                 <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
                 <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
                 <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
@@ -107,7 +107,7 @@
             <!-- Top Header -->
             <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 relative z-30 flex-shrink-0">
                 <div class="flex items-center">
-                    <button id="mobile-menu-button" class="md:hidden mr-4 text-gray-500 hover:text-gray-700 focus:outline-none">
+                    <button id="mobile-menu-open" class="md:hidden mr-4 text-gray-500 hover:text-gray-700 focus:outline-none">
                         <i data-lucide="menu" class="w-6 h-6"></i>
                     </button>
                     <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -183,15 +183,31 @@
             </div>
         </div>
         
-        <!-- Mobile Sidebar Overlay -->
-        <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden backdrop-blur-sm" onclick="toggleMobileMenu()"></div>
-        <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-[#111827] z-40 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col shadow-2xl">
-            <nav class="flex-1 py-4 space-y-1 px-2">
-                 <a href="admin.html" class="flex items-center px-4 py-3 text-sm font-medium rounded-md text-gray-400 hover:bg-gray-800">Dashboard</a>
-                 <a href="#" class="flex items-center px-4 py-3 text-sm font-medium rounded-md bg-gray-800 text-white border-l-4 border-purple-500">Rooms</a>
-                 <a href="ownerlogin.html" onclick="localStorage.removeItem('user'); sessionStorage.clear();" class="flex items-center px-4 py-3 text-sm font-medium rounded-md text-red-400 hover:bg-gray-800 mt-4 border-t border-gray-700">Sign Out</a>
-            </nav>
-        </aside>
+        <!-- Mobile Sidebar -->
+        <div id="mobile-menu" class="md:hidden fixed inset-0 z-50 flex hidden">
+            <div class="fixed inset-0 bg-black/30 backdrop-blur-sm" id="mobile-menu-overlay"></div>
+            <aside class="sidebar w-72 flex-shrink-0 text-gray-300 flex flex-col relative z-10 ml-auto">
+                <div class="h-16 flex items-center justify-between px-6 border-b border-gray-800">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-purple-600 p-1.5 rounded-lg"><i data-lucide="home" class="w-5 h-5 text-white"></i></div>
+                        <div><h1 class="text-xl font-bold text-white">RoomHy</h1><span class="text-[10px] text-gray-500">OWNER PANEL</span></div>
+                    </div>
+                    <button id="close-mobile-menu" class="p-2 text-gray-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <nav class="flex-1 py-6 space-y-1">
+                    <a href="admin.html" class="sidebar-link"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Dashboard</a>
+
+                    <a href="rooms.html" class="sidebar-link active"><i data-lucide="bed-double" class="w-5 h-5 mr-3"></i> Rooms</a>
+                    <a href="tenantrec.html" class="sidebar-link"><i data-lucide="clipboard-list" class="w-5 h-5 mr-3"></i> Tenant Records</a>
+                    <a href="payment.html" class="sidebar-link"><i data-lucide="credit-card" class="w-5 h-5 mr-3"></i> Payments</a>
+                    <a href="booking_request.html" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Booking Requests</a>
+                    <a href="ownerchat.html" class="sidebar-link"><i data-lucide="message-circle" class="w-5 h-5 mr-3"></i> Chat</a>
+                    <a href="location.html" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Location</a>
+                    <a href="ownerprofile.html" class="sidebar-link"><i data-lucide="user" class="w-5 h-5 mr-3"></i> Profile</a>
+                    <a href="settings.html" class="sidebar-link"><i data-lucide="settings" class="w-5 h-5 mr-3"></i> Settings</a>
+                </nav>
+            </aside>
+        </div>
     </div>
 
     <!-- Add Room Modal -->
@@ -291,6 +307,23 @@
                 <input type="hidden" id="assignBedIndex">
                 <input type="hidden" id="assignMode" value="existing">
                 
+                <div class="mb-4 rounded-lg border border-purple-100 bg-purple-50 p-3">
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                            <p class="text-gray-500 uppercase font-semibold">Property</p>
+                            <p id="assignPropertyName" class="text-gray-800 font-semibold truncate">-</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 uppercase font-semibold">Room</p>
+                            <p id="assignRoomNumber" class="text-gray-800 font-semibold">-</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 uppercase font-semibold">Rent</p>
+                            <p id="assignRoomRent" class="text-gray-800 font-semibold">-</p>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Existing Tenant Section -->
                 <div id="existingTenantSection" class="space-y-4">
                     <div>
@@ -313,8 +346,8 @@
                         <input type="tel" id="newTenantPhone" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Enter phone">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
-                        <input type="email" id="newTenantEmail" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Enter email">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email (Required)</label>
+                        <input type="email" id="newTenantEmail" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Enter tenant gmail">
                     </div>
                 </div>
 
@@ -345,7 +378,7 @@
                 <div class="mb-3">
                     <label class="text-xs font-bold text-slate-400 uppercase">Login ID</label>
                     <div class="flex justify-between items-center">
-                        <code class="font-mono font-bold text-purple-600 text-lg" id="credLoginId">TNT123</code>
+                        <code class="font-mono font-bold text-purple-600 text-lg" id="credLoginId">TNT-NEW-001</code>
                         <button onclick="copyText('credLoginId')" class="text-gray-400 hover:text-purple-600"><i data-lucide="copy" class="w-4 h-4"></i></button>
                     </div>
                 </div>
@@ -365,99 +398,357 @@
     <script>
         window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.createIcons(); });
 
-        // Backend base for dev (Live Server / different origin). Adjust if your backend runs elsewhere.
+        // Backend base with fallback support (local + hosted).
         const backendBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+        const backendBases = Array.from(new Set([
+            backendBase,
+            'http://localhost:5000',
+            'http://localhost:5001',
+            'https://roomhy-backend-wqwo.onrender.com',
+            'https://roomhy-backend.onrender.com'
+        ]));
+        let activeBackendBase = backendBase;
+
+        async function apiFetch(path, options = {}) {
+            const attempts = [activeBackendBase, ...backendBases.filter((b) => b !== activeBackendBase)];
+            let lastError = null;
+            for (const base of attempts) {
+                try {
+                    const res = await fetch(`${base}${path}`, options);
+                    if (res.status === 404) {
+                        lastError = new Error(`404 for ${path} at ${base}`);
+                        continue;
+                    }
+                    if (res.ok) activeBackendBase = base;
+                    return res;
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+            if (lastError) throw lastError;
+            throw new Error(`API request failed for ${path}`);
+        }
         let backendRoomsCache = null; // store rooms fetched from backend for this owner
 
         // 1. Session & Property Init
-        const user = JSON.parse(sessionStorage.getItem('owner_user') || sessionStorage.getItem('owner_session') || localStorage.getItem('user') || 'null');
-        
+        function safeReadJson(raw) {
+            try { return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+        }
+        function getUrlLoginId() {
+            try {
+                const q = new URLSearchParams(window.location.search);
+                const h = (window.location.hash && window.location.hash.includes('?'))
+                    ? new URLSearchParams(window.location.hash.split('?')[1])
+                    : new URLSearchParams('');
+                return (q.get('loginId') || q.get('loginid') || h.get('loginId') || h.get('loginid') || '').trim().toUpperCase();
+            } catch (e) {
+                return '';
+            }
+        }
+        function propagateLoginIdToLinks(loginId) {
+            if (!loginId) return;
+            document.querySelectorAll('a[href]').forEach((a) => {
+                const href = a.getAttribute('href') || '';
+                if (!href || href.startsWith('http') || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('javascript:')) return;
+                try {
+                    const u = new URL(href, window.location.origin + window.location.pathname);
+                    if (!u.searchParams.get('loginId')) u.searchParams.set('loginId', loginId);
+                    a.setAttribute('href', `${u.pathname.split('/').pop()}${u.search}${u.hash || ''}`);
+                } catch (e) { /* ignore malformed links */ }
+            });
+        }
+
+        let user = safeReadJson(sessionStorage.getItem('owner_session'))
+            || safeReadJson(localStorage.getItem('owner_user'))
+            || safeReadJson(sessionStorage.getItem('owner_user'))
+            || safeReadJson(localStorage.getItem('user'))
+            || null;
+        const urlLoginId = getUrlLoginId();
+        let ownerId = (user && (user.ownerId || user.loginId)) ? String(user.ownerId || user.loginId).toUpperCase() : '';
+        if (!ownerId && urlLoginId) ownerId = urlLoginId;
+        let areaCode = (user && (user.locationCode || user.area)) ? (user.locationCode || user.area) : '';
+
+        window.addEventListener('owner-session-updated', async (ev) => {
+            const owner = ev && ev.detail ? ev.detail : null;
+            if (!owner) return;
+            user = { ...(user || {}), ...owner };
+            ownerId = String(owner.loginId || owner.ownerId || ownerId || '').toUpperCase();
+            areaCode = owner.locationCode || owner.area || areaCode;
+            try {
+                await loadOwnerProperty();
+                await loadRooms();
+            } catch (_) {}
+        });
+
+        async function ensureOwnerContext() {
+            if (!ownerId) {
+                console.warn('No owner loginId found in storage or URL');
+                return;
+            }
+            try {
+                const res = await apiFetch(`/api/owners/${encodeURIComponent(ownerId)}`);
+                if (res.ok) {
+                    const payload = await res.json();
+                    const owner = payload && (payload.owner || payload.data || payload);
+                    const profile = (owner && owner.profile) || {};
+                    user = {
+                        ...(user || {}),
+                        loginId: ownerId,
+                        ownerId: ownerId,
+                        role: 'owner',
+                        name: profile.name || owner?.name || user?.name || 'Owner',
+                        locationCode: profile.area || owner?.locationCode || user?.locationCode || '',
+                        area: profile.area || owner?.area || user?.area || ''
+                    };
+                    areaCode = user.locationCode || user.area || areaCode;
+                    try { localStorage.setItem('owner_user', JSON.stringify(user)); } catch (e) {}
+                    try { sessionStorage.setItem('owner_session', JSON.stringify(user)); } catch (e) {}
+                }
+            } catch (e) {
+                console.warn('Owner context fetch failed:', e && e.message);
+            }
+            if (!areaCode) areaCode = 'KO';
+            propagateLoginIdToLinks(ownerId);
+        }
+
+        function normalizeTextValue(value) {
+            const text = String(value || '').trim();
+            if (!text) return '';
+            const lower = text.toLowerCase();
+            if (lower === 'new' || lower === 'undefined' || lower === 'null' || lower === 'na' || lower === 'n/a') return '';
+            return text;
+        }
+
+        function firstValidValue(...values) {
+            for (const v of values) {
+                const cleaned = normalizeTextValue(v);
+                if (cleaned) return cleaned;
+            }
+            return '';
+        }
+
         if(!user || user.role !== 'owner') {
             console.warn("No owner session found");
         }
-
-        const ownerId = user ? (user.ownerId || user.loginId) : 'OWNER001';
-        const areaCode = (user && user.locationCode) ? user.locationCode : 'KO'; 
         let currentProperty = null;
 
         // Load property associated with this Owner ID
         async function loadOwnerProperty() {
-            // Try backend first: GET /api/owners/:loginId/rooms
+            if (!ownerId) {
+                console.warn('loadOwnerProperty: No ownerId available');
+                return;
+            }
+
+            console.debug('loadOwnerProperty: Loading for ownerId:', ownerId);
+
+            // PRIMARY: Try backend properties endpoint first
             try {
-                const res = await fetch(`${backendBase}/api/owners/${encodeURIComponent(ownerId)}/rooms`);
+                const pres = await apiFetch(`/api/owners/${encodeURIComponent(ownerId)}/properties`);
+                if (pres.ok) {
+                    const pdata = await pres.json();
+                    const props = Array.isArray(pdata?.properties) ? pdata.properties : [];
+                    if (props.length > 0) {
+                        const p = props[0];
+                        currentProperty = {
+                            _id: p?._id,
+                            id: p?._id || p?.id || p?.propertyId || ('PROP_' + ownerId),
+                            title: p?.title || p?.name || p?.propertyName || 'Property',
+                            name: p?.title || p?.name || p?.propertyName || 'Property',
+                            location: p?.location || p?.area || p?.city || p?.address || 'Location',
+                            address: p?.address || p?.area || '',
+                            ownerName: p?.ownerName || user?.name || 'Owner',
+                            ownerLoginId: p?.ownerLoginId || ownerId,
+                            locationCode: p?.locationCode || p?.area || 'KO'
+                        };
+                        console.debug('loadOwnerProperty: Loaded from backend API', currentProperty);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('loadOwnerProperty: Properties API failed', err?.message);
+            }
+
+            // SECONDARY: Try rooms endpoint which also returns properties
+            try {
+                const res = await apiFetch(`/api/owners/${encodeURIComponent(ownerId)}/rooms`);
                 if (res.ok) {
                     const data = await res.json();
-                    // data: { properties, rooms }
                     if (data && Array.isArray(data.properties) && data.properties.length > 0) {
-                        currentProperty = data.properties[0];
+                        const p = data.properties[0];
+                        currentProperty = {
+                            _id: p?._id,
+                            id: p?._id || p?.id || p?.propertyId || ('PROP_' + ownerId),
+                            title: p?.title || p?.name || p?.propertyName || 'Property',
+                            name: p?.title || p?.name || p?.propertyName || 'Property',
+                            location: p?.location || p?.area || p?.city || p?.address || 'Location',
+                            address: p?.address || p?.area || '',
+                            ownerName: p?.ownerName || user?.name || 'Owner',
+                            ownerLoginId: p?.ownerLoginId || ownerId,
+                            locationCode: p?.locationCode || p?.area || 'KO'
+                        };
+                        console.debug('loadOwnerProperty: Loaded from rooms endpoint', currentProperty);
                     }
                     if (data && Array.isArray(data.rooms)) {
                         backendRoomsCache = data.rooms;
                     }
+                    if (currentProperty) return;
                 }
             } catch (err) {
-                // ignore and fallback to localStorage
-                console.warn('Owner rooms fetch failed, falling back to localStorage', err);
+                console.warn('loadOwnerProperty: Rooms endpoint failed', err?.message);
             }
 
-            // Fallback to localStorage properties if backend didn't return a property
-            const properties = JSON.parse(localStorage.getItem('roomhy_properties') || '[]');
-            if (!currentProperty) currentProperty = properties.find(p => p.ownerId === ownerId || p.ownerLoginId === ownerId || p.owner === ownerId);
-
-            // If not found in property list, check Visit Reports (User Requirement)
+            // TERTIARY: Fallback to localStorage properties
             if (!currentProperty) {
-                const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
-                console.debug('loadOwnerProperty: trying visits lookup', { ownerId, visitsCount: visits.length });
-
-                // Find visit where generated credentials or other identifiers match the ownerId
-                const matchedVisit = visits.find(v => {
-                    const gv = v.generatedCredentials || v.generatedCreds || v.generated || {};
-                    return String(v.loginId) === String(ownerId) ||
-                        String(gv.loginId) === String(ownerId) ||
-                        String(v.generatedId || '') === String(ownerId) ||
-                        String(v.username || '') === String(ownerId) ||
-                        (user && v.mobile && String(v.mobile) === String(user.phone));
-                });
-
-                console.debug('loadOwnerProperty: matchedVisit', matchedVisit);
-
-                if (matchedVisit) {
-                    // Prefer structured property info if present
-                    const pInfo = matchedVisit.propertyInfo || matchedVisit.property || matchedVisit.propertyDetails || matchedVisit;
-                    const pName = pInfo?.title || pInfo?.name || pInfo?.propertyName || matchedVisit.propertyName || matchedVisit.name || "Property Name";
-                    const pLoc = pInfo?.location || pInfo?.city || pInfo?.address || matchedVisit.location || "Location";
-                    const oName = pInfo?.ownerName || matchedVisit.ownerName || matchedVisit.owner || "Owner";
-
-                    currentProperty = {
-                        id: pInfo?._id || matchedVisit.propertyId || matchedVisit._id || matchedVisit.id || ('PROP_' + ownerId),
-                        title: pName,
-                        name: pName,
-                        location: pLoc,
-                        ownerName: oName
-                    };
-
-                    // Also update header name from Visit if session is generic
-                    if (user && (user.name === 'Owner' || !user.name)) {
-                        user.name = oName;
-                        sessionStorage.setItem('owner_user', JSON.stringify(user));
-                        // Update DOM immediately if elements exist
-                        const hn = document.getElementById('headerOwnerName');
-                        const ha = document.getElementById('headerAvatar');
-                        if (hn) hn.innerText = user.name;
-                        if (ha) ha.innerText = (user.name || 'O').charAt(0).toUpperCase();
+                try {
+                    const properties = JSON.parse(localStorage.getItem('roomhy_properties') || '[]');
+                    const found = properties.find(p => p.ownerId === ownerId || p.ownerLoginId === ownerId || p.owner === ownerId);
+                    if (found) {
+                        currentProperty = {
+                            _id: found?._id,
+                            id: found?._id || found?.id || found?.propertyId || ('PROP_' + ownerId),
+                            title: found?.title || found?.name || found?.propertyName || 'Property',
+                            name: found?.title || found?.name || found?.propertyName || 'Property',
+                            location: found?.location || found?.area || found?.city || found?.address || 'Location',
+                            address: found?.address || found?.area || '',
+                            ownerName: found?.ownerName || user?.name || 'Owner',
+                            ownerLoginId: found?.ownerLoginId || ownerId,
+                            locationCode: found?.locationCode || found?.area || 'KO'
+                        };
+                        console.debug('loadOwnerProperty: Loaded from localStorage', currentProperty);
+                        return;
                     }
-                    console.debug('loadOwnerProperty: built currentProperty', currentProperty);
+                } catch (err) {
+                    console.warn('loadOwnerProperty: localStorage search failed', err?.message);
                 }
             }
 
+            // QUATERNARY: Fallback to approved visits from backend
+            if (!currentProperty) {
+                try {
+                    const vr = await apiFetch(`/api/visits/approved`);
+                    if (vr.ok) {
+                        const vd = await vr.json();
+                        const visits = vd.visits || [];
+                        const matchedVisit = visits.find(v => {
+                            const gid = (v.generatedCredentials && v.generatedCredentials.loginId) || '';
+                            return String(gid).toUpperCase() === String(ownerId || '').toUpperCase();
+                        });
+                        if (matchedVisit) {
+                            const pInfo = matchedVisit.propertyInfo || matchedVisit;
+                            currentProperty = {
+                                _id: pInfo?._id || matchedVisit._id,
+                                id: pInfo?._id || matchedVisit.propertyId || matchedVisit._id || matchedVisit.id || ('PROP_' + ownerId),
+                                title: pInfo?.title || pInfo?.name || pInfo?.propertyName || matchedVisit.propertyName || 'Property',
+                                name: pInfo?.title || pInfo?.name || pInfo?.propertyName || matchedVisit.propertyName || 'Property',
+                                location: pInfo?.location || pInfo?.area || pInfo?.city || pInfo?.address || matchedVisit.area || matchedVisit.city || matchedVisit.address || 'Location',
+                                address: pInfo?.address || matchedVisit.address || matchedVisit.area || '',
+                                ownerName: pInfo?.ownerName || matchedVisit.ownerName || user?.name || 'Owner',
+                                ownerLoginId: pInfo?.ownerLoginId || ownerId,
+                                locationCode: pInfo?.locationCode || matchedVisit.locationCode || matchedVisit.area || 'KO'
+                            };
+                            console.debug('loadOwnerProperty: Loaded from visits endpoint', currentProperty);
+                            return;
+                        }
+                    }
+                } catch (err) {
+                    console.warn('loadOwnerProperty: Visits endpoint failed', err?.message);
+                }
+            }
+
+            // QUINARY: Try owner context in window scope (from ownerContextSync.js)
+            if (!currentProperty) {
+                try {
+                    const oc = window.__ownerContext || {};
+                    if (oc.propertyName || oc.propertyLocation) {
+                        currentProperty = {
+                            id: 'PROP_' + ownerId,
+                            title: oc.propertyName || 'Property',
+                            name: oc.propertyName || 'Property',
+                            location: oc.propertyLocation || oc.area || oc.locationCode || 'Location',
+                            address: oc.address || oc.area || '',
+                            ownerName: oc.name || user?.name || 'Owner',
+                            ownerLoginId: ownerId,
+                            locationCode: oc.locationCode || oc.area || 'KO'
+                        };
+                        console.debug('loadOwnerProperty: Loaded from owner context', currentProperty);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('loadOwnerProperty: Owner context failed', err?.message);
+                }
+            }
+
+            // SENARY: Final fallback to visit reports in localStorage
+            if (!currentProperty) {
+                try {
+                    const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
+                    const matchedVisit = visits.find(v => {
+                        const gv = v.generatedCredentials || v.generatedCreds || v.generated || {};
+                        return String(v.loginId) === String(ownerId) ||
+                            String(gv.loginId) === String(ownerId) ||
+                            String(v.generatedId || '') === String(ownerId) ||
+                            String(v.username || '') === String(ownerId) ||
+                            (user && v.mobile && String(v.mobile) === String(user.phone));
+                    });
+
+                    if (matchedVisit) {
+                        const pInfo = matchedVisit.propertyInfo || matchedVisit.property || matchedVisit.propertyDetails || matchedVisit;
+                        const pName = pInfo?.title || pInfo?.name || pInfo?.propertyName || matchedVisit.propertyName || matchedVisit.name || "Property Name";
+                        const pLoc = pInfo?.location || pInfo?.area || pInfo?.city || pInfo?.address || matchedVisit.area || matchedVisit.city || matchedVisit.address || matchedVisit.location || "Location";
+                        const oName = pInfo?.ownerName || matchedVisit.ownerName || matchedVisit.owner || "Owner";
+
+                        currentProperty = {
+                            _id: pInfo?._id || matchedVisit._id,
+                            id: pInfo?._id || matchedVisit.propertyId || matchedVisit._id || matchedVisit.id || ('PROP_' + ownerId),
+                            title: pName,
+                            name: pName,
+                            location: pLoc,
+                            address: pInfo?.address || matchedVisit.address || '',
+                            ownerName: oName,
+                            ownerLoginId: ownerId,
+                            locationCode: pInfo?.locationCode || ownerId.slice(0, 2) || 'KO'
+                        };
+
+                        // Update session name from Visit info if needed
+                        if (user && (user.name === 'Owner' || !user.name)) {
+                            user.name = oName;
+                            sessionStorage.setItem('owner_session', JSON.stringify(user));
+                            const hn = document.getElementById('headerOwnerName');
+                            const ha = document.getElementById('headerAvatar');
+                            if (hn) hn.innerText = user.name;
+                            if (ha) ha.innerText = (user.name || 'O').charAt(0).toUpperCase();
+                        }
+                        console.debug('loadOwnerProperty: Loaded from localStorage visits', currentProperty);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('loadOwnerProperty: localStorage visits search failed', err?.message);
+                }
+            }
+
+            // Update UI with the loaded property
             const displayEl = document.getElementById('propertyNameDisplay');
             const modalDisplayEl = document.getElementById('modalPropertyNameText');
             const modalIdEl = document.getElementById('modalPropertyId');
 
-                if (currentProperty) {
-                const title = currentProperty.title || currentProperty.name || currentProperty.propertyName || currentProperty.displayName || currentProperty.propName || 'Property';
-                const loc = currentProperty.location || currentProperty.locationCode || currentProperty.area || currentProperty.city || 'Unknown';
-                const text = `${title} (${loc})`;
+            if (currentProperty) {
+                const title = firstValidValue(
+                    currentProperty.title,
+                    currentProperty.name,
+                    currentProperty.propertyName,
+                    currentProperty.displayName,
+                    currentProperty.propName
+                ) || 'Owner Property';
+                const loc = firstValidValue(
+                    currentProperty.location,
+                    currentProperty.locationCode,
+                    currentProperty.area,
+                    currentProperty.city,
+                    areaCode
+                );
+                currentProperty.title = title;
+                currentProperty.name = title;
+                const text = loc ? `${title} (${loc})` : title;
                 if (displayEl) {
                     // render as a clickable link to the property page (use id when available)
                     displayEl.innerText = text;
@@ -486,7 +777,7 @@
                 const headerAvatar = document.getElementById('headerAvatar');
                 
                 if(headerName) headerName.innerText = user.name || 'Owner';
-                if(headerId) headerId.innerText = `ID: ${ownerId}`;
+                if(headerId) headerId.innerText = `ID: ${ownerId || '-'}`;
                 if(headerAvatar) headerAvatar.innerText = (user.name || 'O').charAt(0).toUpperCase();
             }
             
@@ -531,7 +822,7 @@
                 return false;
             }
             try {
-                const res = await fetch(`${backendBase}/api/owners/${encodeURIComponent(ownerId)}/rooms`, { method: 'GET' });
+                const res = await apiFetch(`/api/owners/${encodeURIComponent(ownerId)}/rooms`, { method: 'GET' });
                 if (res.ok) {
                     if (statusEl) statusEl.innerText = 'Backend: reachable';
                     return true;
@@ -549,7 +840,7 @@
         async function loadTenantsFromBackend() {
             if (!backendBase) return alert('Backend not configured.');
             try {
-                const resp = await fetch(`${backendBase}/api/tenants/owner/${encodeURIComponent(ownerId)}`);
+                const resp = await apiFetch(`/api/tenants/owner/${encodeURIComponent(ownerId)}`);
                 if (!resp.ok) return alert('Failed to fetch tenants from backend: ' + resp.status);
                 const data = await resp.json();
                 // Expect data to be an array or object with .data
@@ -577,6 +868,17 @@
             // If backend didn't return rooms, fallback to localStorage
             if (!myRooms || myRooms.length === 0) {
                 const allRooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
+                let patched = false;
+                const fixedTitle = firstValidValue(currentProperty && (currentProperty.title || currentProperty.name)) || 'Owner Property';
+                allRooms.forEach((r) => {
+                    if (r && (r.ownerId === ownerId || r.ownerLoginId === ownerId || r.owner === ownerId) && !firstValidValue(r.propertyTitle)) {
+                        r.propertyTitle = fixedTitle;
+                        patched = true;
+                    }
+                });
+                if (patched) {
+                    try { localStorage.setItem('roomhy_rooms', JSON.stringify(allRooms)); } catch (_) {}
+                }
                 myRooms = allRooms.filter(r => r.ownerId === ownerId || r.ownerLoginId === ownerId || r.owner === ownerId);
 
                 // If still no rooms (session ownerId might be missing), try matching by current property
@@ -717,15 +1019,20 @@
         }
 
         // 3. Save Room
-        function saveRoom(e) {
+        async function saveRoom(e) {
             e.preventDefault();
-            const propId = document.getElementById('modalPropertyId').value;
+            let propId = document.getElementById('modalPropertyId').value;
             const number = document.getElementById('roomNo').value;
             const type = document.getElementById('roomType').value;
             const rent = document.getElementById('roomRent').value;
             const gender = document.getElementById('roomGender').value;
             const bedCount = parseInt(document.getElementById('roomBeds').value);
 
+            if (!propId) {
+                propId = await ensureCorrectPropertyId();
+                const modalIdEl = document.getElementById('modalPropertyId');
+                if (modalIdEl && propId) modalIdEl.value = propId;
+            }
             if (!propId) return alert("Property not loaded. Cannot add room.");
 
             const beds = Array(bedCount).fill().map(() => ({ status: 'available', tenantId: null, tenantName: null }));
@@ -736,7 +1043,7 @@
                 ownerLoginId: (user && (user.loginId || user.ownerId)) || ownerId,
                 owner: (user && (user.name || user.ownerName)) || undefined,
                 propertyId: propId,
-                propertyTitle: document.getElementById('modalPropertyNameText') ? document.getElementById('modalPropertyNameText').innerText : '',
+                propertyTitle: firstValidValue(currentProperty && (currentProperty.title || currentProperty.name)) || 'Owner Property',
                 number,
                 type,
                 rent,
@@ -792,12 +1099,190 @@
             input.value = val;
         }
 
+        // Ensure propertyId is correct MongoDB ObjectId for backend tenant assign API
+        async function ensureCorrectPropertyId() {
+            const isMongoId = (value) => /^[a-f\d]{24}$/i.test(String(value || '').trim());
+            const normalizedOwnerId = String(ownerId || '').trim().toUpperCase();
+            const wantedTitle = String(
+                (currentProperty && (currentProperty.title || currentProperty.name || currentProperty.propertyName))
+                || ((window.__ownerContext && window.__ownerContext.propertyName) || '')
+                || ''
+            ).trim().toLowerCase();
+
+            const pickBestPropertyId = (items) => {
+                if (!Array.isArray(items) || items.length === 0) return null;
+
+                const matchByOwner = items.filter((p) => {
+                    const candidateOwner = String(
+                        p?.ownerLoginId || p?.owner?.loginId || p?.ownerId || p?.generatedCredentials?.loginId || ''
+                    ).trim().toUpperCase();
+                    return candidateOwner && candidateOwner === normalizedOwnerId;
+                });
+
+                const pool = matchByOwner.length > 0 ? matchByOwner : items;
+
+                if (wantedTitle) {
+                    const titleMatch = pool.find((p) => {
+                        const title = String(p?.title || p?.name || p?.propertyName || '').trim().toLowerCase();
+                        return title && title === wantedTitle;
+                    });
+                    const titleId = titleMatch?._id || titleMatch?.id || titleMatch?.propertyId || null;
+                    if (titleId && isMongoId(titleId)) return String(titleId);
+                }
+
+                const first = pool.find((p) => isMongoId(p?._id || p?.id || p?.propertyId));
+                if (!first) return null;
+                return String(first._id || first.id || first.propertyId);
+            };
+
+            try {
+                // PRIORITY 1: Owner-specific properties endpoint.
+                if (backendBase && normalizedOwnerId) {
+                    console.log('ensureCorrectPropertyId: checking owner properties API', normalizedOwnerId);
+                    const pres = await apiFetch(`/api/owners/${encodeURIComponent(ownerId)}/properties`);
+                    if (pres.ok) {
+                        const pdata = await pres.json();
+                        const props = Array.isArray(pdata?.properties) ? pdata.properties : [];
+                        const id = pickBestPropertyId(props);
+                        if (id) {
+                            if (currentProperty) currentProperty._id = id;
+                            const modalIdEl = document.getElementById('modalPropertyId');
+                            if (modalIdEl) modalIdEl.value = id;
+                            console.log('ensureCorrectPropertyId: resolved from owner properties API', id);
+                            return id;
+                        }
+                    }
+                }
+
+                // PRIORITY 2: Superadmin property source (/api/properties) used by superadmin/properties.html.
+                if (backendBase) {
+                    console.log('ensureCorrectPropertyId: checking superadmin property source /api/properties');
+                    const allRes = await apiFetch(`/api/properties`);
+                    if (allRes.ok) {
+                        const allData = await allRes.json();
+                        const allProps = Array.isArray(allData?.properties) ? allData.properties : [];
+                        const id = pickBestPropertyId(allProps);
+                        if (id) {
+                            if (currentProperty) currentProperty._id = id;
+                            const modalIdEl = document.getElementById('modalPropertyId');
+                            if (modalIdEl) modalIdEl.value = id;
+                            try {
+                                const cacheList = allProps.map((p) => ({
+                                    _id: p?._id || p?.id || p?.propertyId || null,
+                                    id: p?.id || p?._id || p?.propertyId || null,
+                                    propertyId: p?.propertyId || p?._id || p?.id || null,
+                                    title: p?.title || p?.name || p?.propertyName || '',
+                                    name: p?.name || p?.title || p?.propertyName || '',
+                                    ownerLoginId: p?.ownerLoginId || p?.owner?.loginId || '',
+                                    locationCode: p?.locationCode || p?.areaCode || ''
+                                }));
+                                localStorage.setItem('roomhy_properties', JSON.stringify(cacheList));
+                            } catch (_) {}
+                            console.log('ensureCorrectPropertyId: resolved from /api/properties', id);
+                            return id;
+                        }
+                    }
+                }
+
+                // PRIORITY 3: Cached property data populated by superadmin/properties.html.
+                try {
+                    const cached = JSON.parse(localStorage.getItem('roomhy_properties') || '[]');
+                    const id = pickBestPropertyId(cached);
+                    if (id) {
+                        if (currentProperty) currentProperty._id = id;
+                        const modalIdEl = document.getElementById('modalPropertyId');
+                        if (modalIdEl) modalIdEl.value = id;
+                        console.log('ensureCorrectPropertyId: resolved from local cache roomhy_properties', id);
+                        return id;
+                    }
+                } catch (_) {}
+
+                // PRIORITY 4: No property found -> auto-create from owner context.
+                const propertyTitle =
+                    (currentProperty && (currentProperty.title || currentProperty.name || currentProperty.propertyName))
+                    || ((window.__ownerContext && window.__ownerContext.propertyName) || '').trim()
+                    || 'Owner Property';
+                const propertyAddress =
+                    (currentProperty && (currentProperty.address || currentProperty.location || currentProperty.city || currentProperty.area))
+                    || ((window.__ownerContext && (window.__ownerContext.propertyLocation || window.__ownerContext.area)) || '')
+                    || '';
+                const propertyArea =
+                    ((window.__ownerContext && (window.__ownerContext.area || window.__ownerContext.locationCode)) || areaCode || '')
+                    || '';
+
+                console.warn('ensureCorrectPropertyId: no property found, creating one', { ownerId: normalizedOwnerId, propertyTitle, propertyArea });
+                let createRes = await apiFetch(`/api/owners/${encodeURIComponent(ownerId)}/properties`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: propertyTitle,
+                        address: propertyAddress,
+                        locationCode: propertyArea,
+                        area: propertyArea
+                    })
+                });
+
+                if (!createRes.ok && createRes.status === 404) {
+                    createRes = await apiFetch(`/api/properties/ensure-owner`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ownerLoginId: normalizedOwnerId,
+                            title: propertyTitle,
+                            address: propertyAddress,
+                            locationCode: propertyArea,
+                            area: propertyArea
+                        })
+                    });
+                }
+
+                if (createRes.ok) {
+                    const created = await createRes.json();
+                    const newId = created?.property?._id || null;
+                    if (newId && isMongoId(newId)) {
+                        if (currentProperty) {
+                            currentProperty._id = newId;
+                            currentProperty.title = propertyTitle;
+                            currentProperty.name = propertyTitle;
+                        }
+                        const modalIdEl = document.getElementById('modalPropertyId');
+                        if (modalIdEl) modalIdEl.value = newId;
+                        console.log('ensureCorrectPropertyId: auto-created property', newId);
+                        return newId;
+                    }
+                }
+
+                const createFail = await createRes.json().catch(() => ({}));
+                console.error('ensureCorrectPropertyId: property create failed', createFail);
+                return null;
+            } catch (err) {
+                console.error('ensureCorrectPropertyId: error', err);
+                return null;
+            }
+        }
         // 5. Assign Tenant Logic with TABS
         function openAssignModal(roomId, bedIndex, roomNum) {
             document.getElementById('assignRoomId').value = roomId;
             document.getElementById('assignBedIndex').value = bedIndex;
             const titleEl = document.getElementById('assignRoomTitle');
             if(titleEl) titleEl.innerText = `Assigning to Room ${roomNum} - Bed ${bedIndex + 1}`;
+            const allRooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
+            const room = allRooms.find(r => r.id === roomId);
+            const propertyNameEl = document.getElementById('assignPropertyName');
+            const roomNoEl = document.getElementById('assignRoomNumber');
+            const rentEl = document.getElementById('assignRoomRent');
+            if (room) {
+                const resolvedPropertyName = firstValidValue(
+                    room.propertyTitle,
+                    currentProperty && (currentProperty.title || currentProperty.name || currentProperty.propertyName),
+                    document.getElementById('modalPropertyNameText') ? document.getElementById('modalPropertyNameText').innerText : '',
+                    'Owner Property'
+                ) || 'Owner Property';
+                room.propertyTitle = resolvedPropertyName;
+                if (propertyNameEl) propertyNameEl.innerText = resolvedPropertyName;
+                if (roomNoEl) roomNoEl.innerText = room.number || roomNum || '-';
+                if (rentEl) rentEl.innerText = `INR ${room.rent || 0}`;
+            }
             
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
             const available = tenants.filter(t => t.ownerId === ownerId && !t.roomNo);
@@ -849,7 +1334,7 @@
             }
         }
 
-        function confirmAssignment(e) {
+        async function confirmAssignment(e) {
             e.preventDefault();
             const mode = document.getElementById('assignMode').value;
             const roomId = document.getElementById('assignRoomId').value;
@@ -860,6 +1345,13 @@
             const allRooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
             const roomIdx = allRooms.findIndex(r => r.id === roomId);
             if (roomIdx === -1) return;
+            const assignedPropertyName = firstValidValue(
+                document.getElementById('assignPropertyName') ? document.getElementById('assignPropertyName').innerText : '',
+                allRooms[roomIdx].propertyTitle,
+                currentProperty && (currentProperty.title || currentProperty.name || currentProperty.propertyName),
+                'Owner Property'
+            ) || 'Owner Property';
+            allRooms[roomIdx].propertyTitle = assignedPropertyName;
 
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
 
@@ -869,16 +1361,25 @@
                 const t = tenants.find(x => x.id === tenantId || x.loginId === tenantId);
                 if(!t) return;
                 tenantName = t.name;
+                if (!t.email) return alert("Tenant email is required. Please update tenant email before assigning room.");
+                if (!t.phone) return alert("Tenant phone number is required. Please update tenant phone before assigning room.");
                 
                 if (!t.loginId) {
                     const creds = generateCredentials(areaCode);
                     t.loginId = creds.loginId;
                     t.password = creds.password;
-                    showCredentialsModal(t.name, t.loginId, t.password, t.email);
+                    t.tempPassword = creds.password;
+                    showCredentialsModal(t.name, t.loginId, t.password, t.email, {
+                        propertyName: assignedPropertyName,
+                        roomNo: allRooms[roomIdx].number,
+                        agreedRent: allRooms[roomIdx].rent || 0
+                    });
                 }
                 t.roomNo = allRooms[roomIdx].number;
                 t.bedNo = bedIdx + 1;
                 t.propertyId = allRooms[roomIdx].propertyId;
+                t.propertyTitle = assignedPropertyName;
+                t.ownerLoginId = ownerId;
                 t.agreedRent = allRooms[roomIdx].rent || 0;
                 t.moveInDate = new Date().toISOString().split('T')[0];
                 // assign property object or fallback to title for display
@@ -891,41 +1392,55 @@
                 } catch (err) {}
                 t.assignedBy = ownerId;
 
-                // Sync existing tenant to backend with agreedRent
-                (async () => {
+                // Keep backend sync best-effort for legacy tenants (without dbId)
+                if (!t.dbId) {
                     try {
+                        // Ensure we have correct propertyId before sending
+                        const correctPropertyId = await ensureCorrectPropertyId();
+                        // Only send fields expected by backend /api/tenants/assign
                         const payload = {
                             name: t.name,
                             phone: t.phone,
                             email: t.email,
-                            propertyId: t.propertyId,
+                            propertyId: correctPropertyId || t.propertyId || '',
                             roomNo: t.roomNo,
                             bedNo: t.bedNo,
                             moveInDate: t.moveInDate,
-                            agreedRent: t.agreedRent
+                            agreedRent: t.agreedRent,
+                            ownerLoginId: ownerId,
+                            propertyTitle: assignedPropertyName,
+                            locationCode: (window.__ownerContext && (window.__ownerContext.area || window.__ownerContext.locationCode)) || areaCode || ''
                         };
-                        const assignUrl = `${backendBase}/api/tenants/assign`;
-                        await fetch(assignUrl, {
+                        const resp = await apiFetch(`/api/tenants/assign`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            if (data && data.tenant) {
+                                t.dbId = data.tenant.id || data.tenant._id || t.dbId;
+                                t.loginId = data.tenant.loginId || t.loginId;
+                                t.tempPassword = data.tenant.tempPassword || t.tempPassword;
+                            }
+                        }
                     } catch (err) {
                         console.warn('Tenant sync to backend failed (continuing with local record):', err);
                     }
-                })();
+                }
             } else {
                 const name = document.getElementById('newTenantName').value.trim();
                 const phone = document.getElementById('newTenantPhone').value.trim();
                 const email = document.getElementById('newTenantEmail').value.trim();
                 
-                if (!name || !phone) return alert("Name and Phone required");
+                if (!name || !phone || !email) return alert("Name, Phone and Tenant Gmail are required");
+                if (!/^[0-9]{10}$/.test(phone)) return alert("Tenant phone must be 10 digits");
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter valid tenant Gmail ID");
 
-                const creds = generateCredentials(areaCode);
                 const newTenant = {
                     id: 'TNT-' + Date.now(),
-                    loginId: creds.loginId,
-                    password: creds.password,
+                    loginId: '',
+                    password: '',
                     name: name,
                     phone: phone,
                     email: email,
@@ -933,6 +1448,7 @@
                     roomNo: allRooms[roomIdx].number,
                     bedNo: bedIdx + 1,
                     propertyId: allRooms[roomIdx].propertyId,
+                    propertyTitle: allRooms[roomIdx].propertyTitle || (currentProperty && (currentProperty.title || currentProperty.name)) || '',
                     agreedRent: allRooms[roomIdx].rent || 0,
                     moveInDate: new Date().toISOString().split('T')[0],
                     // attach property object for immediate display in tenant records
@@ -949,51 +1465,70 @@
                     })(),
                     status: 'Active',
                     assignedBy: ownerId,
+                    ownerLoginId: ownerId,
                     joinedDate: new Date().toISOString().split('T')[0]
                 };
                 
                 tenants.push(newTenant);
-                tenantId = newTenant.loginId;
                 tenantName = name;
 
-                // Best-effort: create tenant in backend (MongoDB Atlas) so tenant is persisted server-side
-                (async () => {
-                    try {
-                        const payload = {
-                            name: newTenant.name,
-                            phone: newTenant.phone,
-                            email: newTenant.email,
-                            propertyId: newTenant.propertyId,
-                            roomNo: newTenant.roomNo,
-                            bedNo: newTenant.bedNo,
-                            moveInDate: newTenant.moveInDate,
-                            agreedRent: newTenant.agreedRent
-                        };
-                        const assignUrl = `${backendBase}/api/tenants/assign`;
-                        const resp = await fetch(assignUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (resp.ok) {
-                            const d = await resp.json();
-                            if (d && d.tenant) {
-                                // update local tenant with server-side identifiers
-                                const idx = tenants.findIndex(x => x.loginId === newTenant.loginId || x.id === newTenant.id);
-                                if (idx !== -1) {
-                                    tenants[idx].dbId = d.tenant.id || d.tenant._id;
-                                    tenants[idx].loginId = d.tenant.loginId || tenants[idx].loginId;
-                                    tenants[idx].tempPassword = d.tenant.tempPassword || tenants[idx].tempPassword;
-                                    tenants[idx].property = d.tenant.property || tenants[idx].property;
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.warn('Tenant assign to backend failed (continuing with local record):', err);
+                // Create tenant in backend first; use backend-generated credentials to avoid mismatch.
+                let modalLoginId = '';
+                let modalPassword = '';
+                try {
+                    // Ensure we have correct propertyId before sending (this will fetch fresh from API)
+                    const correctPropertyId = await ensureCorrectPropertyId();
+                    
+                    // Only send fields expected by backend /api/tenants/assign
+                    const payload = {
+                        name: newTenant.name,
+                        phone: newTenant.phone,
+                        email: newTenant.email,
+                        propertyId: correctPropertyId || newTenant.propertyId || '',
+                        roomNo: newTenant.roomNo,
+                        bedNo: newTenant.bedNo,
+                        moveInDate: newTenant.moveInDate,
+                        agreedRent: newTenant.agreedRent,
+                        ownerLoginId: ownerId,
+                        propertyTitle: assignedPropertyName,
+                        locationCode: (window.__ownerContext && (window.__ownerContext.area || window.__ownerContext.locationCode)) || areaCode || ''
+                    };
+                    
+                    console.log('📤 Sending tenant assignment payload:', payload);
+                    const resp = await apiFetch(`/api/tenants/assign`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!resp.ok) {
+                        const failData = await resp.json().catch(() => ({}));
+                        return alert(failData.message || 'Failed to assign tenant in backend');
                     }
-                })();
+                    const d = await resp.json();
+                    if (d && d.tenant) {
+                        newTenant.dbId = d.tenant.id || d.tenant._id || '';
+                        newTenant.loginId = d.tenant.loginId || '';
+                        newTenant.tempPassword = d.tenant.tempPassword || '';
+                        newTenant.password = d.tenant.tempPassword || '';
+                        newTenant.ownerLoginId = d.tenant.ownerLoginId || newTenant.ownerLoginId;
+                        // Keep property name from current rooms assignment context.
+                        newTenant.propertyTitle = assignedPropertyName;
+                        newTenant.property = { title: assignedPropertyName };
+                        modalLoginId = newTenant.loginId;
+                        modalPassword = newTenant.tempPassword;
+                    }
+                } catch (err) {
+                    console.warn('Tenant assign to backend failed:', err);
+                    const reason = (err && err.message) ? `\nReason: ${err.message}` : '';
+                    return alert(`Backend assign failed. Please try again.${reason}`);
+                }
 
-                showCredentialsModal(name, creds.loginId, creds.password, email);
+                tenantId = newTenant.loginId || newTenant.id;
+                showCredentialsModal(name, modalLoginId, modalPassword, email, {
+                    propertyName: assignedPropertyName,
+                    roomNo: newTenant.roomNo,
+                    agreedRent: newTenant.agreedRent || 0
+                });
             }
 
             allRooms[roomIdx].beds[bedIdx] = {
@@ -1009,13 +1544,20 @@
         }
 
         function generateCredentials(code) {
-            const random = Math.floor(1000 + Math.random() * 9000);
-            const loginId = `TNT${code}${random}`;
+            const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+            const nextNumber = tenants.reduce((max, t) => {
+                const id = String((t && t.loginId) || '');
+                const match = id.match(/^ROOMHYTNT(\d{4})$/i);
+                if (!match) return max;
+                const n = parseInt(match[1], 10);
+                return Number.isFinite(n) && n > max ? n : max;
+            }, 0) + 1;
+            const loginId = `ROOMHYTNT${String(nextNumber).padStart(4, '0')}`;
             const password = Math.random().toString(36).slice(-8);
             return { loginId, password };
         }
 
-        function showCredentialsModal(name, id, pass, email) {
+        function showCredentialsModal(name, id, pass, email, assignmentDetails = {}) {
             const nameEl = document.getElementById('credName');
             const idEl = document.getElementById('credLoginId');
             const passEl = document.getElementById('credPassword');
@@ -1030,9 +1572,18 @@
                 modal.classList.add('flex');
             }
             
-            // Send email credentials if email provided
+            // Send email credentials with digital check-in link
             if (email) {
                 try {
+                    const checkinLink = `${window.location.origin}/digital-checkin/tenantprofile.html?loginId=${encodeURIComponent(id)}`;
+                    const propertyName = firstValidValue(
+                        assignmentDetails.propertyName,
+                        document.getElementById('assignPropertyName') ? document.getElementById('assignPropertyName').innerText : '',
+                        currentProperty && (currentProperty.title || currentProperty.name || currentProperty.propertyName),
+                        'Owner Property'
+                    ) || 'Owner Property';
+                    const roomNo = assignmentDetails.roomNo || '-';
+                    const agreedRent = assignmentDetails.agreedRent || 0;
                     const emailHtml = `
                         <!DOCTYPE html>
                         <html>
@@ -1049,7 +1600,7 @@
                                 .value { color: #000; font-weight: bold; font-size: 16px; }
                                 .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
                             </style>
-                        </head>
+</head>
                         <body>
                             <div class="container">
                                 <div class="header">
@@ -1059,15 +1610,21 @@
                                     <p>Hi ${name},</p>
                                     
                                     <p>You have been successfully assigned a room. Your tenant account has been created on the RoomHy platform. Here are your login credentials:</p>
+                                    <p><strong>Property:</strong> ${propertyName}</p>
+                                    <p><strong>Room Number:</strong> ${roomNo}</p>
+                                    <p><strong>Rent:</strong> INR ${agreedRent}</p>
                                     
                                     <div class="credentials-box">
                                         <p><span class="label">Login ID:</span><br><span class="value">${id}</span></p>
                                         <p><span class="label">Password:</span><br><span class="value">${pass}</span></p>
                                     </div>
+
+                                    <p><strong>Tenant Digital Check-In Link:</strong><br><a href="${checkinLink}">${checkinLink}</a></p>
                                     
                                     <p><strong>Next Steps:</strong></p>
                                     <ol>
                                         <li>Log in to your tenant portal using the credentials above</li>
+                                        <li>Open the digital check-in link and complete profile + KYC + OTP + agreement</li>
                                         <li>Complete your profile information</li>
                                         <li>Upload necessary documents</li>
                                         <li>Connect with property management</li>
@@ -1085,13 +1642,14 @@
                         </html>
                     `;
                     
-                    fetch('https://roomhy-backend-wqwo.onrender.com/api/email/send', {
+                    apiFetch(`/api/email/send`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             to: email,
                             subject: '🏠 Your RoomHy Tenant Account Credentials',
-                            html: emailHtml
+                            html: emailHtml,
+                            text: `Tenant login credentials\nProperty: ${propertyName}\nRoom Number: ${roomNo}\nRent: INR ${agreedRent}\nLogin ID: ${id}\nPassword: ${pass}\nDigital Check-In: ${checkinLink}`
                         })
                     }).then(res => res.json()).then(data => {
                         if (data.success) {
@@ -1185,6 +1743,17 @@
                 document.getElementById('roomForm').reset();
                 document.getElementById('roomBeds').value = '2';
                 document.getElementById('roomGender').value = '';
+                // form.reset() clears hidden fields too; repopulate property binding.
+                const modalIdEl = document.getElementById('modalPropertyId');
+                const modalNameEl = document.getElementById('modalPropertyNameText');
+                if (modalIdEl) {
+                    modalIdEl.value = (currentProperty && (currentProperty._id || currentProperty.id || currentProperty.propertyId)) || '';
+                }
+                if (modalNameEl && currentProperty) {
+                    const t = currentProperty.title || currentProperty.name || currentProperty.propertyName || 'Property';
+                    const l = currentProperty.location || currentProperty.locationCode || currentProperty.area || currentProperty.city || 'Unknown';
+                    modalNameEl.innerText = `${t} (${l})`;
+                }
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
             }
@@ -1203,18 +1772,24 @@
                 modal.classList.remove('flex');
             }
         }
-        function toggleMobileMenu() {
-            const sidebar = document.getElementById('mobile-sidebar');
-            const overlay = document.getElementById('mobile-overlay');
-            if(sidebar) sidebar.classList.toggle('-translate-x-full');
-            if(overlay) overlay.classList.toggle('hidden');
+        const menuBtn = document.getElementById('mobile-menu-open');
+        const closeMenuBtn = document.getElementById('close-mobile-menu');
+        const menuOverlay = document.getElementById('mobile-menu-overlay');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (menuBtn && mobileMenu) {
+            menuBtn.addEventListener('click', () => mobileMenu.classList.remove('hidden'));
         }
-        
-        const menuBtn = document.getElementById('mobile-menu-button'); // Fixed ID
-        if(menuBtn) menuBtn.addEventListener('click', toggleMobileMenu);
+        if (closeMenuBtn && mobileMenu) {
+            closeMenuBtn.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+        }
+        if (menuOverlay && mobileMenu) {
+            menuOverlay.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+        }
 
         // Init (ensure backend calls complete before rendering)
         (async function initPage(){
+            await ensureOwnerContext();
             await loadOwnerProperty();
             await checkBackendStatus();
             await loadRooms();
@@ -1223,3 +1798,13 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+

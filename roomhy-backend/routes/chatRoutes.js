@@ -97,6 +97,7 @@ router.get('/rooms', (req, res) => {
 
 // Get messages for a room
 router.get('/messages/:room_id', chatController.getMessages);
+router.get('/conversation', chatController.getConversation);
 
 // Mark messages as read
 router.post('/mark-read/:room_id', chatController.markAsRead);
