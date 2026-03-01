@@ -15,10 +15,10 @@
     <script>
         // API Configuration - Support both local and production
         // For local development, use: http://localhost:3000 or http://localhost:10
-        // For production, use: https://roomhy-backend-wqwo.onrender.com
+        // For production, use: https://api.roomhy.com
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000'
-            : 'https://roomhy-backend-wqwo.onrender.com';
+            ? 'http://localhost:5001'
+            : 'https://api.roomhy.com';
         
         console.log('Using API_URL:', API_URL);
 
@@ -1640,8 +1640,8 @@
                 try {
                     // Get API base URL - support both local and production
                     const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                        ? 'http://localhost:5000'
-                        : 'https://roomhy-backend.onrender.com';
+                        ? 'http://localhost:5001'
+                        : 'https://api.roomhy.com';
                     
                     const response = await fetch(`${apiBase}/api/locations/cities`);
                     if (!response.ok) throw new Error('Failed to fetch cities from MongoDB');
@@ -1935,8 +1935,8 @@
             let areasByCity = {};
             try {
                 const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                    ? 'http://localhost:5000'
-                    : 'https://roomhy-backend.onrender.com';
+                    ? 'http://localhost:5001'
+                    : 'https://api.roomhy.com';
                 const response = await fetch(`${apiBase}/api/locations/areas`);
                 if (response.ok) {
                     const areaData = await response.json();

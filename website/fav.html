@@ -6,7 +6,7 @@
     <title>My Favorites - Roomhy</title>
     <script>
         // API Configuration
-        const API_URL = 'https://roomhy-backend-wqwo.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
     </script>
     <script src="./js/favorites-system.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -836,8 +836,8 @@
             try {
                 // Get API base URL - support both local and production
                 const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                    ? 'http://localhost:5000'
-                    : 'https://roomhy-backend.onrender.com';
+                    ? 'http://localhost:5001'
+                    : 'https://api.roomhy.com';
                 
                 const response = await fetch(`${apiBase}/api/locations/cities`);
                 if (!response.ok) throw new Error('Failed to fetch cities from MongoDB');
@@ -907,8 +907,8 @@
             let areasByCity = {};
             try {
                 const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                    ? 'http://localhost:5000'
-                    : 'https://roomhy-backend.onrender.com';
+                    ? 'http://localhost:5001'
+                    : 'https://api.roomhy.com';
                 const response = await fetch(`${apiBase}/api/locations/areas`);
                 if (response.ok) {
                     const areaData = await response.json();

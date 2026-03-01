@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,7 +7,7 @@
     <script>
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5001'
-            : 'https://roomhy-backend-wqwo.onrender.com';
+            : 'https://api.roomhy.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -372,9 +372,12 @@
             localStorage.setItem('tenant_user', JSON.stringify(user));
             
             // Redirect to where they left off
-            if(!tenant.profileFilled) window.location.href = `../digital-checkin/tenantprofile.html?loginId=${encodeURIComponent(tenant.loginId || '')}`;
-            else if(tenant.kycStatus === 'pending') window.location.href = `../digital-checkin/tenantkyc.html?loginId=${encodeURIComponent(tenant.loginId || '')}`;
-            else if(!tenant.agreementSigned) window.location.href = `../digital-checkin/tenantagreement.html?loginId=${encodeURIComponent(tenant.loginId || '')}`;
+            const checkinBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:5001'
+                : 'https://admin.roomhy.com';
+            if(!tenant.profileFilled) window.location.href = `${checkinBase}/digital-checkin/tenantprofile.html?loginId=${encodeURIComponent(tenant.loginId || '')}`;
+            else if(tenant.kycStatus === 'pending') window.location.href = `${checkinBase}/digital-checkin/tenantkyc.html?loginId=${encodeURIComponent(tenant.loginId || '')}`;
+            else if(!tenant.agreementSigned) window.location.href = `${checkinBase}/digital-checkin/tenantagreement.html?loginId=${encodeURIComponent(tenant.loginId || '')}`;
             else window.location.href = 'tenantdashboard.html';
         }
 

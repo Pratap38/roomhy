@@ -127,7 +127,7 @@ exports.assignTenant = async (req, res) => {
         console.log(`[RENT RECORD CREATED] Rent ID: ${rent._id}, Amount: ₹${rentAmount}`);
 
         // Send email to tenant with loginId, tempPassword and digital check-in link (non-blocking)
-        const baseWebUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
+        const baseWebUrl = process.env.FRONTEND_URL || 'https://admin.roomhy.com';
         const tenantCheckinLink = `${baseWebUrl}/digital-checkin/tenantprofile.html?loginId=${encodeURIComponent(tenant.loginId)}`;
         try {
             if (tenant.email) {

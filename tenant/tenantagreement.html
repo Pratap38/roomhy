@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roomhy - Tenant Agreement</title>
     <script>
-        const API_URL = 'https://roomhy-backend.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -49,7 +49,7 @@
                     
                     <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 h-64 overflow-y-auto mb-6 text-sm text-gray-700 leading-relaxed">
                         <h3 class="font-bold mb-2">Terms & Conditions</h3>
-                        <p class="mb-2">1. The tenant agrees to pay the monthly rent of <strong id="rent-amount">₹-</strong> on or before the 5th of every month.</p>
+                        <p class="mb-2">1. The tenant agrees to pay the monthly rent of <strong id="rent-amount">?-</strong> on or before the 5th of every month.</p>
                         <p class="mb-2">2. The tenancy commences on <strong id="move-in">-</strong>.</p>
                         <p class="mb-2">3. Security deposit is refundable subject to property condition upon exit.</p>
                         <p>4. Tenant shall comply with all building rules regarding noise, guests, and maintenance.</p>
@@ -78,7 +78,7 @@
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
             const me = tenants.find(t => t.loginId === user.loginId);
             if(me) {
-                document.getElementById('rent-amount').innerText = '₹' + (me.agreedRent || '0');
+                document.getElementById('rent-amount').innerText = '?' + (me.agreedRent || '0');
                 document.getElementById('move-in').innerText = me.moveInDate ? new Date(me.moveInDate).toLocaleDateString() : '-';
             }
         });
@@ -96,7 +96,7 @@
                 
                 localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
                 
-                alert("🎉 Onboarding Complete! Redirecting to Dashboard...");
+                alert("?? Onboarding Complete! Redirecting to Dashboard...");
                 window.location.href = 'tenantdashboard.html';
             }
         }

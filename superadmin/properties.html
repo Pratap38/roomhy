@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
         // Dynamic API configuration
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5001'
-            : 'https://roomhy-backend.onrender.com';
+            : 'https://api.roomhy.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -238,8 +238,8 @@
         let currentPropertiesData = [];
         const API_BASES = Array.from(new Set([
             API_URL,
-            'https://roomhy-backend-wqwo.onrender.com',
-            'https://roomhy-backend.onrender.com',
+            'https://api.roomhy.com',
+            'https://api.roomhy.com',
             'http://localhost:5001'
         ]));
         let activeApiBase = API_URL;
@@ -318,7 +318,7 @@
         // Fetch owners data from API (same as owner.html does)
         async function loadOwners() {
             let owners = [];
-            console.log('ðŸ“¥ Fetching owners data from backend...');
+            console.log('📥 Fetching owners data from backend...');
             try {
                 const res = await fetchFromAnyApi('/api/owners', {
                     headers: getAuthHeaders()
@@ -327,19 +327,19 @@
                     const data = await res.json();
                     // Handle both array response and {data: [...]} response
                     owners = Array.isArray(data) ? data : (data.data || data.owners || []);
-                    console.log(`âœ… Loaded ${owners.length} owners from backend`);
+                    console.log(`✅ Loaded ${owners.length} owners from backend`);
                 } else {
-                    console.warn('âš ï¸ Owners API returned', res.status);
+                    console.warn('⚠️ Owners API returned', res.status);
                 }
             } catch (err) {
-                console.warn('âš ï¸ Failed to fetch owners from backend, falling back to localStorage', err);
+                console.warn('⚠️ Failed to fetch owners from backend, falling back to localStorage', err);
             }
 
             // Fallback to localStorage shaped data
             if (!owners || !Array.isArray(owners) || owners.length === 0) {
                 const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
                 owners = Object.keys(db).map(id => ({ loginId: id, ...db[id] }));
-                console.log(`ðŸ“¦ Loaded ${owners.length} owners from localStorage`);
+                console.log(`📦 Loaded ${owners.length} owners from localStorage`);
             }
 
             return owners;
@@ -361,7 +361,7 @@
                     };
                 }
             });
-            console.log(`ðŸ—ºï¸ Built owner map with ${Object.keys(ownerMap).length} entries`);
+            console.log(`🗺️ Built owner map with ${Object.keys(ownerMap).length} entries`);
             return ownerMap;
         }
 
@@ -593,7 +593,7 @@
             if (!propRooms || propRooms.length === 0) {
                 const allRooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
                 propRooms = allRooms.filter(r => (r.ownerId === ownerId || r.ownerLoginId === ownerId));
-                if (propRooms.length > 0) console.log('ðŸ“¦ Loaded rooms from localStorage for owner:', ownerId);
+                if (propRooms.length > 0) console.log('📦 Loaded rooms from localStorage for owner:', ownerId);
             }
             
             const container = document.getElementById('rooms-container');

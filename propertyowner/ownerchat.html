@@ -343,7 +343,7 @@
         const WEBSITE_USER_ID_REGEX = /^roomhyweb\d{6}$/i;
         const CHAT_API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5001'
-            : 'https://roomhy-backend-wqwo.onrender.com';
+            : 'https://api.roomhy.com';
 
         function isValidOwnerLoginId(v) {
             return OWNER_LOGIN_ID_REGEX.test(String(v || '').trim().toUpperCase());
@@ -569,7 +569,7 @@
         async function loadChats() {
             if (!currentOwner) return;
             const ownerId = currentOwner.loginId || currentOwner.ownerId;
-            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
             const bookingIdFromURL = getBookingIdFromURL();
 
             let bookings = [];
@@ -837,7 +837,10 @@
             const tenantName = currentChat.name || 'Tenant';
             const tenantEmail = currentChat.email || '';
 
-                        const bookingFormLink = `${window.location.origin}/booking-form.html?bookingId=${bookingId}&userId=${userId}&ownerName=${encodeURIComponent(ownerName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
+                        const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                            ? 'http://localhost:5001'
+                            : 'https://app.roomhy.com';
+                        const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}&ownerName=${encodeURIComponent(ownerName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
 
             const bookingData = {
                 booking_id: bookingId,
@@ -876,7 +879,7 @@
         async function updateChatDecision(decision, userType) {
             if (!currentChat) return;
 
-            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
             const bookingId = currentChat._id || currentChat.id;
             const userId = resolveWebsiteUserId(currentChat);
             
@@ -894,7 +897,10 @@
                     // If owner liked, send booking form link to chat
                     if (decision === 'like' && userType === 'owner') {
                         // Create booking form link with bookingId and userId
-                                                const bookingFormLink = `${window.location.origin}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                                                const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                                                    ? 'http://localhost:5001'
+                                                    : 'https://app.roomhy.com';
+                                                const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
                         const ownerId = currentOwner.loginId || currentOwner.ownerId;
 
                         // Save booking details to MongoDB
@@ -914,7 +920,7 @@
                                 status: 'accepted'
                             };
 
-                            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+                            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
                             await fetch(`${API_URL}/api/bookings`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -995,7 +1001,7 @@
                     return;
                 }
 
-                const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+                const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
                 const response = await fetch(`${API_URL}/api/notifications/chat-message`, {
                     method: 'POST',
                     headers: {
@@ -1080,7 +1086,10 @@
                 const ownerName = currentOwner.name || currentOwner.ownerName || 'Owner';
                 
                 // Generate booking form link
-                                const bookingFormLink = `${window.location.origin}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                                const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                                    ? 'http://localhost:5001'
+                                    : 'https://app.roomhy.com';
+                                const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
                 
                 console.log('📋 Booking form data:', {
                     bookingId, userId, propertyName, ownerId, ownerName

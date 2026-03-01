@@ -2,7 +2,7 @@
     // API base URL
     const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? 'http://localhost:5001'
-        : 'https://roomhy-backend-wqwo.onrender.com';
+        : 'https://api.roomhy.com';
     const API_BASE = API_URL;
 </script>
 <!DOCTYPE html>
@@ -573,7 +573,7 @@
                 // Determine API URL based on environment
                 const apiUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                     ? 'http://localhost:5001'
-                    : 'https://roomhy-backend-wqwo.onrender.com';
+                    : 'https://api.roomhy.com';
 
                 const response = await fetch(`${apiUrl}/api/rents`);
                 if (!response.ok) {

@@ -347,7 +347,7 @@ router.post('/approve', async (req, res) => {
 
             if (ownerEmail) {
                 emailAttempted = true;
-                const baseWebUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'http://localhost:5000';
+                const baseWebUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
                 const mainCheckinLink = `${baseWebUrl}/digital-checkin/index.html`;
                 const directCheckinLink = `${baseWebUrl}/digital-checkin/ownerprofile.html?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
                 const subject = 'RoomHy Property Approved - Complete Digital Check-In';

@@ -399,13 +399,11 @@
         window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.createIcons(); });
 
         // Backend base with fallback support (local + hosted).
-        const backendBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+        const backendBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
         const backendBases = Array.from(new Set([
             backendBase,
-            'http://localhost:5000',
             'http://localhost:5001',
-            'https://roomhy-backend-wqwo.onrender.com',
-            'https://roomhy-backend.onrender.com'
+            'https://api.roomhy.com'
         ]));
         let activeBackendBase = backendBase;
 
@@ -1575,7 +1573,10 @@
             // Send email credentials with digital check-in link
             if (email) {
                 try {
-                    const checkinLink = `${window.location.origin}/digital-checkin/tenantprofile.html?loginId=${encodeURIComponent(id)}`;
+                    const checkinBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                        ? 'http://localhost:5001'
+                        : 'https://admin.roomhy.com';
+                    const checkinLink = `${checkinBase}/digital-checkin/tenantprofile.html?loginId=${encodeURIComponent(id)}`;
                     const propertyName = firstValidValue(
                         assignmentDetails.propertyName,
                         document.getElementById('assignPropertyName') ? document.getElementById('assignPropertyName').innerText : '',

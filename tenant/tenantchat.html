@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -21,15 +21,15 @@
         <!-- Sidebar -->
         <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
             <div class="p-6 border-b border-gray-200">
-                <h1 class="text-xl font-bold text-purple-600">💬 Messages</h1>
+                <h1 class="text-xl font-bold text-purple-600">?? Messages</h1>
             </div>
 
             <!-- Filter Tabs -->
             <div class="px-4 py-3 border-b border-gray-200 space-y-2">
                 <div class="flex gap-2 mb-2">
                     <button onclick="filterChats('all')" class="filter-btn active">All Chats</button>
-                    <button onclick="filterChats('owner')" class="filter-btn">🏠 Owner</button>
-                    <button onclick="filterChats('support')" class="filter-btn">🛡️ Support</button>
+                    <button onclick="filterChats('owner')" class="filter-btn">?? Owner</button>
+                    <button onclick="filterChats('support')" class="filter-btn">??? Support</button>
                 </div>
                 <button onclick="openNewChatModal()" class="w-full px-3 py-1 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700">+ New Chat</button>
             </div>
@@ -96,7 +96,7 @@
             </div>
         </div>
     </div>
-        const API_URL = 'https://roomhy-backend.onrender.com';
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
         let socket = null;
         let loginId = null;
         let currentChat = null;
@@ -112,7 +112,7 @@
             }
 
             loginId = user.loginId;
-            console.log('✓ Tenant logged in:', loginId);
+            console.log('? Tenant logged in:', loginId);
 
             initSocket();
             loadChats();
@@ -124,7 +124,7 @@
             socket = io(API_URL);
 
             socket.on('connect', () => {
-                console.log('✓ Connected to chat');
+                console.log('? Connected to chat');
                 socket.emit('join_room', {
                     login_id: loginId,
                     role: 'tenant',
@@ -233,7 +233,7 @@
                     messages = await response.json();
                 } else if (response.status === 404) {
                     // No messages yet - this is normal for new chats
-                    console.log(`📝 New chat - no message history yet for ${login_id}`);
+                    console.log(`?? New chat - no message history yet for ${login_id}`);
                 } else {
                     console.error(`API Error: ${response.status} ${response.statusText}`);
                 }
@@ -295,8 +295,8 @@
         // Utilities
         function getTypeLabel(type) {
             const labels = {
-                owner: '🏠 Owner',
-                support: '🛡️ Support'
+                owner: '?? Owner',
+                support: '??? Support'
             };
             return labels[type] || type;
         }
@@ -364,7 +364,7 @@
                         class="w-full p-3 text-left bg-white border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition">
                         <p class="font-medium text-gray-800 text-sm">${contact.name}</p>
                         <p class="text-xs text-gray-500 mt-1">ID: ${contact.id}</p>
-                        <p class="text-xs text-gray-400 mt-1">${contact.type === 'owner' ? '🏠 Owner' : '🛡️ Support'}</p>
+                        <p class="text-xs text-gray-400 mt-1">${contact.type === 'owner' ? '?? Owner' : '??? Support'}</p>
                     </button>
                 `).join('');
             }

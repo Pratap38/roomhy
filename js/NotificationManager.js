@@ -8,7 +8,7 @@ class NotificationManager {
     constructor() {
         this.API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5001'
-            : 'https://roomhy-backend-wqwo.onrender.com';
+            : 'https://api.roomhy.com';
         
         this.user = this.resolveCurrentUser();
         this.notificationSound = this.initializeSound();

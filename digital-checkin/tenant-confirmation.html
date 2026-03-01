@@ -86,7 +86,9 @@
   </div>
 
   <script>
-    const nextUrl = `${window.location.origin}/propertyowner/index.html`;
+    const nextUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:5001/propertyowner/index.html'
+      : 'https://app.roomhy.com/propertyowner/index.html';
     const continueBtn = document.getElementById('continueBtn');
     continueBtn.href = nextUrl;
 

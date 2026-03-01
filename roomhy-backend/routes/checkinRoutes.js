@@ -254,7 +254,7 @@ router.post('/owner/kyc/verify-otp', async (req, res) => {
 
         // Send login credentials email
         if (owner && owner.email) {
-            const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5001';
+            const baseUrl = process.env.FRONTEND_URL || 'https://admin.roomhy.com';
             const ownerPassword = owner.checkinPassword || owner.credentials?.password || 'default';
             const fullLoginUrl = `${baseUrl}/propertyowner/index.html`;
             
@@ -382,7 +382,7 @@ router.post('/owner/final-submit', async (req, res) => {
         // Send owner dashboard link email after final submit
         const owner = await Owner.findOne({ loginId: String(loginId).toUpperCase() }).lean();
         const targetEmail = (owner && owner.email) || (record.ownerProfile && record.ownerProfile.email) || '';
-        const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'http://localhost:5000';
+        const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
         const dashboardUrl = `${baseUrl}/propertyowner/index.html`;
         let loginEmailSent = false;
 
@@ -616,7 +616,7 @@ router.post('/tenant/final-submit', async (req, res) => {
         await tenant.save();
 
         const targetEmail = tenant.email || record?.tenantProfile?.email || '';
-        const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'http://localhost:5000';
+        const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
         const tenantLoginUrl = `${baseUrl}/propertyowner/index.html`;
         const dashboardUrl = `${baseUrl}/propertyowner/index.html`;
         let loginEmailSent = false;

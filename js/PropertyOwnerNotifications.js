@@ -271,7 +271,7 @@ class PropertyOwnerNotifications {
      */
     async markAllAsRead() {
         try {
-            const response = await fetch(`${this.notificationManager?.API_URL || 'https://roomhy-backend-wqwo.onrender.com'}/api/notifications/mark-all-read`, {
+            const response = await fetch(`${this.notificationManager?.API_URL || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com')}/api/notifications/mark-all-read`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ toLoginId: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).loginId : '', toRole: 'owner' })

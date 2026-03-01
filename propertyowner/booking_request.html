@@ -8,7 +8,7 @@
         // API Configuration - Backend running on port 5001
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5001'
-            : 'https://roomhy-backend-wqwo.onrender.com';
+            : 'https://api.roomhy.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -1141,7 +1141,10 @@
             const ownerFullName = currentOwner.name || ownerName || 'Owner';
             
             // Generate booking form link with all parameters
-                        const bookingFormLink = `${window.location.origin}/booking-form.html?bookingId=${bookingId}&ownerName=${encodeURIComponent(ownerFullName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
+                        const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                            ? 'http://localhost:5001'
+                            : 'https://app.roomhy.com';
+                        const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&ownerName=${encodeURIComponent(ownerFullName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
             
             console.log('📋 Booking link data:', {
                 bookingId, tenantName, tenantEmail, propertyId, propertyName, ownerFullName

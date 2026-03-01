@@ -23,7 +23,7 @@ const server = http.createServer(app);
 // Initialize Socket.IO with CORS
 const io = socketIO(server, {
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:5000', '*'], // Adjust for your frontend
+    origin: ['http://localhost:3000', 'http://localhost:5001', '*'], // Adjust for your frontend
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization']
   },

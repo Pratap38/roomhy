@@ -47,9 +47,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         // API Configuration
+        // Use dedicated API host in production.
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000'
-            : 'https://roomhy-backend.onrender.com';
+            ? 'http://localhost:5001'
+            : 'https://api.roomhy.com';
     </script>
     <script src="../seeder.js"></script>
     <style>
@@ -355,7 +356,7 @@
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = 'superadmin/superadmin.html';
+                window.location.href = 'superadmin.html';
                 return;
             }
 
@@ -369,7 +370,7 @@
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = 'superadmin/superadmin.html';
+                window.location.href = 'superadmin.html';
                 return;
             }
 
@@ -400,7 +401,7 @@
                         // Clear owner sessions to prevent crosstalk
                         sessionStorage.removeItem('owner_session');
                         localStorage.removeItem('owner_user');
-                        window.location.href = 'superadmin/superadmin.html';
+                        window.location.href = 'superadmin.html';
                         return;
                     }
                 }
@@ -487,7 +488,7 @@
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = 'superadmin/areaadmin.html';
+                window.location.href = 'areaadmin.html';
             } else {
                 console.warn('[Staff Login] Area Manager not found or password mismatch for:', loginId);
                 showError('Invalid credentials.', errorMsg);
@@ -543,7 +544,7 @@
              // Clear owner sessions to prevent crosstalk
              sessionStorage.removeItem('owner_session');
              localStorage.removeItem('owner_user');
-             window.location.href = 'superadmin/areaadmin.html';
+             window.location.href = 'areaadmin.html';
         }
 
         // Tenant Login

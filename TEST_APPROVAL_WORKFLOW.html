@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -27,26 +27,26 @@
 </head>
 <body class="bg-gray-900 text-gray-100 p-8">
     <div class="max-w-2xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6">🧪 Approval Workflow Test</h1>
+        <h1 class="text-3xl font-bold mb-6">?? Approval Workflow Test</h1>
         
         <div class="bg-gray-800 rounded-lg p-6 mb-6">
             <h2 class="text-xl font-bold mb-4">Endpoint Status</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-gray-700 p-4 rounded">
                     <div class="text-sm text-gray-400">Email Endpoint</div>
-                    <div id="emailStatus" class="text-lg font-bold">❓ Checking...</div>
+                    <div id="emailStatus" class="text-lg font-bold">? Checking...</div>
                 </div>
                 <div class="bg-gray-700 p-4 rounded">
                     <div class="text-sm text-gray-400">Admin Approval Endpoint</div>
-                    <div id="approvalStatus" class="text-lg font-bold">❓ Checking...</div>
+                    <div id="approvalStatus" class="text-lg font-bold">? Checking...</div>
                 </div>
                 <div class="bg-gray-700 p-4 rounded">
                     <div class="text-sm text-gray-400">Visit Fetch Endpoint</div>
-                    <div id="visitStatus" class="text-lg font-bold">❓ Checking...</div>
+                    <div id="visitStatus" class="text-lg font-bold">? Checking...</div>
                 </div>
                 <div class="bg-gray-700 p4 rounded">
                     <div class="text-sm text-gray-400">Server Health</div>
-                    <div id="serverStatus" class="text-lg font-bold">❓ Checking...</div>
+                    <div id="serverStatus" class="text-lg font-bold">? Checking...</div>
                 </div>
             </div>
         </div>
@@ -55,25 +55,25 @@
             <h2 class="text-xl font-bold mb-4">Test Actions</h2>
             <div class="space-y-3">
                 <button onclick="testServer()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-bold">
-                    1️⃣ Test Server Connection
+                    1?? Test Server Connection
                 </button>
                 <button onclick="testEmailEndpoint()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded font-bold">
-                    2️⃣ Test Email Endpoint (/api/email/send)
+                    2?? Test Email Endpoint (/api/email/send)
                 </button>
                 <button onclick="testApprovalEndpoint()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-bold">
-                    3️⃣ Test Approval Endpoint (/api/admin/approve-visit)
+                    3?? Test Approval Endpoint (/api/admin/approve-visit)
                 </button>
                 <button onclick="testFetchVisits()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded font-bold">
-                    4️⃣ Test Fetch Visits (/api/visits/pending)
+                    4?? Test Fetch Visits (/api/visits/pending)
                 </button>
                 <button onclick="testFullWorkflow()" class="w-full bg-pink-600 hover:bg-pink-700 text-white py-2 rounded font-bold text-lg">
-                    🚀 TEST COMPLETE WORKFLOW
+                    ?? TEST COMPLETE WORKFLOW
                 </button>
             </div>
         </div>
 
         <div class="bg-gray-800 rounded-lg p-6">
-            <h2 class="text-xl font-bold mb-4">📋 Test Log</h2>
+            <h2 class="text-xl font-bold mb-4">?? Test Log</h2>
             <div id="log" class="log-box"></div>
             <button onclick="clearLog()" class="mt-4 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded">
                 Clear Log
@@ -82,7 +82,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:5000';
+        const API_URL = 'http://localhost:5001';
         const logs = [];
 
         function log(message, type = 'info') {
@@ -110,12 +110,12 @@
             try {
                 const response = await fetch(API_URL + '/api/visits/pending');
                 const status = response.status;
-                log(`✅ Server is running (Status: ${status})`, 'success');
-                document.getElementById('serverStatus').innerHTML = '✅ Running';
+                log(`? Server is running (Status: ${status})`, 'success');
+                document.getElementById('serverStatus').innerHTML = '? Running';
                 document.getElementById('serverStatus').className = 'text-lg font-bold text-green-400';
             } catch (err) {
-                log(`❌ Server connection failed: ${err.message}`, 'error');
-                document.getElementById('serverStatus').innerHTML = '❌ Not Responding';
+                log(`? Server connection failed: ${err.message}`, 'error');
+                document.getElementById('serverStatus').innerHTML = '? Not Responding';
                 document.getElementById('serverStatus').className = 'text-lg font-bold text-red-400';
             }
         }
@@ -134,15 +134,15 @@
                 });
                 const data = await response.json();
                 if (response.ok || data.success) {
-                    log(`✅ Email endpoint works: ${data.message}`, 'success');
-                    document.getElementById('emailStatus').innerHTML = '✅ Working';
+                    log(`? Email endpoint works: ${data.message}`, 'success');
+                    document.getElementById('emailStatus').innerHTML = '? Working';
                     document.getElementById('emailStatus').className = 'text-lg font-bold text-green-400';
                 } else {
-                    log(`⚠️ Email endpoint error: ${data.message}`, 'warning');
+                    log(`?? Email endpoint error: ${data.message}`, 'warning');
                 }
             } catch (err) {
-                log(`❌ Email endpoint failed: ${err.message}`, 'error');
-                document.getElementById('emailStatus').innerHTML = '❌ Failed';
+                log(`? Email endpoint failed: ${err.message}`, 'error');
+                document.getElementById('emailStatus').innerHTML = '? Failed';
                 document.getElementById('emailStatus').className = 'text-lg font-bold text-red-400';
             }
         }
@@ -155,7 +155,7 @@
                 const visitData = await visitResponse.json();
                 
                 if (!visitData.visits || visitData.visits.length === 0) {
-                    log('⚠️ No pending visits to test with', 'warning');
+                    log('?? No pending visits to test with', 'warning');
                     return;
                 }
 
@@ -173,16 +173,16 @@
                 });
                 const data = await response.json();
                 if (response.ok || data.success) {
-                    log(`✅ Approval endpoint works: ${data.message}`, 'success');
+                    log(`? Approval endpoint works: ${data.message}`, 'success');
                     log(`Generated credentials - Login: ${data.loginId}, Password: ${data.tempPassword}`, 'success');
-                    document.getElementById('approvalStatus').innerHTML = '✅ Working';
+                    document.getElementById('approvalStatus').innerHTML = '? Working';
                     document.getElementById('approvalStatus').className = 'text-lg font-bold text-green-400';
                 } else {
-                    log(`❌ Approval failed: ${data.message}`, 'error');
+                    log(`? Approval failed: ${data.message}`, 'error');
                 }
             } catch (err) {
-                log(`❌ Approval endpoint error: ${err.message}`, 'error');
-                document.getElementById('approvalStatus').innerHTML = '❌ Error';
+                log(`? Approval endpoint error: ${err.message}`, 'error');
+                document.getElementById('approvalStatus').innerHTML = '? Error';
                 document.getElementById('approvalStatus').className = 'text-lg font-bold text-red-400';
             }
         }
@@ -193,24 +193,24 @@
                 const response = await fetch(API_URL + '/api/visits/pending');
                 const data = await response.json();
                 if (response.ok && data.visits) {
-                    log(`✅ Fetch visits works: Found ${data.visits.length} visits`, 'success');
+                    log(`? Fetch visits works: Found ${data.visits.length} visits`, 'success');
                     if (data.visits.length > 0) {
                         log(`First visit: ${data.visits[0].propertyInfo?.name || data.visits[0].propertyName}`, 'info');
                     }
-                    document.getElementById('visitStatus').innerHTML = '✅ Working';
+                    document.getElementById('visitStatus').innerHTML = '? Working';
                     document.getElementById('visitStatus').className = 'text-lg font-bold text-green-400';
                 } else {
-                    log(`❌ Failed to fetch visits: ${data.message}`, 'error');
+                    log(`? Failed to fetch visits: ${data.message}`, 'error');
                 }
             } catch (err) {
-                log(`❌ Fetch visits error: ${err.message}`, 'error');
-                document.getElementById('visitStatus').innerHTML = '❌ Error';
+                log(`? Fetch visits error: ${err.message}`, 'error');
+                document.getElementById('visitStatus').innerHTML = '? Error';
                 document.getElementById('visitStatus').className = 'text-lg font-bold text-red-400';
             }
         }
 
         async function testFullWorkflow() {
-            log('🚀 Starting complete workflow test...', 'info');
+            log('?? Starting complete workflow test...', 'info');
             log('This will test all endpoints in sequence', 'info');
             
             log('\n--- STEP 1: Server Connection ---', 'info');
@@ -228,7 +228,7 @@
             log('\n--- STEP 4: Approval Endpoint ---', 'info');
             await testApprovalEndpoint();
             
-            log('\n✅ Complete workflow test finished!', 'success');
+            log('\n? Complete workflow test finished!', 'success');
             log('All endpoints should now be working. Try approving a visit in superadmin/enquiry.html', 'success');
         }
 

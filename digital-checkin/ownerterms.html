@@ -74,8 +74,8 @@
 
   <script>
     const API_BASES = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? ['http://localhost:5001', 'http://localhost:5000']
-      : ['https://roomhy-backend-wqwo.onrender.com'];
+      ? ['http://localhost:5001', 'http://localhost:5001']
+      : ['https://api.roomhy.com'];
     const query = new URLSearchParams(location.search);
     const loginId = query.get('loginId') || '';
     const queryEmail = query.get('email') || '';

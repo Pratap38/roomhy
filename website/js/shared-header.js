@@ -168,7 +168,7 @@ async function loadNotifications() {
         const userId = localStorage.getItem('websiteUserId') || sessionStorage.getItem('userId');
         if (!userId) return;
 
-        const API_URL = window.API_URL || 'http://localhost:5001';
+        const API_URL = window.API_URL || 'https://api.roomhy.com';
 
         // Fetch notifications from backend
         const response = await fetch(`${API_URL}/api/website-enquiry/notifications/${userId}`);

@@ -3,7 +3,7 @@
  * This script helps migrate data from localStorage to MongoDB
  */
 
-const API_URL = 'https://roomhy-backend-wqwo.onrender.com'; // Change to your backend URL
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com'; // Change to your backend URL
 
 /**
  * Migrate all localStorage properties to MongoDB

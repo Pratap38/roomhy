@@ -521,7 +521,7 @@ exports.approveBooking = async (req, res) => {
             );
             
             // Create in-app notification
-            const notificationEndpoint = `${process.env.API_URL || 'http://localhost:5000'}/api/website-enquiry/notifications/create`;
+            const notificationEndpoint = `${process.env.API_URL || 'https://api.roomhy.com'}/api/website-enquiry/notifications/create`;
             await fetch(notificationEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

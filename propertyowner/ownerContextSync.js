@@ -1,13 +1,11 @@
-﻿(function () {
+(function () {
   const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:5001'
-    : 'https://roomhy-backend-wqwo.onrender.com';
+    : 'https://api.roomhy.com';
   const API_BASES = Array.from(new Set([
     API_URL,
-    'http://localhost:5000',
     'http://localhost:5001',
-    'https://roomhy-backend-wqwo.onrender.com',
-    'https://roomhy-backend.onrender.com'
+    'https://api.roomhy.com'
   ]));
   let activeApiBase = API_URL;
 
@@ -72,7 +70,7 @@
     // Priority 1: Read from URL parameters (bypasses Tracking Prevention)
     const urlData = getUrlData();
     if (urlData.loginId && urlData.name) {
-      debugLog('[ownerContextSync] ðŸ”— Found owner data in URL parameters:', {
+      debugLog('[ownerContextSync] 🔗 Found owner data in URL parameters:', {
         name: urlData.name,
         loginId: urlData.loginId,
         propertyName: urlData.propertyName

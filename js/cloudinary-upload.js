@@ -13,7 +13,7 @@ async function handleEmpPhotoUpload(input) {
     preview.innerHTML = '<span>Uploading...</span>';
 
     try {
-        const res = await fetch('https://roomhy-backend.onrender.com/api/upload-profile-photo', {
+        const res = await fetch((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001/api/upload-profile-photo' : 'https://api.roomhy.com/api/upload-profile-photo', {
             method: 'POST',
             body: formData
         });

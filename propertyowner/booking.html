@@ -194,7 +194,7 @@
         async function loadBookings() {
             if (!currentOwner) return;
             const ownerId = currentOwner.loginId || currentOwner.ownerId;
-            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://roomhy-backend-wqwo.onrender.com';
+            const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
 
             try {
                 const response = await fetch(`${API_URL}/api/booking/requests?owner_id=${ownerId}&status=confirmed`);

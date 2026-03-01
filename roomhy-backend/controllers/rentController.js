@@ -1,4 +1,4 @@
-﻿const Rent = require('../models/Rent');
+const Rent = require('../models/Rent');
 const Tenant = require('../models/Tenant');
 const Property = require('../models/Property');
 const { sendMail } = require('../utils/mailer');
@@ -129,7 +129,7 @@ exports.recordPaymentByTenant = async (req, res) => {
     try {
         const { tenantId, razorpayPaymentId, paidAmount, paymentMethod } = req.body;
 
-        console.log(`ðŸ” [recordPaymentByTenant] Searching for rent - tenantId: ${tenantId}, amount: ${paidAmount}`);
+        console.log(`🔍 [recordPaymentByTenant] Searching for rent - tenantId: ${tenantId}, amount: ${paidAmount}`);
 
         if (!tenantId || !paidAmount) {
             return res.status(400).json({ error: 'tenantId and paidAmount required' });
@@ -154,11 +154,11 @@ exports.recordPaymentByTenant = async (req, res) => {
             ]
         }).sort({ dueDate: -1 });
 
-        console.log(`ðŸ“Š [recordPaymentByTenant] Rent found:`, rent ? 'YES' : 'NO');
+        console.log(`📊 [recordPaymentByTenant] Rent found:`, rent ? 'YES' : 'NO');
 
         if (!rent) {
             // If not found, try to create a minimal rent record for this first payment
-            console.log(`âš ï¸ [recordPaymentByTenant] No rent found. Attempting to create one...`);
+            console.log(`⚠️ [recordPaymentByTenant] No rent found. Attempting to create one...`);
             
             rent = new Rent({
                 tenantLoginId: tenantId,
@@ -175,7 +175,7 @@ exports.recordPaymentByTenant = async (req, res) => {
             });
             
             await rent.save();
-            console.log(`âœ… [recordPaymentByTenant] Created new rent record: ${rent._id}`);
+            console.log(`✅ [recordPaymentByTenant] Created new rent record: ${rent._id}`);
             
             // Send confirmation
             await sendPaymentConfirmationEmail(rent);
@@ -189,7 +189,7 @@ exports.recordPaymentByTenant = async (req, res) => {
             });
         }
         
-        console.log(`âœ… [recordPaymentByTenant] Found rent: ${rent._id}`);
+        console.log(`✅ [recordPaymentByTenant] Found rent: ${rent._id}`);
 
         rent.paidAmount = (rent.paidAmount || 0) + paidAmount;
         rent.razorpayPaymentId = razorpayPaymentId;
@@ -201,10 +201,10 @@ exports.recordPaymentByTenant = async (req, res) => {
             rent.paymentStatus = 'paid';
             rent.autoReminderEnabled = false;
             rent.autoReminderLastSentAt = undefined;
-            console.log(`ðŸ’³ [recordPaymentByTenant] Payment complete: â‚¹${rent.paidAmount} >= â‚¹${rent.totalDue}`);
+            console.log(`💳 [recordPaymentByTenant] Payment complete: ₹${rent.paidAmount} >= ₹${rent.totalDue}`);
         } else if (rent.paidAmount > 0) {
             rent.paymentStatus = 'partially_paid';
-            console.log(`ðŸ’³ [recordPaymentByTenant] Partial payment: â‚¹${rent.paidAmount} of â‚¹${rent.totalDue}`);
+            console.log(`💳 [recordPaymentByTenant] Partial payment: ₹${rent.paidAmount} of ₹${rent.totalDue}`);
         }
 
         await rent.save();
@@ -212,7 +212,7 @@ exports.recordPaymentByTenant = async (req, res) => {
         // Send payment confirmation email
         await sendPaymentConfirmationEmail(rent);
 
-        console.log(`âœ… Payment recorded for tenant ${tenantId}: â‚¹${paidAmount}`);
+        console.log(`✅ Payment recorded for tenant ${tenantId}: ₹${paidAmount}`);
 
         res.json({ 
             success: true, 
@@ -221,7 +221,7 @@ exports.recordPaymentByTenant = async (req, res) => {
             paymentStatus: rent.paymentStatus
         });
     } catch (err) {
-        console.error('âŒ Record payment by tenant error:', err.message);
+        console.error('❌ Record payment by tenant error:', err.message);
         res.status(500).json({ error: err.message || 'Failed to record payment' });
     }
 };
@@ -238,8 +238,8 @@ async function sendPaymentConfirmationEmail(rent) {
                 <p><strong>Payment Details:</strong></p>
                 <ul>
                     <li>Property: ${rent.propertyName}</li>
-                    <li>Amount Paid: â‚¹${rent.paidAmount}</li>
-                    <li>Total Due: â‚¹${rent.totalDue}</li>
+                    <li>Amount Paid: ₹${rent.paidAmount}</li>
+                    <li>Total Due: ₹${rent.totalDue}</li>
                     <li>Payment Status: ${rent.paymentStatus}</li>
                     <li>Payment Date: ${new Date(rent.paymentDate).toLocaleDateString()}</li>
                 </ul>
@@ -361,13 +361,13 @@ async function sendRentReminderEmail(rent, type = 'initial') {
                 <ul>
                     <li>Property: ${rent.propertyName}</li>
                     <li>Room: ${rent.roomNumber}</li>
-                    <li>Rent Amount: â‚¹${rent.rentAmount}</li>
+                    <li>Rent Amount: ₹${rent.rentAmount}</li>
                     <li>Collection Period: 10th - 15th of the month</li>
                     <li>Current Month: ${rent.collectionMonth}</li>
                 </ul>
                 <p style="color: #d32f2f;"><strong>Please complete your payment by 15th to avoid late fees.</strong></p>
                 <p>Click the button below to pay online:</p>
-                <a href="http://localhost:5001/tenant/tenantsign-in.html" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay Now</a>
+                <a href="https://app.roomhy.com/tenant/tenantlogin.html" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay Now</a>
             `;
 
         if (rent.tenantEmail) {
@@ -401,14 +401,14 @@ async function sendDelayedReminderEmail(rent, reminderType) {
                 <ul>
                     <li>Property: ${rent.propertyName}</li>
                     <li>Room: ${rent.roomNumber}</li>
-                    <li>Amount Due: â‚¹${rent.totalDue - rent.paidAmount}</li>
+                    <li>Amount Due: ₹${rent.totalDue - rent.paidAmount}</li>
                     <li>Due Date: 15th of ${rent.collectionMonth}</li>
                     <li>Days Overdue: ${getDaysOverdue(rent.overdueStartDate)}</li>
                 </ul>
                 <p style="color: #d32f2f; background-color: #fff3cd; padding: 10px; border-left: 4px solid #d32f2f;">
                     <strong>Reminder #${reminderNumber}:</strong> Please arrange payment immediately to avoid late fees and legal action.
                 </p>
-                <a href="http://localhost:5001/tenant/tenantsign-in.html" style="background-color: #d32f2f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay Now</a>
+                <a href="https://app.roomhy.com/tenant/tenantlogin.html" style="background-color: #d32f2f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay Now</a>
             `;
 
         if (rent.tenantEmail) {
@@ -475,7 +475,7 @@ exports.createRazorpayOrder = async (req, res) => {
         const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
         if (!keyId || !keySecret || keySecret === 'your_key_secret_here') {
-            console.error('âš ï¸  Razorpay credentials not configured. Add to .env file:');
+            console.error('⚠️  Razorpay credentials not configured. Add to .env file:');
             console.error('RAZORPAY_KEY_ID=rzp_test_xxxxx');
             console.error('RAZORPAY_KEY_SECRET=your_actual_key_secret');
             return res.status(500).json({ 
@@ -605,7 +605,7 @@ exports.requestCashPayment = async (req, res) => {
             const owner = await Owner.findOne({ loginId: ownerId }).select('email profile.email').lean();
             const ownerEmail = (owner && (owner.email || (owner.profile && owner.profile.email))) || '';
             if (ownerEmail) {
-                const appBaseUrl = process.env.APP_BASE_URL || 'http://localhost:5001';
+                const appBaseUrl = process.env.APP_BASE_URL || 'https://app.roomhy.com';
                 const receivedUrl = `${appBaseUrl}/propertyowner/payment-received.html?rentId=${encodeURIComponent(String(rent._id))}&ownerLoginId=${encodeURIComponent(ownerId)}`;
                 const html = `
                     <div style="font-family:Arial,sans-serif;">

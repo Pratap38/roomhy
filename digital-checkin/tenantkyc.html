@@ -36,7 +36,7 @@
   <script>
     const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:5001'
-      : 'https://roomhy-backend-wqwo.onrender.com';
+      : 'https://api.roomhy.com';
     const params = new URLSearchParams(location.search);
     if (params.get('loginId')) document.getElementById('loginId').value = params.get('loginId');
 

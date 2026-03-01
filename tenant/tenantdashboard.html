@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,7 +7,7 @@
     <script>
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5001'
-            : 'https://roomhy-backend-wqwo.onrender.com';
+            : 'https://api.roomhy.com';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -268,7 +268,7 @@
                             </div>
                             <div class="mb-6">
                                 <p class="text-sm text-blue-100 mb-2">Amount Due</p>
-                                <h1 class="text-6xl font-bold text-white" id="rent-amount">₹ --</h1>
+                                <h1 class="text-6xl font-bold text-white" id="rent-amount">? --</h1>
                             </div>
                             <div class="flex flex-wrap gap-3 items-center">
                                 <span class="px-4 py-2 bg-white/20 text-white rounded-full text-sm font-medium backdrop-blur">Due: 5th of Month</span>
@@ -414,7 +414,7 @@
                             </div>
                             <div class="pt-1">
                                 <p class="font-semibold text-slate-900">Rent Paid Successfully</p>
-                                <p class="text-sm text-slate-500 mt-1">Oct 2025 • ₹ 8,500</p>
+                                <p class="text-sm text-slate-500 mt-1">Oct 2025 � ? 8,500</p>
                             </div>
                         </div>
                     </div>
@@ -434,7 +434,7 @@
             
             <div class="text-center mb-8">
                 <p class="text-sm text-slate-500 uppercase tracking-wide font-semibold">Total Payable</p>
-                <p class="text-4xl font-bold text-brand-blue mt-2" id="modal-amount">₹ 0</p>
+                <p class="text-4xl font-bold text-brand-blue mt-2" id="modal-amount">? 0</p>
             </div>
 
             <div class="space-y-3">
@@ -442,7 +442,7 @@
                     <i data-lucide="credit-card" class="w-5 h-5 mr-4 text-brand-blue"></i>
                     <div class="text-left">
                         <span class="font-semibold text-slate-700">Pay Online</span>
-                        <p class="text-xs text-slate-500">Cards • UPI • Wallets • Netbanking</p>
+                        <p class="text-xs text-slate-500">Cards � UPI � Wallets � Netbanking</p>
                     </div>
                 </button>
                 <button onclick="requestCashPayment()" class="w-full p-4 border border-slate-200 rounded-xl flex items-center hover:border-amber-500 hover:bg-amber-50 transition group">
@@ -453,7 +453,7 @@
                     </div>
                 </button>
                 <div class="p-3 bg-green-50 rounded-lg border border-green-200 text-sm">
-                    <p class="font-semibold text-green-800">✓ Secure Payment</p>
+                    <p class="font-semibold text-green-800">? Secure Payment</p>
                     <p class="text-xs text-green-700">Your payment is encrypted and secure</p>
                 </div>
 
@@ -539,8 +539,8 @@
                 }
                 const roomInfo = `Room ${tenantRecord.roomNo || '-'} (${tenantRecord.bedNo || '-'})`;
                 
-                document.getElementById('rent-amount').innerText = `₹ ${rent.toLocaleString()}`;
-                document.getElementById('modal-amount').innerText = `₹ ${rent.toLocaleString()}`;
+                document.getElementById('rent-amount').innerText = `? ${rent.toLocaleString()}`;
+                document.getElementById('modal-amount').innerText = `? ${rent.toLocaleString()}`;
                 
                 document.getElementById('prop-name').innerText = propName;
                 document.getElementById('prop-name-detail').innerText = propName;
@@ -671,7 +671,7 @@
                     tenantId: user.loginId,
                     description: 'Monthly Rent Payment'
                 };
-                console.log('📤 Sending payment order request:', payload);
+                console.log('?? Sending payment order request:', payload);
                 
                 const orderResponse = await fetch(`${API_URL}/api/rents/create-order`, {
                     method: 'POST',
@@ -679,9 +679,9 @@
                     body: JSON.stringify(payload)
                 });
 
-                console.log('📥 Order response status:', orderResponse.status);
+                console.log('?? Order response status:', orderResponse.status);
                 const orderData = await orderResponse.json();
-                console.log('📥 Order response data:', orderData);
+                console.log('?? Order response data:', orderData);
 
                 if (!orderResponse.ok) {
                     throw new Error(orderData.error || 'Failed to create payment order');
@@ -734,9 +734,9 @@
                     })
                 });
 
-                console.log('💾 Payment recording status:', paymentRes.status);
+                console.log('?? Payment recording status:', paymentRes.status);
                 const paymentData = await paymentRes.json();
-                console.log('💾 Payment response:', paymentData);
+                console.log('?? Payment response:', paymentData);
 
                 if (paymentRes.ok && paymentData.success) {
                     const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
@@ -862,7 +862,7 @@
 
             const rentAmountElement = document.getElementById('rent-amount');
             if (rentAmountElement) {
-                rentAmountElement.textContent = '₹ 0';
+                rentAmountElement.textContent = '? 0';
             }
         }
 
@@ -878,7 +878,7 @@
                     <h4 class="text-lg font-bold text-slate-900 mb-2">Payment Successful!</h4>
                     <p class="text-sm text-slate-600 mb-4">${successText}</p>
                     <div class="p-3 bg-green-50 rounded-lg border border-green-200 text-sm text-left">
-                        <p class="text-green-900"><strong>✓ Payment recorded</strong></p>
+                        <p class="text-green-900"><strong>? Payment recorded</strong></p>
                         <p class="text-green-800 text-xs mt-1">Check your email for receipt</p>
                     </div>
                 </div>

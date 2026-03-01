@@ -14,11 +14,27 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+const ROOT_DIR = path.resolve(__dirname, '..');
+const allowedOrigins = (
+    process.env.CORS_ORIGINS ||
+    'https://roomhy.com,https://www.roomhy.com,https://admin.roomhy.com,https://app.roomhy.com,https://api.roomhy.com,http://localhost:3000,http://localhost:5000,http://localhost:5001'
+)
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Allow server-to-server tools and curl/postman requests without Origin header
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+};
 const io = new Server(server, {
-    cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
-    }
+    cors: corsOptions
 });
 
 initChatSocket(io);
@@ -26,7 +42,7 @@ initChatSocket(io);
 // Middleware (JSON parsing & Security)
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
-app.use(cors());
+app.use(cors(corsOptions));
 
 console.log('✅ Middleware configured');
 
@@ -139,17 +155,25 @@ try {
     process.exit(1);
 }
 
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        service: 'roomhy-backend',
+        env: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Static File Serving (MUST come AFTER API routes)
 console.log('📁 Configuring static files...');
-app.use(express.static('.'));
-app.use('/Areamanager', express.static('../Areamanager'));
-app.use('/propertyowner', express.static('../propertyowner'));
-app.use('/tenant', express.static('../tenant'));
-app.use('/superadmin', express.static('../superadmin'));
-app.use('/website', express.static('../website'));
-app.use('/images', express.static('../images'));
-app.use('/js', express.static('../js'));
-app.use(express.static('../'));
+app.use(express.static(ROOT_DIR));
+app.use('/Areamanager', express.static(path.join(ROOT_DIR, 'Areamanager')));
+app.use('/propertyowner', express.static(path.join(ROOT_DIR, 'propertyowner')));
+app.use('/tenant', express.static(path.join(ROOT_DIR, 'tenant')));
+app.use('/superadmin', express.static(path.join(ROOT_DIR, 'superadmin')));
+app.use('/website', express.static(path.join(ROOT_DIR, 'website')));
+app.use('/images', express.static(path.join(ROOT_DIR, 'images')));
+app.use('/js', express.static(path.join(ROOT_DIR, 'js')));
 console.log('✅ Static files configured');
 
 // Global error handlers
