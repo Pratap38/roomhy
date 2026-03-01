@@ -1,12 +1,16 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-dotenv.config({ path: '../.env' });
+const path = require('path');
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const Owner = require('../models/Owner');
 
 async function seedOwner() {
     try {
-        const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/roomhy';
+        const mongoUri = process.env.MONGO_URI;
+        if (!mongoUri) {
+            throw new Error('MONGO_URI is missing in environment. Seeder aborted.');
+        }
         await mongoose.connect(mongoUri);
         console.log('Seeder: Mongo connected');
 
