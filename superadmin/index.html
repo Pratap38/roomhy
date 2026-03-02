@@ -235,6 +235,17 @@
 
     <script>
         lucide.createIcons();
+
+        function resolvePanelPath(folder, fileName) {
+            const path = (window.location.pathname || '').toLowerCase();
+            // Supports both deploy styles:
+            // 1) /superadmin/index.html  -> /superadmin/superadmin.html
+            // 2) /index.html (admin root)-> /superadmin.html
+            if (path.includes(`/${folder}/`)) {
+                return `/${folder}/${fileName}`;
+            }
+            return `/${fileName}`;
+        }
         
         // Unified Login Handler - Auto-detects user role by ID (optimized for speed)
         function handleUnifiedLogin() {
@@ -365,7 +376,7 @@
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = '/superadmin/superadmin.html';
+                window.location.href = resolvePanelPath('superadmin', 'superadmin.html');
                 return;
             }
 
@@ -381,7 +392,7 @@
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = '/superadmin/superadmin.html';
+                window.location.href = resolvePanelPath('superadmin', 'superadmin.html');
                 return;
             }
 
@@ -414,7 +425,7 @@
                         // Clear owner sessions to prevent crosstalk
                         sessionStorage.removeItem('owner_session');
                         localStorage.removeItem('owner_user');
-                        window.location.href = '/superadmin/superadmin.html';
+                        window.location.href = resolvePanelPath('superadmin', 'superadmin.html');
                         return;
                     }
                 }
@@ -473,7 +484,7 @@
                 };
                 sessionStorage.setItem('owner_session', JSON.stringify(sessionUser));
                 localStorage.setItem('owner_user', JSON.stringify(sessionUser));
-                window.location.href = '/propertyowner/admin.html';
+                window.location.href = resolvePanelPath('propertyowner', 'admin.html');
             } else {
                 console.warn('[Owner Login] Owner credentials invalid for:', ownerId);
                 showError('Invalid credentials.', errorMsg);
@@ -502,7 +513,7 @@
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = '/superadmin/areaadmin.html';
+                window.location.href = resolvePanelPath('superadmin', 'areaadmin.html');
             } else {
                 console.warn('[Staff Login] Area Manager not found or password mismatch for:', loginId);
                 showError('Invalid credentials.', errorMsg);
@@ -559,7 +570,7 @@
              // Clear owner sessions to prevent crosstalk
              sessionStorage.removeItem('owner_session');
              localStorage.removeItem('owner_user');
-             window.location.href = '/superadmin/areaadmin.html';
+             window.location.href = resolvePanelPath('superadmin', 'areaadmin.html');
         }
 
         // Tenant Login
@@ -638,7 +649,7 @@
 
             localStorage.setItem('tenant_user', JSON.stringify(tenantUser));
             localStorage.setItem('user', JSON.stringify(tenantUser));
-            window.location.href = '/tenant/tenantdashboard.html';
+            window.location.href = resolvePanelPath('tenant', 'tenantdashboard.html');
         }
 
         function showError(msg, errorMsg) {
