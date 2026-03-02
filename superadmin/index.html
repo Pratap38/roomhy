@@ -358,12 +358,14 @@
                 console.log('[Staff Login] ✅ SuperAdmin login with default credentials');
                 const user = { id: 'SUPER_ADMIN', loginId: 'SUPER_ADMIN', email, name: 'Super Admin', role: 'superadmin' };
                 sessionStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('staff_user', JSON.stringify(user));
                 localStorage.setItem('staff_token', 'superadmin_token');
+                localStorage.setItem('token', 'superadmin_token');
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = 'superadmin.html';
+                window.location.href = '/superadmin/superadmin.html';
                 return;
             }
 
@@ -372,12 +374,14 @@
                 console.log('[Staff Login] ✅ SuperAdmin login with stored credentials');
                 const user = { ...db, loginId: db.loginId || db.id || 'SUPER_ADMIN', role: 'superadmin' };
                 sessionStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('staff_user', JSON.stringify(user));
                 localStorage.setItem('staff_token', 'superadmin_token');
+                localStorage.setItem('token', 'superadmin_token');
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = 'superadmin.html';
+                window.location.href = '/superadmin/superadmin.html';
                 return;
             }
 
@@ -405,10 +409,12 @@
                         localStorage.setItem('staff_user', JSON.stringify(data.user));
                         localStorage.setItem('staff_token', data.token);
                         sessionStorage.setItem('user', JSON.stringify(data.user));
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        localStorage.setItem('token', data.token);
                         // Clear owner sessions to prevent crosstalk
                         sessionStorage.removeItem('owner_session');
                         localStorage.removeItem('owner_user');
-                        window.location.href = 'superadmin.html';
+                        window.location.href = '/superadmin/superadmin.html';
                         return;
                     }
                 }
@@ -467,7 +473,7 @@
                 };
                 sessionStorage.setItem('owner_session', JSON.stringify(sessionUser));
                 localStorage.setItem('owner_user', JSON.stringify(sessionUser));
-                window.location.href = 'propertyowner/admin.html';
+                window.location.href = '/propertyowner/admin.html';
             } else {
                 console.warn('[Owner Login] Owner credentials invalid for:', ownerId);
                 showError('Invalid credentials.', errorMsg);
@@ -490,12 +496,13 @@
                 // Set staff session with isolated keys
                 sessionStorage.setItem('manager_user', JSON.stringify(user));
                 sessionStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('staff_user', JSON.stringify(user));
                 localStorage.setItem('staff_token', 'manager_token');
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = 'areaadmin.html';
+                window.location.href = '/superadmin/areaadmin.html';
             } else {
                 console.warn('[Staff Login] Area Manager not found or password mismatch for:', loginId);
                 showError('Invalid credentials.', errorMsg);
@@ -546,12 +553,13 @@
              // Set staff session with isolated keys
              sessionStorage.setItem('manager_user', JSON.stringify(user));
              sessionStorage.setItem('user', JSON.stringify(user));
+             localStorage.setItem('user', JSON.stringify(user));
              localStorage.setItem('staff_user', JSON.stringify(user));
              localStorage.setItem('staff_token', 'employee_token');
              // Clear owner sessions to prevent crosstalk
              sessionStorage.removeItem('owner_session');
              localStorage.removeItem('owner_user');
-             window.location.href = 'areaadmin.html';
+             window.location.href = '/superadmin/areaadmin.html';
         }
 
         // Tenant Login
@@ -630,7 +638,7 @@
 
             localStorage.setItem('tenant_user', JSON.stringify(tenantUser));
             localStorage.setItem('user', JSON.stringify(tenantUser));
-            window.location.href = 'tenant/tenantdashboard.html';
+            window.location.href = '/tenant/tenantdashboard.html';
         }
 
         function showError(msg, errorMsg) {
