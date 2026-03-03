@@ -1,8 +1,10 @@
 lucide.createIcons();
 
-const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:5001'
-    : 'https://api.roomhy.com';
+const API_BASE_URL = (typeof window !== 'undefined' && window.API_URL)
+    ? window.API_URL
+    : ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:5001'
+        : 'https://api.roomhy.com');
 
 let commissionData = [];
 
@@ -20,13 +22,16 @@ function toggleSubmenu(id, element) {
 
 function toggleMobileMenu() {
     const mobileSidebar = document.getElementById('mobile-sidebar');
-    const mobileOverlay = document.getElementById('mobile-overlay');
+    const mobileOverlay = document.getElementById('mobile-sidebar-overlay') || document.getElementById('mobile-overlay');
+    if (!mobileSidebar || !mobileOverlay) return;
     const isClosed = mobileSidebar.classList.contains('-translate-x-full');
     if (isClosed) {
         mobileSidebar.classList.remove('-translate-x-full');
+        mobileSidebar.classList.add('translate-x-0');
         mobileOverlay.classList.remove('hidden');
     } else {
         mobileSidebar.classList.add('-translate-x-full');
+        mobileSidebar.classList.remove('translate-x-0');
         mobileOverlay.classList.add('hidden');
     }
 }
@@ -57,7 +62,7 @@ function calcToBePaid(rentAmount, isFirstMonth) {
 }
 
 async function fetchJson(path, options = {}) {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
         headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
         ...options
     });

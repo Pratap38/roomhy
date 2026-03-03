@@ -42,7 +42,7 @@ function renderOtpHtml(firstName, otp) {
 }
 
 // Request OTP for website signup
-router.post('/signup/request-otp', otpLimiter, captchaProtection({ required: true }), async (req, res) => {
+router.post('/signup/request-otp', otpLimiter, captchaProtection({ required: false }), async (req, res) => {
     try {
         const firstName = (req.body.firstName || '').toString().trim();
         const lastName = (req.body.lastName || '').toString().trim();
@@ -239,7 +239,7 @@ router.get('/', async (req, res) => {
 });
 
 // Submit new signup
-router.post('/submit', formLimiter, captchaProtection({ required: true }), async (req, res) => {
+router.post('/submit', formLimiter, captchaProtection({ required: false }), async (req, res) => {
     try {
         const signupData = req.body;
 

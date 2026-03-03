@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const WebsiteEnquiry = require('../models/WebsiteEnquiry');
 const Owner = require('../models/Owner');
+const Employee = require('../models/Employee');
+const { sendMail } = require('../utils/mailer');
 const { notifySuperadmin } = require('../utils/superadminNotifier');
 const { formLimiter, captchaProtection } = require('../middleware/security');
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -10,7 +13,7 @@ const { auditTrail } = require('../middleware/auditTrail');
 // ============================================================
 // POST: Submit a new website enquiry
 // ============================================================
-router.post('/submit', formLimiter, captchaProtection({ required: true }), async (req, res) => {
+router.post('/submit', formLimiter, captchaProtection({ required: false }), async (req, res) => {
     try {
         const {
             property_type,
@@ -27,6 +30,10 @@ router.post('/submit', formLimiter, captchaProtection({ required: true }), async
             owner_name,
             owner_email,
             owner_phone,
+            contact_name,
+            country,
+            tenants_managed,
+            additional_message,
             photos
         } = req.body;
 
@@ -58,6 +65,10 @@ router.post('/submit', formLimiter, captchaProtection({ required: true }), async
             owner_name,
             owner_email,
             owner_phone,
+            contact_name,
+            country,
+            tenants_managed: Number(tenants_managed) || 0,
+            additional_message,
             photos: photos || [],
             status: 'pending'
         });
@@ -167,6 +178,139 @@ router.get('/status/:status', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching enquiries',
+            error: error.message
+        });
+    }
+});
+
+// ============================================================
+// GET: Fetch active marketing employees for assignment modal
+// ============================================================
+router.get('/employees/marketing', async (req, res) => {
+    try {
+        const employees = await Employee.find({
+            role: 'Marketing Team',
+            isActive: true
+        })
+            .sort({ createdAt: -1 })
+            .select('name loginId email phone role area city areaCode locationCode isActive')
+            .lean();
+
+        return res.status(200).json({
+            success: true,
+            count: employees.length,
+            employees
+        });
+    } catch (error) {
+        console.error('Error fetching marketing employees:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching marketing employees',
+            error: error.message
+        });
+    }
+});
+
+// ============================================================
+// POST: Assign enquiry to an employee and send notification email
+// ============================================================
+router.post('/assign/:enquiryId', async (req, res) => {
+    try {
+        const { enquiryId } = req.params;
+        const {
+            assigned_to_loginId,
+            assigned_to,
+            assigned_area,
+            status = 'assigned',
+            notes
+        } = req.body || {};
+
+        const lookup = [{ enquiry_id: enquiryId }];
+        if (mongoose.Types.ObjectId.isValid(enquiryId)) {
+            lookup.push({ _id: enquiryId });
+        }
+        const enquiry = await WebsiteEnquiry.findOne({ $or: lookup });
+
+        if (!enquiry) {
+            return res.status(404).json({
+                success: false,
+                message: 'Enquiry not found'
+            });
+        }
+
+        let employee = null;
+        if (assigned_to_loginId) {
+            employee = await Employee.findOne({ loginId: assigned_to_loginId, isActive: true }).lean();
+        }
+        if (!employee && assigned_to) {
+            employee = await Employee.findOne({ name: assigned_to, isActive: true }).lean();
+        }
+
+        if (!employee) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid active employee not found for assignment'
+            });
+        }
+
+        enquiry.status = status || 'assigned';
+        enquiry.assigned_to = employee.name;
+        enquiry.assigned_to_loginId = employee.loginId;
+        enquiry.assigned_email = employee.email || null;
+        enquiry.assigned_area = assigned_area || employee.area || employee.city || null;
+        enquiry.assigned_date = new Date();
+        if (typeof notes === 'string') enquiry.notes = notes;
+        await enquiry.save();
+
+        let employeeEmailSent = false;
+        if (employee.email) {
+            try {
+                const subject = `New Website Enquiry Assigned - ${enquiry.property_name || 'Property'}`;
+                const html = `
+                    <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6;">
+                        <h2>New Enquiry Assigned</h2>
+                        <p>Hi ${employee.name || 'Team Member'},</p>
+                        <p>A website property enquiry has been assigned to you.</p>
+                        <hr />
+                        <p><strong>Property:</strong> ${enquiry.property_name || '-'}</p>
+                        <p><strong>Owner Name:</strong> ${enquiry.owner_name || '-'}</p>
+                        <p><strong>Contact Name:</strong> ${enquiry.contact_name || '-'}</p>
+                        <p><strong>Owner Phone:</strong> ${enquiry.owner_phone || '-'}</p>
+                        <p><strong>City:</strong> ${enquiry.city || '-'}</p>
+                        <p><strong>Country:</strong> ${enquiry.country || '-'}</p>
+                        <p><strong>Tenants Managed:</strong> ${enquiry.tenants_managed || 0}</p>
+                        <p><strong>Additional Message:</strong> ${enquiry.additional_message || enquiry.description || '-'}</p>
+                        <hr />
+                        <p>Please follow up from the Web Enquiry panel.</p>
+                    </div>
+                `;
+                employeeEmailSent = await sendMail(employee.email, subject, '', html);
+            } catch (mailErr) {
+                console.warn('website enquiry assignment email failed:', mailErr.message);
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Enquiry assigned successfully',
+            enquiry,
+            employee: {
+                loginId: employee.loginId,
+                name: employee.name,
+                email: employee.email || '',
+                area: employee.area || '',
+                city: employee.city || ''
+            },
+            email: {
+                attempted: !!employee.email,
+                sent: employeeEmailSent
+            }
+        });
+    } catch (error) {
+        console.error('Error assigning enquiry:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error assigning enquiry',
             error: error.message
         });
     }
@@ -287,7 +431,9 @@ router.delete('/:id', protect, authorize('superadmin', 'areamanager'), auditTrai
 router.get('/assigned-to/:loginId', async (req, res) => {
     try {
         const { loginId } = req.params;
-        const enquiries = await WebsiteEnquiry.find({ assigned_to: loginId }).sort({ created_at: -1 });
+        const enquiries = await WebsiteEnquiry.find({
+            $or: [{ assigned_to_loginId: loginId }, { assigned_to: loginId }]
+        }).sort({ created_at: -1 });
 
         res.status(200).json({
             success: true,

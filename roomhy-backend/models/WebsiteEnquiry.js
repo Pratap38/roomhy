@@ -21,6 +21,10 @@ const WebsiteEnquirySchema = new mongoose.Schema({
     owner_name: { type: String, required: true },
     owner_email: { type: String },
     owner_phone: { type: String },
+    contact_name: { type: String },
+    country: { type: String },
+    tenants_managed: { type: Number, default: 0 },
+    additional_message: { type: String },
     photos: [{ type: String }], // URLs of uploaded photos
     status: {
         type: String,
@@ -29,6 +33,8 @@ const WebsiteEnquirySchema = new mongoose.Schema({
         index: true
     },
     assigned_to: { type: String, default: null }, // Area manager name/ID
+    assigned_to_loginId: { type: String, default: null },
+    assigned_email: { type: String, default: null },
     assigned_area: { type: String, default: null }, // Area name
     assigned_date: { type: Date, default: null },
     notes: { type: String, default: '' },

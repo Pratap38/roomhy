@@ -27,8 +27,14 @@ lucide.createIcons();
                         owner_name: e.owner_name,
                         owner_email: e.owner_email,
                         owner_phone: e.owner_phone,
+                        contact_name: e.contact_name,
+                        country: e.country,
+                        tenants_managed: e.tenants_managed,
+                        additional_message: e.additional_message,
                         status: e.status,
                         assigned_to: e.assigned_to,
+                        assigned_to_loginId: e.assigned_to_loginId,
+                        assigned_email: e.assigned_email,
                         assigned_area: e.assigned_area,
                         notes: e.notes,
                         created_at: e.created_at
@@ -89,42 +95,60 @@ lucide.createIcons();
                 ];
             }
 
-            loadManagers();
+            await loadManagers();
             updateStats();
             filterEnquiries();
         }
 
-        // Load employees from backend or localStorage
-        function loadManagers() {
-            // Try to get employees from localStorage cache (set by manager.html)
-            const cachedEmployees = JSON.parse(localStorage.getItem('roomhy_employees_cache') || '[]');
-            
-            if (cachedEmployees.length > 0) {
-                managers = cachedEmployees.map(e => ({
-                    id: e.loginId || e.id,
-                    name: e.name,
-                    area: e.area || e.locationCode || 'Unassigned'
-                }));
-            } else {
-                // Fallback: use hardcoded managers if no data available
-                managers = [
-                    { id: 1, name: 'Rajesh Kumar', area: 'Indore' },
-                    { id: 2, name: 'Priya Singh', area: 'Kota' },
-                    { id: 3, name: 'Amit Patel', area: 'Ahmedabad' },
-                    { id: 4, name: 'Neha Sharma', area: 'Delhi' }
-                ];
+        // Load employees from backend (Marketing Team) with cache fallback
+        async function loadManagers() {
+            managers = [];
+            try {
+                const response = await fetch(`${API_URL}/api/website-enquiry/employees/marketing`);
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    managers = (result.employees || []).map(e => ({
+                        id: e.loginId,
+                        loginId: e.loginId,
+                        name: e.name,
+                        email: e.email || '',
+                        phone: e.phone || '',
+                        role: e.role || 'Marketing Team',
+                        area: e.area || e.locationCode || 'Unassigned',
+                        city: e.city || ''
+                    }));
+                }
+            } catch (err) {
+                console.warn('Failed to load marketing employees from backend:', err.message);
             }
-            
+
+            if (!managers.length) {
+                const cachedEmployees = JSON.parse(localStorage.getItem('roomhy_employees_cache') || '[]');
+                managers = cachedEmployees
+                    .filter(e => (e.role || '').toLowerCase() === 'marketing team')
+                    .map(e => ({
+                        id: e.loginId || e.id,
+                        loginId: e.loginId || e.id,
+                        name: e.name,
+                        email: e.email || '',
+                        phone: e.phone || '',
+                        role: e.role || 'Marketing Team',
+                        area: e.area || e.locationCode || 'Unassigned',
+                        city: e.city || ''
+                    }));
+            }
+
             const select = document.getElementById('manager-select');
             select.innerHTML = '<option value="">Choose Employee...</option>';
             managers.forEach(m => {
                 const option = document.createElement('option');
-                option.value = m.id;
-                option.textContent = `${m.name} (${m.area})`;
+                option.value = m.loginId || m.id;
+                option.textContent = `${m.name} | ${m.loginId} | ${m.area || '-'} | ${m.city || '-'}`;
                 select.appendChild(option);
             });
 
             const cityFilter = document.getElementById('city-filter');
+            cityFilter.innerHTML = '<option value="">All Cities</option>';
             const cities = [...new Set(allEnquiries.map(e => e.city))];
             cities.forEach(city => {
                 const option = document.createElement('option');
@@ -284,6 +308,10 @@ lucide.createIcons();
                             <p class="font-semibold">${enquiry.owner_phone}</p>
                         </div>
                         <div>
+                            <p class="text-xs text-gray-600">Contact Name</p>
+                            <p class="font-semibold">${enquiry.contact_name || 'N/A'}</p>
+                        </div>
+                        <div>
                             <p class="text-xs text-gray-600">Submitted Date</p>
                             <p class="font-semibold">${new Date(enquiry.created_at).toLocaleString()}</p>
                         </div>
@@ -293,6 +321,10 @@ lucide.createIcons();
                         <div>
                             <p class="text-xs text-gray-600">City</p>
                             <p class="font-semibold">${enquiry.city.toUpperCase()}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-600">Country</p>
+                            <p class="font-semibold">${enquiry.country || 'N/A'}</p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-600">Locality</p>
@@ -324,6 +356,16 @@ lucide.createIcons();
                             <p class="text-sm">${enquiry.description}</p>
                         </div>
                     ` : ''}
+                    <div>
+                        <p class="text-xs text-gray-600">Tenants Managed</p>
+                        <p class="text-sm">${enquiry.tenants_managed || 0}</p>
+                    </div>
+                    ${enquiry.additional_message ? `
+                        <div>
+                            <p class="text-xs text-gray-600">Additional Message</p>
+                            <p class="text-sm">${enquiry.additional_message}</p>
+                        </div>
+                    ` : ''}
                 </div>
             `;
             
@@ -346,46 +388,47 @@ lucide.createIcons();
             document.getElementById('manager-select').value = '';
         }
 
-        function confirmAssignment() {
+        async function confirmAssignment() {
             const enquiryId = document.getElementById('modal-enquiry-id').value;
             const managerId = document.getElementById('manager-select').value;
 
             if (!managerId) {
-                alert('Please select a manager');
+                alert('Please select an employee');
                 return;
             }
 
             const enquiry = allEnquiries.find(e => e.id === enquiryId);
-            const manager = managers.find(m => m.id == managerId);
+            const manager = managers.find(m => String(m.loginId || m.id) === String(managerId));
 
             if (enquiry && manager) {
-                enquiry.status = 'assigned';
-                enquiry.assigned_to = manager.name;
-                enquiry.assigned_area = manager.area;
-
-                fetch(`${API_URL}/api/website-enquiry/${enquiryId}`, {
-                    method: 'PUT',
+                try {
+                    const response = await fetch(`${API_URL}/api/website-enquiry/assign/${encodeURIComponent(enquiryId)}`, {
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         status: 'assigned',
                         assigned_to: manager.name,
+                        assigned_to_loginId: manager.loginId || manager.id,
                         assigned_area: manager.area
                     })
-                }).then(response => response.json())
-                  .then(result => {
-                      if (result.success) {
-                          closeAssignmentModal();
-                          loadEnquiries();
-                          alert(`Assigned to ${manager.name} successfully!`);
-                      } else {
-                          alert('Error assigning enquiry: ' + result.message);
-                      }
-                  }).catch(error => {
-                      console.error('Error assigning enquiry:', error);
-                      alert('Error assigning enquiry. Please try again.');
-                  });
+                });
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        closeAssignmentModal();
+                        await loadEnquiries();
+                        const mailMsg = result.email && result.email.attempted
+                            ? (result.email.sent ? ' Employee email notification sent.' : ' Employee assigned, but email notification failed.')
+                            : ' Employee has no email configured.';
+                        alert(`Assigned to ${manager.name} successfully!${mailMsg}`);
+                    } else {
+                        alert('Error assigning enquiry: ' + (result.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error assigning enquiry:', error);
+                    alert('Error assigning enquiry. Please try again.');
+                }
             }
         }
 

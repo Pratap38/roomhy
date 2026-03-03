@@ -132,21 +132,41 @@
                         const formData = new FormData(propertyForm);
 
                         // Build enquiry data
+                        const ownerName = (formData.get('name') || '').toString().trim();
+                        const propertyName = (formData.get('property_name') || '').toString().trim();
+                        const city = (formData.get('city') || '').toString().trim();
+                        const country = (formData.get('country') || '').toString().trim();
+                        const contactName = (formData.get('contact_name') || '').toString().trim();
+                        const additionalMessage = (formData.get('additional_message') || '').toString().trim();
+                        const tenantsManaged = parseInt(formData.get('tenants_managed'), 10) || 0;
+
+                        const enquiryDescriptionLines = [
+                            `Tenants Managed: ${tenantsManaged}`,
+                            `Contact Name: ${contactName}`
+                        ];
+                        if (additionalMessage) {
+                            enquiryDescriptionLines.push(`Additional Message: ${additionalMessage}`);
+                        }
+
                         const enquiryData = {
-                            property_type: formData.get('property_type'),
-                            property_name: formData.get('property_name'),
-                            city: formData.get('city'),
-                            locality: formData.get('locality'),
-                            address: formData.get('address'),
-                            pincode: formData.get('pincode'),
-                            description: formData.get('description'),
-                            amenities: Array.from(formData.getAll('amenities[]')),
-                            gender_suitability: formData.get('gender_suitability'),
-                            rent: parseInt(formData.get('rent')) || 0,
-                            deposit: formData.get('deposit'),
-                            owner_name: formData.get('owner_name'),
-                            owner_email: formData.get('owner_email') || '',
-                            owner_phone: formData.get('owner_phone')
+                            property_type: formData.get('property_type') || 'pg',
+                            property_name: propertyName,
+                            city: city,
+                            locality: country,
+                            address: '',
+                            pincode: '',
+                            description: enquiryDescriptionLines.join('\n'),
+                            amenities: [],
+                            gender_suitability: '',
+                            rent: 0,
+                            deposit: '',
+                            owner_name: ownerName,
+                            owner_email: '',
+                            owner_phone: (formData.get('owner_phone') || 'NA').toString(),
+                            contact_name: contactName,
+                            tenants_managed: tenantsManaged,
+                            country: country,
+                            additional_message: additionalMessage
                         };
 
                         // Submit to MongoDB via API
@@ -176,8 +196,10 @@
                         // Reset form
                         propertyForm.reset();
 
-                        // Clear image previews
-                        imagePreviews.innerHTML = '';
+                        // Clear image previews (if section exists)
+                        if (imagePreviews) {
+                            imagePreviews.innerHTML = '';
+                        }
 
                         // Re-enable submit button
                         submitBtn.disabled = false;

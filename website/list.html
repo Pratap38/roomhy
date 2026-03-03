@@ -192,191 +192,58 @@
     <main class="container mx-auto px-4 sm:px-6 py-8 md:py-12 flex-grow">
 
         <div class="max-w-4xl mx-auto">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">Property Details</h1>
-            <p class="text-center text-gray-600 mb-10 -mt-4">Your listing will be reviewed by our team before going live.</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">Property Listing Form</h1>
+            <p class="text-center text-gray-600 mb-10 -mt-4">Fill the details below and submit for review.</p>
 
             <div id="submit-message" class="mb-4 p-4 rounded-lg hidden"></div>
 
             <form id="property-form" action="#" method="POST" class="space-y-8">
-                
-                <div class="light-card rounded-lg p-6 md:p-8">
-                    <div class="flex items-center mb-6 border-b pb-4">
-                        <i data-lucide="user" class="w-6 h-6 mr-3 text-blue-600"></i>
-                        <h2 class="text-xl font-semibold text-gray-800">Your Contact Information</h2>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="owner_name" class="block text-sm font-medium text-gray-700 mb-1">Your Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="owner_name" name="owner_name" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="e.g., John Doe">
-                        </div>
-                        <div>
-                            <label for="owner_phone" class="block text-sm font-medium text-gray-700 mb-1">Your Phone Number <span class="text-red-500">*</span></label>
-                            <input type="tel" id="owner_phone" name="owner_phone" required pattern="[0-9]{10}" class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="e.g., 9876543210">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label for="owner_email" class="block text-sm font-medium text-gray-700 mb-1">Your Email</label>
-                            <input type="email" id="owner_email" name="owner_email" class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="e.g., john@example.com">
-                        </div>
-                    </div>
-                </div>
+                <input type="hidden" name="property_type" value="pg">
+                <input type="hidden" name="owner_phone" value="NA">
 
                 <div class="light-card rounded-lg p-6 md:p-8">
                     <div class="flex items-center mb-6 border-b pb-4">
                         <i data-lucide="clipboard-list" class="w-6 h-6 mr-3 text-blue-600"></i>
-                        <h2 class="text-xl font-semibold text-gray-800">Basic Information</h2>
+                        <h2 class="text-xl font-semibold text-gray-800">Required Details</h2>
                     </div>
-                    <div class="space-y-6">
-                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Property Type <span class="text-red-500">*</span></label>
-                            <div class="flex flex-wrap gap-4">
-                                <label class="flex items-center space-x-2"><input type="radio" name="property_type" value="pg" required class="form-radio h-4 w-4 text-blue-600 border-gray-300"><span class="text-gray-700">PG / Co-Living</span></label>
-                                <label class="flex items-center space-x-2"><input type="radio" name="property_type" value="hostel" required class="form-radio h-4 w-4 text-blue-600 border-gray-300"><span class="text-gray-700">Hostel</span></label>
-                                <label class="flex items-center space-x-2"><input type="radio" name="property_type" value="apartment" required class="form-radio h-4 w-4 text-blue-600 border-gray-300"><span class="text-gray-700">Apartment / Flat</span></label>
-                            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="name" name="name" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter your name">
                         </div>
-
                         <div>
                             <label for="property_name" class="block text-sm font-medium text-gray-700 mb-1">Property Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="property_name" name="property_name" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="e.g., The Student Hub, Royal PG for Boys">
+                            <input type="text" id="property_name" name="property_name" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter property name">
                         </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="city" class="block text-sm font-medium text-gray-700 mb-1">City <span class="text-red-500">*</span></label>
-                                <select id="city" name="city" required class="form-select w-full border-gray-300 rounded-md shadow-sm">
-                                    <option value="">Select City</option>
-                                </select>
-                                <small class="text-gray-500 mt-1">Select from configured cities or enter custom location</small>
-                            </div>
-                            <div>
-                                <label for="locality" class="block text-sm font-medium text-gray-700 mb-1">Locality / Area <span class="text-red-500">*</span></label>
-                                <input type="text" id="locality" name="locality" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="e.g., Vijay Nagar, Kolar Road">
-                            </div>
-                        </div>
-
-                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Full Address <span class="text-red-500">*</span></label>
-                                <input type="text" id="address" name="address" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="House/Building Number, Street Name">
-                            </div>
-                            <div>
-                                <label for="pincode" class="block text-sm font-medium text-gray-700 mb-1">Pincode <span class="text-red-500">*</span></label>
-                                <input type="text" id="pincode" name="pincode" required pattern="\d{6}" title="Enter 6 digit pincode" class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="e.g., 560001">
-                            </div>
-                        </div>
-
                         <div>
-                            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                            <textarea id="description" name="description" rows="4" class="form-textarea w-full border-gray-300 rounded-md shadow-sm" placeholder="Highlight key features, rules, and why students should choose your property..."></textarea>
-                            <p class="mt-1 text-xs text-gray-500">Max 500 characters.</p>
+                            <label for="tenants_managed" class="block text-sm font-medium text-gray-700 mb-1">Number of Tenant Managed <span class="text-red-500">*</span></label>
+                            <input type="number" id="tenants_managed" name="tenants_managed" min="0" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter number of tenants">
                         </div>
-                    </div>
-                </div>
-
-                <div class="light-card rounded-lg p-6 md:p-8">
-                    <div class="flex items-center mb-6 border-b pb-4">
-                        <i data-lucide="sparkles" class="w-6 h-6 mr-3 text-blue-600"></i>
-                        <h2 class="text-xl font-semibold text-gray-800">Amenities Offered</h2>
-                    </div>
-                    <p class="text-sm text-gray-500 mb-4">Select all amenities available at your property.</p>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        <label class="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer">
-                            <input type="checkbox" name="amenities[]" value="wifi" class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded">
-                            <i data-lucide="wifi" class="w-5 h-5 ml-3 text-gray-600"></i>
-                            <span class="ml-2 text-gray-700">High-Speed Wi-Fi</span>
-                        </label>
-                         <label class="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer">
-                            <input type="checkbox" name="amenities[]" value="laundry" class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded">
-                            <i data-lucide="washer" class="w-5 h-5 ml-3 text-gray-600"></i>
-                            <span class="ml-2 text-gray-700">Laundry Service</span>
-                        </label>
-                         <label class="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer">
-                            <input type="checkbox" name="amenities[]" value="ac" class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded">
-                            <i data-lucide="wind" class="w-5 h-5 ml-3 text-gray-600"></i>
-                            <span class="ml-2 text-gray-700">Air Conditioning (AC)</span>
-                        </label>
-                        <label class="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer">
-                            <input type="checkbox" name="amenities[]" value="food" class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded">
-                            <i data-lucide="chef-hat" class="w-5 h-5 ml-3 text-gray-600"></i>
-                            <span class="ml-2 text-gray-700">Meals Included</span>
-                        </label>
-                        <label class="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer">
-                            <input type="checkbox" name="amenities[]" value="security" class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded">
-                            <i data-lucide="shield" class="w-5 h-5 ml-3 text-gray-600"></i>
-                            <span class="ml-2 text-gray-700">24/7 Security</span>
-                        </label>
-                        <label class="flex items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer">
-                            <input type="checkbox" name="amenities[]" value="parking" class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded">
-                            <i data-lucide="parking-square" class="w-5 h-5 ml-3 text-gray-600"></i>
-                            <span class="ml-2 text-gray-700">Parking</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="light-card rounded-lg p-6 md:p-8">
-                    <div class="flex items-center mb-6 border-b pb-4">
-                        <i data-lucide="indian-rupee" class="w-6 h-6 mr-3 text-blue-600"></i>
-                        <h2 class="text-xl font-semibold text-gray-800">Pricing & Occupancy</h2>
-                    </div>
-                    <div class="space-y-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Gender Suitability <span class="text-red-500">*</span></label>
-                            <div class="flex flex-wrap gap-4">
-                                <label class="flex items-center space-x-2"><input type="radio" name="gender_suitability" value="boys" required class="form-radio h-4 w-4 text-blue-600 border-gray-300"><span class="text-gray-700">Boys Only</span></label>
-                                <label class="flex items-center space-x-2"><input type="radio" name="gender_suitability" value="girls" required class="form-radio h-4 w-4 text-blue-600 border-gray-300"><span class="text-gray-700">Girls Only</span></label>
-                                <label class="flex items-center space-x-2"><input type="radio" name="gender_suitability" value="coed" required class="form-radio h-4 w-4 text-blue-600 border-gray-300"><span class="text-gray-700">Co-Ed</span></label>
-                            </div>
+                            <label for="city" class="block text-sm font-medium text-gray-700 mb-1">City <span class="text-red-500">*</span></label>
+                            <select id="city" name="city" required class="form-select w-full border-gray-300 rounded-md shadow-sm">
+                                <option value="">Select City</option>
+                            </select>
                         </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="rent" class="block text-sm font-medium text-gray-700 mb-1">Starting Price (per month) <span class="text-red-500">*</span></label>
-                                <div class="relative mt-1 rounded-md shadow-sm">
-                                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <i data-lucide="indian-rupee" class="h-5 w-5 text-gray-400"></i>
-                                    </div>
-                                    <input type="number" id="rent" name="rent" required min="1000" class="form-input w-full rounded-md border-gray-300 pl-10" placeholder="e.g., 5000">
-                                </div>
-                            </div>
-                            <div>
-                                <label for="deposit" class="block text-sm font-medium text-gray-700 mb-1">Security Deposit <span class="text-red-500">*</span></label>
-                                <select id="deposit" name="deposit" required class="form-select w-full border-gray-300 rounded-md shadow-sm">
-                                    <option value="">Select Deposit</option>
-                                    <option value="0">No Deposit</option>
-                                    <option value="1">1 Month Rent</option>
-                                    <option value="2">2 Months Rent</option>
-                                    <option value="3">3 Months Rent</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label for="country" class="block text-sm font-medium text-gray-700 mb-1">Country <span class="text-red-500">*</span></label>
+                            <input type="text" id="country" name="country" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter country">
                         </div>
-                    </div>
-                </div>
-
-                <div class="light-card rounded-lg p-6 md:p-8">
-                    <div class="flex items-center mb-6 border-b pb-4">
-                        <i data-lucide="image" class="w-6 h-6 mr-3 text-blue-600"></i>
-                        <h2 class="text-xl font-semibold text-gray-800">Property Photos</h2>
-                    </div>
-                    <div>
-                        <label for="property-photos" class="file-input-label block text-sm font-medium text-gray-700 mb-2">Upload Photos (Select multiple, min 3 recommended) <span class="text-red-500">*</span></label>
-                        <div class="mt-1 file-drop-area">
-                            <input type="file" id="property-photos" name="property_photos[]" multiple required accept="image/jpeg, image/png, image/webp" class="file-input-hidden">
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                <i data-lucide="upload-cloud" class="w-10 h-10 mb-3 text-gray-400"></i>
-                                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold text-blue-600 hover:underline">Click to upload</span> or drag and drop</p>
-                                <p class="text-xs text-gray-500">PNG, JPG or WEBP (Max 5MB per file)</p>
-                            </div>
+                        <div>
+                            <label for="contact_name" class="block text-sm font-medium text-gray-700 mb-1">Contact Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="contact_name" name="contact_name" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter contact person name">
                         </div>
-                        
-                        <div id="image-previews" class="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                            </div>
+                        <div class="md:col-span-2">
+                            <label for="additional_message" class="block text-sm font-medium text-gray-700 mb-1">Additional Message (if any)</label>
+                            <textarea id="additional_message" name="additional_message" rows="4" class="form-textarea w-full border-gray-300 rounded-md shadow-sm" placeholder="Type additional message..."></textarea>
+                        </div>
                     </div>
                 </div>
 
                 <div class="text-center pt-4">
                     <button type="submit" class="w-full md:w-auto bg-blue-600 text-white font-semibold py-3 px-10 rounded-lg text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/50">
                         <i data-lucide="send" class="w-5 h-5 inline mr-2"></i>
-                        <span>Submit for Review</span>
+                        <span>Submit</span>
                     </button>
                     <p class="text-xs text-gray-500 mt-3">Your listing will be reviewed before going live.</p>
                 </div>

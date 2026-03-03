@@ -627,8 +627,13 @@ exports.requestCashPayment = async (req, res) => {
             const owner = await Owner.findOne({ loginId: ownerId }).select('email profile.email').lean();
             const ownerEmail = (owner && (owner.email || (owner.profile && owner.profile.email))) || '';
             if (ownerEmail) {
-                const appBaseUrl = process.env.APP_BASE_URL || 'https://app.roomhy.com';
-                const receivedUrl = `${appBaseUrl}/propertyowner/payment-received.html?rentId=${encodeURIComponent(String(rent._id))}&ownerLoginId=${encodeURIComponent(ownerId)}`;
+                const ownerPortalBaseUrl = (
+                    process.env.OWNER_PORTAL_URL ||
+                    process.env.API_URL ||
+                    process.env.APP_BASE_URL ||
+                    'https://api.roomhy.com'
+                ).replace(/\/$/, '');
+                const receivedUrl = `${ownerPortalBaseUrl}/propertyowner/payment-received.html?rentId=${encodeURIComponent(String(rent._id))}&ownerLoginId=${encodeURIComponent(ownerId)}`;
                 const html = `
                     <div style="font-family:Arial,sans-serif;">
                         <h3>Cash Payment Request</h3>

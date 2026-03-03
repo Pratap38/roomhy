@@ -266,8 +266,12 @@ lucide.createIcons();
         // Render commission cards safely (some templates don't include dedicated ids)
         function displayCommissionCards(totalRevenue, commissionRate, pendingPayouts) {
             try {
-                const rentEl = document.getElementById('statRent');
-                if (rentEl) rentEl.innerText = `\u20B9${Number(totalRevenue || 0).toLocaleString()}`;
+                // Keep statRent as owner's rent collection value.
+                // If a dedicated platform revenue element exists, update that instead.
+                const platformRevenueEl = document.getElementById('statPlatformRevenue');
+                if (platformRevenueEl) {
+                    platformRevenueEl.innerText = `\u20B9${Number(totalRevenue || 0).toLocaleString()}`;
+                }
             } catch (e) {
                 console.warn('displayCommissionCards render warning:', e && e.message);
             }
