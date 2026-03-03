@@ -14,6 +14,7 @@ const mailer = require('../utils/mailer');
 exports.assignTenant = async (req, res) => {
     try {
         const { name, phone, email, propertyId, roomNo, bedNo, moveInDate, agreedRent, ownerLoginId, propertyTitle, locationCode } = req.body;
+        const assignedPropertyTitle = String(propertyTitle || '').trim();
 
         // Validation
         if (!name || !phone || !email || !agreedRent) {
@@ -94,7 +95,7 @@ exports.assignTenant = async (req, res) => {
             tempPassword, // Store for now; will be displayed once, then forgotten
             user: user._id,
             ownerLoginId: String(ownerLoginId || property.ownerLoginId || '').toUpperCase() || undefined,
-            propertyTitle: property.title || propertyTitle || '',
+            propertyTitle: assignedPropertyTitle || property.title || '',
             assignedBy: req.user ? req.user.id : (property.owner && property.owner._id ? property.owner._id : undefined), // Owner who assigned
             status: 'pending',
             kycStatus: 'pending'
@@ -105,8 +106,9 @@ exports.assignTenant = async (req, res) => {
 
         // Create Rent record for this tenant
         const rentAmount = parseInt(agreedRent);
+        const rentPropertyName = assignedPropertyTitle || property.title || 'Property';
         const rent = await Rent.create({
-            propertyName: property.title,
+            propertyName: rentPropertyName,
             roomNumber: roomNo,
             area: property.area || '-',
             tenantName: name,
@@ -123,7 +125,7 @@ exports.assignTenant = async (req, res) => {
         });
 
         // Log notification for super admin
-        console.log(`[TENANT ASSIGNED] ${name} (${loginId}) assigned to ${property.title}, Room ${roomNo}`);
+        console.log(`[TENANT ASSIGNED] ${name} (${loginId}) assigned to ${rentPropertyName}, Room ${roomNo}`);
         console.log(`[RENT RECORD CREATED] Rent ID: ${rent._id}, Amount: ₹${rentAmount}`);
 
         // Send email to tenant with loginId, tempPassword and digital check-in link (non-blocking)
@@ -136,7 +138,7 @@ exports.assignTenant = async (req, res) => {
                     <div style="font-family: Arial, Helvetica, sans-serif; color:#111; font-size:14px;">
                         <h3>Tenant Account Created</h3>
                         <p>Your tenant account has been created successfully.</p>
-                        <p><strong>Property:</strong> ${property.title || propertyTitle || '-'}</p>
+                        <p><strong>Property:</strong> ${assignedPropertyTitle || property.title || '-'}</p>
                         <p><strong>Room Number:</strong> ${roomNo || '-'}</p>
                         <p><strong>Rent:</strong> INR ${parseInt(agreedRent || 0, 10)}</p>
                         <p><strong>Login ID:</strong> ${tenant.loginId}</p>
@@ -146,7 +148,7 @@ exports.assignTenant = async (req, res) => {
                         <p>Please complete profile, KYC, OTP verification, and agreement e-sign.</p>
                     </div>
                 `;
-                const text = `Tenant account created.\nProperty: ${property.title || propertyTitle || '-'}\nRoom Number: ${roomNo || '-'}\nRent: INR ${parseInt(agreedRent || 0, 10)}\nLogin ID: ${tenant.loginId}\nPassword: ${tenant.tempPassword}\nDigital Check-In: ${tenantCheckinLink}`;
+                const text = `Tenant account created.\nProperty: ${assignedPropertyTitle || property.title || '-'}\nRoom Number: ${roomNo || '-'}\nRent: INR ${parseInt(agreedRent || 0, 10)}\nLogin ID: ${tenant.loginId}\nPassword: ${tenant.tempPassword}\nDigital Check-In: ${tenantCheckinLink}`;
                 mailer.sendMail(tenant.email, subject, text, html);
             }
 
@@ -175,7 +177,7 @@ exports.assignTenant = async (req, res) => {
                 phone: tenant.phone,
                 email: tenant.email,
                 property: tenant.property,
-                propertyTitle: tenant.propertyTitle || property.title || '',
+                propertyTitle: tenant.propertyTitle || assignedPropertyTitle || property.title || '',
                 ownerLoginId: tenant.ownerLoginId || '',
                 roomNo: tenant.roomNo,
                 bedNo: tenant.bedNo,
