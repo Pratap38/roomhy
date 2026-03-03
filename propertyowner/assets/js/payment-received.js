@@ -3,8 +3,9 @@ const API_URL = (window.location.hostname === 'localhost' || window.location.hos
             : 'https://api.roomhy.com';
 
         const params = new URLSearchParams(window.location.search);
-        const rentId = params.get('rentId') || '';
-        const ownerLoginId = (params.get('ownerLoginId') || '').toUpperCase();
+        const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#\?/, ''));
+        const rentId = params.get('rentId') || hashParams.get('rentId') || '';
+        const ownerLoginId = (params.get('ownerLoginId') || hashParams.get('ownerLoginId') || '').toUpperCase();
 
         const statusBox = document.getElementById('statusBox');
         const receivedBtn = document.getElementById('receivedBtn');
@@ -56,7 +57,9 @@ const API_URL = (window.location.hostname === 'localhost' || window.location.hos
             }
         }
 
-        receivedBtn.addEventListener('click', async () => {
+        receivedBtn.addEventListener('click', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             receivedBtn.disabled = true;
             setStatus('Sending OTP to tenant Gmail...', 'info');
             try {
