@@ -7,20 +7,6 @@ if (params.get('loginId')) document.getElementById('loginId').value = params.get
 let lastRefId = '';
 const TENANT_KYC_STATE_KEY = 'roomhy_tenant_kyc_state';
 
-function readFileAsData(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve({
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      dataUrl: r.result
-    });
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 async function post(path, payload) {
   let lastErr = null;
   for (const base of API_BASES) {
@@ -87,10 +73,6 @@ applyCallbackParams();
 
 document.getElementById('startDigiLockerBtn').onclick = async () => {
   try {
-    const frontFile = document.getElementById('aadhaarFront').files[0];
-    const backFile = document.getElementById('aadhaarBack').files[0];
-    if (!frontFile || !backFile) return alert('Upload Aadhaar front and back photos');
-
     const aadhaarNumber = document.getElementById('aadhaarNumber').value.trim().replace(/\D/g, '');
     if (!/^\d{12}$/.test(aadhaarNumber)) return alert('Aadhaar must be 12 digits');
 
@@ -98,8 +80,6 @@ document.getElementById('startDigiLockerBtn').onclick = async () => {
       loginId: document.getElementById('loginId').value.trim(),
       aadhaarNumber,
       aadhaarLinkedPhone: document.getElementById('aadhaarLinkedPhone').value.trim(),
-      aadhaarFront: await readFileAsData(frontFile),
-      aadhaarBack: await readFileAsData(backFile),
       redirectUrl: `${window.location.origin}${window.location.pathname}?loginId=${encodeURIComponent(document.getElementById('loginId').value.trim())}`
     });
 

@@ -901,8 +901,23 @@ router.post('/tenant/final-submit', async (req, res) => {
         const normalizedLoginId = String(loginId).toUpperCase();
         const record = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'tenant' });
         if (!record) return res.status(404).json({ success: false, message: 'Tenant check-in record not found' });
-        if (!record.tenantKyc || !isTenantKycVerified(record)) {
+        const tenantModel = await Tenant.findOne({ loginId: normalizedLoginId });
+        const tenantModelVerified = Boolean(
+            tenantModel &&
+            (
+                tenantModel.kycStatus === 'verified' ||
+                tenantModel.kyc?.digilockerVerified ||
+                tenantModel.kyc?.otpVerified
+            )
+        );
+        if (!record.tenantKyc || (!isTenantKycVerified(record) && !tenantModelVerified)) {
             return res.status(400).json({ success: false, message: 'Complete KYC verification first (OTP or DigiLocker)' });
+        }
+        if (tenantModelVerified && !isTenantKycVerified(record)) {
+            record.tenantKyc = record.tenantKyc || {};
+            record.tenantKyc.digilockerVerified = true;
+            record.tenantKyc.digilockerStatus = 'verified';
+            record.tenantKyc.digilockerVerifiedAt = new Date();
         }
         if (!record.tenantAgreement || !record.tenantAgreement.acceptedAt) {
             return res.status(400).json({ success: false, message: 'Accept rental agreement first' });
@@ -911,7 +926,7 @@ router.post('/tenant/final-submit', async (req, res) => {
         record.tenantSubmittedAt = new Date();
         await record.save();
 
-        const tenant = await Tenant.findOne({ loginId: normalizedLoginId });
+        const tenant = tenantModel || await Tenant.findOne({ loginId: normalizedLoginId });
         if (!tenant) {
             return res.status(404).json({ success: false, message: 'Tenant not found for this login ID' });
         }

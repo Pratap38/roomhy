@@ -1,8 +1,42 @@
-const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:5001'
-      : 'https://api.roomhy.com';
+const API_BASES = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? ['http://localhost:5001']
+      : ['', 'https://api.roomhy.com'];
     const params = new URLSearchParams(location.search);
     if (params.get('loginId')) document.getElementById('loginId').value = params.get('loginId');
+
+    async function postWithFallback(path, payload) {
+      let lastErr = null;
+      for (const base of API_BASES) {
+        try {
+          const res = await fetch(`${base}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data?.success) return data;
+          lastErr = new Error(data.message || `HTTP ${res.status}`);
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Request failed');
+    }
+
+    async function getWithFallback(path) {
+      let lastErr = null;
+      for (const base of API_BASES) {
+        try {
+          const res = await fetch(`${base}${path}`);
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) return data;
+          lastErr = new Error(data.message || `HTTP ${res.status}`);
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Request failed');
+    }
 
     document.getElementById('submitBtn').onclick = async () => {
       const submitBtn = document.getElementById('submitBtn');
@@ -14,25 +48,14 @@ const API_BASE = (location.hostname === 'localhost' || location.hostname === '12
       submitBtn.textContent = 'Submitting...';
 
       try {
-        const agreeRes = await fetch(`${API_BASE}/api/checkin/tenant/agreement`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ loginId, eSignName, accepted: true })
-        });
-        const agreeData = await agreeRes.json();
-        if (!agreeRes.ok || !agreeData.success) {
-          throw new Error(agreeData.message || 'Agreement submit failed');
+        const checkin = await getWithFallback(`/api/checkin/tenant/${encodeURIComponent(loginId)}`);
+        const kyc = checkin?.record?.tenantKyc || {};
+        if (!(kyc.otpVerified || kyc.digilockerVerified)) {
+          throw new Error('Complete KYC verification first (OTP or DigiLocker)');
         }
+        await postWithFallback('/api/checkin/tenant/agreement', { loginId, eSignName, accepted: true });
 
-        const submitRes = await fetch(`${API_BASE}/api/checkin/tenant/final-submit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ loginId })
-        });
-        const submitData = await submitRes.json();
-        if (!submitRes.ok || !submitData.success) {
-          throw new Error(submitData.message || 'Final submit failed');
-        }
+        await postWithFallback('/api/checkin/tenant/final-submit', { loginId });
 
         const confirmationUrl = `tenant-confirmation.html?loginId=${encodeURIComponent(loginId)}`;
         window.location.href = confirmationUrl;
