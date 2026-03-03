@@ -3,6 +3,18 @@ lucide.createIcons();
         let forgotLoginId = '';
         let forgotResetToken = '';
 
+        async function fetchTenantByLoginId(loginId) {
+            try {
+                const res = await fetch(`${API_URL}/api/tenants`);
+                if (!res.ok) return null;
+                const tenants = await res.json();
+                if (!Array.isArray(tenants)) return null;
+                return tenants.find(t => (t.loginId || '').toUpperCase() === String(loginId || '').toUpperCase()) || null;
+            } catch (_) {
+                return null;
+            }
+        }
+
         function togglePasswordVisibility(inputId, btn) {
             const input = document.getElementById(inputId);
             if (!input) return;
@@ -139,10 +151,50 @@ lucide.createIcons();
             );
 
             if (firstTimeTenant) {
-                tenantPayload = firstTimeTenant;
+                tenantPayload = { ...firstTimeTenant, tempPassword };
                 showStep2();
                 return;
             }
+
+            // Backend first-time verification (for fresh devices with no localStorage)
+            try {
+                const verifyRes = await fetch(`${API_URL}/api/auth/tenant/verify-temp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ loginId, tempPassword })
+                });
+                if (verifyRes.ok) {
+                    const verifyData = await verifyRes.json().catch(() => ({}));
+                    tenantPayload = { ...(verifyData.tenant || {}), loginId, tempPassword };
+                    showStep2();
+                    return;
+                }
+            } catch (_) {}
+
+            // Normal backend login after password is already set
+            try {
+                const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: loginId, password: tempPassword })
+                });
+                const loginData = await loginRes.json().catch(() => ({}));
+                if (loginRes.ok && loginData && loginData.user && loginData.user.role === 'tenant') {
+                    const tenantRecord = await fetchTenantByLoginId(loginId);
+                    createSession(tenantRecord || {
+                        id: loginData.user.id,
+                        name: loginData.user.name || 'Tenant',
+                        email: '',
+                        phone: '',
+                        loginId,
+                        status: 'active',
+                        kycStatus: 'verified',
+                        profileFilled: true,
+                        agreementSigned: true
+                    });
+                    return;
+                }
+            } catch (_) {}
 
             // Active tenant login with already-set password
             const activeTenant = tenants.find(t => (t.loginId && t.loginId.toUpperCase() === loginId) && (t.password === tempPassword));
@@ -161,32 +213,49 @@ lucide.createIcons();
             if (newPassword.length < 6) return showError('Password must be at least 6 characters.');
             if (newPassword !== confirmPassword) return showError('Passwords do not match.');
 
+            if (!tenantPayload || !tenantPayload.loginId || !tenantPayload.tempPassword) {
+                return showError('Session expired. Please login again with temporary password.');
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/api/auth/tenant/set-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        loginId: tenantPayload.loginId,
+                        tempPassword: tenantPayload.tempPassword,
+                        newPassword
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) return showError(data.message || 'Failed to set new password');
+            } catch (_) {
+                return showError('Network error while setting new password.');
+            }
+
+            // Keep local mirror updated when present
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
             const idx = tenants.findIndex(t => t.loginId && t.loginId.toUpperCase() === (tenantPayload.loginId || '').toUpperCase());
-
             if (idx > -1) {
                 tenants[idx].password = newPassword;
                 tenants[idx].tempPassword = null;
-                tenants[idx].passwordSet = true; // Flag for progress
+                tenants[idx].passwordSet = true;
                 localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
-
-                const user = {
-                    name: tenants[idx].name,
-                    phone: tenants[idx].phone,
-                    email: tenants[idx].email,
-                    loginId: tenants[idx].loginId,
-                    role: 'tenant',
-                    tenantId: tenants[idx].id,
-                    passwordSet: true
-                };
-                localStorage.setItem('tenant_user', JSON.stringify(user));
-
-                // Redirect straight to dashboard after first-time password setup.
-                alert("Password Set! Redirecting to Dashboard.");
-                window.location.href = 'tenantdashboard.html';
-            } else {
-                showError('System error: Tenant record not found.');
             }
+
+            const tenantRecord = await fetchTenantByLoginId(tenantPayload.loginId);
+            alert("Password Set! Redirecting to Dashboard.");
+            createSession(tenantRecord || {
+                id: tenantPayload.id || tenantPayload._id || tenantPayload.loginId,
+                name: tenantPayload.name || 'Tenant',
+                email: tenantPayload.email || '',
+                phone: tenantPayload.phone || '',
+                loginId: tenantPayload.loginId,
+                status: 'active',
+                kycStatus: 'verified',
+                profileFilled: true,
+                agreementSigned: true
+            });
         }
         
         function createSession(tenant) {

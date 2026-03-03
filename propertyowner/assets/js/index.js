@@ -1,8 +1,10 @@
 lucide.createIcons();
         function resolveTenantLoginUrl() {
             const host = window.location.hostname;
-            if (host === 'admin.roomhy.com') return 'https://app.roomhy.com/tenant/tenantlogin.html';
-            if (host === 'www.admin.roomhy.com') return 'https://app.roomhy.com/tenant/tenantlogin.html';
+            // admin domain often serves SPA fallback for unknown paths.
+            // Use api domain static route which is guaranteed to expose /tenant pages.
+            if (host === 'admin.roomhy.com') return 'https://api.roomhy.com/tenant/tenantlogin.html';
+            if (host === 'www.admin.roomhy.com') return 'https://api.roomhy.com/tenant/tenantlogin.html';
             return '/tenant/tenantlogin.html';
         }
 
@@ -28,6 +30,7 @@ lucide.createIcons();
             });
         } catch (e) { console.warn('Role selector init failed', e); }
         let currentUserPayload = null;
+        let currentTempPassword = '';
         let forgotLoginId = '';
         let forgotResetToken = '';
         let ownerMemoryStore = {};
@@ -445,6 +448,7 @@ lucide.createIcons();
                     })();
                 }
                 
+                currentTempPassword = password;
                 showSetPasswordScreen();
                 return;
             }
@@ -467,6 +471,7 @@ lucide.createIcons();
                             area: db[loginId].profile?.area || '',
                             locationCode: db[loginId].profile?.locationCode || ''
                         };
+                        currentTempPassword = password;
                         showSetPasswordScreen();
                     } else {
                         // Normal Login Flow
@@ -482,9 +487,9 @@ lucide.createIcons();
                 if (res.ok) {
                     const owner = await res.json();
                     const backendPassword =
-                        owner?.checkinPassword ||
-                        owner?.password ||
                         owner?.credentials?.password ||
+                        owner?.password ||
+                        owner?.checkinPassword ||
                         '';
 
                     if (backendPassword && backendPassword === password) {
@@ -520,6 +525,7 @@ lucide.createIcons();
                                 propertyName: db[loginId].profile?.propertyName || '',
                                 propertyLocation: db[loginId].profile?.propertyLocation || ''
                             };
+                            currentTempPassword = password;
                             showSetPasswordScreen();
                         } else {
                             proceedToDashboard(loginId, db[loginId]);
@@ -554,6 +560,10 @@ lucide.createIcons();
                 return alert('Unable to determine current user. Please start login again.');
             }
 
+            if (!currentTempPassword) {
+                return alert('Temporary password session expired. Please login again.');
+            }
+
             // Ensure a local owner record exists before updating
             if (!db[loginId]) {
                 console.warn('Local owner record missing for', loginId, '- creating local placeholder to continue onboarding.');
@@ -574,6 +584,21 @@ lucide.createIcons();
             }
 
             setJsonStorage('roomhy_owners_db', db);
+
+            // Update User auth password first (hash-safe), then keep Owner document in sync.
+            try {
+                const setRes = await fetch(`${API_URL}/api/auth/owner/set-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ loginId, tempPassword: currentTempPassword, newPassword: newPass })
+                });
+                const setData = await setRes.json().catch(() => ({}));
+                if (!setRes.ok) {
+                    return alert(setData.message || 'Failed to set new password. Please try again.');
+                }
+            } catch (err) {
+                return alert('Network error while setting new password. Please try again.');
+            }
 
             // Try to update backend owner record as well. If PATCH fails (404/400), try creating the owner then retry PATCH once.
             (async () => {
