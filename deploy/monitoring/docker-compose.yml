@@ -1,0 +1,173 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Prometheus - Metrics Database
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: roomhy-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alerts/alerting-rules.yml:/etc/prometheus/alerting-rules.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    environment:
+      - TZ=UTC
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quit", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================================================
+  # Grafana - Dashboards & Alerts
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: roomhy-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      # Admin credentials (change in production!)
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-change_me_now}
+      
+      # Enable plugins
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      
+      # Performance
+      - GF_DATABASE_MAX_OPEN_CONN=100
+      - GF_SERVER_MAX_CONN_DEFAULT=100
+      
+      # Features
+      - GF_FEATURE_TOGGLES_ENABLE=
+      - GF_ALERTING_ENABLED=true
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================================================
+  # AlertManager - Alert Routing & Notification
+  # ============================================================================
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: roomhy-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    environment:
+      - TZ=UTC
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================================================
+  # Node Exporter - System Metrics (for VPS monitoring)
+  # ============================================================================
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: roomhy-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+
+networks:
+  monitoring:
+    driver: bridge
+
+# ============================================================================
+# Access Points
+# ============================================================================
+# 
+# Prometheus:   http://localhost:9090
+# Grafana:      http://localhost:3000 (admin/roomhy_admin_2026)
+# AlertManager: http://localhost:9093
+# Node Exporter: http://localhost:9100/metrics
+#
+# ============================================================================
+# Quick Start
+# ============================================================================
+#
+# 1. Start services:
+#    docker-compose -f monitoring/docker-compose.yml up -d
+#
+# 2. Check status:
+#    docker-compose -f monitoring/docker-compose.yml ps
+#
+# 3. View logs:
+#    docker-compose -f monitoring/docker-compose.yml logs -f grafana
+#
+# 4. Access Grafana:
+#    - Go to http://localhost:3000
+#    - Login: admin / roomhy_admin_2026
+#    - Add Prometheus datasource: http://prometheus:9090
+#    - Import dashboard JSON from dashboards/ folder
+#
+# 5. Stop services:
+#    docker-compose -f monitoring/docker-compose.yml down
+#
+# ============================================================================
+# Production Deployment
+# ============================================================================
+#
+# For production:
+# 1. Change GF_SECURITY_ADMIN_PASSWORD to random strong password
+# 2. Use external volumes on separate storage
+# 3. Setup reverse proxy (nginx) in front of Grafana
+# 4. Enable TLS/SSL certificates
+# 5. Configure Slack/PagerDuty webhooks in AlertManager
+# 6. Run backups of Prometheus data regularly
+#
+# ============================================================================

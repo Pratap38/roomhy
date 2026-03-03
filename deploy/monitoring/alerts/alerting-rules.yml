@@ -1,0 +1,290 @@
+# Prometheus Alerting Rules
+# Defines conditions that trigger alerts
+
+groups:
+  - name: roomhy_application
+    interval: 30s
+    rules:
+      # =====================================================================
+      # Application Health Alerts
+      # =====================================================================
+      
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status_code=~"5.."}[5m]) /
+            rate(http_requests_total[5m])
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High error rate detected"
+          description: |
+            Error rate is {{ $value | humanizePercentage }} for the last 5 minutes.
+            This is above the 5% threshold.
+          dashboard: "http://localhost:3000/d/roomhy-app/application-overview"
+          runbook: "https://wiki.internal/runbooks/high-error-rate"
+
+      - alert: HighResponseLatency
+        expr: |
+          histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High response latency detected"
+          description: |
+            p95 response time is {{ $value | humanizeDuration }} 
+            (threshold: 1s)
+          action: "Check database performance and API dependencies"
+
+      - alert: TooManyDatabaseErrors
+        expr: |
+          rate(app_errors_total{error_type="DatabaseError"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "Database errors spiking"
+          description: "{{ $value | humanize }} DB errors/sec in the last 5 minutes"
+          action: "Check MongoDB connection and replication status"
+
+      - alert: RateLimitingActive
+        expr: |
+          rate(rate_limit_hits_total[1m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Rate limiting is active"
+          description: "{{ $value | humanize }} rate limit hits/min"
+          note: "May indicate bot attack or legitimate traffic spike"
+
+      - alert: AuthenticationFailureSpike
+        expr: |
+          rate(http_requests_total{route="/api/auth/login",status_code="401"}[5m]) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "Many failed login attempts"
+          description: "{{ $value }} failed logins per second"
+          action: "Check for brute force attacks in audit logs"
+
+  - name: roomhy_infrastructure
+    interval: 30s
+    rules:
+      # =====================================================================
+      # Infrastructure & System Alerts
+      # =====================================================================
+
+      - alert: HighCPUUsage
+        expr: |
+          (1 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])))) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+          action: "Check running processes. Consider scaling up."
+
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+          action: "Check for memory leaks. Restart services if needed."
+
+      - alert: DiskSpaceRunningOut
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.15
+        for: 10m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: |
+            Only {{ $value | humanizePercentage }} of disk space available.
+            Available: {{ printf "%.2f" (node_filesystem_avail_bytes{mountpoint="/"} / 1024 / 1024 / 1024) }} GB
+          action: "Clean up logs/backups or expand disk immediately"
+
+      - alert: HighDiskIOWait
+        expr: |
+          (avg by (instance) (rate(node_cpu_seconds_total{mode="iowait"}[5m]))) > 0.30
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "High disk I/O wait on {{ $labels.instance }}"
+          description: "I/O wait is {{ $value | humanizePercentage }}"
+          action: "Check disk performance and database query efficiency"
+
+      - alert: NodeDown
+        expr: |
+          up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "Node {{ $labels.instance }} is down"
+          description: "Node exporter on {{ $labels.instance }} has not reported for 1 minute"
+          action: "SSH to server and check status. Restart if needed."
+
+      - alert: PrometheusDown
+        expr: |
+          up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: monitoring
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus has stopped reporting metrics"
+          action: "Restart Prometheus service"
+
+  - name: roomhy_database
+    interval: 30s
+    rules:
+      # =====================================================================
+      # Database Alerts
+      # =====================================================================
+
+      - alert: HighDatabaseQueryLatency
+        expr: |
+          histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "High database query latency"
+          description: "p95 query time is {{ $value | humanizeDuration }}"
+          action: "Check slow query logs and create indexes if needed"
+
+      - alert: MongoDBConnectionPoolExhausted
+        expr: |
+          (mongodb_connections_active / 10) > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "MongoDB connection pool nearly exhausted"
+          description: "{{ $value | humanizePercentage }} of connections in use"
+          action: "Increase pool size or identify slow queries"
+
+      - alert: MongoDBReplicationLag
+        expr: |
+          mongodb_rs_members_replication_lag_seconds > 10
+        for: 2m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "MongoDB replica set lag detected"
+          description: "Replication lag: {{ $value | humanizeDuration }}"
+          action: "Check network between replica set members"
+
+  - name: roomhy_business
+    interval: 5m
+    rules:
+      # =====================================================================
+      # Business Logic Alerts
+      # =====================================================================
+
+      - alert: NoHealthChecks
+        expr: |
+          rate(http_requests_total{route="/api/health"}[5m]) == 0
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "No health check requests received"
+          description: "Health endpoint is not being checked"
+          note: "May indicate monitoring/dependency health check is broken"
+
+      - alert: BackupNotRunning
+        expr: |
+          (time() - node_boot_time_seconds) < 3600 # Only alert if server up > 1 hour
+          and
+          increase(backup_runs_total[24h]) == 0
+        for: 1h
+        labels:
+          severity: critical
+          team: ops
+        annotations:
+          summary: "Daily backup has not run"
+          description: "No backups completed in the last 24 hours"
+          action: "Check cron job logs and backup status"
+          runbook: "https://wiki.internal/runbooks/backup-troubleshooting"
+
+  - name: roomhy_network
+    interval: 30s
+    rules:
+      # =====================================================================
+      # Network & Connectivity Alerts
+      # =====================================================================
+
+      - alert: HighNetworkPacketLoss
+        expr: |
+          (rate(node_network_receive_drop_total[5m]) + rate(node_network_transmit_drop_total[5m])) > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "High network packet loss detected"
+          description: "{{ $value }} packets/sec being dropped"
+          action: "Check network interface status and hardware"
+
+      - alert: HighNetworkErrorRate
+        expr: |
+          (rate(node_network_receive_errs_total[5m]) + rate(node_network_transmit_errs_total[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "High network errors on {{ $labels.device }}"
+          description: "{{ $value }} errors/sec"
+          action: "Check network configuration or hardware"
+
+# ============================================================================
+# Alert Severity Levels:
+# ============================================================================
+# 
+# critical: Page on-call engineer immediately (PagerDuty)
+# warning:  Send to Slack channel, may require manual investigation
+# info:     Log for historical tracking
+#
+# ============================================================================
+# Integration with AlertManager:
+# ============================================================================
+#
+# AlertManager handles:
+# 1. Grouping related alerts
+# 2. Deduplication of repeated alerts
+# 3. Routing to appropriate receivers (Slack, PagerDuty, Email, etc)
+# 4. Silencing/Inhibiting alerts
+# 5. Alert enrichment and aggregation
+#
+# See: deploy/monitoring/alertmanager.yml
+#
+# ============================================================================

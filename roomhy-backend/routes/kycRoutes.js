@@ -5,6 +5,7 @@ const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const mailer = require('../utils/mailer');
 const { notifySuperadmin } = require('../utils/superadminNotifier');
+const { formLimiter, otpLimiter, captchaProtection } = require('../middleware/security');
 
 // Temporary OTP store (for production, move to Redis/database)
 const signupOtpStore = new Map();
@@ -41,7 +42,7 @@ function renderOtpHtml(firstName, otp) {
 }
 
 // Request OTP for website signup
-router.post('/signup/request-otp', async (req, res) => {
+router.post('/signup/request-otp', otpLimiter, captchaProtection({ required: true }), async (req, res) => {
     try {
         const firstName = (req.body.firstName || '').toString().trim();
         const lastName = (req.body.lastName || '').toString().trim();
@@ -238,7 +239,7 @@ router.get('/', async (req, res) => {
 });
 
 // Submit new signup
-router.post('/submit', async (req, res) => {
+router.post('/submit', formLimiter, captchaProtection({ required: true }), async (req, res) => {
     try {
         const signupData = req.body;
 

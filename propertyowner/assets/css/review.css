@@ -1,0 +1,103 @@
+body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background for the main content area */
+        }
+        .sidebar {
+            background-color: #111827; /* Dark gray for sidebar */
+        }
+        .sidebar-link {
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .sidebar-link:hover, .sidebar-link.active {
+            background-color: #374151; /* Slightly lighter gray on hover/active */
+            color: #ffffff;
+        }
+        /* Dropdown transition */
+        .profile-dropdown {
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+         /* Table styles - Excel Look */
+        .excel-table {
+            border-collapse: collapse; /* Makes borders connect like Excel */
+            width: 100%;
+        }
+        .excel-table th, .excel-table td {
+            border: 1px solid #e5e7eb; /* Gray border for all cells */
+            padding: 12px 16px; /* py-3 px-4 */
+            text-align: left;
+            vertical-align: top; /* Align content to top */
+        }
+        .excel-table th {
+            background-color: #f9fafb; /* Very light gray header */
+            font-weight: 600;
+            font-size: 0.75rem; /* 12px */
+            text-transform: uppercase;
+            color: #6b7280; /* Gray-500 */
+        }
+         .excel-table td {
+             font-size: 0.875rem; /* 14px */
+             color: #1f2937; /* Gray-800 */
+             white-space: normal; /* Allow review text to wrap */
+         }
+         .excel-table tbody tr:hover {
+            background-color: #f0f9ff; /* Light blue on hover */
+        }
+        
+        /* Status Badges */
+        .status-badge {
+            @apply px-2.5 py-0.5 rounded-full text-xs font-medium inline-block;
+        }
+        .status-approved {
+            @apply bg-green-100 text-green-800;
+        }
+        .status-pending {
+             @apply bg-yellow-100 text-yellow-800;
+        }
+
+        .action-icon {
+             @apply p-1.5 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100 transition;
+        }
+        .action-icon-delete {
+            @apply text-red-400 hover:text-red-600 hover:bg-red-50;
+        }
+         .action-icon-approve {
+            @apply text-green-400 hover:text-green-600 hover:bg-green-50;
+        }
+        
+        /* Filter Tab Style */
+        .filter-tab {
+            @apply px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm border;
+        }
+        
+        .filter-all {
+             @apply bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100;
+        }
+        .filter-all.active {
+            @apply bg-purple-600 text-white border-purple-600 hover:bg-purple-700;
+        }
+
+        .filter-pending {
+             @apply bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100;
+        }
+        .filter-pending.active {
+            @apply bg-yellow-500 text-white border-yellow-500 hover:bg-yellow-600;
+        }
+
+        .filter-approved {
+             @apply bg-green-50 text-green-700 border-green-200 hover:bg-green-100;
+        }
+        .filter-approved.active {
+            @apply bg-green-600 text-white border-green-600 hover:bg-green-700;
+        }
+
+        /* Modal styles */
+        .modal {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+        .modal-body {
+             max-height: 70vh;
+             overflow-y: auto;
+        }

@@ -4,6 +4,7 @@ const CheckinRecord = require('../models/CheckinRecord');
 const Owner = require('../models/Owner');
 const Tenant = require('../models/Tenant');
 const { sendMail } = require('../utils/mailer');
+const { otpLimiter } = require('../middleware/security');
 
 const otpStore = new Map();
 
@@ -98,7 +99,7 @@ router.post('/owner/profile', async (req, res) => {
     }
 });
 
-router.post('/owner/kyc/send-otp', async (req, res) => {
+router.post('/owner/kyc/send-otp', otpLimiter, async (req, res) => {
     try {
         const { loginId, aadhaarLinkedPhone, aadhaarNumber, email } = req.body || {};
         console.log('[CHECKIN KYC] Received send-otp request:', { loginId, aadhaarLinkedPhone, aadhaarNumber, email });
@@ -231,7 +232,7 @@ router.post('/owner/kyc/send-otp', async (req, res) => {
     }
 });
 
-router.post('/owner/kyc/verify-otp', async (req, res) => {
+router.post('/owner/kyc/verify-otp', otpLimiter, async (req, res) => {
     try {
         const { loginId, aadhaarNumber, otp } = req.body || {};
         const k = keyFor('owner', loginId, aadhaarNumber);
@@ -463,7 +464,7 @@ router.post('/tenant/profile', async (req, res) => {
     }
 });
 
-router.post('/tenant/kyc/send-otp', async (req, res) => {
+router.post('/tenant/kyc/send-otp', otpLimiter, async (req, res) => {
     try {
         const { loginId, aadhaarLinkedPhone, aadhaarNumber, aadhaarFront, aadhaarBack } = req.body || {};
         if (!loginId || !aadhaarLinkedPhone || !aadhaarNumber || !aadhaarFront || !aadhaarBack) {
@@ -512,7 +513,7 @@ router.post('/tenant/kyc/send-otp', async (req, res) => {
     }
 });
 
-router.post('/tenant/kyc/verify-otp', async (req, res) => {
+router.post('/tenant/kyc/verify-otp', otpLimiter, async (req, res) => {
     try {
         const { loginId, aadhaarNumber, otp } = req.body || {};
         const normalizedLoginId = String(loginId || '').toUpperCase();

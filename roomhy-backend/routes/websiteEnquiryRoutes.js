@@ -3,11 +3,14 @@ const router = express.Router();
 const WebsiteEnquiry = require('../models/WebsiteEnquiry');
 const Owner = require('../models/Owner');
 const { notifySuperadmin } = require('../utils/superadminNotifier');
+const { formLimiter, captchaProtection } = require('../middleware/security');
+const { protect, authorize } = require('../middleware/authMiddleware');
+const { auditTrail } = require('../middleware/auditTrail');
 
 // ============================================================
 // POST: Submit a new website enquiry
 // ============================================================
-router.post('/submit', async (req, res) => {
+router.post('/submit', formLimiter, captchaProtection({ required: true }), async (req, res) => {
     try {
         const {
             property_type,
@@ -201,7 +204,7 @@ router.get('/:id', async (req, res) => {
 // ============================================================
 // PUT: Update/Approve enquiry
 // ============================================================
-router.put('/:id', async (req, res) => {
+router.put('/:id', protect, authorize('superadmin', 'areamanager'), auditTrail('website-enquiry'), async (req, res) => {
     try {
         const {
             status,
@@ -252,7 +255,7 @@ router.put('/:id', async (req, res) => {
 // ============================================================
 // DELETE: Delete enquiry
 // ============================================================
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', protect, authorize('superadmin', 'areamanager'), auditTrail('website-enquiry'), async (req, res) => {
     try {
         const enquiry = await WebsiteEnquiry.findByIdAndDelete(req.params.id);
 
@@ -361,7 +364,7 @@ router.get('/', async (req, res) => {
 // ============================================================
 // PUT: Update enquiry (assign to manager)
 // ============================================================
-router.put('/:enquiry_id', async (req, res) => {
+router.put('/:enquiry_id', protect, authorize('superadmin', 'areamanager'), auditTrail('website-enquiry'), async (req, res) => {
     try {
         const { enquiry_id } = req.params;
         const { assigned_to, assigned_area, status, notes } = req.body;
@@ -404,7 +407,7 @@ router.put('/:enquiry_id', async (req, res) => {
 // ============================================================
 // DELETE: Delete an enquiry
 // ============================================================
-router.delete('/:enquiry_id', async (req, res) => {
+router.delete('/:enquiry_id', protect, authorize('superadmin', 'areamanager'), auditTrail('website-enquiry'), async (req, res) => {
     try {
         const { enquiry_id } = req.params;
 

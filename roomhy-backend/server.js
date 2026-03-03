@@ -1,12 +1,26 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const helmet = require('helmet');
 const dotenv = require('dotenv');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const { startCronJobs } = require('./services/cronJobs');
 const initChatSocket = require('./socket/chatSocket');
+const { globalApiLimiter } = require('./middleware/security');
+const {
+    compressionMiddleware,
+    hppMiddleware,
+    mongoSanitizeMiddleware,
+    requestHardening
+} = require('./middleware/requestHardening');
+let metricsManager = null;
+try {
+    metricsManager = require('./utils/prometheusMetrics');
+} catch (err) {
+    console.warn('⚠️ Prometheus metrics disabled:', err.message);
+}
 
 console.log('🚀 Starting server...');
 
@@ -15,13 +29,27 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const ROOT_DIR = path.resolve(__dirname, '..');
-const allowedOrigins = (
-    process.env.CORS_ORIGINS ||
-    'https://roomhy.com,https://www.roomhy.com,https://admin.roomhy.com,https://app.roomhy.com,https://api.roomhy.com,http://localhost:3000,http://localhost:5000,http://localhost:5001'
-)
+app.set('trust proxy', Number(process.env.TRUST_PROXY || 1));
+const envOrigins = (process.env.CORS_ORIGINS || '')
     .split(',')
     .map(origin => origin.trim())
     .filter(Boolean);
+const defaultOrigins = [
+    'https://roomhy.com',
+    'https://www.roomhy.com',
+    'https://admin.roomhy.com',
+    'https://app.roomhy.com',
+    'https://api.roomhy.com'
+];
+const localOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'http://localhost:5001',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5000',
+    'http://127.0.0.1:5001'
+];
+const allowedOrigins = Array.from(new Set([...(envOrigins.length ? envOrigins : defaultOrigins), ...localOrigins]));
 const corsOptions = {
     origin: (origin, callback) => {
         // Allow server-to-server tools and curl/postman requests without Origin header
@@ -40,9 +68,21 @@ const io = new Server(server, {
 initChatSocket(io);
 
 // Middleware (JSON parsing & Security)
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
+app.use(compressionMiddleware);
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
+app.use(mongoSanitizeMiddleware);
+app.use(hppMiddleware);
+app.use(requestHardening);
 app.use(cors(corsOptions));
+app.use('/api', globalApiLimiter);
+if (metricsManager && typeof metricsManager.init === 'function') {
+    metricsManager.init(app);
+}
 
 console.log('✅ Middleware configured');
 

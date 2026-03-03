@@ -9,87 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        
-        /* --- Sidebar Styling (Dark Theme) --- */
-        .sidebar {
-            background-color: #111827;
-            color: #9ca3af;
-        }
-        .sidebar-link {
-            color: #9ca3af;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1.5rem;
-            font-size: 0.9rem;
-            border-left: 3px solid transparent;
-            cursor: pointer;
-        }
-        .sidebar-link:hover {
-            color: #f3f4f6; 
-            background-color: #1f2937;
-        }
-        .sidebar-link.active {
-            background-color: #1f2937;
-            color: #ffffff;
-            border-left-color: #a855f7; /* Purple-500 */
-        }
-
-        /* Submenu Styling */
-        .submenu {
-            background-color: #0f172a;
-            overflow: hidden;
-            transition: max-height 0.3s ease-in-out;
-            max-height: 0;
-        }
-        .submenu.open {
-            max-height: 500px;
-        }
-        .submenu a {
-            padding-left: 3.5rem;
-            font-size: 0.85rem;
-        }
-        
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 4px;
-        }
-
-        /* Modal Transitions */
-        .modal { transition: opacity 0.25s ease; }
-
-        /* Table Styling */
-        .data-table th {
-            background-color: #f9fafb;
-            color: #6b7280;
-            font-weight: 600;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 0.75rem 1.5rem;
-            text-align: left;
-        }
-        .data-table td {
-            border-bottom: 1px solid #e5e7eb;
-            padding: 1rem 1.5rem;
-            font-size: 0.875rem;
-            color: #1f2937;
-        }
-        .data-table tr:hover td {
-            background-color: #f9fafb;
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/backup.css">
 </head>
 <body class="text-slate-800">
     <div class="flex h-screen overflow-hidden">
@@ -97,8 +17,8 @@
         <aside class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar">
             <div class="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827] z-10">
                  <div class="flex items-center gap-3">
-                     <div class="bg-purple-600 p-1.5 rounded-lg"><i data-lucide="building-2" class="w-5 h-5 text-white"></i></div>
-                     <div><h1 class="text-xl font-bold text-white">RoomHy</h1><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
+                     
+                     <div><img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-8 w-auto"><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
                  </div>
             </div>
             <nav class="flex-1 py-6 space-y-1">
@@ -338,7 +258,7 @@
         <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden backdrop-blur-sm" onclick="toggleMobileMenu()"></div>
         <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-[#111827] z-40 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col overflow-y-auto">
             <div class="h-16 flex items-center justify-between px-6 border-b border-gray-800 sticky top-0 bg-[#111827]">
-                 <h1 class="text-xl font-bold text-white">RoomHy</h1>
+                 <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-8 w-auto">
                  <button id="mobile-menu-close"><i data-lucide="x" class="w-6 h-6 text-gray-400"></i></button>
             </div>
             <nav class="flex-1 py-4 space-y-1 px-2">
@@ -399,54 +319,12 @@
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
-
-        // Sidebar Submenu
-        function toggleSubmenu(id, element) {
-            const submenu = document.getElementById(id);
-            const chevron = element.querySelector('.lucide-chevron-down');
-            if (submenu.classList.contains('open')) {
-                submenu.classList.remove('open');
-                chevron.style.transform = 'rotate(0deg)';
-            } else {
-                submenu.classList.add('open');
-                chevron.style.transform = 'rotate(180deg)';
-            }
-        }
-
-        // Mobile Menu
-        function toggleMobileMenu() {
-            const mobileSidebar = document.getElementById('mobile-sidebar');
-            const mobileOverlay = document.getElementById('mobile-overlay');
-            const isClosed = mobileSidebar.classList.contains('-translate-x-full');
-            
-            if (isClosed) {
-                mobileSidebar.classList.remove('-translate-x-full');
-                mobileOverlay.classList.remove('hidden');
-            } else {
-                mobileSidebar.classList.add('-translate-x-full');
-                mobileOverlay.classList.add('hidden');
-            }
-        }
-        document.getElementById('mobile-menu-open').addEventListener('click', toggleMobileMenu);
-        document.getElementById('mobile-menu-close')?.addEventListener('click', toggleMobileMenu);
-
-        // Modal Logic
-        function toggleModal(modalID){
-            const modal = document.getElementById(modalID);
-            if(modal.classList.contains('hidden')){
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            } else {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        }
-    </script>
+    <script src="assets/js/backup.js"></script>
         <script src="./mobile-sidebar.js"></script>
 </body>
 </html>
+
+
 
 
 

@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { sendMail } = require('../utils/mailer');
+const { formLimiter, captchaProtection } = require('../middleware/security');
 
 // POST: Send an email
-router.post('/send', async (req, res) => {
+router.post('/send', formLimiter, captchaProtection({ required: true }), async (req, res) => {
     try {
         const { to, subject, html, text } = req.body;
 

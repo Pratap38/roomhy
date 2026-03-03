@@ -1,0 +1,282 @@
+# AlertManager Configuration
+# Handles routing, grouping, and notification of alerts from Prometheus
+
+global:
+  resolve_timeout: 5m
+  # SMTP configuration (optional - for email notifications)
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_auth_username: 'replace_with_smtp_username'
+  smtp_auth_password: 'replace_with_smtp_app_password'
+  smtp_from: 'alerts@roomhy.com'
+
+# ============================================================================
+# Templates (optional - for customizing alert messages)
+# ============================================================================
+templates: 
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# ============================================================================
+# Alert Routes
+# Defines which alerts go to which channels
+# ============================================================================
+route:
+  # Default receiver
+  receiver: 'default'
+  
+  # Group alerts by labels
+  group_by: ['alertname', 'cluster', 'service']
+  
+  # How long to wait before sending grouped alerts
+  group_wait: 10s
+  
+  # How long to wait before re-sending existing alerts
+  group_interval: 10s
+  
+  # How long to repeat sent alerts if no new updates
+  repeat_interval: 12h
+  
+  # Sub-routes for specific alert types
+  routes:
+    # ====================================================================
+    # CRITICAL ALERTS - Page on-call engineer
+    # ====================================================================
+    - match:
+        severity: critical
+      receiver: 'pagerduty'
+      group_wait: 0s           # Send immediately, don't batch
+      repeat_interval: 30m     # Re-notify every 30 min
+      continue: true           # Also send to default route
+
+    # ====================================================================
+    # DATABASE ALERTS - Database team Slack channel
+    # ====================================================================
+    - match:
+        team: database
+      receiver: 'slack-database'
+      group_wait: 30s
+      repeat_interval: 4h
+
+    # ====================================================================
+    # SECURITY ALERTS - Security team
+    # ====================================================================
+    - match:
+        team: security
+      receiver: 'slack-security'
+      group_wait: 0s           # Immediate for security
+      repeat_interval: 1h
+
+    # ====================================================================
+    # INFRASTRUCTURE ALERTS - DevOps team
+    # ====================================================================
+    - match:
+        team: infra
+      receiver: 'slack-infra'
+      group_wait: 1m
+      repeat_interval: 2h
+
+    # ====================================================================
+    # MONITORING ALERTS - Send to ops team
+    # ====================================================================
+    - match:
+        team: monitoring
+      receiver: 'slack-ops'
+      group_wait: 5m
+      repeat_interval: 6h
+
+    # ====================================================================
+    # Business Logic Alerts
+    # ====================================================================
+    - match:
+        team: ops
+      receiver: 'email-ops'
+      group_wait: 30s
+      repeat_interval: 24h
+
+# ============================================================================
+# Receivers
+# Define notification channels
+# ============================================================================
+receivers:
+  # =====================================================================
+  # Default receiver (all alerts)
+  # =====================================================================
+  - name: 'default'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'  # Set via environment variable
+        channel: '#alerts'
+        title: 'Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  # =====================================================================
+  # PagerDuty - Critical incidents (on-call engineer)
+  # =====================================================================
+  - name: 'pagerduty'
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'  # Set via environment variable
+        description: '{{ .GroupLabels.alertname }} - {{ .Alerts.Firing | len }} firing'
+        client: 'Roomhy Monitoring'
+        client_url: 'http://localhost:3000'
+        details:
+          firing: '{{ template "pagerduty.default.instances" .Alerts.Firing }}'
+          resolved: '{{ template "pagerduty.default.instances" .Alerts.Resolved }}'
+
+  # =====================================================================
+  # Slack - Database team channel
+  # =====================================================================
+  - name: 'slack-database'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_DATABASE}'  # Separate webhook for #database-alerts
+        channel: '#database-alerts'
+        title: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          Severity: {{ .Alerts.Firing | len }} FIRING
+          {{ range .Alerts.Firing }}{{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+        actions:
+          - type: button
+            text: 'View Dashboard'
+            url: 'http://localhost:3000/d/mongodb'
+          - type: button
+            text: 'Runbook'
+            url: 'https://wiki.internal/runbooks/{{ .GroupLabels.alertname }}'
+
+  # =====================================================================
+  # Slack - Security team
+  # =====================================================================
+  - name: 'slack-security'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_SECURITY}'
+        channel: '#security-alerts'
+        title: '🔒 Security Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts.Firing }}{{ .Annotations.description }}{{ end }}
+        send_resolved: true
+        color: 'danger'  # Red for security
+
+  # =====================================================================
+  # Slack - Infrastructure team
+  # =====================================================================
+  - name: 'slack-infra'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_INFRA}'
+        channel: '#infra-alerts'
+        title: '⚙️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts.Firing }}
+          Instance: {{ .Labels.instance }}
+          {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+  # =====================================================================
+  # Slack - Operations team
+  # =====================================================================
+  - name: 'slack-ops'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_OPS}'
+        channel: '#ops-alerts'
+        title: '📊 Ops Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  # =====================================================================
+  # Email - Ops team (for critical backups)
+  # =====================================================================
+  - name: 'email-ops'
+    email_configs:
+      - to: 'ops-team@roomhy.com'
+        headers:
+          Subject: '[ALERT] {{ .GroupLabels.alertname }}'
+        html: |
+          <h3>{{ .GroupLabels.alertname }}</h3>
+          <p>{{ range .Alerts }}{{ .Annotations.description }}<br>{{ end }}</p>
+          <p><a href="http://localhost:3000">View in Grafana</a></p>
+
+  # =====================================================================
+  # Webhook - Custom integration (optional)
+  # =====================================================================
+  - name: 'webhook'
+    webhook_configs:
+      - url: 'http://localhost:8080/alerts'  # Your custom webhook endpoint
+        send_resolved: true
+
+# ============================================================================
+# Inhibition Rules
+# Prevent certain alerts from firing under specific conditions
+# ============================================================================
+inhibit_rules:
+  # Don't alert on high latency if error rate is already high
+  - source_match:
+      severity: 'critical'
+      alertname: 'HighErrorRate'
+    target_match:
+      severity: 'warning'
+      alertname: 'HighResponseLatency'
+    equal: ['instance']
+
+  # If node is down, suppress CPU/Memory/Disk alerts
+  - source_match:
+      alertname: 'NodeDown'
+    target_match_re:
+      alertname: 'High(CPU|Memory|DiskIO).*'
+    equal: ['instance']
+
+  # If backup is not critical, suppress less critical alerting failures
+  - source_match:
+      alertname: 'BackupNotRunning'
+    target_match:
+      severity: 'info'
+    equal: ['service']
+
+# ============================================================================
+# Notes on Setup
+# ============================================================================
+#
+# 1. Environment Variables Setup:
+#    - SLACK_WEBHOOK_URL: https://hooks.slack.com/services/YOUR/WEBHOOK
+#    - SLACK_WEBHOOK_DATABASE: (separate webhook for #database-alerts)
+#    - SLACK_WEBHOOK_SECURITY: (for #security-alerts)
+#    - SLACK_WEBHOOK_INFRA: (for #infra-alerts)
+#    - SLACK_WEBHOOK_OPS: (for #ops-alerts)
+#    - PAGERDUTY_SERVICE_KEY: Your PagerDuty integration key
+#
+# 2. To set env vars in Docker:
+#    docker-compose -e SLACK_WEBHOOK_URL='...' up
+#
+# 3. Or use a .env file:
+#    docker-compose --env-file .env up
+#
+# 4. Create separate Slack webhooks:
+#    - Slack App Settings → Incoming Webhooks
+#    - Create one webhook per channel
+#    - Get the webhook URL
+#
+# 5. Testing AlertManager:
+#    curl -XPOST http://localhost:9093/api/v1/alerts -d '[
+#      {
+#        "labels": {
+#          "alertname": "TestAlert",
+#          "severity": "critical"
+#        },
+#        "annotations": {
+#          "description": "This is a test alert"
+#        }
+#      }
+#    ]'
+#
+# 6. PagerDuty Integration:
+#    - Create Integration Key in PagerDuty service
+#    - Set as PAGERDUTY_SERVICE_KEY
+#
+# 7. For email alerts:
+#    - Generate Gmail app password
+#    - Set SMTP credentials
+#    - Recipients must be configured
+#
+# 8. Monitoring AlertManager itself:
+#    - Check /api/v1/status
+#    - Look for configuration errors in logs
+#
+# ============================================================================

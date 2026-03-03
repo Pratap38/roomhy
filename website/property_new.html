@@ -12,21 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        * { font-family: 'Inter', sans-serif; }
-        body { background-color: #f9fafb; color: #1f2937; }
-        .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%); color: white; font-weight: 600; transition: all 0.3s; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(59,130,246,0.4); }
-        .btn-secondary { background: white; border: 2px solid #3b82f6; color: #3b82f6; font-weight: 600; }
-        .btn-secondary:hover { background: #eff6ff; }
-        .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .badge-success { background: #d1fae5; color: #065f46; }
-        .badge-info { background: #dbeafe; color: #0c3a6e; }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .locked-state { opacity: 0.5; pointer-events: none; }
-    </style>
+    <link rel="stylesheet" href="assets/css/property_new.css">
 </head>
 <body class="bg-gray-50">
     <!-- Header -->
@@ -335,71 +321,7 @@
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
-
-        // Update UI based on property type
-        function detectPropertyType() {
-            const propertyType = document.getElementById('property-type').textContent;
-            const isBidToAll = propertyType.includes('Hostel') || propertyType.includes('PG');
-            
-            const bidTitle = document.getElementById('bid-info-title');
-            const bidDesc = document.getElementById('bid-info-desc');
-            const bidBtnText = document.getElementById('bid-btn-text');
-            const sidebarBidText = document.getElementById('sidebar-bid-text');
-            const ctaTitle = document.getElementById('cta-title');
-            const ctaDesc = document.getElementById('cta-description');
-            
-            if (isBidToAll) {
-                bidTitle.textContent = 'Bid to All';
-                bidDesc.textContent = 'Your bid will be sent to all matching hostels in this area';
-                bidBtnText.textContent = 'Bid to All';
-                sidebarBidText.textContent = 'Bid to All';
-                ctaTitle.textContent = 'Ready to Join?';
-                ctaDesc.textContent = 'Send your bid to all hostels in this area';
-            } else {
-                bidTitle.textContent = 'Bid Now';
-                bidDesc.textContent = 'Your bid will be sent only to this property';
-                bidBtnText.textContent = 'Bid Now';
-                sidebarBidText.textContent = 'Bid Now';
-                ctaTitle.textContent = 'Interested?';
-                ctaDesc.textContent = 'Place your bid for this property';
-            }
-        }
-
-        function openPaymentModal() {
-            document.getElementById('payment-modal').classList.remove('hidden');
-            document.getElementById('payment-modal').classList.add('flex');
-        }
-
-        function closePaymentModal() {
-            document.getElementById('payment-modal').classList.add('hidden');
-            document.getElementById('payment-modal').classList.remove('flex');
-        }
-
-        // Image Carousel
-        const carousel = document.getElementById('carousel');
-        let currentIndex = 0;
-        const slides = carousel?.children?.length || 0;
-
-        // Mobile menu functionality
-        const mobileBtn = document.getElementById('mobile-menu-btn');
-        const mobileSidebar = document.getElementById('mobile-sidebar');
-        const mobileOverlay = document.getElementById('mobile-overlay');
-        const closeMobile = document.getElementById('close-mobile-menu');
-
-        function toggleMobile() {
-            mobileSidebar.classList.toggle('translate-x-full');
-            mobileOverlay.classList.toggle('hidden');
-        }
-
-        mobileBtn.onclick = toggleMobile;
-        closeMobile.onclick = toggleMobile;
-        mobileOverlay.onclick = toggleMobile;
-
-        // Initialize
-        detectPropertyType();
-    </script>
+    <script src="assets/js/property_new.js"></script>
 
     <!-- Mobile Menu Overlay -->
     <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-[60] hidden backdrop-blur-sm"></div>

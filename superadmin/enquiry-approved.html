@@ -10,26 +10,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .sidebar { background-color: #111827; color: #9ca3af; }
-        .sidebar-link {
-            display: flex; align-items: center; padding: 0.75rem 1.5rem; 
-            color: #9ca3af; font-weight: 500; font-size: 0.9rem;
-            transition: all 0.2s; border-left: 3px solid transparent; cursor: pointer;
-        }
-        .sidebar-link.active { background-color: #1f2937; color: #ffffff; border-left-color: #a855f7; }
-        
-        /* Mobile Menu Icon - Transparent Background */
-        #mobile-menu-open { background-color: transparent !important; padding: 0.5rem !important; border-radius: 0.375rem; transition: all 0.2s ease; }
-        #mobile-menu-open:hover { background-color: transparent !important; color: #64748b; }
-    </style>
+    <link rel="stylesheet" href="assets/css/enquiry-approved.css">
 </head>
 <body class="text-slate-800">
     <div class="flex h-screen overflow-hidden">
         <aside class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto">
             <div class="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827]">
-                 <div class="flex items-center gap-3"><div class="bg-purple-600 p-1.5 rounded-lg"><i data-lucide="building-2" class="w-5 h-5 text-white"></i></div><div><h1 class="text-xl font-bold text-white">RoomHy</h1></div></div>
+                 <div class="flex items-center gap-3"><div><img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-8 w-auto"></div></div>
             </div>
             <nav class="flex-1 py-6 space-y-1">
                 <a href="../superadmin.html" class="sidebar-link"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Dashboard</a>
@@ -69,65 +56,12 @@
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
-        function loadApproved() {
-            const tbody = document.getElementById('approvedBody');
-            const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]').filter(v => v.status === 'approved');
-
-            if(!visits.length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-gray-400">No approved visits found.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = visits.map(v => {
-                const prop = v.propertyInfo || {};
-                const profPhotos = v.professionalPhotos || [];
-                const fieldPhotos = v.photos || [];
-                const isLive = v.isLiveOnWebsite || false;
-                const thumb = profPhotos[0] || fieldPhotos[0] || 'https://via.placeholder.com/100';
-
-                return `
-                <tr>
-                    <td class="px-6 py-4"><img src="${thumb}" class="w-12 h-12 rounded object-cover border"></td>
-                    <td class="px-6 py-4">
-                        <div class="font-bold text-gray-800">${prop.name}</div>
-                        <div class="text-[10px] text-gray-500">${prop.area}</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="text-[10px] font-bold ${profPhotos.length ? 'text-green-600 bg-green-50' : 'text-orange-600 bg-orange-50'} px-2 py-1 rounded">
-                            ${profPhotos.length ? 'Uploaded' : 'Pending'}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="${isLive ? 'text-green-600 bg-green-50' : 'text-gray-400 bg-gray-50'} text-[10px] font-bold px-2 py-1 rounded">
-                            ${isLive ? 'LIVE' : 'OFFLINE'}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-xs font-mono">${v.generatedCredentials?.loginId || '-'}</td>
-                    <td class="px-6 py-4 text-center">
-                        <button onclick="revoke('${v._id}')" class="text-xs text-red-600 hover:underline">Revoke</button>
-                    </td>
-                </tr>`;
-            }).join('');
-            lucide.createIcons();
-        }
-
-        function revoke(id) {
-            if(!confirm("Are you sure you want to move this back to pending/hold?")) return;
-            const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
-            const idx = visits.findIndex(v => v._id === id);
-            if(idx !== -1) {
-                visits[idx].status = 'hold';
-                localStorage.setItem('roomhy_visits', JSON.stringify(visits));
-                loadApproved();
-            }
-        }
-        document.addEventListener('DOMContentLoaded', loadApproved);
-    </script>
+    <script src="assets/js/enquiry-approved.js"></script>
         <script src="./mobile-sidebar.js"></script>
 </body>
 </html>
+
+
 
 
 

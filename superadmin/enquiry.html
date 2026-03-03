@@ -19,29 +19,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .sidebar { background-color: #111827; color: #9ca3af; }
-        .sidebar-link {
-            display: flex; align-items: center; padding: 0.75rem 1.5rem; 
-            color: #9ca3af; font-weight: 500; font-size: 0.9rem;
-            transition: all 0.2s; border-left: 3px solid transparent; cursor: pointer;
-        }
-        .sidebar-link:hover { background-color: #1f2937; color: #f3f4f6; }
-        .sidebar-link.active { background-color: #1f2937; color: #ffffff; border-left-color: #a855f7; }
-        .submenu { background-color: #0f172a; overflow: hidden; transition: max-height 0.3s ease-in-out; max-height: 0; }
-        .submenu.open { max-height: 500px; }
-        .submenu a { padding-left: 3.5rem; font-size: 0.85rem; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
-        
-        .status-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
-        .status-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        
-        /* Mobile Menu Icon - Transparent Background */
-        #mobile-menu-open { background-color: transparent !important; padding: 0.5rem !important; border-radius: 0.375rem; transition: all 0.2s ease; }
-        #mobile-menu-open:hover { background-color: transparent !important; color: #64748b; }
-    </style>
+    <link rel="stylesheet" href="assets/css/enquiry.css">
 </head>
 <body class="text-slate-800">
     <!-- Mobile Sidebar Overlay -->
@@ -52,8 +30,8 @@
         <aside id="mobile-sidebar" class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827] z-10">
                  <div class="flex items-center gap-3">
-                     <div class="bg-purple-600 p-1.5 rounded-lg"><i data-lucide="building-2" class="w-5 h-5 text-white"></i></div>
-                     <div><h1 class="text-xl font-bold text-white">RoomHy</h1><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
+                     
+                     <div><img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-8 w-auto"><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
                  </div>
             </div>
             <nav class="flex-1 py-6 space-y-1">
@@ -966,41 +944,11 @@
     <script src="../website/js/safe-storage.js"></script>
         <script src="./mobile-sidebar.js"></script>
     <script src="js/SuperAdminNotificationManager.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            window.superAdminNotificationManager = new SuperAdminNotificationManager();
-            window.superAdminNotificationManager.requestNotificationPermission();
-            window.superAdminNotificationManager.startPolling();
-
-            const bellBtn = document.getElementById('notificationBellBtn');
-            const dropdown = document.getElementById('notificationDropdown');
-            if (bellBtn && dropdown) {
-                bellBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdown.classList.toggle('hidden');
-                });
-                document.addEventListener('click', (e) => {
-                    if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                    }
-                });
-            }
-        });
-
-        function markAllRead() {
-            if (window.superAdminNotificationManager) {
-                window.superAdminNotificationManager.markAllAsRead();
-            }
-        }
-
-        function clearAll() {
-            if (window.superAdminNotificationManager) {
-                window.superAdminNotificationManager.clearAll();
-            }
-        }
-    </script>
+    <script src="assets/js/enquiry.js"></script>
 </body>
 </html>
+
+
 
 
 

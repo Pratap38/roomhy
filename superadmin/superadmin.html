@@ -35,74 +35,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        
-        /* --- Sidebar Styling (Dark Theme) --- */
-        .sidebar {
-            background-color: #111827;
-            color: #9ca3af;
-        }
-        .sidebar-link {
-            color: #9ca3af;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1.5rem;
-            font-size: 0.9rem;
-            border-left: 3px solid transparent;
-            cursor: pointer;
-        }
-        .sidebar-link:hover {
-            color: #f3f4f6; 
-            background-color: #1f2937;
-        }
-        .sidebar-link.active {
-            background-color: #1f2937;
-            color: #ffffff;
-            border-left-color: #a855f7; /* Purple-500 */
-        }
-
-        /* Submenu Styling */
-        .submenu {
-            background-color: #0f172a;
-            overflow: hidden;
-            transition: max-height 0.3s ease-in-out;
-            max-height: 0;
-        }
-        .submenu.open {
-            max-height: 500px;
-        }
-        .submenu a {
-            padding-left: 3.5rem;
-            font-size: 0.85rem;
-        }
-        
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 4px;
-        }
-        
-        /* Mobile Menu Icon - Transparent Background */
-        #mobile-menu-open {
-            background-color: transparent !important;
-            padding: 0.5rem !important;
-            border-radius: 0.375rem;
-            transition: all 0.2s ease;
-        }
-        #mobile-menu-open:hover {
-            background-color: transparent !important;
-            color: #64748b;
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/superadmin.css">
 </head>
 <body class="text-slate-800">
     <!-- Mobile Overlay -->
@@ -113,8 +46,8 @@
         <aside id="mobile-sidebar" class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827] z-10">
                  <div class="flex items-center gap-3">
-                     <div class="bg-purple-600 p-1.5 rounded-lg"><i data-lucide="building-2" class="w-5 h-5 text-white"></i></div>
-                     <div><h1 class="text-xl font-bold text-white">RoomHy</h1><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
+                     
+                     <div><img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-8 w-auto"><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
                  </div>
                  <button id="mobile-sidebar-close" class="md:hidden ml-auto p-2 text-gray-400 hover:text-white">
                      <i data-lucide="x" class="w-5 h-5"></i>
@@ -527,87 +460,12 @@
     
     <!-- Notification System -->
     <script src="js/SuperAdminNotificationManager.js"></script>
-    <script>
-        // Initialize notification system when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize notification manager
-            window.superAdminNotificationManager = new SuperAdminNotificationManager();
-            
-            // Request notification permission
-            window.superAdminNotificationManager.requestNotificationPermission().then(granted => {
-                if (granted) {
-                    console.log('✅ Notification permission granted');
-                }
-            });
-            
-            // Start polling for notifications
-            window.superAdminNotificationManager.startPolling();
-            
-            // Setup notification bell click handler
-            const bellBtn = document.getElementById('notificationBellBtn');
-            const dropdown = document.getElementById('notificationDropdown');
-            
-            if (bellBtn && dropdown) {
-                bellBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    dropdown.classList.toggle('hidden');
-                });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
-                        dropdown.classList.add('hidden');
-                    }
-                });
-            }
-            
-            // Register callbacks for different notification types
-            window.superAdminNotificationManager.onNotification('new_booking', (data) => {
-                console.log('📅 New booking received:', data);
-            });
-            
-            window.superAdminNotificationManager.onNotification('new_enquiry', (data) => {
-                console.log('❓ New enquiry received:', data);
-            });
-        });
-        
-        // Global functions for notification actions
-        function markAllRead() {
-            if (window.superAdminNotificationManager) {
-                window.superAdminNotificationManager.markAllAsRead();
-            }
-        }
-        
-        function clearAll() {
-            if (window.superAdminNotificationManager) {
-                window.superAdminNotificationManager.clearAll();
-            }
-        }
-        
-        // Request notification permission manually
-        function requestNotificationPermission() {
-            if (window.superAdminNotificationManager) {
-                window.superAdminNotificationManager.requestNotificationPermission().then(granted => {
-                    if (granted) {
-                        alert('✅ Browser notifications enabled.');
-                    } else {
-                        if (!('Notification' in window)) {
-                            alert('This browser does not support system notifications. In-page popup and sound will still work.');
-                            return;
-                        }
-                        if (Notification.permission === 'denied') {
-                            alert('Browser notifications are blocked. Enable notifications for this site in browser settings. In-page popup and sound are still active.');
-                            return;
-                        }
-                        alert('Notification permission not granted. In-page popup and sound are still active.');
-                    }
-                });
-            }
-        }
-    </script>
+    <script src="assets/js/superadmin.js"></script>
         <script src="./mobile-sidebar.js"></script>
 </body>
 </html>
+
+
 
 
 

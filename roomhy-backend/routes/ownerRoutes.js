@@ -12,9 +12,10 @@ const Room = require('../models/Room');
 const Enquiry = require('../models/Enquiry');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const ownerController = require('../controllers/ownercontroller');
+const { auditTrail } = require('../middleware/auditTrail');
 
 // 1. Create new owner (Preserved from original - used by enquiry approval/import)
-router.post('/', async (req, res) => {
+router.post('/', auditTrail('owners'), async (req, res) => {
     try {
         console.log('📝 Owner POST request:', req.body);
         const owner = new Owner(req.body);
@@ -50,10 +51,10 @@ router.get('/:loginId', ownerController.getOwnerById);
 
 // 4. Update Owner KYC Status (NEW - Super Admin Only)
 // Relaxed auth for development/testing
-router.patch('/:id/kyc', ownerController.updateOwnerKyc);
+router.patch('/:id/kyc', protect, authorize('superadmin', 'areamanager'), auditTrail('owners'), ownerController.updateOwnerKyc);
 
 // 5. Update owner by loginId (Preserved - Used for Password Updates)
-router.patch('/:loginId', async (req, res) => {
+router.patch('/:loginId', auditTrail('owners'), async (req, res) => {
     try {
         console.log('✏️ Owner PATCH request for:', req.params.loginId);
 
@@ -112,7 +113,7 @@ router.get('/:loginId/properties', async (req, res) => {
 });
 
 // 7b. Create property for owner by loginId (used by owner panel rooms/properties sync)
-router.post('/:loginId/properties', async (req, res) => {
+router.post('/:loginId/properties', auditTrail('owners'), async (req, res) => {
     try {
         const loginId = String(req.params.loginId || '').toUpperCase();
         const { title, address, locationCode, city, area, description } = req.body || {};
@@ -174,7 +175,7 @@ module.exports = router;
 
 // POST /owners/:loginId/request-head
 // Called by an authenticated owner to request escalation to Super Admin (head).
-router.post('/:loginId/request-head', protect, async (req, res) => {
+router.post('/:loginId/request-head', protect, auditTrail('owners'), async (req, res) => {
     try {
         const loginId = req.params.loginId;
         // only owner role should be allowed here

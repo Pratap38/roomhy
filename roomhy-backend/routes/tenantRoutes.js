@@ -5,9 +5,10 @@ const Room = require('../models/Room');
 const Property = require('../models/Property');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const tenantController = require('../controllers/tenantController');
+const { auditTrail } = require('../middleware/auditTrail');
 
 // 0. Assign tenant to room - POST must come before GET
-router.post('/assign', tenantController.assignTenant);
+router.post('/assign', protect, authorize('superadmin', 'areamanager', 'owner'), auditTrail('tenants'), tenantController.assignTenant);
 
 // 1. Get all tenants
 router.get('/', async (req, res) => {
@@ -36,7 +37,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 3. Create tenant
-router.post('/', async (req, res) => {
+router.post('/', protect, authorize('superadmin', 'areamanager', 'owner'), auditTrail('tenants'), async (req, res) => {
     try {
         const tenant = new Tenant(req.body);
         await tenant.save();
@@ -47,7 +48,7 @@ router.post('/', async (req, res) => {
 });
 
 // 4. Update tenant
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', protect, authorize('superadmin', 'areamanager', 'owner'), auditTrail('tenants'), async (req, res) => {
     try {
         const tenant = await Tenant.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!tenant) return res.status(404).json({ message: 'Tenant not found' });
@@ -58,7 +59,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // 5. Delete tenant
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', protect, authorize('superadmin', 'areamanager', 'owner'), auditTrail('tenants'), async (req, res) => {
     try {
         const tenant = await Tenant.findByIdAndDelete(req.params.id);
         if (!tenant) return res.status(404).json({ message: 'Tenant not found' });

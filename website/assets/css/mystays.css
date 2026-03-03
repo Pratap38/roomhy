@@ -1,0 +1,63 @@
+body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f2f6;
+            color: #1F2937;
+        }
+
+        .text-shadow {
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .light-card {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .light-card:hover {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            transform: translateY(-4px);
+        }
+
+        .horizontal-slider::-webkit-scrollbar {
+            display: none;
+        }
+        .horizontal-slider {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Status badge styles */
+        .status-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255,255,255,0.95);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border: 2px solid;
+        }
+
+        .status-active {
+            color: #059669;
+            border-color: #059669;
+        }
+
+        .status-upcoming {
+            color: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .status-completed {
+            color: #6b7280;
+            border-color: #6b7280;
+        }
+
+        .modal {
+            transition: opacity 0.3s ease;
+        }

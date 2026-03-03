@@ -1,0 +1,71 @@
+body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        /* --- Sidebar Styling (Dark Theme) --- */
+        .sidebar {
+            background-color: #111827;
+            color: #9ca3af;
+        }
+        .sidebar-link {
+            color: #9ca3af;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+        .sidebar-link:hover {
+            color: #f3f4f6; 
+            background-color: #1f2937;
+        }
+        .sidebar-link.active {
+            background-color: #1f2937;
+            color: #ffffff;
+            border-left-color: #a855f7; /* Purple-500 */
+        }
+
+        /* Submenu Styling */
+        .submenu {
+            background-color: #0f172a;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            max-height: 0;
+        }
+        .submenu.open {
+            max-height: 500px;
+        }
+        .submenu a {
+            padding-left: 3.5rem;
+            font-size: 0.85rem;
+        }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        /* Chart Placeholders */
+        .chart-placeholder {
+            background: repeating-linear-gradient(
+                45deg,
+                #f9fafb,
+                #f9fafb 10px,
+                #f3f4f6 10px,
+                #f3f4f6 20px
+            );
+        }
+        
+        /* Report Card Hover */
+        .report-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
