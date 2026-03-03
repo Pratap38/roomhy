@@ -1,6 +1,6 @@
-const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:5001'
-  : 'https://api.roomhy.com';
+const API_BASES = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? ['http://localhost:5001']
+  : ['', 'https://api.roomhy.com'];
 
 const params = new URLSearchParams(location.search);
 if (params.get('loginId')) document.getElementById('loginId').value = params.get('loginId');
@@ -21,14 +21,22 @@ function readFileAsData(file) {
 }
 
 async function post(path, payload) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.success) throw new Error(data.message || `HTTP ${res.status}`);
-  return data;
+  let lastErr = null;
+  for (const base of API_BASES) {
+    try {
+      const res = await fetch(`${base}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.success) return data;
+      lastErr = new Error(data.message || `HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('Request failed');
 }
 
 document.getElementById('startDigiLockerBtn').onclick = async () => {

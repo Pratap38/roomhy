@@ -1,6 +1,6 @@
 const API_BASES = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? ['http://localhost:5001']
-  : ['https://api.roomhy.com'];
+  : ['', 'https://api.roomhy.com'];
 
 const params = new URLSearchParams(location.search);
 const hashQuery = location.hash && location.hash.includes('?')
