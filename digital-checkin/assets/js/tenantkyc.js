@@ -5,6 +5,7 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
 const params = new URLSearchParams(location.search);
 if (params.get('loginId')) document.getElementById('loginId').value = params.get('loginId');
 let lastRefId = '';
+const TENANT_KYC_STATE_KEY = 'roomhy_tenant_kyc_state';
 
 function readFileAsData(file) {
   return new Promise((resolve, reject) => {
@@ -39,6 +40,51 @@ async function post(path, payload) {
   throw lastErr || new Error('Request failed');
 }
 
+function loadKycState() {
+  try {
+    const state = JSON.parse(sessionStorage.getItem(TENANT_KYC_STATE_KEY) || '{}');
+    if (!state || typeof state !== 'object') return;
+    if (!document.getElementById('loginId').value && state.loginId) document.getElementById('loginId').value = state.loginId;
+    if (state.aadhaarNumber) document.getElementById('aadhaarNumber').value = state.aadhaarNumber;
+    if (state.aadhaarLinkedPhone) document.getElementById('aadhaarLinkedPhone').value = state.aadhaarLinkedPhone;
+    if (state.referenceId) {
+      document.getElementById('digilockerRef').value = state.referenceId;
+      lastRefId = state.referenceId;
+    }
+  } catch (_) {}
+}
+
+function saveKycState(extra = {}) {
+  try {
+    const state = {
+      loginId: document.getElementById('loginId').value.trim(),
+      aadhaarNumber: document.getElementById('aadhaarNumber').value.trim().replace(/\D/g, ''),
+      aadhaarLinkedPhone: document.getElementById('aadhaarLinkedPhone').value.trim(),
+      referenceId: document.getElementById('digilockerRef').value.trim() || lastRefId || '',
+      ...extra
+    };
+    sessionStorage.setItem(TENANT_KYC_STATE_KEY, JSON.stringify(state));
+  } catch (_) {}
+}
+
+function applyCallbackParams() {
+  const callbackParams = new URLSearchParams(window.location.search);
+  const referenceFromCallback =
+    callbackParams.get('reference_id') ||
+    callbackParams.get('ref_id') ||
+    callbackParams.get('referenceId') ||
+    '';
+  if (referenceFromCallback) {
+    lastRefId = referenceFromCallback;
+    document.getElementById('digilockerRef').value = referenceFromCallback;
+    saveKycState({ referenceId: referenceFromCallback });
+    document.getElementById('otpMsg').innerText = 'DigiLocker callback received. Click Complete Verification.';
+  }
+}
+
+loadKycState();
+applyCallbackParams();
+
 document.getElementById('startDigiLockerBtn').onclick = async () => {
   try {
     const frontFile = document.getElementById('aadhaarFront').files[0];
@@ -53,11 +99,13 @@ document.getElementById('startDigiLockerBtn').onclick = async () => {
       aadhaarNumber,
       aadhaarLinkedPhone: document.getElementById('aadhaarLinkedPhone').value.trim(),
       aadhaarFront: await readFileAsData(frontFile),
-      aadhaarBack: await readFileAsData(backFile)
+      aadhaarBack: await readFileAsData(backFile),
+      redirectUrl: `${window.location.origin}${window.location.pathname}?loginId=${encodeURIComponent(document.getElementById('loginId').value.trim())}`
     });
 
     lastRefId = data.referenceId || '';
     document.getElementById('digilockerRef').value = lastRefId;
+    saveKycState({ referenceId: lastRefId, verificationId: data.verificationId || '' });
     document.getElementById('otpMsg').innerText = 'DigiLocker verification initiated. Complete it and click Complete Verification.';
     if (data.verifyUrl) window.location.href = data.verifyUrl;
   } catch (err) {
@@ -77,6 +125,7 @@ document.getElementById('completeDigiLockerBtn').onclick = async () => {
       aadhaarNumber,
       referenceId
     };
+    saveKycState({ referenceId });
     await post('/api/checkin/tenant/kyc/digilocker/complete', payload);
 
     try {
