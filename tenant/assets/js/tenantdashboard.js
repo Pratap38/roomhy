@@ -1,4 +1,5 @@
 lucide.createIcons();
+        let currentTenantRecord = null;
 
         function getTenantUser() {
             try {
@@ -13,6 +14,77 @@ lucide.createIcons();
             return user ? (user.tenantId || user.loginId || '') : '';
         }
 
+        function getLocalTenantRecord(loginId) {
+            const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+            return tenants.find(t => (t.loginId || '').toUpperCase() === String(loginId || '').toUpperCase()) || null;
+        }
+
+        function upsertLocalTenantRecord(record) {
+            if (!record || !record.loginId) return;
+            const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+            const loginId = String(record.loginId).toUpperCase();
+            const idx = tenants.findIndex(t => (t.loginId || '').toUpperCase() === loginId);
+            if (idx >= 0) tenants[idx] = { ...tenants[idx], ...record };
+            else tenants.push(record);
+            localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
+        }
+
+        async function fetchTenantRecordFromApi(loginId) {
+            try {
+                const res = await fetch(`${API_URL}/api/tenants`);
+                if (!res.ok) return null;
+                const tenants = await res.json();
+                if (!Array.isArray(tenants)) return null;
+                return tenants.find(t => (t.loginId || '').toUpperCase() === String(loginId || '').toUpperCase()) || null;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function getPropertyName(tenantRecord) {
+            if (!tenantRecord) return 'Roomhy Property';
+            if (typeof tenantRecord.property === 'string') return tenantRecord.property || tenantRecord.propertyTitle || 'Roomhy Property';
+            if (tenantRecord.property && typeof tenantRecord.property === 'object') {
+                return tenantRecord.property.title || tenantRecord.property.name || tenantRecord.propertyTitle || 'Roomhy Property';
+            }
+            return tenantRecord.propertyTitle || 'Roomhy Property';
+        }
+
+        function getRoomInfo(tenantRecord) {
+            if (!tenantRecord) return 'Room -';
+            const roomNo = tenantRecord.roomNo || (tenantRecord.room && tenantRecord.room.number) || '-';
+            const bedNo = tenantRecord.bedNo || '-';
+            return `Room ${roomNo} (${bedNo})`;
+        }
+
+        function renderTenantSummary(user, tenantRecord) {
+            const safeName = (user && user.name) ? user.name : 'Tenant';
+            document.getElementById('welcome-name').innerText = safeName.split(' ')[0];
+            document.getElementById('headerAvatar').innerText = safeName.charAt(0).toUpperCase();
+            document.getElementById('userMenuName').innerText = safeName;
+
+            if (!tenantRecord) {
+                document.getElementById('login-id').innerText = user.loginId || getUserId();
+                document.getElementById('login-id-detail').innerText = user.loginId || getUserId();
+                return;
+            }
+
+            const rent = Number(tenantRecord.agreedRent || 0);
+            const propName = getPropertyName(tenantRecord);
+            const roomInfo = getRoomInfo(tenantRecord);
+
+            document.getElementById('rent-amount').innerText = `\u20B9 ${rent.toLocaleString()}`;
+            document.getElementById('modal-amount').innerText = `\u20B9 ${rent.toLocaleString()}`;
+
+            document.getElementById('prop-name').innerText = propName;
+            document.getElementById('prop-name-detail').innerText = propName;
+            document.getElementById('room-info').innerText = roomInfo;
+            document.getElementById('room-info-detail').innerText = roomInfo;
+            document.getElementById('login-id').innerText = tenantRecord.loginId || user.loginId || getUserId();
+            document.getElementById('login-id-detail').innerText = tenantRecord.loginId || user.loginId || getUserId();
+            document.getElementById('move-in-date-detail').innerText = tenantRecord.moveInDate ? new Date(tenantRecord.moveInDate).toLocaleDateString('en-IN') : '-';
+        }
+
         function showUserMenu() {
             document.getElementById('userMenu').classList.add('show');
         }
@@ -21,7 +93,7 @@ lucide.createIcons();
             document.getElementById('userMenu').classList.remove('show');
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const user = getTenantUser();
             if (!user || user.role !== 'tenant') {
                 document.getElementById('sessionModal').classList.remove('hidden');
@@ -29,36 +101,14 @@ lucide.createIcons();
                 return;
             }
 
-            const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-            const tenantRecord = tenants.find(t => t.loginId === user.loginId);
-
-            document.getElementById('welcome-name').innerText = user.name.split(' ')[0];
-            document.getElementById('headerAvatar').innerText = user.name.charAt(0).toUpperCase();
-            document.getElementById('userMenuName').innerText = user.name;
-
-            if (tenantRecord) {
-                const rent = tenantRecord.agreedRent || 0;
-                let propName = 'Roomhy Property';
-                if (tenantRecord.property) {
-                    if (typeof tenantRecord.property === 'string') propName = tenantRecord.property;
-                    else if (typeof tenantRecord.property === 'object') propName = tenantRecord.property.title || tenantRecord.property.name || JSON.stringify(tenantRecord.property);
-                }
-                const roomInfo = `Room ${tenantRecord.roomNo || '-'} (${tenantRecord.bedNo || '-'})`;
-                
-                document.getElementById('rent-amount').innerText = `\u20B9 ${rent.toLocaleString()}`;
-                document.getElementById('modal-amount').innerText = `\u20B9 ${rent.toLocaleString()}`;
-                
-                document.getElementById('prop-name').innerText = propName;
-                document.getElementById('prop-name-detail').innerText = propName;
-                document.getElementById('room-info').innerText = roomInfo;
-                document.getElementById('room-info-detail').innerText = roomInfo;
-                document.getElementById('login-id').innerText = tenantRecord.loginId || getUserId();
-                document.getElementById('login-id-detail').innerText = tenantRecord.loginId || getUserId();
-                document.getElementById('move-in-date-detail').innerText = tenantRecord.moveInDate ? new Date(tenantRecord.moveInDate).toLocaleDateString('en-IN') : '-';
-            } else {
-                document.getElementById('login-id').innerText = getUserId();
-                document.getElementById('login-id-detail').innerText = getUserId();
+            const loginId = (user.loginId || '').toUpperCase();
+            let tenantRecord = getLocalTenantRecord(loginId);
+            if (!tenantRecord) {
+                tenantRecord = await fetchTenantRecordFromApi(loginId);
+                if (tenantRecord) upsertLocalTenantRecord(tenantRecord);
             }
+            currentTenantRecord = tenantRecord || null;
+            renderTenantSummary(user, tenantRecord);
         });
 
         document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
@@ -153,7 +203,7 @@ lucide.createIcons();
             if (!user) return null;
 
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-            const tenantRecord = tenants.find(t => t.loginId === user.loginId);
+            const tenantRecord = currentTenantRecord || tenants.find(t => (t.loginId || '').toUpperCase() === (user.loginId || '').toUpperCase());
             if (!tenantRecord) return null;
 
             const ownerLoginId = tenantRecord.ownerLoginId || tenantRecord.ownerId || (tenantRecord.owner && (tenantRecord.owner.loginId || tenantRecord.owner.ownerId)) || '';
