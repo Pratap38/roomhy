@@ -10,6 +10,7 @@ router.get('/', rentController.getAllRents);
 
 // Get rents for specific owner
 router.get('/owner/:ownerLoginId', rentController.getRentsByOwner);
+router.get('/tenant/:tenantLoginId', rentController.getRentsByTenant);
 
 // Send rent reminders (normal 10-15th period) - BEFORE parameterized routes
 router.post('/reminders/send', rentController.sendRentReminder);

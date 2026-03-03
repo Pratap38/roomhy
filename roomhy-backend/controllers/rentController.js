@@ -226,6 +226,28 @@ exports.recordPaymentByTenant = async (req, res) => {
     }
 };
 
+// Get rent/payment history for a tenant by loginId
+exports.getRentsByTenant = async (req, res) => {
+    try {
+        const tenantLoginId = String(req.params.tenantLoginId || '').trim().toUpperCase();
+        const limit = Math.min(Number(req.query.limit || 12), 100);
+
+        if (!tenantLoginId) {
+            return res.status(400).json({ success: false, message: 'tenantLoginId is required' });
+        }
+
+        const rents = await Rent.find({ tenantLoginId })
+            .sort({ paymentDate: -1, updatedAt: -1, createdAt: -1 })
+            .limit(limit)
+            .lean();
+
+        return res.json({ success: true, rents });
+    } catch (err) {
+        console.error('Get rents by tenant error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 // Send payment confirmation email
 async function sendPaymentConfirmationEmail(rent) {
     try {

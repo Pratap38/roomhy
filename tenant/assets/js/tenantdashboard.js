@@ -43,7 +43,15 @@ lucide.createIcons();
 
         function getPropertyName(tenantRecord) {
             if (!tenantRecord) return 'Roomhy Property';
-            if (typeof tenantRecord.property === 'string') return tenantRecord.property || tenantRecord.propertyTitle || 'Roomhy Property';
+            if (tenantRecord.propertyTitle && String(tenantRecord.propertyTitle).trim()) {
+                return String(tenantRecord.propertyTitle).trim();
+            }
+            if (typeof tenantRecord.property === 'string') {
+                // Ignore ObjectId-like values; prefer human-readable title.
+                const raw = String(tenantRecord.property).trim();
+                const looksLikeObjectId = /^[a-f0-9]{24}$/i.test(raw);
+                if (!looksLikeObjectId && raw) return raw;
+            }
             if (tenantRecord.property && typeof tenantRecord.property === 'object') {
                 return tenantRecord.property.title || tenantRecord.property.name || tenantRecord.propertyTitle || 'Roomhy Property';
             }
@@ -85,6 +93,98 @@ lucide.createIcons();
             document.getElementById('move-in-date-detail').innerText = tenantRecord.moveInDate ? new Date(tenantRecord.moveInDate).toLocaleDateString('en-IN') : '-';
         }
 
+        function formatAmount(value) {
+            const n = Number(value || 0);
+            return `\u20B9 ${n.toLocaleString('en-IN')}`;
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '-';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '-';
+            return d.toLocaleString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getPaymentMethodLabel(method) {
+            const map = {
+                razorpay: 'Online',
+                cash: 'Cash',
+                bank_transfer: 'Bank Transfer',
+                other: 'Other'
+            };
+            return map[String(method || '').toLowerCase()] || 'Unknown';
+        }
+
+        async function fetchTenantPaymentHistory(loginId) {
+            try {
+                const res = await fetch(`${API_URL}/api/rents/tenant/${encodeURIComponent(loginId)}?limit=15`);
+                if (!res.ok) return [];
+                const data = await res.json().catch(() => ({}));
+                if (!data || !Array.isArray(data.rents)) return [];
+                return data.rents;
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function renderActivityTimeline(rents) {
+            const timeline = document.querySelector('#activity .space-y-6');
+            if (!timeline) return;
+
+            if (!Array.isArray(rents) || rents.length === 0) {
+                timeline.innerHTML = `
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center border-4 border-white shadow-md">
+                                <i data-lucide="clock-3" class="w-5 h-5 text-slate-500"></i>
+                            </div>
+                        </div>
+                        <div class="pt-1">
+                            <p class="font-semibold text-slate-900">No payment activity yet</p>
+                            <p class="text-sm text-slate-500 mt-1">Your rent payments will appear here.</p>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            timeline.innerHTML = rents.map((rent, idx) => {
+                const status = String(rent.paymentStatus || 'pending').toLowerCase();
+                const isPaid = status === 'paid' || status === 'completed';
+                const iconBg = isPaid ? 'bg-green-100' : 'bg-amber-100';
+                const iconColor = isPaid ? 'text-green-600' : 'text-amber-600';
+                const icon = isPaid ? 'check-circle' : 'clock-3';
+                const title = isPaid ? 'Rent Paid Successfully' : 'Rent Payment Pending';
+                const amount = formatAmount(rent.paidAmount || rent.totalDue || rent.rentAmount || 0);
+                const method = getPaymentMethodLabel(rent.paymentMethod);
+                const when = formatDateTime(rent.paymentDate || rent.updatedAt || rent.createdAt);
+
+                return `
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 ${iconBg} rounded-full flex items-center justify-center border-4 border-white shadow-md">
+                                <i data-lucide="${icon}" class="w-5 h-5 ${iconColor}"></i>
+                            </div>
+                            ${idx < rents.length - 1 ? '<div class="w-0.5 h-12 bg-slate-200 mt-2"></div>' : ''}
+                        </div>
+                        <div class="pt-1">
+                            <p class="font-semibold text-slate-900">${title}</p>
+                            <p class="text-sm text-slate-500 mt-1">${when} • ${amount} • ${method}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
         function showUserMenu() {
             document.getElementById('userMenu').classList.add('show');
         }
@@ -109,6 +209,9 @@ lucide.createIcons();
             }
             currentTenantRecord = tenantRecord || null;
             renderTenantSummary(user, tenantRecord);
+
+            const history = await fetchTenantPaymentHistory(loginId);
+            renderActivityTimeline(history);
         });
 
         document.getElementById('mobile-menu-toggle').addEventListener('click', () => {

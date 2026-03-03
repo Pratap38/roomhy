@@ -84,6 +84,26 @@ lucide.createIcons();
             };
         }
 
+        function resolveTenantPropertyText(t) {
+            if (!t) return 'Unknown Property';
+            const propObj = (t.property && typeof t.property === 'object') ? t.property : null;
+            if (propObj) {
+                const title = propObj.title || propObj.name || '';
+                if (title) return title + (propObj.locationCode ? ` (${propObj.locationCode})` : '');
+            }
+
+            const directTitle = t.propertyTitle || t.propertyName || '';
+            if (directTitle) return directTitle;
+
+            if (typeof t.property === 'string') {
+                const raw = String(t.property).trim();
+                // Ignore Mongo ObjectId-like values shown to users.
+                if (!/^[a-f0-9]{24}$/i.test(raw) && raw) return raw;
+            }
+
+            return 'Unknown Property';
+        }
+
         function loadTenants() {
             // Try backend first (requires superadmin token), fallback to localStorage
             let tenants = [];
@@ -112,7 +132,7 @@ lucide.createIcons();
                 // Filter Logic
                 const search = document.getElementById('areaSearch').value.toLowerCase();
                 const filteredTenants = tenants.filter(t => {
-                    const prop = (typeof t.property === 'object' && t.property !== null) ? (t.property.title || '') : (t.property || '');
+                    const prop = resolveTenantPropertyText(t);
                     const area = (t.address || '').toLowerCase();
                     return (prop.toLowerCase().includes(search) || area.includes(search));
                 });
@@ -147,9 +167,7 @@ lucide.createIcons();
                         actionButtons = '<span class="text-xs text-gray-400">Waiting for upload</span>';
                     }
 
-                    let propDisplay = (typeof t.property === 'object' && t.property !== null)
-                        ? `${t.property.title || t.property.name}${t.property.locationCode ? ' (' + t.property.locationCode + ')' : ''}`
-                        : (t.property || 'Unknown Property');
+                    let propDisplay = resolveTenantPropertyText(t);
                     let moveIn = t.moveInDate ? new Date(t.moveInDate).toLocaleDateString() : '-';
                     let moveOut = t.moveOutDate ? new Date(t.moveOutDate).toLocaleDateString() : '<button onclick="moveOutTenant(\'' + t.loginId + '\')" class="text-xs text-red-600 hover:underline">Move Out</button>';
                     if(t.status === 'moved_out') moveOut = `<span class="text-red-600 font-medium text-xs">Left: ${t.moveOutDate ? new Date(t.moveOutDate).toLocaleDateString() : '-'}</span>`;
@@ -234,7 +252,7 @@ lucide.createIcons();
                 'Tenant Name': t.name,
                 'Login ID': t.loginId,
                 'Phone': t.phone,
-                'Property': (typeof t.property === 'object' && t.property !== null) ? `${t.property.title || t.property.name}${t.property.locationCode ? ' ('+t.property.locationCode+')' : ''}` : (t.property || '-'),
+                'Property': resolveTenantPropertyText(t),
                 'Room': t.roomNo || '-',
                 'Bed': t.bedNo || '-',
                 'KYC Status': t.kycStatus || '-',
@@ -264,7 +282,7 @@ lucide.createIcons();
                 document.getElementById('detailAadhaar').innerText = (tenant.kyc && tenant.kyc.aadhar) ? tenant.kyc.aadhar : 'N/A';
                 document.getElementById('detailGuardian').innerText = tenant.guardianNumber || tenant.emergencyContact || 'Not Provided';
                 document.getElementById('detailJoinDate').innerText = tenant.moveInDate ? new Date(tenant.moveInDate).toLocaleDateString() : '-';
-                const propDisplay = (typeof tenant.property === 'object' && tenant.property !== null) ? (tenant.property.title || tenant.property.name || JSON.stringify(tenant.property)) : (tenant.property || 'Unknown Property');
+                const propDisplay = resolveTenantPropertyText(tenant);
                 document.getElementById('detailProperty').innerText = `${propDisplay} (Rm ${tenant.roomNo})`;
 
                 // Load Image
