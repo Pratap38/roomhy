@@ -13,12 +13,12 @@
       <div><label>Login ID</label><input id="loginId" required></div>
       <div><label>Aadhaar Number</label><input id="aadhaarNumber" pattern="\d{12}" maxlength="12" required></div>
       <div><label>Aadhaar Linked Phone Number</label><input id="aadhaarLinkedPhone" required></div>
-      <div><label>OTP (6 digits)</label><input id="otp" pattern="\d{6}" maxlength="6"></div>
+      <div><label>DigiLocker Reference ID</label><input id="digilockerRef"></div>
       <div class="full"><label>Aadhaar Front Photo</label><input id="aadhaarFront" type="file" accept="image/*" required></div>
       <div class="full"><label>Aadhaar Back Photo</label><input id="aadhaarBack" type="file" accept="image/*" required></div>
     </div>
-    <button id="sendOtpBtn">Send OTP</button>
-    <button id="verifyOtpBtn">Verify OTP</button>
+    <button id="startDigiLockerBtn">Start DigiLocker Verification</button>
+    <button id="completeDigiLockerBtn">Complete Verification</button>
     <p class="muted" id="otpMsg"></p>
     <button id="nextBtn" style="display:none;">Continue to Rental Agreement</button>
   </div>

@@ -32,13 +32,13 @@
         <div class="hint">Format: XXXX XXXX XXXX (12 digits, spaces optional)</div>
       </div>
       <div>
-        <label>OTP (6 digits)</label>
-        <input id="otp" type="text" placeholder="000000" pattern="\d{6}" maxlength="6" required>
-        <div class="hint">6-digit OTP sent to your Aadhaar linked mobile number</div>
+        <label>DigiLocker Reference ID</label>
+        <input id="digilockerRef" type="text" placeholder="Will auto-fill after start">
+        <div class="hint">Use the same reference after completing DigiLocker verification</div>
       </div>
     </div>
-    <button id="sendOtpBtn">Send OTP to Aadhaar Mobile</button>
-    <button id="verifyOtpBtn" type="button">Verify OTP</button>
+    <button id="startDigiLockerBtn">Start DigiLocker Verification</button>
+    <button id="completeDigiLockerBtn" type="button">Complete Verification</button>
     <p class="muted" id="otpMsg"></p>
     <button id="nextBtn" type="button" style="display:none;">Continue to Terms & Conditions</button>
   </div>

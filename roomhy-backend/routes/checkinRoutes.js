@@ -25,6 +25,19 @@ async function upsertRecord(loginId, role, update) {
     );
 }
 
+function createDigilockerRef(loginId) {
+    const suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `DL-${String(loginId || '').toUpperCase()}-${Date.now()}-${suffix}`;
+}
+
+function isOwnerKycVerified(record) {
+    return Boolean(record?.ownerKyc?.otpVerified || record?.ownerKyc?.digilockerVerified);
+}
+
+function isTenantKycVerified(record) {
+    return Boolean(record?.tenantKyc?.otpVerified || record?.tenantKyc?.digilockerVerified);
+}
+
 router.post('/owner/profile', async (req, res) => {
     try {
         const { loginId, name, dob, email, phone, address, area, password, payment = {} } = req.body || {};
@@ -287,6 +300,99 @@ router.post('/owner/kyc/verify-otp', otpLimiter, async (req, res) => {
     }
 });
 
+router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
+    try {
+        const { loginId, aadhaarLinkedPhone, aadhaarNumber, email } = req.body || {};
+        if (!loginId || !aadhaarNumber) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+        if (!/^\d{12}$/.test(String(aadhaarNumber))) {
+            return res.status(400).json({ success: false, message: 'Aadhaar must be 12 digits' });
+        }
+
+        const ref = createDigilockerRef(loginId);
+        await upsertRecord(loginId, 'owner', {
+            ownerKyc: {
+                aadhaarLinkedPhone: aadhaarLinkedPhone || '',
+                aadhaarNumber: String(aadhaarNumber),
+                otpVerified: false,
+                digilockerVerified: false,
+                digilockerStatus: 'pending',
+                digilockerRef: ref,
+                digilockerStartedAt: new Date()
+            }
+        });
+
+        await Owner.findOneAndUpdate(
+            { loginId: String(loginId).toUpperCase() },
+            {
+                $set: {
+                    loginId: String(loginId).toUpperCase(),
+                    email: email || undefined,
+                    checkinAadhaarLinkedPhone: aadhaarLinkedPhone || '',
+                    checkinAadhaarNumber: String(aadhaarNumber),
+                    'kyc.status': 'pending',
+                    'kyc.provider': 'digilocker'
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        const providerUrl = process.env.DIGILOCKER_VERIFY_URL || 'https://www.digilocker.gov.in/';
+        return res.json({
+            success: true,
+            provider: 'digilocker',
+            referenceId: ref,
+            verifyUrl: providerUrl,
+            message: 'DigiLocker verification initiated. Complete verification and submit reference ID.'
+        });
+    } catch (err) {
+        console.error('owner/kyc/digilocker/start error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/owner/kyc/digilocker/complete', otpLimiter, async (req, res) => {
+    try {
+        const { loginId, aadhaarNumber, referenceId } = req.body || {};
+        if (!loginId || !aadhaarNumber || !referenceId) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+        const normalizedLoginId = String(loginId).toUpperCase();
+        const record = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'owner' });
+        if (!record || !record.ownerKyc) {
+            return res.status(404).json({ success: false, message: 'Owner KYC record not found' });
+        }
+        if (String(record.ownerKyc.aadhaarNumber || '') !== String(aadhaarNumber)) {
+            return res.status(400).json({ success: false, message: 'Aadhaar mismatch' });
+        }
+        if (String(record.ownerKyc.digilockerRef || '') !== String(referenceId)) {
+            return res.status(400).json({ success: false, message: 'Invalid DigiLocker reference ID' });
+        }
+
+        record.ownerKyc.digilockerVerified = true;
+        record.ownerKyc.digilockerStatus = 'verified';
+        record.ownerKyc.digilockerVerifiedAt = new Date();
+        await record.save();
+
+        const owner = await Owner.findOneAndUpdate(
+            { loginId: normalizedLoginId },
+            { $set: { 'kyc.status': 'submitted', 'kyc.provider': 'digilocker', 'kyc.submittedAt': new Date() } },
+            { new: true }
+        );
+
+        return res.json({
+            success: true,
+            message: 'DigiLocker verification completed successfully',
+            record,
+            owner
+        });
+    } catch (err) {
+        console.error('owner/kyc/digilocker/complete error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 router.post('/owner/terms-accept', async (req, res) => {
     try {
         const { loginId, accepted } = req.body || {};
@@ -308,8 +414,8 @@ router.post('/owner/final-submit', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Final verification required' });
         }
         const record = await upsertRecord(loginId, 'owner', {});
-        if (!record.ownerKyc || !record.ownerKyc.otpVerified) {
-            return res.status(400).json({ success: false, message: 'Complete Aadhaar OTP verification first' });
+        if (!record.ownerKyc || !isOwnerKycVerified(record)) {
+            return res.status(400).json({ success: false, message: 'Complete KYC verification first (OTP or DigiLocker)' });
         }
         if (!record.ownerTermsAcceptedAt) {
             return res.status(400).json({ success: false, message: 'Accept terms and conditions first' });
@@ -495,6 +601,121 @@ router.post('/tenant/kyc/verify-otp', otpLimiter, async (req, res) => {
     }
 });
 
+router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
+    try {
+        const { loginId, aadhaarLinkedPhone, aadhaarNumber, aadhaarFront, aadhaarBack } = req.body || {};
+        if (!loginId || !aadhaarNumber) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+        if (!/^\d{12}$/.test(String(aadhaarNumber))) {
+            return res.status(400).json({ success: false, message: 'Aadhaar must be 12 digits' });
+        }
+        const normalizedLoginId = String(loginId).toUpperCase();
+        const ref = createDigilockerRef(normalizedLoginId);
+
+        await upsertRecord(normalizedLoginId, 'tenant', {
+            tenantKyc: {
+                aadhaarLinkedPhone: aadhaarLinkedPhone || '',
+                aadhaarNumber: String(aadhaarNumber),
+                aadhaarFront: aadhaarFront || null,
+                aadhaarBack: aadhaarBack || null,
+                otpVerified: false,
+                digilockerVerified: false,
+                digilockerStatus: 'pending',
+                digilockerRef: ref,
+                digilockerStartedAt: new Date()
+            }
+        });
+
+        const tenant = await Tenant.findOne({ loginId: normalizedLoginId });
+        if (!tenant) {
+            return res.status(404).json({ success: false, message: 'Tenant not found for this login ID' });
+        }
+
+        tenant.kyc = tenant.kyc || {};
+        tenant.kyc.aadhaarNumber = String(aadhaarNumber);
+        tenant.kyc.aadhar = String(aadhaarNumber);
+        tenant.kyc.aadhaarLinkedPhone = aadhaarLinkedPhone || '';
+        tenant.kyc.aadhaarFront = aadhaarFront || tenant.kyc.aadhaarFront || null;
+        tenant.kyc.aadhaarBack = aadhaarBack || tenant.kyc.aadhaarBack || null;
+        tenant.kyc.otpVerified = false;
+        tenant.kyc.digilockerVerified = false;
+        tenant.kycStatus = 'submitted';
+        tenant.digitalCheckin = tenant.digitalCheckin || {};
+        tenant.digitalCheckin.kyc = {
+            ...(tenant.digitalCheckin.kyc || {}),
+            aadhaarLinkedPhone: aadhaarLinkedPhone || '',
+            aadhaarNumber: String(aadhaarNumber),
+            aadhaarFront: aadhaarFront || tenant.digitalCheckin?.kyc?.aadhaarFront || null,
+            aadhaarBack: aadhaarBack || tenant.digitalCheckin?.kyc?.aadhaarBack || null,
+            digilockerRef: ref,
+            digilockerStatus: 'pending',
+            digilockerVerified: false
+        };
+        await tenant.save();
+
+        const providerUrl = process.env.DIGILOCKER_VERIFY_URL || 'https://www.digilocker.gov.in/';
+        return res.json({
+            success: true,
+            provider: 'digilocker',
+            referenceId: ref,
+            verifyUrl: providerUrl,
+            message: 'DigiLocker verification initiated. Complete verification and submit reference ID.'
+        });
+    } catch (err) {
+        console.error('tenant/kyc/digilocker/start error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/tenant/kyc/digilocker/complete', otpLimiter, async (req, res) => {
+    try {
+        const { loginId, aadhaarNumber, referenceId } = req.body || {};
+        if (!loginId || !aadhaarNumber || !referenceId) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+        const normalizedLoginId = String(loginId).toUpperCase();
+        const record = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'tenant' });
+        if (!record || !record.tenantKyc) {
+            return res.status(404).json({ success: false, message: 'Tenant KYC record not found' });
+        }
+        if (String(record.tenantKyc.aadhaarNumber || '') !== String(aadhaarNumber)) {
+            return res.status(400).json({ success: false, message: 'Aadhaar mismatch' });
+        }
+        if (String(record.tenantKyc.digilockerRef || '') !== String(referenceId)) {
+            return res.status(400).json({ success: false, message: 'Invalid DigiLocker reference ID' });
+        }
+
+        record.tenantKyc.digilockerVerified = true;
+        record.tenantKyc.digilockerStatus = 'verified';
+        record.tenantKyc.digilockerVerifiedAt = new Date();
+        await record.save();
+
+        const tenant = await Tenant.findOne({ loginId: normalizedLoginId });
+        if (!tenant) {
+            return res.status(404).json({ success: false, message: 'Tenant not found for this login ID' });
+        }
+        tenant.kyc = tenant.kyc || {};
+        tenant.kyc.digilockerVerified = true;
+        tenant.kyc.digilockerVerifiedAt = new Date();
+        tenant.kyc.otpVerified = Boolean(tenant.kyc.otpVerified);
+        tenant.kycStatus = 'verified';
+        tenant.digitalCheckin = tenant.digitalCheckin || {};
+        tenant.digitalCheckin.kyc = {
+            ...(tenant.digitalCheckin.kyc || {}),
+            digilockerVerified: true,
+            digilockerVerifiedAt: new Date(),
+            digilockerStatus: 'verified'
+        };
+        await tenant.save();
+
+        return res.json({ success: true, message: 'DigiLocker verification completed successfully', record, tenant });
+    } catch (err) {
+        console.error('tenant/kyc/digilocker/complete error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 router.post('/tenant/agreement', async (req, res) => {
     try {
         const { loginId, eSignName, accepted } = req.body || {};
@@ -538,8 +759,8 @@ router.post('/tenant/final-submit', async (req, res) => {
         const normalizedLoginId = String(loginId).toUpperCase();
         const record = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'tenant' });
         if (!record) return res.status(404).json({ success: false, message: 'Tenant check-in record not found' });
-        if (!record.tenantKyc || !record.tenantKyc.otpVerified) {
-            return res.status(400).json({ success: false, message: 'Complete Aadhaar OTP verification first' });
+        if (!record.tenantKyc || !isTenantKycVerified(record)) {
+            return res.status(400).json({ success: false, message: 'Complete KYC verification first (OTP or DigiLocker)' });
         }
         if (!record.tenantAgreement || !record.tenantAgreement.acceptedAt) {
             return res.status(400).json({ success: false, message: 'Accept rental agreement first' });
