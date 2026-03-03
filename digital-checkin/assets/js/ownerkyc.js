@@ -2,8 +2,24 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
       ? ['http://localhost:5001', 'http://localhost:5001']
       : ['https://api.roomhy.com'];
     const params = new URLSearchParams(location.search);
-    if (params.get('loginId')) document.getElementById('loginId').value = params.get('loginId');
-    const ownerEmail = (params.get('email') || '').trim();
+    const hashQuery = location.hash && location.hash.includes('?')
+      ? new URLSearchParams(location.hash.split('?')[1])
+      : new URLSearchParams('');
+
+    function getParamValue(names) {
+      const allEntries = [...params.entries(), ...hashQuery.entries()];
+      for (const key of names) {
+        const direct = params.get(key) || hashQuery.get(key);
+        if (direct) return direct.trim();
+        const ciMatch = allEntries.find(([k, v]) => k.toLowerCase() === key.toLowerCase() && v);
+        if (ciMatch && ciMatch[1]) return ciMatch[1].trim();
+      }
+      return '';
+    }
+
+    const loginIdFromQuery = getParamValue(['loginId', 'loginid', 'staffId']);
+    if (loginIdFromQuery) document.getElementById('loginId').value = loginIdFromQuery;
+    let ownerEmail = getParamValue(['email', 'ownerEmail', 'mail']);
     
     // Display email info if available
     if (ownerEmail) {
@@ -43,6 +59,38 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
       }
       throw lastErr || new Error('Request failed');
     }
+
+    async function getWithFallback(path) {
+      let lastErr = null;
+      for (const base of API_BASES) {
+        try {
+          const res = await fetch(`${base}${path}`);
+          if (res.ok) return res.json();
+          const data = await res.json().catch(() => ({}));
+          lastErr = new Error(data.message || `HTTP ${res.status}`);
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Request failed');
+    }
+
+    async function hydrateOwnerEmail() {
+      const loginId = document.getElementById('loginId').value.trim();
+      if (!loginId || ownerEmail) return;
+      try {
+        const owner = await getWithFallback(`/api/owners/${encodeURIComponent(loginId)}`);
+        ownerEmail = (owner?.email || owner?.profile?.email || owner?.checkinEmail || '').trim();
+        if (ownerEmail) {
+          document.getElementById('emailInfo').style.display = 'block';
+          document.getElementById('displayEmail').textContent = ownerEmail;
+        }
+      } catch (_) {
+        // keep manual flow without email prefill
+      }
+    }
+
+    hydrateOwnerEmail();
 
     document.getElementById('sendOtpBtn').onclick = async () => {
       const loginId = document.getElementById('loginId').value.trim();

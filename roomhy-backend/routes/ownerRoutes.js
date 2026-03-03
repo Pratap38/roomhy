@@ -10,6 +10,7 @@ const Message = require('../models/Message');
 const Property = require('../models/Property');
 const Room = require('../models/Room');
 const Enquiry = require('../models/Enquiry');
+const CheckinRecord = require('../models/CheckinRecord');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const ownerController = require('../controllers/ownercontroller');
 const { auditTrail } = require('../middleware/auditTrail');
@@ -48,6 +49,28 @@ router.get('/', ownerController.getAllOwners);
 
 // 3. Get owner by loginId (Preserved)
 router.get('/:loginId', ownerController.getOwnerById);
+
+// 3b. Delete owner by loginId
+router.delete('/:loginId', auditTrail('owners'), async (req, res) => {
+    try {
+        const loginId = String(req.params.loginId || '').toUpperCase();
+        if (!loginId) {
+            return res.status(400).json({ success: false, message: 'Invalid owner loginId' });
+        }
+
+        const deletedOwner = await Owner.findOneAndDelete({ loginId });
+        await CheckinRecord.deleteOne({ loginId, role: 'owner' });
+
+        if (!deletedOwner) {
+            return res.status(404).json({ success: false, message: `Owner ${loginId} not found` });
+        }
+
+        return res.json({ success: true, message: `Owner ${loginId} deleted successfully` });
+    } catch (err) {
+        console.error('❌ Owner DELETE error:', err.message);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 // 4. Update Owner KYC Status (NEW - Super Admin Only)
 // Relaxed auth for development/testing
@@ -171,8 +194,6 @@ router.get('/:loginId/rent', async (req, res) => {
     }
 });
 
-module.exports = router;
-
 // POST /owners/:loginId/request-head
 // Called by an authenticated owner to request escalation to Super Admin (head).
 router.post('/:loginId/request-head', protect, auditTrail('owners'), async (req, res) => {
@@ -203,3 +224,5 @@ router.post('/:loginId/request-head', protect, auditTrail('owners'), async (req,
         res.status(500).json({ message: err.message });
     }
 });
+
+module.exports = router;

@@ -2,12 +2,12 @@ lucide.createIcons();
         let currentViewingId = null;
         let currentOwnersData = []; // For Excel Export
         let ownersLookup = {};
-        const API_BASES = Array.from(new Set([
-            API_URL,
-            'https://api.roomhy.com',
-            'https://api.roomhy.com',
-            'http://localhost:5001'
-        ]));
+        const IS_LOCAL_HOST = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+        const API_BASES = Array.from(new Set(
+            IS_LOCAL_HOST
+                ? [API_URL, 'http://localhost:5001', 'https://api.roomhy.com']
+                : [API_URL, 'https://api.roomhy.com']
+        ));
         let activeApiBase = API_URL;
 
         function getStoredToken() {
@@ -129,6 +129,27 @@ lucide.createIcons();
             return '';
         }
 
+        function populateAreaFilter(owners) {
+            const select = document.getElementById('areaFilter');
+            if (!select) return;
+            const selected = select.value || 'all';
+            const codes = Array.from(new Set(
+                (owners || [])
+                    .map(o => pickValue(o.checkinArea, o.locationCode, o.profile?.locationCode, o.area).toUpperCase())
+                    .filter(Boolean)
+            )).sort();
+
+            select.innerHTML = '<option value="all">All Areas</option>';
+            codes.forEach(code => {
+                const option = document.createElement('option');
+                option.value = code;
+                option.textContent = code;
+                select.appendChild(option);
+            });
+
+            select.value = codes.includes(selected) || selected === 'all' ? selected : 'all';
+        }
+
         async function loadOwners() {
             const tbody = document.getElementById('ownersTableBody');
             const areaFilterElement = document.getElementById('areaFilter');
@@ -180,6 +201,7 @@ lucide.createIcons();
                 checkinIfscCode: pickValue(o.checkinIfscCode, o.ifscCode, o.profile?.ifscCode),
                 checkinBranchName: pickValue(o.checkinBranchName, o.branchName, o.profile?.branchName)
             }));
+            populateAreaFilter(owners);
 
             // Fetch visit data from backend and create a map of owner -> property details
             let visitMap = {};
@@ -400,27 +422,38 @@ lucide.createIcons();
         }
 
         // --- Delete Function ---
-        function deleteOwner(id) {
-            if(!confirm(`Are you sure you want to delete owner ${id}? This action cannot be undone.`)) return;
+        async function deleteOwner(id) {
+            if (!id) return;
+            if (!confirm(`Are you sure you want to delete owner ${id}? This action cannot be undone.`)) return;
 
-            // Remove from DB
-            const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
-            if (db[id]) {
-                delete db[id];
-                localStorage.setItem('roomhy_owners_db', JSON.stringify(db));
-                
-                // Remove from UI immediately
-                const row = document.getElementById(`row-${id}`);
-                if(row) row.remove();
-                
-                // Also remove from visits if needed to keep sync (optional)
-                let visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
-                visits = visits.filter(v => !(v.generatedCredentials && v.generatedCredentials.loginId === id));
-                localStorage.setItem('roomhy_visits', JSON.stringify(visits));
+            try {
+                const res = await fetchFromAnyApi(`/api/owners/${encodeURIComponent(id)}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
 
-                alert("Owner deleted successfully.");
-                // Reload to refresh list/export data
-                loadOwners(); 
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || `Delete failed (HTTP ${res.status})`);
+                }
+
+                // Optional cleanup of stale local cache
+                const db = JSON.parse(localStorage.getItem('roomhy_owners_db') || '{}');
+                if (db[id]) {
+                    delete db[id];
+                    localStorage.setItem('roomhy_owners_db', JSON.stringify(db));
+                }
+
+                alert('Owner deleted successfully.');
+                await loadOwners();
+            } catch (err) {
+                if (String(err && err.message || '').includes('HTTP 404')) {
+                    const row = document.getElementById(`row-${id}`);
+                    if (row) row.remove();
+                    alert(`Owner ${id} already deleted / not found in backend.`);
+                    return;
+                }
+                alert(`Failed to delete owner ${id}: ${err.message}`);
             }
         }
 
