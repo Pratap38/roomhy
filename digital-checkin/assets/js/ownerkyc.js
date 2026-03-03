@@ -22,10 +22,55 @@ const loginIdFromQuery = getParamValue(['loginId', 'loginid', 'staffId']);
 if (loginIdFromQuery) document.getElementById('loginId').value = loginIdFromQuery;
 let ownerEmail = getParamValue(['email', 'ownerEmail', 'mail']);
 let lastRefId = '';
+const OWNER_KYC_STATE_KEY = 'roomhy_owner_kyc_state';
 
 if (ownerEmail) {
   document.getElementById('emailInfo').style.display = 'block';
   document.getElementById('displayEmail').textContent = ownerEmail;
+}
+
+function loadKycState() {
+  try {
+    const state = JSON.parse(sessionStorage.getItem(OWNER_KYC_STATE_KEY) || '{}');
+    if (!state || typeof state !== 'object') return;
+    if (!document.getElementById('loginId').value && state.loginId) document.getElementById('loginId').value = state.loginId;
+    if (state.aadhaarLinkedPhone) document.getElementById('aadhaarLinkedPhone').value = state.aadhaarLinkedPhone;
+    if (state.aadhaarNumber) document.getElementById('aadhaarNumber').value = state.aadhaarNumber;
+    if (state.referenceId) {
+      document.getElementById('digilockerRef').value = state.referenceId;
+      lastRefId = state.referenceId;
+    }
+    if (!ownerEmail && state.ownerEmail) {
+      ownerEmail = state.ownerEmail;
+      document.getElementById('emailInfo').style.display = 'block';
+      document.getElementById('displayEmail').textContent = ownerEmail;
+    }
+  } catch (_) {}
+}
+
+function saveKycState(extra = {}) {
+  try {
+    const payload = {
+      loginId: document.getElementById('loginId').value.trim(),
+      aadhaarLinkedPhone: document.getElementById('aadhaarLinkedPhone').value.trim(),
+      aadhaarNumber: document.getElementById('aadhaarNumber').value.trim(),
+      ownerEmail,
+      referenceId: document.getElementById('digilockerRef').value.trim() || lastRefId || '',
+      ...extra
+    };
+    sessionStorage.setItem(OWNER_KYC_STATE_KEY, JSON.stringify(payload));
+  } catch (_) {}
+}
+
+function applyCallbackParams() {
+  const referenceFromCallback = getParamValue(['reference_id', 'ref_id', 'referenceId']);
+  const verificationFromCallback = getParamValue(['verification_id', 'verificationId']);
+  if (referenceFromCallback) {
+    document.getElementById('digilockerRef').value = referenceFromCallback;
+    lastRefId = referenceFromCallback;
+    saveKycState({ referenceId: referenceFromCallback, verificationId: verificationFromCallback || '' });
+    document.getElementById('otpMsg').innerHTML = '<span class="success">DigiLocker callback received. Click Complete Verification.</span>';
+  }
 }
 
 document.getElementById('aadhaarNumber').addEventListener('input', (e) => {
@@ -84,6 +129,8 @@ async function hydrateOwnerEmail() {
 }
 
 hydrateOwnerEmail();
+loadKycState();
+applyCallbackParams();
 
 document.getElementById('startDigiLockerBtn').onclick = async () => {
   const loginId = document.getElementById('loginId').value.trim();
@@ -98,10 +145,12 @@ document.getElementById('startDigiLockerBtn').onclick = async () => {
       loginId,
       aadhaarLinkedPhone,
       aadhaarNumber,
-      email: ownerEmail
+      email: ownerEmail,
+      redirectUrl: `${window.location.origin}${window.location.pathname}?loginId=${encodeURIComponent(loginId)}${ownerEmail ? `&email=${encodeURIComponent(ownerEmail)}` : ''}`
     });
     lastRefId = data.referenceId || '';
     document.getElementById('digilockerRef').value = lastRefId;
+    saveKycState({ referenceId: lastRefId, verificationId: data.verificationId || '' });
     document.getElementById('otpMsg').innerHTML = '<span class="success">DigiLocker verification initiated. Complete it and click Complete Verification.</span>';
     if (data.verifyUrl) {
       window.location.href = data.verifyUrl;
@@ -121,6 +170,7 @@ document.getElementById('completeDigiLockerBtn').onclick = async () => {
   if (!referenceId) return alert('DigiLocker reference ID is required');
 
   try {
+    saveKycState({ referenceId });
     document.getElementById('completeDigiLockerBtn').disabled = true;
     await postWithFallback('/api/checkin/owner/kyc/digilocker/complete', {
       loginId,

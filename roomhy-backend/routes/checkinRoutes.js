@@ -308,7 +308,7 @@ router.post('/owner/kyc/verify-otp', otpLimiter, async (req, res) => {
 
 router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
     try {
-        const { loginId, aadhaarLinkedPhone, aadhaarNumber, email } = req.body || {};
+        const { loginId, aadhaarLinkedPhone, aadhaarNumber, email, redirectUrl: clientRedirectUrl } = req.body || {};
         if (!loginId || !aadhaarNumber) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
@@ -317,7 +317,7 @@ router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
         }
 
         const ref = createDigilockerRef(loginId);
-        const redirectUrl = process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/ownerkyc.html`;
+        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/ownerkyc.html`;
 
         const accountCheck = await verifyDigilockerAccount({
             verificationId: ref,
@@ -671,7 +671,7 @@ router.post('/tenant/kyc/verify-otp', otpLimiter, async (req, res) => {
 
 router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
     try {
-        const { loginId, aadhaarLinkedPhone, aadhaarNumber, aadhaarFront, aadhaarBack } = req.body || {};
+        const { loginId, aadhaarLinkedPhone, aadhaarNumber, aadhaarFront, aadhaarBack, redirectUrl: clientRedirectUrl } = req.body || {};
         if (!loginId || !aadhaarNumber) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
@@ -680,7 +680,7 @@ router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
         }
         const normalizedLoginId = String(loginId).toUpperCase();
         const ref = createDigilockerRef(normalizedLoginId);
-        const redirectUrl = process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/tenantkyc.html`;
+        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/tenantkyc.html`;
 
         const accountCheck = await verifyDigilockerAccount({
             verificationId: ref,
