@@ -45,8 +45,8 @@ lucide.createIcons();
                 }
                 const roomInfo = `Room ${tenantRecord.roomNo || '-'} (${tenantRecord.bedNo || '-'})`;
                 
-                document.getElementById('rent-amount').innerText = `? ${rent.toLocaleString()}`;
-                document.getElementById('modal-amount').innerText = `? ${rent.toLocaleString()}`;
+                document.getElementById('rent-amount').innerText = `\u20B9 ${rent.toLocaleString()}`;
+                document.getElementById('modal-amount').innerText = `\u20B9 ${rent.toLocaleString()}`;
                 
                 document.getElementById('prop-name').innerText = propName;
                 document.getElementById('prop-name-detail').innerText = propName;
@@ -368,7 +368,7 @@ lucide.createIcons();
 
             const rentAmountElement = document.getElementById('rent-amount');
             if (rentAmountElement) {
-                rentAmountElement.textContent = '? 0';
+                rentAmountElement.textContent = '\u20B9 0';
             }
         }
 

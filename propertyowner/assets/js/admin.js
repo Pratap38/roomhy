@@ -174,7 +174,7 @@ lucide.createIcons();
                     }
                 } catch (e) {}
             }
-            document.getElementById('statRent').innerText = `?${rentCollected.toLocaleString()}`;
+            document.getElementById('statRent').innerText = `\u20B9${rentCollected.toLocaleString()}`;
 
             // Fetch rooms from backend (new endpoint). If unavailable, fallback to localStorage.
             let myRooms = [];
@@ -267,7 +267,7 @@ lucide.createIcons();
         function displayCommissionCards(totalRevenue, commissionRate, pendingPayouts) {
             try {
                 const rentEl = document.getElementById('statRent');
-                if (rentEl) rentEl.innerText = `?${Number(totalRevenue || 0).toLocaleString()}`;
+                if (rentEl) rentEl.innerText = `\u20B9${Number(totalRevenue || 0).toLocaleString()}`;
             } catch (e) {
                 console.warn('displayCommissionCards render warning:', e && e.message);
             }
@@ -309,7 +309,7 @@ lucide.createIcons();
                     
                     // First payment (index 0) gets 10% commission
                     const monthlyCommission = paymentIndex === 0 ? (rentAmount * 0.10) : 0;
-                    const serviceFee = 50; // Always ₹50 per payment
+                    const serviceFee = 50; // Always INR 50 per payment
 
                     commissions[ownerLoginId].totalRent += rentAmount;
                     commissions[ownerLoginId].totalCommission += monthlyCommission;
@@ -335,11 +335,11 @@ lucide.createIcons();
             });
 
             console.log('Commission Breakdown:');
-            console.log('  Total Rent: ₹' + stats.totalRent);
-            console.log('  Total Commission (10%): ₹' + stats.totalCommission);
-            console.log('  Total Service Fees: ₹' + stats.totalServiceFees);
-            console.log('  Platform Revenue: ₹' + (stats.totalCommission + stats.totalServiceFees));
-            console.log('  Total Payouts: ₹' + stats.totalPayouts);
+            console.log('  Total Rent: INR ' + stats.totalRent);
+            console.log('  Total Commission (10%): INR ' + stats.totalCommission);
+            console.log('  Total Service Fees: INR ' + stats.totalServiceFees);
+            console.log('  Platform Revenue: INR ' + (stats.totalCommission + stats.totalServiceFees));
+            console.log('  Total Payouts: INR ' + stats.totalPayouts);
 
             return {
                 totalPlatformRevenue: stats.totalCommission + stats.totalServiceFees,
@@ -512,3 +512,4 @@ lucide.createIcons();
                 window.ownerNotifications = new PropertyOwnerNotifications();
             }
         });
+
