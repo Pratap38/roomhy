@@ -869,7 +869,7 @@
             // Generate booking form link with all parameters
                         const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                             ? 'http://localhost:5001'
-                            : 'https://app.roomhy.com';
+                            : 'https://api.roomhy.com';
                         const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&ownerName=${encodeURIComponent(ownerFullName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
             
             console.log('📋 Booking link data:', {

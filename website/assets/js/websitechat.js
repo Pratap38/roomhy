@@ -802,7 +802,7 @@ if (typeof lucide !== 'undefined') {
                         // Create booking form link with bookingId and userId
                                                 const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                                                     ? 'http://localhost:5001'
-                                                    : 'https://roomhy.com';
+                                                    : 'https://api.roomhy.com';
                                                 const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
 
                         // Save booking details to MongoDB

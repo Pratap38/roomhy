@@ -503,7 +503,7 @@ let currentOwner = null;
 
                         const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                             ? 'http://localhost:5001'
-                            : 'https://app.roomhy.com';
+                            : 'https://api.roomhy.com';
                         const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}&ownerName=${encodeURIComponent(ownerName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
 
             const bookingData = {
@@ -563,7 +563,7 @@ let currentOwner = null;
                         // Create booking form link with bookingId and userId
                                                 const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                                                     ? 'http://localhost:5001'
-                                                    : 'https://app.roomhy.com';
+                                                    : 'https://api.roomhy.com';
                                                 const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
                         const ownerId = currentOwner.loginId || currentOwner.ownerId;
 
@@ -752,7 +752,7 @@ let currentOwner = null;
                 // Generate booking form link
                                 const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                                     ? 'http://localhost:5001'
-                                    : 'https://app.roomhy.com';
+                                    : 'https://api.roomhy.com';
                                 const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
                 
                 console.log('📋 Booking form data:', {
