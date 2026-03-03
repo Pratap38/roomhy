@@ -52,7 +52,11 @@ async function callCashfree(path, payload) {
                 message,
                 response: data
             });
-            throw new Error(detail);
+            const err = new Error(detail);
+            err.code = code;
+            err.status = response.status;
+            err.data = data;
+            throw err;
         }
         return data;
     } finally {
@@ -61,9 +65,30 @@ async function callCashfree(path, payload) {
 }
 
 async function requestAadhaarOtp(aadhaarNumber) {
-    const data = await callCashfree('/verification/offline-aadhaar/otp', {
-        aadhaar_number: String(aadhaarNumber || '').trim()
-    });
+    let data;
+    try {
+        data = await callCashfree('/verification/offline-aadhaar/otp', {
+            aadhaar_number: String(aadhaarNumber || '').trim()
+        });
+    } catch (err) {
+        // Cashfree may return verification_pending when OTP was just generated for same Aadhaar.
+        // Reuse the refId so verify endpoint can proceed without forcing a resend.
+        if (err?.code === 'verification_pending') {
+            const pendingRefId =
+                err?.data?.error?.refId ||
+                err?.data?.error?.reference_id ||
+                err?.data?.reference_id ||
+                err?.data?.ref_id;
+            if (pendingRefId) {
+                return {
+                    referenceId: String(pendingRefId),
+                    raw: err.data,
+                    pending: true
+                };
+            }
+        }
+        throw err;
+    }
 
     const referenceId = data?.reference_id || data?.ref_id || data?.data?.reference_id || data?.data?.ref_id;
     if (!referenceId) {
