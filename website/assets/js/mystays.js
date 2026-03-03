@@ -16,7 +16,10 @@ let userBookings = [];
         window.addEventListener('storage', updateMobileMenuState);
         
         // Get user identity from URL/storage/auth
-        const userId = getUserIdFromUrl() || localStorage.getItem('userId') || sessionStorage.getItem('userId');
+        const userId = getUserIdFromUrl()
+            || getCurrentUserIdFromSession()
+            || localStorage.getItem('userId')
+            || sessionStorage.getItem('userId');
         const userEmail = getCurrentUserEmail();
         
         if (userId || userEmail) {
@@ -131,10 +134,32 @@ let userBookings = [];
     function getUserIdFromUrl() {
         const params = new URLSearchParams(window.location.search);
         const userId = params.get('userId');
+        const email = params.get('email') || params.get('tenantEmail');
         if (userId) {
             localStorage.setItem('userId', userId);
-            return userId;
         }
+        if (email && String(email).trim()) {
+            const normalized = String(email).trim().toLowerCase();
+            localStorage.setItem('userEmail', normalized);
+            sessionStorage.setItem('userEmail', normalized);
+        }
+        return userId || null;
+    }
+
+    function getCurrentUserIdFromSession() {
+        try {
+            if (typeof AuthUtils !== 'undefined') {
+                if (typeof AuthUtils.getUserId === 'function') {
+                    const id = AuthUtils.getUserId();
+                    if (id && String(id).trim()) return String(id).trim();
+                }
+                if (typeof AuthUtils.getUser === 'function') {
+                    const u = AuthUtils.getUser() || {};
+                    const id = u.userId || u.user_id || u.loginId || u.id;
+                    if (id && String(id).trim()) return String(id).trim();
+                }
+            }
+        } catch (_e) {}
         return null;
     }
 
