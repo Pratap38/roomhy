@@ -42,8 +42,17 @@ async function callCashfree(path, payload) {
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
+            const code = data?.code || data?.error_code || data?.type || '';
             const message = data?.message || data?.error_description || data?.error || `Cashfree request failed (${response.status})`;
-            throw new Error(message);
+            const detail = code ? `${message} [${code}]` : message;
+            console.error('[Cashfree Error]', {
+                path,
+                status: response.status,
+                code,
+                message,
+                response: data
+            });
+            throw new Error(detail);
         }
         return data;
     } finally {
@@ -56,7 +65,7 @@ async function requestAadhaarOtp(aadhaarNumber) {
         aadhaar_number: String(aadhaarNumber || '').trim()
     });
 
-    const referenceId = data?.reference_id || data?.data?.reference_id;
+    const referenceId = data?.reference_id || data?.ref_id || data?.data?.reference_id || data?.data?.ref_id;
     if (!referenceId) {
         throw new Error('Cashfree OTP reference not received');
     }
@@ -66,6 +75,7 @@ async function requestAadhaarOtp(aadhaarNumber) {
 async function verifyAadhaarOtp(referenceId, otp) {
     const data = await callCashfree('/verification/offline-aadhaar/verify', {
         reference_id: referenceId,
+        ref_id: referenceId,
         otp: String(otp || '').trim()
     });
     return data;
