@@ -3,7 +3,10 @@ lucide.createIcons();
         try {
             const btnTenant = document.getElementById('btn-tenant');
             const btnOwner = document.getElementById('btn-owner');
-            if (btnTenant) btnTenant.addEventListener('click', () => { window.location.href = '../tenant/tenantlogin.html'; });
+            const tenantLoginPath = '/tenant/tenantlogin.html';
+            if (btnTenant) btnTenant.addEventListener('click', () => {
+                window.location.assign(tenantLoginPath);
+            });
             if (btnOwner) btnOwner.addEventListener('click', () => {
                 // visually emphasize owner button
                 btnOwner.classList.add('bg-blue-600', 'text-white');
