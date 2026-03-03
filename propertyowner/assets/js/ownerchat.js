@@ -411,13 +411,37 @@ let currentOwner = null;
                     return;
                 }
 
+                function normalizeBookingLink(rawLink) {
+                    try {
+                        const defaultBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                            ? 'http://localhost:5001'
+                            : 'https://api.roomhy.com';
+                        const parsed = new URL(rawLink, defaultBase);
+
+                        if (/booking-form\.html$/i.test(parsed.pathname)) {
+                            parsed.pathname = '/propertyowner/booking-form.html';
+                        }
+
+                        if (!parsed.hostname || parsed.hostname === window.location.hostname) {
+                            return `${defaultBase}${parsed.pathname}${parsed.search}${parsed.hash}`;
+                        }
+
+                        return parsed.toString();
+                    } catch (_e) {
+                        return rawLink;
+                    }
+                }
+
                 messages.forEach((msg) => {
                     const isOwner = String(msg.sender_login_id || '').toUpperCase() === ownerId;
                     const msgContainer = document.createElement('div');
                     msgContainer.className = `message-container flex w-full ${isOwner ? 'justify-end' : 'justify-start'}`;
                     const time = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     let displayText = String(msg.message || '').replace(/\d{10,}/g, '***');
-                    displayText = displayText.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">$1</a>');
+                    displayText = displayText.replace(/((?:https?:\/\/[^\s]+|\/(?:propertyowner\/)?booking-form\.html[^\s]*))/gi, (full) => {
+                        const safeLink = /booking-form\.html/i.test(full) ? normalizeBookingLink(full) : full;
+                        return `<a href="${safeLink}" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">${full}</a>`;
+                    });
 
                     msgContainer.innerHTML = `
                         <div class="message-bubble p-3 shadow-sm ${isOwner ? 'owner' : 'user'}">
@@ -504,7 +528,7 @@ let currentOwner = null;
                         const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                             ? 'http://localhost:5001'
                             : 'https://api.roomhy.com';
-                        const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}&ownerName=${encodeURIComponent(ownerName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
+                        const bookingFormLink = `${bookingBase}/propertyowner/booking-form.html?bookingId=${bookingId}&userId=${userId}&ownerName=${encodeURIComponent(ownerName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
 
             const bookingData = {
                 booking_id: bookingId,
@@ -564,7 +588,7 @@ let currentOwner = null;
                                                 const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                                                     ? 'http://localhost:5001'
                                                     : 'https://api.roomhy.com';
-                                                const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                                                const bookingFormLink = `${bookingBase}/propertyowner/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
                         const ownerId = currentOwner.loginId || currentOwner.ownerId;
 
                         // Save booking details to MongoDB
@@ -753,7 +777,7 @@ let currentOwner = null;
                                 const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                                     ? 'http://localhost:5001'
                                     : 'https://api.roomhy.com';
-                                const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                                const bookingFormLink = `${bookingBase}/propertyowner/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
                 
                 console.log('📋 Booking form data:', {
                     bookingId, userId, propertyName, ownerId, ownerName

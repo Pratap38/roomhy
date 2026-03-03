@@ -673,11 +673,32 @@ if (typeof lucide !== 'undefined') {
             const messagesDiv = document.getElementById('messages');
             if (!ownerId || !userId || !messagesDiv) return;
 
+            function normalizeBookingLink(rawLink) {
+                try {
+                    const defaultBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                        ? 'http://localhost:5001'
+                        : 'https://api.roomhy.com';
+                    const parsed = new URL(rawLink, defaultBase);
+
+                    if (/booking-form\.html$/i.test(parsed.pathname)) {
+                        parsed.pathname = '/propertyowner/booking-form.html';
+                    }
+
+                    if (!parsed.hostname || parsed.hostname === window.location.hostname) {
+                        return `${defaultBase}${parsed.pathname}${parsed.search}${parsed.hash}`;
+                    }
+
+                    return parsed.toString();
+                } catch (_e) {
+                    return rawLink;
+                }
+            }
+
             function formatMessageText(rawText) {
                 const safe = String(rawText || '').replace(/\d{10,}/g, '***');
-                const bookingLinkMatch = safe.match(/(https?:\/\/[^\s]*booking-form\.html[^\s]*)/i);
+                const bookingLinkMatch = safe.match(/((?:https?:\/\/[^\s]*|\/)?(?:propertyowner\/)?booking-form\.html[^\s]*)/i);
                 if (bookingLinkMatch) {
-                    const link = bookingLinkMatch[1];
+                    const link = normalizeBookingLink(bookingLinkMatch[1]);
                     return `<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-3">
                         <p class="font-semibold text-indigo-700 text-xs sm:text-sm mb-2">Booking Form Ready</p>
                         <a href="${link}" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs sm:text-sm hover:bg-indigo-700">Open Booking Form</a>
@@ -803,7 +824,7 @@ if (typeof lucide !== 'undefined') {
                                                 const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                                                     ? 'http://localhost:5001'
                                                     : 'https://api.roomhy.com';
-                                                const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                                                const bookingFormLink = `${bookingBase}/propertyowner/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
 
                         // Save booking details to MongoDB
                         try {

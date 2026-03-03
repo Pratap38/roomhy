@@ -752,7 +752,7 @@
             console.log('✅ SessionStorage set successfully');
             
             // Navigate to booking form
-            const url = '../booking-form.html?userId=' + encodeURIComponent(userId || '');
+            const url = 'booking-form.html?userId=' + encodeURIComponent(userId || '');
             console.log('🔗 Navigating to:', url);
             window.location.href = url;
         }
@@ -870,7 +870,7 @@
                         const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                             ? 'http://localhost:5001'
                             : 'https://api.roomhy.com';
-                        const bookingFormLink = `${bookingBase}/booking-form.html?bookingId=${bookingId}&ownerName=${encodeURIComponent(ownerFullName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
+                        const bookingFormLink = `${bookingBase}/propertyowner/booking-form.html?bookingId=${bookingId}&ownerName=${encodeURIComponent(ownerFullName)}&propertyId=${encodeURIComponent(propertyId)}&propertyName=${encodeURIComponent(propertyName)}&tenantName=${encodeURIComponent(tenantName)}&tenantEmail=${encodeURIComponent(tenantEmail)}`;
             
             console.log('📋 Booking link data:', {
                 bookingId, tenantName, tenantEmail, propertyId, propertyName, ownerFullName
