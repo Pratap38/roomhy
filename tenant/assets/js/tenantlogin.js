@@ -244,8 +244,7 @@ lucide.createIcons();
             }
 
             const tenantRecord = await fetchTenantByLoginId(tenantPayload.loginId);
-            alert("Password Set! Redirecting to Dashboard.");
-            createSession(tenantRecord || {
+            const sessionTenant = tenantRecord || {
                 id: tenantPayload.id || tenantPayload._id || tenantPayload.loginId,
                 name: tenantPayload.name || 'Tenant',
                 email: tenantPayload.email || '',
@@ -255,7 +254,21 @@ lucide.createIcons();
                 kycStatus: 'verified',
                 profileFilled: true,
                 agreementSigned: true
-            });
+            };
+
+            const user = {
+                name: sessionTenant.name || 'Tenant',
+                phone: sessionTenant.phone || '',
+                email: sessionTenant.email || '',
+                loginId: sessionTenant.loginId || tenantPayload.loginId,
+                role: 'tenant',
+                tenantId: sessionTenant.id || sessionTenant._id || sessionTenant.loginId || tenantPayload.loginId,
+                passwordSet: true
+            };
+            localStorage.setItem('tenant_user', JSON.stringify(user));
+
+            alert("Password Set! Redirecting to Dashboard.");
+            window.location.href = 'tenantdashboard.html';
         }
         
         function createSession(tenant) {
