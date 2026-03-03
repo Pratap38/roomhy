@@ -128,7 +128,7 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
           document.getElementById('sendOtpBtn').disabled = false;
           return;
         }
-        document.getElementById('otpMsg').innerHTML = `<span class="success">✓ OTP sent to your registered email. Check your inbox for a 4-digit code.</span>`;
+        document.getElementById('otpMsg').innerHTML = `<span class="success">✓ OTP sent to your Aadhaar linked mobile number. Enter the 6-digit OTP.</span>`;
       } catch (err) {
         console.error('OTP send error:', err);
         document.getElementById('otpMsg').innerHTML = `<span class="error">Error: ${err.message}</span>`;
@@ -147,8 +147,8 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
       if (!aadhaarNumber || aadhaarNumber.length !== 12) {
         return alert('Please enter a valid Aadhaar number (12 digits)');
       }
-      if (!otp || otp.length !== 4) {
-        return alert('Please enter a valid 4-digit OTP');
+      if (!/^\\d{6}$/.test(otp)) {
+        return alert('Please enter a valid 6-digit OTP');
       }
       
       try {
@@ -179,3 +179,4 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
       const emailPart = ownerEmail ? `&email=${encodeURIComponent(ownerEmail)}` : '';
       location.href = `ownerterms.html?loginId=${encodeURIComponent(loginId)}${emailPart}`;
     };
+

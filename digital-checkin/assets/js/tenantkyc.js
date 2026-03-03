@@ -39,17 +39,19 @@ const API_BASE = (location.hostname === 'localhost' || location.hostname === '12
         });
         const data = await res.json();
         if (!res.ok || !data.success) return alert(data.message || 'OTP send failed');
-        document.getElementById('otpMsg').innerText = `OTP sent. (Dev OTP: ${data.devOtp})`;
+        document.getElementById('otpMsg').innerText = 'OTP sent to Aadhaar linked mobile number. Enter the 6-digit OTP.';
       } catch (err) {
         alert('Error: ' + err.message);
       }
     };
 
     document.getElementById('verifyOtpBtn').onclick = async () => {
+      const otpInput = document.getElementById('otp').value.trim();
+      if (!/^\d{6}$/.test(otpInput)) return alert('Please enter a valid 6-digit OTP');
       const payload = {
         loginId: document.getElementById('loginId').value.trim(),
         aadhaarNumber: document.getElementById('aadhaarNumber').value.trim(),
-        otp: document.getElementById('otp').value.trim()
+        otp: otpInput
       };
       const res = await fetch(`${API_BASE}/api/checkin/tenant/kyc/verify-otp`, {
         method: 'POST',

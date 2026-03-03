@@ -5,6 +5,7 @@ const Owner = require('../models/Owner');
 const Tenant = require('../models/Tenant');
 const { sendMail } = require('../utils/mailer');
 const { otpLimiter } = require('../middleware/security');
+const { requestAadhaarOtp, verifyAadhaarOtp } = require('../services/cashfreeKycService');
 
 const otpStore = new Map();
 
@@ -154,78 +155,15 @@ router.post('/owner/kyc/send-otp', otpLimiter, async (req, res) => {
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
-        // Generate 4-digit OTP
-        const otp = String(Math.floor(1000 + Math.random() * 9000));
+        const { referenceId } = await requestAadhaarOtp(aadhaarNumber);
         const k = keyFor('owner', loginId, aadhaarNumber);
-        otpStore.set(k, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
-        
-        // Send OTP via email
-        const emailHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
-                    .header { background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-                    .header h1 { margin: 0; font-size: 28px; }
-                    .content { padding: 30px; background: #f8fafc; }
-                    .otp-box { background: white; border-left: 4px solid #2563eb; padding: 20px; margin: 20px 0; border-radius: 4px; text-align: center; }
-                    .otp-code { font-size: 36px; font-weight: bold; color: #2563eb; letter-spacing: 5px; font-family: monospace; margin: 15px 0; }
-                    .footer { text-align: center; padding: 20px; font-size: 12px; color: #999; border-top: 1px solid #eee; }
-                    .warning { color: #d32f2f; font-size: 12px; margin-top: 10px; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>🔐 RoomHy Verification Code</h1>
-                    </div>
-                    <div class="content">
-                        <p>Hi <strong>${owner.name || 'Owner'}</strong>,</p>
-                        <p>We received a request to verify your identity on RoomHy. Use the following 4-digit verification code:</p>
-                        
-                        <div class="otp-box">
-                            <p style="margin: 0; color: #666; font-size: 12px;">Your Verification Code</p>
-                            <div class="otp-code">${otp}</div>
-                            <p style="margin: 0; color: #999; font-size: 11px;">Valid for 5 minutes</p>
-                        </div>
+        otpStore.set(k, { referenceId, expiresAt: Date.now() + 10 * 60 * 1000 });
 
-                        <p>This code is required to:</p>
-                        <ul>
-                            <li>Complete your Aadhaar KYC verification</li>
-                            <li>Activate your RoomHy owner account</li>
-                            <li>Begin receiving property inquiries</li>
-                        </ul>
-
-                        <p style="color: #d32f2f; font-weight: bold;">⚠️ Important:</p>
-                        <ul>
-                            <li>Never share this code with anyone</li>
-                            <li>Code expires in 5 minutes</li>
-                            <li>If you did not request this, please ignore this email</li>
-                        </ul>
-
-                        <p>After verification, your login credentials will be sent to this email address.</p>
-                    </div>
-                    <div class="footer">
-                        <p>&copy; 2025 RoomHy. All rights reserved. | Secure & Verified Platform</p>
-                        <p>If you have questions, contact: support@roomhy.com</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-        `;
-
-        try {
-            await sendMail(owner.email, 'RoomHy - Your Verification Code (Valid for 5 minutes)', '', emailHtml);
-            console.log('[CHECKIN OTP] Sent OTP to:', owner.email, 'for owner:', loginId);
-        } catch (emailErr) {
-            console.error('[CHECKIN OTP] Email send error:', emailErr.message);
-            // Continue even if email fails - OTP is still valid
-        }
-
-        return res.json({ success: true, message: 'OTP sent to your registered email', devOtp: otp });
+        return res.json({
+            success: true,
+            message: 'OTP sent to Aadhaar linked mobile number',
+            provider: 'cashfree'
+        });
     } catch (err) {
         console.error('owner/kyc/send-otp error:', err);
         return res.status(500).json({ success: false, message: err.message });
@@ -237,9 +175,10 @@ router.post('/owner/kyc/verify-otp', otpLimiter, async (req, res) => {
         const { loginId, aadhaarNumber, otp } = req.body || {};
         const k = keyFor('owner', loginId, aadhaarNumber);
         const entry = otpStore.get(k);
-        if (!entry || Date.now() > entry.expiresAt || String(otp) !== entry.otp) {
+        if (!entry || Date.now() > entry.expiresAt) {
             return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
         }
+        await verifyAadhaarOtp(entry.referenceId, otp);
         otpStore.delete(k);
         
         const record = await upsertRecord(loginId, 'owner', { 'ownerKyc.otpVerified': true });
@@ -502,11 +441,15 @@ router.post('/tenant/kyc/send-otp', otpLimiter, async (req, res) => {
         tenant.updatedAt = new Date();
         await tenant.save();
 
-        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        const { referenceId } = await requestAadhaarOtp(aadhaarNumber);
         const k = keyFor('tenant', normalizedLoginId, aadhaarNumber);
-        otpStore.set(k, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
-        console.log('[CHECKIN OTP] tenant', normalizedLoginId, aadhaarNumber, otp);
-        return res.json({ success: true, message: 'OTP generated', devOtp: otp });
+        otpStore.set(k, { referenceId, expiresAt: Date.now() + 10 * 60 * 1000 });
+        console.log('[CHECKIN OTP] tenant', normalizedLoginId, aadhaarNumber, 'Cashfree OTP requested');
+        return res.json({
+            success: true,
+            message: 'OTP sent to Aadhaar linked mobile number',
+            provider: 'cashfree'
+        });
     } catch (err) {
         console.error('tenant/kyc/send-otp error:', err);
         return res.status(500).json({ success: false, message: err.message });
@@ -519,9 +462,10 @@ router.post('/tenant/kyc/verify-otp', otpLimiter, async (req, res) => {
         const normalizedLoginId = String(loginId || '').toUpperCase();
         const k = keyFor('tenant', normalizedLoginId, aadhaarNumber);
         const entry = otpStore.get(k);
-        if (!entry || Date.now() > entry.expiresAt || String(otp) !== entry.otp) {
+        if (!entry || Date.now() > entry.expiresAt) {
             return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
         }
+        await verifyAadhaarOtp(entry.referenceId, otp);
         otpStore.delete(k);
         const record = await upsertRecord(normalizedLoginId, 'tenant', { 'tenantKyc.otpVerified': true });
 
@@ -673,3 +617,5 @@ router.get('/:role/:loginId', async (req, res) => {
 });
 
 module.exports = router;
+
+

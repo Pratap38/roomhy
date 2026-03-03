@@ -1,0 +1,77 @@
+const CASHFREE_API_BASES = {
+    sandbox: 'https://sandbox.cashfree.com',
+    production: 'https://api.cashfree.com'
+};
+
+function getApiBase() {
+    if (process.env.CASHFREE_API_BASE) {
+        return process.env.CASHFREE_API_BASE.trim();
+    }
+    const env = String(process.env.CASHFREE_ENV || 'sandbox').toLowerCase();
+    return CASHFREE_API_BASES[env] || CASHFREE_API_BASES.sandbox;
+}
+
+function getHeaders() {
+    const clientId = process.env.CASHFREE_CLIENT_ID;
+    const clientSecret = process.env.CASHFREE_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+        throw new Error('Cashfree client credentials are not configured');
+    }
+
+    return {
+        'Content-Type': 'application/json',
+        'x-client-id': clientId,
+        'x-client-secret': clientSecret,
+        'x-api-version': process.env.CASHFREE_API_VERSION || '2025-01-01'
+    };
+}
+
+async function callCashfree(path, payload) {
+    const controller = new AbortController();
+    const timeoutMs = Number(process.env.CASHFREE_TIMEOUT_MS || 15000);
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const response = await fetch(`${getApiBase()}${path}`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(payload),
+            signal: controller.signal
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            const message = data?.message || data?.error_description || data?.error || `Cashfree request failed (${response.status})`;
+            throw new Error(message);
+        }
+        return data;
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+async function requestAadhaarOtp(aadhaarNumber) {
+    const data = await callCashfree('/verification/offline-aadhaar/otp', {
+        aadhaar_number: String(aadhaarNumber || '').trim()
+    });
+
+    const referenceId = data?.reference_id || data?.data?.reference_id;
+    if (!referenceId) {
+        throw new Error('Cashfree OTP reference not received');
+    }
+    return { referenceId, raw: data };
+}
+
+async function verifyAadhaarOtp(referenceId, otp) {
+    const data = await callCashfree('/verification/offline-aadhaar/verify', {
+        reference_id: referenceId,
+        otp: String(otp || '').trim()
+    });
+    return data;
+}
+
+module.exports = {
+    requestAadhaarOtp,
+    verifyAadhaarOtp
+};

@@ -11,9 +11,9 @@
     <h2>Tenant Aadhaar KYC</h2>
     <div class="grid">
       <div><label>Login ID</label><input id="loginId" required></div>
-      <div><label>Aadhaar Number</label><input id="aadhaarNumber" required></div>
+      <div><label>Aadhaar Number</label><input id="aadhaarNumber" pattern="\d{12}" maxlength="12" required></div>
       <div><label>Aadhaar Linked Phone Number</label><input id="aadhaarLinkedPhone" required></div>
-      <div><label>OTP</label><input id="otp"></div>
+      <div><label>OTP (6 digits)</label><input id="otp" pattern="\d{6}" maxlength="6"></div>
       <div class="full"><label>Aadhaar Front Photo</label><input id="aadhaarFront" type="file" accept="image/*" required></div>
       <div class="full"><label>Aadhaar Back Photo</label><input id="aadhaarBack" type="file" accept="image/*" required></div>
     </div>

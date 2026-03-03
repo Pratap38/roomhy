@@ -13,7 +13,7 @@
     
     <!-- Display Email Info -->
     <div id="emailInfo" style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: none;">
-      <p style="margin: 0; font-size: 12px; color: #1976d2;"><strong>OTP will be sent to:</strong> <span id="displayEmail">-</span></p>
+      <p style="margin: 0; font-size: 12px; color: #1976d2;"><strong>Registered email for login details:</strong> <span id="displayEmail">-</span></p>
     </div>
     
     <div class="grid">
@@ -28,16 +28,16 @@
       </div>
       <div>
         <label>Aadhaar Number</label>
-        <input id="aadhaarNumber" type="text" placeholder="XXXX XXXX XXXX XXXX" pattern="\d{4}[\s]?\d{4}[\s]?\d{4}[\s]?\d{4}" required>
-        <div class="hint">Format: XXXX XXXX XXXX XXXX (12 digits, spaces optional)</div>
+        <input id="aadhaarNumber" type="text" placeholder="XXXX XXXX XXXX" pattern="\d{4}[\s]?\d{4}[\s]?\d{4}" required>
+        <div class="hint">Format: XXXX XXXX XXXX (12 digits, spaces optional)</div>
       </div>
       <div>
-        <label>OTP (4 digits)</label>
-        <input id="otp" type="text" placeholder="0000" pattern="\d{4}" maxlength="4" required>
-        <div class="hint">4-digit OTP sent to your registered email</div>
+        <label>OTP (6 digits)</label>
+        <input id="otp" type="text" placeholder="000000" pattern="\d{6}" maxlength="6" required>
+        <div class="hint">6-digit OTP sent to your Aadhaar linked mobile number</div>
       </div>
     </div>
-    <button id="sendOtpBtn">Send OTP to Email</button>
+    <button id="sendOtpBtn">Send OTP to Aadhaar Mobile</button>
     <button id="verifyOtpBtn" type="button">Verify OTP</button>
     <p class="muted" id="otpMsg"></p>
     <button id="nextBtn" type="button" style="display:none;">Continue to Terms & Conditions</button>
