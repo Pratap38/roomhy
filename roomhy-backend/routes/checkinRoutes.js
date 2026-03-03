@@ -481,9 +481,18 @@ router.post('/owner/final-submit', async (req, res) => {
         if (!loginId || finalVerified !== true) {
             return res.status(400).json({ success: false, message: 'Final verification required' });
         }
-        const record = await upsertRecord(loginId, 'owner', {});
-        if (!record.ownerKyc || !isOwnerKycVerified(record)) {
+        const normalizedLoginId = String(loginId).toUpperCase();
+        const record = await upsertRecord(normalizedLoginId, 'owner', {});
+        const ownerDoc = await Owner.findOne({ loginId: normalizedLoginId }).lean();
+        const ownerModelVerified = ownerDoc?.kyc?.status === 'submitted';
+        if (!record.ownerKyc || (!isOwnerKycVerified(record) && !ownerModelVerified)) {
             return res.status(400).json({ success: false, message: 'Complete KYC verification first (OTP or DigiLocker)' });
+        }
+        if (ownerModelVerified && !isOwnerKycVerified(record)) {
+            record.ownerKyc = record.ownerKyc || {};
+            record.ownerKyc.digilockerVerified = true;
+            record.ownerKyc.digilockerStatus = 'verified';
+            record.ownerKyc.digilockerVerifiedAt = new Date();
         }
         if (!record.ownerTermsAcceptedAt) {
             return res.status(400).json({ success: false, message: 'Accept terms and conditions first' });
@@ -494,7 +503,7 @@ router.post('/owner/final-submit', async (req, res) => {
         await record.save();
 
         // Send owner dashboard link email after final submit
-        const owner = await Owner.findOne({ loginId: String(loginId).toUpperCase() }).lean();
+        const owner = ownerDoc || await Owner.findOne({ loginId: normalizedLoginId }).lean();
         const targetEmail = (owner && owner.email) || (record.ownerProfile && record.ownerProfile.email) || '';
         const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
         const dashboardUrl = `${baseUrl}/propertyowner/index.html`;

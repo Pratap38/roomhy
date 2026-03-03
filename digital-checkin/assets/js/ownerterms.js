@@ -102,7 +102,7 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
         setText('dAddress', owner.checkinAddress || owner.address || profile.address || '-');
         setText('dKycPhone', owner.checkinAadhaarLinkedPhone || kyc.aadhaarLinkedPhone || '-');
         setText('dAadhaar', maskAadhaar(owner.checkinAadhaarNumber || kyc.aadhaarNumber || ''));
-        setText('dOtpVerified', (kyc.otpVerified || (owner.kyc && owner.kyc.status === 'submitted')) ? 'Yes' : 'No');
+        setText('dOtpVerified', (kyc.otpVerified || kyc.digilockerVerified || (owner.kyc && owner.kyc.status === 'submitted')) ? 'Yes' : 'No');
         setText('dTermsAccepted', record.ownerTermsAcceptedAt ? 'Yes' : 'No');
         setText('loadStatus', 'Details loaded. Please verify and edit if needed.');
 
@@ -136,6 +136,14 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
     document.getElementById('submitBtn').onclick = async () => {
       if (!document.getElementById('finalVerify').checked) return alert('Please check final verify');
       try {
+        const checkinResp = await getWithFallback(`/api/checkin/owner/${encodeURIComponent(loginId)}`);
+        const ownerResp = await getWithFallback(`/api/owners/${encodeURIComponent(loginId)}`);
+        const kyc = checkinResp?.record?.ownerKyc || {};
+        const ownerKycStatus = ownerResp?.kyc?.status || '';
+        const kycVerified = Boolean(kyc.otpVerified || kyc.digilockerVerified || ownerKycStatus === 'submitted');
+        if (!kycVerified) {
+          return alert('Complete KYC verification first (OTP or DigiLocker), then submit.');
+        }
         const data = await postWithFallback('/api/checkin/owner/final-submit', { loginId, finalVerified: true });
         if (!data.success) return alert(data.message || 'Submit failed');
         showFinalConfirmation(data.dashboardUrl || '');
