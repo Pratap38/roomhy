@@ -104,7 +104,7 @@ document.getElementById('startDigiLockerBtn').onclick = async () => {
     document.getElementById('digilockerRef').value = lastRefId;
     document.getElementById('otpMsg').innerHTML = '<span class="success">DigiLocker verification initiated. Complete it and click Complete Verification.</span>';
     if (data.verifyUrl) {
-      window.open(data.verifyUrl, '_blank', 'noopener,noreferrer');
+      window.location.href = data.verifyUrl;
     }
   } catch (err) {
     document.getElementById('otpMsg').innerHTML = `<span class="error">Error: ${err.message}</span>`;

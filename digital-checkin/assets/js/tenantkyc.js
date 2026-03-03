@@ -51,7 +51,7 @@ document.getElementById('startDigiLockerBtn').onclick = async () => {
     lastRefId = data.referenceId || '';
     document.getElementById('digilockerRef').value = lastRefId;
     document.getElementById('otpMsg').innerText = 'DigiLocker verification initiated. Complete it and click Complete Verification.';
-    if (data.verifyUrl) window.open(data.verifyUrl, '_blank', 'noopener,noreferrer');
+    if (data.verifyUrl) window.location.href = data.verifyUrl;
   } catch (err) {
     alert('Error: ' + err.message);
   }

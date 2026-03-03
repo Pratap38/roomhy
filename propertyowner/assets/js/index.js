@@ -1,9 +1,20 @@
 lucide.createIcons();
+        function resolveTenantLoginUrl() {
+            const host = window.location.hostname;
+            if (host === 'admin.roomhy.com') return 'https://app.roomhy.com/tenant/tenantlogin.html';
+            if (host === 'www.admin.roomhy.com') return 'https://app.roomhy.com/tenant/tenantlogin.html';
+            return '/tenant/tenantlogin.html';
+        }
+
+        function goToTenantLogin() {
+            window.location.assign(resolveTenantLoginUrl());
+        }
+        window.goToTenantLogin = goToTenantLogin;
         // Role selector behavior: Tenant -> tenant login page, Owner -> keep owner form
         try {
             const btnTenant = document.getElementById('btn-tenant');
             const btnOwner = document.getElementById('btn-owner');
-            const tenantLoginPath = '/tenant/tenantlogin.html';
+            const tenantLoginPath = resolveTenantLoginUrl();
             if (btnTenant) btnTenant.addEventListener('click', () => {
                 window.location.assign(tenantLoginPath);
             });
