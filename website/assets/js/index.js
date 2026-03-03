@@ -408,8 +408,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Start rotating through city image + area images every 2 seconds
                 const rotationKey = `carousel-${carouselId}`;
                 if (window[rotationKey]) clearInterval(window[rotationKey]);
-                
-                let currentIndex = -1; // Start at -1 to show city image first
+
+                // On hover, immediately show first area image
+                if (mainImage) mainImage.classList.add('opacity-0');
+                areaImages.forEach(img => img.classList.add('opacity-0'));
+                areaImages[0].classList.remove('opacity-0');
+
+                let currentIndex = 1; // Continue rotation from second state
                 
                 const rotateImages = () => {
                     // Hide all images
