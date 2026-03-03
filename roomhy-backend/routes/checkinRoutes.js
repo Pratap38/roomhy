@@ -6,6 +6,12 @@ const Tenant = require('../models/Tenant');
 const { sendMail } = require('../utils/mailer');
 const { otpLimiter } = require('../middleware/security');
 const { requestAadhaarOtp, verifyAadhaarOtp } = require('../services/cashfreeKycService');
+const {
+    verifyDigilockerAccount,
+    createDigilockerUrl,
+    getDigilockerVerificationStatus,
+    getDigilockerDocument
+} = require('../services/cashfreeDigilockerService');
 
 const otpStore = new Map();
 
@@ -311,6 +317,25 @@ router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
         }
 
         const ref = createDigilockerRef(loginId);
+        const redirectUrl = process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/ownerkyc.html`;
+
+        const accountCheck = await verifyDigilockerAccount({
+            verificationId: ref,
+            mobileNumber: aadhaarLinkedPhone,
+            aadhaarNumber
+        });
+        const userFlow = accountCheck?.account_exists ? 'signin' : 'signup';
+        const digilockerInit = await createDigilockerUrl({
+            verificationId: ref,
+            redirectUrl,
+            userFlow,
+            documents: ['AADHAAR']
+        });
+
+        const cashfreeVerificationId = digilockerInit?.verification_id || ref;
+        const cashfreeReferenceId = digilockerInit?.reference_id || digilockerInit?.ref_id || '';
+        const verifyUrl = digilockerInit?.url || digilockerInit?.verification_url || digilockerInit?.link || '';
+
         await upsertRecord(loginId, 'owner', {
             ownerKyc: {
                 aadhaarLinkedPhone: aadhaarLinkedPhone || '',
@@ -319,6 +344,9 @@ router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
                 digilockerVerified: false,
                 digilockerStatus: 'pending',
                 digilockerRef: ref,
+                digilockerVerificationId: cashfreeVerificationId,
+                digilockerReferenceId: cashfreeReferenceId,
+                digilockerUrl: verifyUrl,
                 digilockerStartedAt: new Date()
             }
         });
@@ -338,13 +366,14 @@ router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
-        const providerUrl = process.env.DIGILOCKER_VERIFY_URL || 'https://www.digilocker.gov.in/';
         return res.json({
             success: true,
             provider: 'digilocker',
-            referenceId: ref,
-            verifyUrl: providerUrl,
-            message: 'DigiLocker verification initiated. Complete verification and submit reference ID.'
+            referenceId: cashfreeReferenceId || ref,
+            verificationId: cashfreeVerificationId,
+            verifyUrl,
+            userFlow,
+            message: 'DigiLocker verification initiated. Complete DigiLocker auth and return to this page.'
         });
     } catch (err) {
         console.error('owner/kyc/digilocker/start error:', err);
@@ -354,7 +383,7 @@ router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
 
 router.post('/owner/kyc/digilocker/complete', otpLimiter, async (req, res) => {
     try {
-        const { loginId, aadhaarNumber, referenceId } = req.body || {};
+        const { loginId, aadhaarNumber, referenceId, verificationId } = req.body || {};
         if (!loginId || !aadhaarNumber || !referenceId) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
@@ -366,13 +395,51 @@ router.post('/owner/kyc/digilocker/complete', otpLimiter, async (req, res) => {
         if (String(record.ownerKyc.aadhaarNumber || '') !== String(aadhaarNumber)) {
             return res.status(400).json({ success: false, message: 'Aadhaar mismatch' });
         }
-        if (String(record.ownerKyc.digilockerRef || '') !== String(referenceId)) {
-            return res.status(400).json({ success: false, message: 'Invalid DigiLocker reference ID' });
+        const storedVerificationId = record.ownerKyc.digilockerVerificationId || record.ownerKyc.digilockerRef;
+        const storedReferenceId = record.ownerKyc.digilockerReferenceId || record.ownerKyc.digilockerRef;
+        const checkVerificationId = verificationId || storedVerificationId;
+        const checkReferenceId = referenceId || storedReferenceId;
+        if (!checkVerificationId && !checkReferenceId) {
+            return res.status(400).json({ success: false, message: 'Missing DigiLocker verification context' });
+        }
+
+        const statusResp = await getDigilockerVerificationStatus({
+            verificationId: checkVerificationId,
+            referenceId: checkReferenceId
+        });
+        const verificationStatus = String(
+            statusResp?.status ||
+            statusResp?.verification_status ||
+            statusResp?.data?.status ||
+            ''
+        ).toUpperCase();
+        const validStatuses = ['AUTHENTICATED', 'SUCCESS', 'COMPLETED', 'VERIFIED'];
+        if (!validStatuses.includes(verificationStatus)) {
+            return res.status(400).json({
+                success: false,
+                message: `DigiLocker verification not completed yet (status: ${verificationStatus || 'PENDING'})`
+            });
+        }
+
+        let aadhaarDocument = null;
+        try {
+            aadhaarDocument = await getDigilockerDocument({
+                documentType: 'AADHAAR',
+                verificationId: checkVerificationId,
+                referenceId: checkReferenceId
+            });
+        } catch (docErr) {
+            console.warn('owner digilocker document fetch warning:', docErr.message);
         }
 
         record.ownerKyc.digilockerVerified = true;
         record.ownerKyc.digilockerStatus = 'verified';
         record.ownerKyc.digilockerVerifiedAt = new Date();
+        record.ownerKyc.digilockerVerificationId = checkVerificationId || '';
+        record.ownerKyc.digilockerReferenceId = checkReferenceId || '';
+        if (aadhaarDocument) {
+            record.ownerKyc.digilockerDocument = aadhaarDocument;
+        }
         await record.save();
 
         const owner = await Owner.findOneAndUpdate(
@@ -384,6 +451,7 @@ router.post('/owner/kyc/digilocker/complete', otpLimiter, async (req, res) => {
         return res.json({
             success: true,
             message: 'DigiLocker verification completed successfully',
+            verificationStatus,
             record,
             owner
         });
@@ -612,6 +680,24 @@ router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
         }
         const normalizedLoginId = String(loginId).toUpperCase();
         const ref = createDigilockerRef(normalizedLoginId);
+        const redirectUrl = process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/tenantkyc.html`;
+
+        const accountCheck = await verifyDigilockerAccount({
+            verificationId: ref,
+            mobileNumber: aadhaarLinkedPhone,
+            aadhaarNumber
+        });
+        const userFlow = accountCheck?.account_exists ? 'signin' : 'signup';
+        const digilockerInit = await createDigilockerUrl({
+            verificationId: ref,
+            redirectUrl,
+            userFlow,
+            documents: ['AADHAAR']
+        });
+
+        const cashfreeVerificationId = digilockerInit?.verification_id || ref;
+        const cashfreeReferenceId = digilockerInit?.reference_id || digilockerInit?.ref_id || '';
+        const verifyUrl = digilockerInit?.url || digilockerInit?.verification_url || digilockerInit?.link || '';
 
         await upsertRecord(normalizedLoginId, 'tenant', {
             tenantKyc: {
@@ -623,6 +709,9 @@ router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
                 digilockerVerified: false,
                 digilockerStatus: 'pending',
                 digilockerRef: ref,
+                digilockerVerificationId: cashfreeVerificationId,
+                digilockerReferenceId: cashfreeReferenceId,
+                digilockerUrl: verifyUrl,
                 digilockerStartedAt: new Date()
             }
         });
@@ -649,18 +738,22 @@ router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
             aadhaarFront: aadhaarFront || tenant.digitalCheckin?.kyc?.aadhaarFront || null,
             aadhaarBack: aadhaarBack || tenant.digitalCheckin?.kyc?.aadhaarBack || null,
             digilockerRef: ref,
+            digilockerVerificationId: cashfreeVerificationId,
+            digilockerReferenceId: cashfreeReferenceId,
+            digilockerUrl: verifyUrl,
             digilockerStatus: 'pending',
             digilockerVerified: false
         };
         await tenant.save();
 
-        const providerUrl = process.env.DIGILOCKER_VERIFY_URL || 'https://www.digilocker.gov.in/';
         return res.json({
             success: true,
             provider: 'digilocker',
-            referenceId: ref,
-            verifyUrl: providerUrl,
-            message: 'DigiLocker verification initiated. Complete verification and submit reference ID.'
+            referenceId: cashfreeReferenceId || ref,
+            verificationId: cashfreeVerificationId,
+            verifyUrl,
+            userFlow,
+            message: 'DigiLocker verification initiated. Complete DigiLocker auth and return to this page.'
         });
     } catch (err) {
         console.error('tenant/kyc/digilocker/start error:', err);
@@ -670,7 +763,7 @@ router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
 
 router.post('/tenant/kyc/digilocker/complete', otpLimiter, async (req, res) => {
     try {
-        const { loginId, aadhaarNumber, referenceId } = req.body || {};
+        const { loginId, aadhaarNumber, referenceId, verificationId } = req.body || {};
         if (!loginId || !aadhaarNumber || !referenceId) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
@@ -682,13 +775,51 @@ router.post('/tenant/kyc/digilocker/complete', otpLimiter, async (req, res) => {
         if (String(record.tenantKyc.aadhaarNumber || '') !== String(aadhaarNumber)) {
             return res.status(400).json({ success: false, message: 'Aadhaar mismatch' });
         }
-        if (String(record.tenantKyc.digilockerRef || '') !== String(referenceId)) {
-            return res.status(400).json({ success: false, message: 'Invalid DigiLocker reference ID' });
+        const storedVerificationId = record.tenantKyc.digilockerVerificationId || record.tenantKyc.digilockerRef;
+        const storedReferenceId = record.tenantKyc.digilockerReferenceId || record.tenantKyc.digilockerRef;
+        const checkVerificationId = verificationId || storedVerificationId;
+        const checkReferenceId = referenceId || storedReferenceId;
+        if (!checkVerificationId && !checkReferenceId) {
+            return res.status(400).json({ success: false, message: 'Missing DigiLocker verification context' });
+        }
+
+        const statusResp = await getDigilockerVerificationStatus({
+            verificationId: checkVerificationId,
+            referenceId: checkReferenceId
+        });
+        const verificationStatus = String(
+            statusResp?.status ||
+            statusResp?.verification_status ||
+            statusResp?.data?.status ||
+            ''
+        ).toUpperCase();
+        const validStatuses = ['AUTHENTICATED', 'SUCCESS', 'COMPLETED', 'VERIFIED'];
+        if (!validStatuses.includes(verificationStatus)) {
+            return res.status(400).json({
+                success: false,
+                message: `DigiLocker verification not completed yet (status: ${verificationStatus || 'PENDING'})`
+            });
+        }
+
+        let aadhaarDocument = null;
+        try {
+            aadhaarDocument = await getDigilockerDocument({
+                documentType: 'AADHAAR',
+                verificationId: checkVerificationId,
+                referenceId: checkReferenceId
+            });
+        } catch (docErr) {
+            console.warn('tenant digilocker document fetch warning:', docErr.message);
         }
 
         record.tenantKyc.digilockerVerified = true;
         record.tenantKyc.digilockerStatus = 'verified';
         record.tenantKyc.digilockerVerifiedAt = new Date();
+        record.tenantKyc.digilockerVerificationId = checkVerificationId || '';
+        record.tenantKyc.digilockerReferenceId = checkReferenceId || '';
+        if (aadhaarDocument) {
+            record.tenantKyc.digilockerDocument = aadhaarDocument;
+        }
         await record.save();
 
         const tenant = await Tenant.findOne({ loginId: normalizedLoginId });
@@ -705,11 +836,13 @@ router.post('/tenant/kyc/digilocker/complete', otpLimiter, async (req, res) => {
             ...(tenant.digitalCheckin.kyc || {}),
             digilockerVerified: true,
             digilockerVerifiedAt: new Date(),
-            digilockerStatus: 'verified'
+            digilockerStatus: 'verified',
+            digilockerVerificationId: checkVerificationId || '',
+            digilockerReferenceId: checkReferenceId || ''
         };
         await tenant.save();
 
-        return res.json({ success: true, message: 'DigiLocker verification completed successfully', record, tenant });
+        return res.json({ success: true, message: 'DigiLocker verification completed successfully', verificationStatus, record, tenant });
     } catch (err) {
         console.error('tenant/kyc/digilocker/complete error:', err);
         return res.status(500).json({ success: false, message: err.message });
