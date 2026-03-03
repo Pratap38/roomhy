@@ -53,7 +53,7 @@
                     </div>
                     <div id="finance-submenu" class="submenu">
                         <a href="rentcollection.html" class="sidebar-link text-sm hover:text-white">Rent Collections</a>
-                        <a href="platform.html" class="sidebar-link text-sm hover:text-white">Commissions</a>
+                        <a href="platform.html" class="sidebar-link text-sm hover:text-white active">Commissions</a>
                         <a href="refund.html" class="sidebar-link text-sm hover:text-white">Refunds</a>
                     </div>
                 </div>
@@ -104,7 +104,7 @@
                         <div class="bg-purple-600 text-white p-6 rounded-xl shadow-md relative overflow-hidden">
                             <div class="relative z-10">
                                 <p class="text-sm font-medium text-purple-100">Total Platform Revenue</p>
-                                <h3 class="text-3xl font-bold mt-1">?1,25,400</h3>
+                                <h3 id="card-total-revenue" class="text-3xl font-bold mt-1">INR 0</h3>
                                 <p class="text-xs mt-2 text-purple-200">Accumulated Commission Earnings</p>
                             </div>
                             <div class="absolute right-4 bottom-4 opacity-10">
@@ -114,14 +114,14 @@
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-500">Standard Commission Rate</p>
-                                <h3 class="text-3xl font-bold text-gray-800 mt-1">10%</h3>
+                                <h3 id="card-commission-rate" class="text-3xl font-bold text-gray-800 mt-1">10%</h3>
                             </div>
                             <p class="text-xs text-gray-500 mt-2">Applicable on monthly rent collected</p>
                         </div>
                          <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
                             <div>
                                 <p class="text-sm font-medium text-gray-500">Pending Payouts to Owners</p>
-                                <h3 class="text-3xl font-bold text-orange-600 mt-1">?45,000</h3>
+                                <h3 id="card-pending-payout" class="text-3xl font-bold text-orange-600 mt-1">INR 0</h3>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-1.5 mt-2">
                                 <div class="bg-orange-500 h-1.5 rounded-full" style="width: 30%"></div>
@@ -163,6 +163,7 @@
                                         <th>Service Fee</th>
                                         <th>To Be Paid</th>
                                         <th>Status</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="commissionTableBody">

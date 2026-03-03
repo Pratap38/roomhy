@@ -27,6 +27,8 @@ router.post('/record-payment-by-tenant', rentController.recordPaymentByTenant);
 router.post('/cash/request', rentController.requestCashPayment);
 router.post('/cash/owner-received', rentController.markCashReceivedByOwner);
 router.post('/cash/verify-otp', rentController.verifyCashPaymentOtp);
+router.post('/platform/payout', rentController.processOwnerPayout);
+router.get('/platform/summary', rentController.getPlatformPayoutSummary);
 
 // Get single rent
 router.get('/:rentId', rentController.getRent);

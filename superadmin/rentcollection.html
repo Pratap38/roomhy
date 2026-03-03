@@ -15,7 +15,7 @@
     
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <div id="mobile-sidebar" class="sidebar w-64 border-r border-gray-200 flex flex-col fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50 md:z-0">
+        <aside id="mobile-sidebar" class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="p-6 border-b border-gray-700 flex items-center justify-between">
                 <div>
                     <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-8 w-auto">
@@ -60,7 +60,7 @@
             <div class="p-4 border-t border-gray-700">
                 <button onclick="logout()" class="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:bg-gray-800 rounded"><i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Sign out</button>
             </div>
-        </div>
+        </aside>
 
         <!-- Main Content -->
         <div class="flex-1 overflow-auto">

@@ -789,3 +789,234 @@ exports.verifyCashPaymentOtp = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
+
+function normalizeLoginId(value) {
+    return String(value || '').trim().toUpperCase();
+}
+
+function normalizeAccountNumber(value) {
+    return String(value || '').replace(/\s+/g, '').trim();
+}
+
+function extractOwnerPayoutInfo(ownerDoc) {
+    const profile = ownerDoc?.profile || {};
+    return {
+        ownerName: profile.name || ownerDoc?.name || '',
+        ownerEmail: profile.email || ownerDoc?.email || '',
+        bankName: profile.bankName || ownerDoc?.checkinBankName || '',
+        accountHolderName: ownerDoc?.checkinAccountHolderName || profile.name || ownerDoc?.name || '',
+        accountNumber: normalizeAccountNumber(profile.accountNumber || ownerDoc?.checkinBankAccountNumber || ''),
+        ifscCode: (profile.ifscCode || ownerDoc?.checkinIfscCode || '').trim().toUpperCase(),
+        branchName: profile.branchName || ownerDoc?.checkinBranchName || ''
+    };
+}
+
+async function sendOwnerPayoutSuccessEmail({ toEmail, ownerName, amount, reference, propertyName, tenantLoginId }) {
+    if (!toEmail) return;
+    const subject = 'RoomHy Owner Payout Successful';
+    const html = `
+        <div style="font-family:Arial,sans-serif;color:#111">
+            <h3>Owner Payout Completed</h3>
+            <p>Hi ${ownerName || 'Owner'},</p>
+            <p>Your payout has been transferred successfully.</p>
+            <ul>
+                <li><strong>Amount:</strong> INR ${Number(amount || 0).toLocaleString('en-IN')}</li>
+                <li><strong>Reference:</strong> ${reference || '-'}</li>
+                <li><strong>Property:</strong> ${propertyName || '-'}</li>
+                <li><strong>Tenant Login ID:</strong> ${tenantLoginId || '-'}</li>
+            </ul>
+            <p>Thank you,<br>RoomHy Team</p>
+        </div>
+    `;
+    await sendMail(toEmail, subject, '', html);
+}
+
+// Platform payout to owner bank account (superadmin action from platform.html)
+exports.processOwnerPayout = async (req, res) => {
+    try {
+        const {
+            ownerLoginId,
+            tenantLoginId,
+            amount,
+            rentAmount,
+            commissionAmount,
+            serviceFeeAmount,
+            propertyName
+        } = req.body || {};
+
+        const ownerId = normalizeLoginId(ownerLoginId);
+        const tenantId = normalizeLoginId(tenantLoginId);
+        const payoutAmount = Number(amount || 0);
+
+        if (!ownerId || !tenantId || !Number.isFinite(payoutAmount) || payoutAmount <= 0) {
+            return res.status(400).json({ success: false, message: 'ownerLoginId, tenantLoginId and valid amount are required' });
+        }
+
+        const ownerDoc = await Owner.findOne({ loginId: ownerId });
+        if (!ownerDoc) {
+            return res.status(404).json({ success: false, message: `Owner not found: ${ownerId}` });
+        }
+
+        const ownerInfo = extractOwnerPayoutInfo(ownerDoc);
+        if (!ownerInfo.accountNumber || !ownerInfo.ifscCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Owner bank details missing (account number / IFSC). Please complete owner profile first.'
+            });
+        }
+
+        const month = new Date().toISOString().slice(0, 7);
+        const rentDocs = await Rent.find({
+            ownerLoginId: ownerId,
+            tenantLoginId: tenantId,
+            collectionMonth: month
+        }).sort({ createdAt: -1 });
+
+        if (!rentDocs.length) {
+            return res.status(404).json({ success: false, message: 'No rent record found for this owner/tenant in current month' });
+        }
+
+        const anyAlreadyPaid = rentDocs.some((r) => r.ownerPayoutStatus === 'paid');
+        if (anyAlreadyPaid) {
+            return res.status(409).json({ success: false, message: 'Payout already completed for this owner/tenant' });
+        }
+
+        // Mark processing before external call
+        await Rent.updateMany(
+            { _id: { $in: rentDocs.map((r) => r._id) } },
+            {
+                $set: {
+                    ownerPayoutStatus: 'processing',
+                    ownerPayoutAmount: payoutAmount,
+                    ownerPayoutNote: `Rent: ${Number(rentAmount || 0)}, Commission: ${Number(commissionAmount || 0)}, Service Fee: ${Number(serviceFeeAmount || 0)}`
+                }
+            }
+        );
+
+        const Razorpay = require('razorpay');
+        const keyId = process.env.RAZORPAY_KEY_ID;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        const payoutAccountNumber = process.env.RAZORPAY_PAYOUT_ACCOUNT_NUMBER;
+
+        if (!keyId || !keySecret) {
+            await Rent.updateMany(
+                { _id: { $in: rentDocs.map((r) => r._id) } },
+                { $set: { ownerPayoutStatus: 'failed', ownerPayoutNote: 'Razorpay key/secret not configured' } }
+            );
+            return res.status(500).json({ success: false, message: 'Razorpay credentials are not configured' });
+        }
+
+        if (!payoutAccountNumber) {
+            await Rent.updateMany(
+                { _id: { $in: rentDocs.map((r) => r._id) } },
+                { $set: { ownerPayoutStatus: 'failed', ownerPayoutNote: 'RAZORPAY_PAYOUT_ACCOUNT_NUMBER missing' } }
+            );
+            return res.status(500).json({ success: false, message: 'RAZORPAY_PAYOUT_ACCOUNT_NUMBER is required for payout transfers' });
+        }
+
+        const razorpay = new Razorpay({ key_id: keyId, key_secret: keySecret });
+
+        // Create contact and fund account for owner payout
+        const contact = await razorpay.contacts.create({
+            name: ownerInfo.ownerName || ownerId,
+            email: ownerInfo.ownerEmail || undefined,
+            type: 'vendor',
+            reference_id: `owner_${ownerId}`,
+            notes: { ownerLoginId: ownerId }
+        });
+
+        const fundAccount = await razorpay.fundAccount.create({
+            contact_id: contact.id,
+            account_type: 'bank_account',
+            bank_account: {
+                name: ownerInfo.accountHolderName || ownerInfo.ownerName || ownerId,
+                ifsc: ownerInfo.ifscCode,
+                account_number: ownerInfo.accountNumber
+            }
+        });
+
+        const payout = await razorpay.payouts.create({
+            account_number: payoutAccountNumber,
+            fund_account_id: fundAccount.id,
+            amount: Math.round(payoutAmount * 100),
+            currency: 'INR',
+            mode: 'IMPS',
+            purpose: 'payout',
+            queue_if_low_balance: true,
+            reference_id: `roomhy_${ownerId}_${tenantId}_${Date.now()}`,
+            narration: 'RoomHy Rent Payout',
+            notes: {
+                ownerLoginId: ownerId,
+                tenantLoginId: tenantId,
+                propertyName: propertyName || ''
+            }
+        });
+
+        const payoutRef = payout.id || payout.reference_id || '';
+        await Rent.updateMany(
+            { _id: { $in: rentDocs.map((r) => r._id) } },
+            {
+                $set: {
+                    ownerPayoutStatus: 'paid',
+                    ownerPayoutAt: new Date(),
+                    ownerPayoutRef: payoutRef,
+                    ownerPayoutAmount: payoutAmount,
+                    ownerPayoutNote: 'Transfer successful'
+                }
+            }
+        );
+
+        await sendOwnerPayoutSuccessEmail({
+            toEmail: ownerInfo.ownerEmail,
+            ownerName: ownerInfo.ownerName,
+            amount: payoutAmount,
+            reference: payoutRef,
+            propertyName,
+            tenantLoginId: tenantId
+        });
+
+        return res.json({
+            success: true,
+            message: 'Owner payout transferred successfully',
+            payout: {
+                id: payout.id,
+                status: payout.status,
+                amount: payoutAmount,
+                reference: payoutRef
+            }
+        });
+    } catch (err) {
+        console.error('processOwnerPayout error:', err && err.message ? err.message : err);
+        return res.status(500).json({ success: false, message: err.message || 'Failed to process owner payout' });
+    }
+};
+
+exports.getPlatformPayoutSummary = async (req, res) => {
+    try {
+        const rents = await Rent.find({}).select('ownerPayoutStatus ownerPayoutAmount commissionAmount serviceFeeAmount paidAmount totalDue rentAmount');
+        const summary = {
+            totalPayoutTransferred: 0,
+            totalPendingPayout: 0,
+            totalRents: 0,
+            paidRows: 0,
+            pendingRows: 0
+        };
+
+        rents.forEach((rent) => {
+            summary.totalRents += Number(rent.rentAmount || rent.totalDue || 0);
+            const payoutAmount = Number(rent.ownerPayoutAmount || 0);
+            if (rent.ownerPayoutStatus === 'paid') {
+                summary.totalPayoutTransferred += payoutAmount;
+                summary.paidRows += 1;
+            } else if (rent.ownerPayoutStatus === 'pending' || rent.ownerPayoutStatus === 'processing' || rent.ownerPayoutStatus === 'failed' || !rent.ownerPayoutStatus) {
+                summary.totalPendingPayout += payoutAmount;
+                summary.pendingRows += 1;
+            }
+        });
+
+        return res.json({ success: true, summary });
+    } catch (err) {
+        console.error('getPlatformPayoutSummary error:', err);
+        return res.status(500).json({ success: false, message: err.message || 'Failed to fetch payout summary' });
+    }
+};

@@ -9,12 +9,33 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
         ]));
         let activeBackendBase = backendBase;
 
+        function getStoredToken() {
+            return (
+                localStorage.getItem('token') ||
+                sessionStorage.getItem('token') ||
+                localStorage.getItem('authToken') ||
+                sessionStorage.getItem('authToken') ||
+                localStorage.getItem('jwt') ||
+                sessionStorage.getItem('jwt') ||
+                ''
+            );
+        }
+
         async function apiFetch(path, options = {}) {
             const attempts = [activeBackendBase, ...backendBases.filter((b) => b !== activeBackendBase)];
             let lastError = null;
+
+            const finalOptions = { ...options };
+            const headers = { ...(options.headers || {}) };
+            const token = getStoredToken();
+            if (token && !headers.Authorization) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            finalOptions.headers = headers;
+
             for (const base of attempts) {
                 try {
-                    const res = await fetch(`${base}${path}`, options);
+                    const res = await fetch(`${base}${path}`, finalOptions);
                     if (res.status === 404) {
                         lastError = new Error(`404 for ${path} at ${base}`);
                         continue;
