@@ -15,12 +15,13 @@ let userBookings = [];
         // Listen for storage changes (logout from other tabs)
         window.addEventListener('storage', updateMobileMenuState);
         
-        // Get user ID from URL parameter (passed from booking form or new_signups.html)
+        // Get user identity from URL/storage/auth
         const userId = getUserIdFromUrl() || localStorage.getItem('userId') || sessionStorage.getItem('userId');
+        const userEmail = getCurrentUserEmail();
         
-        if (userId) {
-            console.log('Loading bookings for user:', userId);
-            loadUserBookings(userId);
+        if (userId || userEmail) {
+            console.log('Loading bookings for identity:', { userId, userEmail });
+            loadUserBookings(userId || userEmail, userEmail);
         } else {
             console.warn('No user ID found. Please pass userId parameter in URL');
             displayBookings();
@@ -137,8 +138,30 @@ let userBookings = [];
         return null;
     }
 
+    function getCurrentUserEmail() {
+        try {
+            if (typeof AuthUtils !== 'undefined' && AuthUtils.getUser) {
+                const authUser = AuthUtils.getUser();
+                if (authUser && authUser.email) return String(authUser.email).trim().toLowerCase();
+            }
+        } catch (_e) {}
+
+        const candidates = [
+            localStorage.getItem('userEmail'),
+            (() => {
+                try { return JSON.parse(localStorage.getItem('user') || '{}').email; } catch (_e) { return ''; }
+            })(),
+            (() => {
+                try { return JSON.parse(localStorage.getItem('currentUser') || '{}').email; } catch (_e) { return ''; }
+            })()
+        ];
+
+        const email = candidates.find((v) => typeof v === 'string' && v.trim().length > 0);
+        return email ? email.trim().toLowerCase() : '';
+    }
+
     // Load user's bookings from sessionStorage
-    async function loadUserBookings(userId) {
+    async function loadUserBookings(userId, userEmail = '') {
         try {
             let bookings = [];
 
@@ -168,9 +191,10 @@ let userBookings = [];
             // Then try API
             if (bookings.length === 0) {
                 try {
+                    const querySuffix = userEmail ? `?email=${encodeURIComponent(userEmail)}` : '';
                     const bookingEndpoints = [
-                        `${API_URL}/api/booking/user/${userId}`,
-                        `${API_URL}/api/bookings/user/${userId}`
+                        `${API_URL}/api/booking/user/${encodeURIComponent(userId)}${querySuffix}`,
+                        `${API_URL}/api/bookings/user/${encodeURIComponent(userId)}${querySuffix}`
                     ];
 
                     let response = null;
@@ -637,9 +661,10 @@ let userBookings = [];
                 closeRefundModal();
                 // Reload bookings to refresh display
                 const userId = localStorage.getItem('userId') || sessionStorage.getItem('userId');
+                const userEmail = getCurrentUserEmail();
                 if (userId) {
                     setTimeout(() => {
-                        loadUserBookings(userId);
+                        loadUserBookings(userId, userEmail);
                     }, 500);
                 }
             }

@@ -397,33 +397,55 @@ exports.getBookingRequestById = async (req, res) => {
 exports.getUserBookings = async (req, res) => {
     try {
         const { userId } = req.params;
-        
+        const emailFromQuery = String(req.query.email || '').trim().toLowerCase();
+
         if (!userId) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'User ID is required' 
+            return res.status(400).json({
+                success: false,
+                message: 'User ID is required'
             });
         }
 
-        console.log(`📖 Fetching bookings for user: ${userId}`);
+        const normalizedUserId = String(userId).trim();
+        const normalizedUserIdLower = normalizedUserId.toLowerCase();
+        const identityCandidates = [normalizedUserId, normalizedUserIdLower];
+        const emailCandidates = emailFromQuery
+            ? [emailFromQuery]
+            : (normalizedUserId.includes('@') ? [normalizedUserIdLower] : []);
 
-        // Find all confirmed bookings for this user
-        const bookings = await BookingRequest.find({ 
-            user_id: userId, 
-            booking_status: { $in: ['confirmed', 'active', 'completed'] } 
-        }).sort({ createdAt: -1 });
+        console.log(`Fetching bookings for user: ${normalizedUserId}`, {
+            emailFromQuery: emailFromQuery || null
+        });
 
-        console.log(`✅ Found ${bookings.length} bookings for user ${userId}`);
+        const bookings = await BookingRequest.find({
+            $and: [
+                {
+                    $or: [
+                        { user_id: { $in: identityCandidates } },
+                        { email: { $in: emailCandidates } }
+                    ]
+                },
+                {
+                    $or: [
+                        { booking_status: { $in: ['confirmed', 'active', 'completed'] } },
+                        { bookingStatus: { $in: ['confirmed', 'active', 'completed'] } },
+                        { status: { $in: ['confirmed', 'booked', 'accepted'] } }
+                    ]
+                }
+            ]
+        }).sort({ createdAt: -1, created_at: -1 });
 
-        res.status(200).json({ 
-            success: true, 
-            data: bookings 
+        console.log(`Found ${bookings.length} bookings for user ${normalizedUserId}`);
+
+        res.status(200).json({
+            success: true,
+            data: bookings
         });
     } catch (error) {
         console.error('Error fetching user bookings:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message 
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 };
