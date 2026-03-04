@@ -90,7 +90,8 @@ document.getElementById('startDigiLockerBtn').onclick = async () => {
     });
 
     lastRefId = data.referenceId || '';
-    document.getElementById('digilockerRef').value = lastRefId;
+    // Keep UI field empty on start; use hidden in-memory value for complete call.
+    document.getElementById('digilockerRef').value = '';
     saveKycState({ referenceId: lastRefId, verificationId: data.verificationId || '' });
     document.getElementById('otpMsg').innerText = 'DigiLocker verification initiated. Complete it and click Complete Verification.';
     if (data.verifyUrl) window.location.href = data.verifyUrl;
