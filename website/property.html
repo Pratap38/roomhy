@@ -217,7 +217,7 @@
                     <div class="mb-4">
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="text-sm font-semibold text-gray-800">All Photos</h4>
-                            <span class="text-xs font-medium text-gray-500">Ã¢â€ Â Scroll to browse Ã¢â€ â€™</span>
+                            <span class="text-xs font-medium text-gray-500">&larr; Scroll to browse &rarr;</span>
                         </div>
                         <div class="flex gap-3 overflow-x-auto pb-2 thumbnail-strip" id="galleryThumbnails">
                             <!-- Thumbnails will be populated dynamically -->
@@ -1068,7 +1068,7 @@
                     const starsEl = document.getElementById(starsId);
                     const ratingEl = document.getElementById(ratingId);
                     const commentEl = document.getElementById(commentId);
-                    const emptyStarsHtml = '<span>☆</span><span>☆</span><span>☆</span><span>☆</span><span>☆</span>';
+                    const emptyStarsHtml = '<span>&#9734;</span><span>&#9734;</span><span>&#9734;</span><span>&#9734;</span><span>&#9734;</span>';
 
                     const ratingValue = normalizeRatingValue(rating);
                     if (ratingValue === null) {
@@ -1081,8 +1081,8 @@
                     const fullStars = Math.floor(ratingValue);
                     const emptyStars = 5 - fullStars;
                     let starsHtml = '';
-                    for (let i = 0; i < fullStars; i++) starsHtml += '<span>★</span>';
-                    for (let i = 0; i < emptyStars; i++) starsHtml += '<span>☆</span>';
+                    for (let i = 0; i < fullStars; i++) starsHtml += '<span>&#9733;</span>';
+                    for (let i = 0; i < emptyStars; i++) starsHtml += '<span>&#9734;</span>';
                     
                     if (starsEl) starsEl.innerHTML = starsHtml;
                     if (ratingEl) ratingEl.textContent = ratingValue.toFixed(1);
@@ -1093,11 +1093,27 @@
                 };
                 
                 // Display Student Reviews Rating
-                const studentRatingFromVisit = v.studentReviewsRating ?? v.studentRating ?? v.student_reviews_rating ?? (v.propertyInfo && (v.propertyInfo.studentReviewsRating || v.propertyInfo.studentRating));
+                const studentRatingFromVisit =
+                    v.studentReviewsRating ??
+                    v.studentRating ??
+                    v.student_reviews_rating ??
+                    (v.propertyInfo && (v.propertyInfo.studentReviewsRating || v.propertyInfo.studentRating)) ??
+                    v.rating ??
+                    v.reviewsAvg ??
+                    v.ratingScore ??
+                    (v.propertyInfo && (v.propertyInfo.rating || v.propertyInfo.reviewsAvg || v.propertyInfo.ratingScore));
                 updateRatingDisplay(studentRatingFromVisit, 'student-reviews-stars', 'student-reviews-rating', 'student-reviews-comment', true);
                 
                 // Display Employee Rating
-                const employeeRatingFromVisit = v.employeeRating ?? v.professionalRating ?? v.employee_rating ?? (v.propertyInfo && (v.propertyInfo.employeeRating || v.propertyInfo.professionalRating));
+                const employeeRatingFromVisit =
+                    v.employeeRating ??
+                    v.professionalRating ??
+                    v.employee_rating ??
+                    (v.propertyInfo && (v.propertyInfo.employeeRating || v.propertyInfo.professionalRating)) ??
+                    v.rating ??
+                    v.reviewsAvg ??
+                    v.ratingScore ??
+                    (v.propertyInfo && (v.propertyInfo.rating || v.propertyInfo.reviewsAvg || v.propertyInfo.ratingScore));
                 updateRatingDisplay(employeeRatingFromVisit, 'employee-rating-stars', 'employee-rating-rating', 'employee-rating-comment', false);
 
 
