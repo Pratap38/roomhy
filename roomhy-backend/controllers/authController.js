@@ -645,8 +645,41 @@ exports.verifyOwnerTemp = async (req, res) => {
         const { loginId, tempPassword } = req.body;
         if (!loginId || !tempPassword) return res.status(400).json({ message: 'Missing fields' });
 
-        const user = await User.findOne({ loginId });
-        if (!user || user.role !== 'owner') return res.status(404).json({ message: 'Owner not found' });
+        const normalizedLoginId = String(loginId || '').trim().toUpperCase();
+        let user = await User.findOne({ loginId: normalizedLoginId, role: 'owner' });
+
+        // Backward-compat: owner record exists but auth user row missing.
+        if (!user) {
+            const owner = await Owner.findOne({ loginId: normalizedLoginId });
+            if (!owner) return res.status(404).json({ message: 'Owner not found' });
+
+            const ownerTempPassword = owner?.credentials?.password || owner?.checkinPassword || '';
+            if (!ownerTempPassword) {
+                return res.status(404).json({ message: 'Owner credentials not initialized' });
+            }
+            if (String(ownerTempPassword) !== String(tempPassword)) {
+                return res.status(401).json({ message: 'Invalid temporary password' });
+            }
+
+            const seedPhone = owner?.phone || owner?.profile?.phone || '0000000000';
+            const seedEmail = owner?.email || owner?.profile?.email || '';
+            const seedName = owner?.name || owner?.profile?.name || normalizedLoginId;
+
+            try {
+                user = await User.create({
+                    name: seedName,
+                    email: seedEmail,
+                    phone: seedPhone,
+                    password: ownerTempPassword,
+                    role: 'owner',
+                    loginId: normalizedLoginId
+                });
+            } catch (createErr) {
+                // In race/duplicate cases, fetch again.
+                user = await User.findOne({ loginId: normalizedLoginId, role: 'owner' });
+                if (!user) throw createErr;
+            }
+        }
 
         if (user.isActive === false) return res.status(403).json({ message: 'Account disabled' });
 
@@ -667,8 +700,40 @@ exports.setOwnerPassword = async (req, res) => {
         const { loginId, tempPassword, newPassword } = req.body;
         if (!loginId || !tempPassword || !newPassword) return res.status(400).json({ message: 'Missing fields' });
 
-        const user = await User.findOne({ loginId });
-        if (!user || user.role !== 'owner') return res.status(404).json({ message: 'Owner not found' });
+        const normalizedLoginId = String(loginId || '').trim().toUpperCase();
+        let user = await User.findOne({ loginId: normalizedLoginId, role: 'owner' });
+
+        // Backward-compat: create missing auth user from Owner record.
+        if (!user) {
+            const owner = await Owner.findOne({ loginId: normalizedLoginId });
+            if (!owner) return res.status(404).json({ message: 'Owner not found' });
+
+            const ownerTempPassword = owner?.credentials?.password || owner?.checkinPassword || '';
+            if (!ownerTempPassword) {
+                return res.status(404).json({ message: 'Owner credentials not initialized' });
+            }
+            if (String(ownerTempPassword) !== String(tempPassword)) {
+                return res.status(401).json({ message: 'Invalid temporary password' });
+            }
+
+            const seedPhone = owner?.phone || owner?.profile?.phone || '0000000000';
+            const seedEmail = owner?.email || owner?.profile?.email || '';
+            const seedName = owner?.name || owner?.profile?.name || normalizedLoginId;
+
+            try {
+                user = await User.create({
+                    name: seedName,
+                    email: seedEmail,
+                    phone: seedPhone,
+                    password: ownerTempPassword,
+                    role: 'owner',
+                    loginId: normalizedLoginId
+                });
+            } catch (createErr) {
+                user = await User.findOne({ loginId: normalizedLoginId, role: 'owner' });
+                if (!user) throw createErr;
+            }
+        }
 
         const ok = await user.matchPassword(tempPassword);
         if (!ok) return res.status(401).json({ message: 'Invalid temporary password' });
