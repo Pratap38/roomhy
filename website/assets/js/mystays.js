@@ -22,13 +22,8 @@ let userBookings = [];
             || sessionStorage.getItem('userId');
         const userEmail = getCurrentUserEmail();
         
-        if (userId || userEmail) {
-            console.log('Loading bookings for identity:', { userId, userEmail });
-            loadUserBookings(userId || userEmail, userEmail);
-        } else {
-            console.warn('No user ID found. Please pass userId parameter in URL');
-            displayBookings();
-        }
+        console.log('Loading bookings for identity:', { userId, userEmail });
+        loadUserBookings(userId || null, userEmail || '');
         setupPaymentMethodToggle();
     });
 
@@ -160,6 +155,19 @@ let userBookings = [];
                 }
             }
         } catch (_e) {}
+
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const id = user.userId || user.user_id || user.loginId || user.id;
+            if (id && String(id).trim()) return String(id).trim();
+        } catch (_e) {}
+
+        try {
+            const tenantUser = JSON.parse(localStorage.getItem('tenant_user') || '{}');
+            const id = tenantUser.userId || tenantUser.user_id || tenantUser.loginId || tenantUser.id;
+            if (id && String(id).trim()) return String(id).trim();
+        } catch (_e) {}
+
         return null;
     }
 
@@ -188,65 +196,81 @@ let userBookings = [];
     // Load user's bookings from sessionStorage
     async function loadUserBookings(userId, userEmail = '') {
         try {
-            let bookings = [];
+            const bookings = [];
 
             // First try sessionStorage
             try {
                 const bookingDataStr = sessionStorage.getItem('bookingConfirmation');
                 if (bookingDataStr) {
                     const bookingData = JSON.parse(bookingDataStr);
-                    bookings = [bookingData];
+                    if (bookingData && typeof bookingData === 'object') {
+                        bookings.push(bookingData);
+                    }
                 }
             } catch (e) {
                 console.error('Error parsing session booking data:', e);
             }
 
             // Then try localStorage
-            if (bookings.length === 0) {
-                try {
-                    const localBooking = localStorage.getItem('lastBooking');
-                    if (localBooking) {
-                        bookings = [JSON.parse(localBooking)];
+            try {
+                const localBooking = localStorage.getItem('lastBooking');
+                if (localBooking) {
+                    const parsed = JSON.parse(localBooking);
+                    if (parsed && typeof parsed === 'object') {
+                        bookings.push(parsed);
                     }
-                } catch (e) {
-                    console.error('Error parsing local booking:', e);
                 }
+            } catch (e) {
+                console.error('Error parsing local booking:', e);
             }
 
             // Then try API
-            if (bookings.length === 0) {
+            if (userId || userEmail) {
                 try {
+                    const identity = userId || userEmail;
                     const querySuffix = userEmail ? `?email=${encodeURIComponent(userEmail)}` : '';
                     const bookingEndpoints = [
-                        `${API_URL}/api/booking/user/${encodeURIComponent(userId)}${querySuffix}`,
-                        `${API_URL}/api/bookings/user/${encodeURIComponent(userId)}${querySuffix}`
+                        `${API_URL}/api/booking/user/${encodeURIComponent(identity)}${querySuffix}`,
+                        `${API_URL}/api/bookings/user/${encodeURIComponent(identity)}${querySuffix}`
                     ];
 
-                    let response = null;
                     for (const endpoint of bookingEndpoints) {
-                        const attempt = await fetch(endpoint, {
+                        const response = await fetch(endpoint, {
                             method: 'GET',
                             headers: { 'Content-Type': 'application/json' }
                         });
 
-                        if (attempt.ok || attempt.status !== 404) {
-                            response = attempt;
+                        if (response.status === 404) continue;
+                        if (!response.ok) {
+                            console.warn('API returned status:', response.status, 'for', endpoint);
                             break;
                         }
-                    }
 
-                    if (response && response.ok) {
                         const data = await response.json();
-                        bookings = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
-                    } else if (response) {
-                        console.warn('API returned status:', response.status);
+                        const apiBookings = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+                        bookings.push(...apiBookings);
+                        break;
                     }
                 } catch (apiError) {
                     console.warn('API call failed:', apiError.message);
                 }
             }
 
-            userBookings = bookings;
+            const dedupedBookings = [];
+            const seen = new Set();
+            for (const booking of bookings) {
+                if (!booking || typeof booking !== 'object') continue;
+
+                const bookingKey = booking.booking_id || booking.bookingId || booking._id || booking.id;
+                const fallbackKey = `${booking.user_id || booking.userId || ''}::${booking.property_id || booking.propertyId || ''}::${booking.payment_id || booking.paymentId || ''}`;
+                const key = String(bookingKey || fallbackKey);
+                if (!key || seen.has(key)) continue;
+
+                seen.add(key);
+                dedupedBookings.push(booking);
+            }
+
+            userBookings = dedupedBookings;
             displayBookings();
         } catch (error) {
             console.error('Error loading bookings:', error);

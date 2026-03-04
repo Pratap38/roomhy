@@ -408,7 +408,8 @@ exports.getUserBookings = async (req, res) => {
 
         const normalizedUserId = String(userId).trim();
         const normalizedUserIdLower = normalizedUserId.toLowerCase();
-        const identityCandidates = [normalizedUserId, normalizedUserIdLower];
+        const normalizedUserIdUpper = normalizedUserId.toUpperCase();
+        const identityCandidates = [normalizedUserId, normalizedUserIdLower, normalizedUserIdUpper];
         const emailCandidates = emailFromQuery
             ? [emailFromQuery]
             : (normalizedUserId.includes('@') ? [normalizedUserIdLower] : []);
