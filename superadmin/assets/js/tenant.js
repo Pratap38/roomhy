@@ -112,6 +112,18 @@ lucide.createIcons();
             // Try backend first (requires superadmin token), fallback to localStorage
             let tenants = [];
             (async () => {
+                let cachedTenants = [];
+                try {
+                    cachedTenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+                } catch (_) {
+                    cachedTenants = [];
+                }
+                const cachedByLoginId = new Map(
+                    (Array.isArray(cachedTenants) ? cachedTenants : [])
+                        .filter(t => t && t.loginId)
+                        .map(t => [String(t.loginId).toUpperCase(), t])
+                );
+
                 try {
                     const token = localStorage.getItem('token');
                     const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
@@ -119,8 +131,30 @@ lucide.createIcons();
                     if (res.ok) {
                         const data = await res.json();
                         const raw = Array.isArray(data) ? data : (Array.isArray(data.tenants) ? data.tenants : []);
-                        tenants = raw.map(normalizeTenantRecord);
-                        if (tenants.length > 0) localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
+                        tenants = raw.map(normalizeTenantRecord).map((t) => {
+                            const key = String(t.loginId || '').toUpperCase();
+                            const cached = cachedByLoginId.get(key);
+                            if (!cached) return t;
+
+                            const cachedProfileName = (cached.digitalCheckin && cached.digitalCheckin.profile && cached.digitalCheckin.profile.propertyName) || '';
+                            const cachedDirectName = cached.propertyTitle || cached.propertyName || '';
+                            const cachedPropertyName = cachedProfileName || cachedDirectName;
+
+                            if (!cachedPropertyName) return t;
+
+                            // Preserve tenantprofile-entered property name when API returns stale assignment title.
+                            t.propertyTitle = cachedPropertyName;
+                            t.propertyName = cachedPropertyName;
+                            t.digitalCheckin = t.digitalCheckin || {};
+                            t.digitalCheckin.profile = t.digitalCheckin.profile || {};
+                            if (!t.digitalCheckin.profile.propertyName || t.digitalCheckin.profile.propertyName !== cachedPropertyName) {
+                                t.digitalCheckin.profile.propertyName = cachedPropertyName;
+                            }
+                            return t;
+                        });
+                        if (tenants.length > 0) {
+                            localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
+                        }
                     }
                 } catch (err) {
                     console.warn('Failed to fetch tenants from API, falling back to localStorage', err);
@@ -136,6 +170,10 @@ lucide.createIcons();
                 // Filter Logic
                 const search = document.getElementById('areaSearch').value.toLowerCase();
                 const filteredTenants = tenants.filter(t => {
+                    const status = String(t.status || '').toLowerCase();
+                    const hasAssignment = Boolean((t.roomNo && String(t.roomNo).trim()) || (t.bedNo && String(t.bedNo).trim()));
+                    if (status === 'moved_out' || !hasAssignment) return false;
+
                     const prop = resolveTenantPropertyText(t);
                     const area = (t.address || '').toLowerCase();
                     return (prop.toLowerCase().includes(search) || area.includes(search));

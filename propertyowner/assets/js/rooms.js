@@ -1314,9 +1314,13 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
                 const tIdx = tenants.findIndex(t => (t.id === tenantId || t.loginId === tenantId));
                 if (tIdx !== -1) {
+                    tenants[tIdx].status = 'moved_out';
+                    tenants[tIdx].moveOutDate = new Date().toISOString();
                     delete tenants[tIdx].roomNo;
                     delete tenants[tIdx].bedNo;
                     delete tenants[tIdx].propertyId;
+                    delete tenants[tIdx].propertyName;
+                    delete tenants[tIdx].propertyTitle;
                     localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
                 }
             }
