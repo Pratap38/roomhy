@@ -51,26 +51,34 @@ lucide.createIcons();
             return '';
         }
 
+        function getProfilePropertyName(tenant) {
+            if (!tenant) return '';
+            const tenantProfileName = tenant.tenantProfile && tenant.tenantProfile.propertyName;
+            const digitalProfileName = tenant.digitalCheckin && tenant.digitalCheckin.profile && tenant.digitalCheckin.profile.propertyName;
+            return tenantProfileName || digitalProfileName || '';
+        }
+
         function normalizeTenantRecord(t) {
             const profile = (t && t.digitalCheckin && t.digitalCheckin.profile) || {};
+            const tenantProfile = (t && t.tenantProfile) || {};
             const kyc = (t && t.digitalCheckin && t.digitalCheckin.kyc) || {};
             const propertyObj = (t && t.property && typeof t.property === 'object') ? t.property : null;
             // Prefer tenant-profile-entered property name over populated property document title.
-            const propertyTitle = profile.propertyName || t.propertyTitle || t.propertyName || (propertyObj && (propertyObj.title || propertyObj.name)) || '';
+            const propertyTitle = getProfilePropertyName(t) || t.propertyTitle || t.propertyName || (propertyObj && (propertyObj.title || propertyObj.name)) || '';
             const aadhaarNumber = (t.kyc && (t.kyc.aadhaarNumber || t.kyc.aadhar)) || kyc.aadhaarNumber || '';
             const aadhaarFront = (t.kyc && (t.kyc.idProofFile || t.kyc.aadhaarFront || t.kyc.aadharFile)) || kyc.aadhaarFront || '';
             const aadhaarBack = (t.kyc && t.kyc.aadhaarBack) || kyc.aadhaarBack || '';
 
             return {
                 ...t,
-                name: t.name || profile.name || '',
-                email: t.email || profile.email || '',
-                phone: t.phone || profile.aadhaarLinkedPhone || '',
-                dob: t.dob || profile.dob || '',
-                guardianNumber: t.guardianNumber || profile.guardianNumber || t.emergencyContact || '',
-                moveInDate: t.moveInDate || profile.moveInDate || '',
-                roomNo: t.roomNo || profile.roomNo || '',
-                agreedRent: (t.agreedRent !== undefined && t.agreedRent !== null) ? t.agreedRent : (profile.agreedRent || 0),
+                name: t.name || profile.name || tenantProfile.name || '',
+                email: t.email || profile.email || tenantProfile.email || '',
+                phone: t.phone || profile.aadhaarLinkedPhone || tenantProfile.aadhaarLinkedPhone || tenantProfile.phone || '',
+                dob: t.dob || profile.dob || tenantProfile.dob || '',
+                guardianNumber: t.guardianNumber || profile.guardianNumber || tenantProfile.guardianNumber || t.emergencyContact || '',
+                moveInDate: t.moveInDate || profile.moveInDate || tenantProfile.moveInDate || '',
+                roomNo: t.roomNo || profile.roomNo || tenantProfile.roomNo || '',
+                agreedRent: (t.agreedRent !== undefined && t.agreedRent !== null) ? t.agreedRent : (profile.agreedRent || tenantProfile.agreedRent || 0),
                 property: propertyObj || propertyTitle || t.property || '',
                 kycStatus: t.kycStatus || ((t.kyc && t.kyc.otpVerified) || kyc.otpVerified ? 'verified' : 'pending'),
                 kyc: {
@@ -87,7 +95,7 @@ lucide.createIcons();
 
         function resolveTenantPropertyText(t) {
             if (!t) return 'Unknown Property';
-            const profilePropertyTitle = (t.digitalCheckin && t.digitalCheckin.profile && t.digitalCheckin.profile.propertyName) || '';
+            const profilePropertyTitle = getProfilePropertyName(t);
             if (profilePropertyTitle) return profilePropertyTitle;
 
             const directTitle = t.propertyTitle || t.propertyName || '';
@@ -203,13 +211,14 @@ lucide.createIcons();
                         const raw = Array.isArray(data) ? data : (Array.isArray(data.tenants) ? data.tenants : []);
                         tenants = raw.map(normalizeTenantRecord).filter((t) => {
                             const key = String(t.loginId || '').toUpperCase();
-                            return !deletedTenantIds.has(key);
+                            const idKey = String(t._id || t.id || t.dbId || '').toUpperCase();
+                            return !deletedTenantIds.has(key) && !deletedTenantIds.has(idKey);
                         }).map((t) => {
                             const key = String(t.loginId || '').toUpperCase();
                             const cached = cachedByLoginId.get(key);
                             if (!cached) return t;
 
-                            const cachedProfileName = (cached.digitalCheckin && cached.digitalCheckin.profile && cached.digitalCheckin.profile.propertyName) || '';
+                            const cachedProfileName = getProfilePropertyName(cached);
                             const cachedDirectName = cached.propertyTitle || cached.propertyName || '';
                             const cachedPropertyName = cachedProfileName || cachedDirectName;
 
@@ -223,6 +232,10 @@ lucide.createIcons();
                             if (!t.digitalCheckin.profile.propertyName || t.digitalCheckin.profile.propertyName !== cachedPropertyName) {
                                 t.digitalCheckin.profile.propertyName = cachedPropertyName;
                             }
+                            t.tenantProfile = t.tenantProfile || {};
+                            if (!t.tenantProfile.propertyName || t.tenantProfile.propertyName !== cachedPropertyName) {
+                                t.tenantProfile.propertyName = cachedPropertyName;
+                            }
                             return t;
                         }).map((t) => {
                             const assignment = getRoomAssignmentForTenant(t);
@@ -232,7 +245,7 @@ lucide.createIcons();
                             const bedIndex = assignment.bedIndex;
                             const assignedProperty = getAssignedPropertyFromRooms(t);
 
-                            const profilePropertyName = (t.digitalCheckin && t.digitalCheckin.profile && t.digitalCheckin.profile.propertyName) || '';
+                            const profilePropertyName = getProfilePropertyName(t);
                             if (assignedProperty && !profilePropertyName) {
                                 t.propertyTitle = assignedProperty;
                                 t.propertyName = assignedProperty;
@@ -336,7 +349,7 @@ lucide.createIcons();
                             </td>
                             <td class="text-right flex items-center justify-end gap-2 py-4">
                                 ${actionButtons}
-                                <button onclick="deleteTenant('${t.loginId}')" class="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition" title="Delete Tenant">
+                                <button onclick="deleteTenant('${t.loginId || ''}','${t._id || t.id || t.dbId || ''}')" class="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition" title="Delete Tenant">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </td>
@@ -373,17 +386,21 @@ lucide.createIcons();
             }
         }
 
-        async function deleteTenant(loginId) {
+        async function deleteTenant(loginId, dbId) {
             if(!confirm("Permanently delete this tenant record?")) return;
 
             const normalizedLoginId = String(loginId || '').toUpperCase();
+            const normalizedDbId = String(dbId || '').trim();
             const tenants = Array.isArray(window.__tenantCache) ? window.__tenantCache : [];
-            const target = tenants.find(t => String(t.loginId || '').toUpperCase() === normalizedLoginId);
+            const target = tenants.find(t =>
+                (normalizedLoginId && String(t.loginId || '').toUpperCase() === normalizedLoginId) ||
+                (normalizedDbId && String(t._id || t.id || t.dbId || '') === normalizedDbId)
+            );
 
             let deletedInBackend = false;
             try {
                 const token = localStorage.getItem('token');
-                const backendId = target && (target._id || target.id || target.dbId);
+                const backendId = normalizedDbId || (target && (target._id || target.id || target.dbId));
                 if (token && backendId) {
                     const res = await fetch(`${API_URL}/api/tenants/${encodeURIComponent(String(backendId))}`, {
                         method: 'DELETE',
@@ -396,14 +413,21 @@ lucide.createIcons();
             }
 
             let localTenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-            localTenants = (Array.isArray(localTenants) ? localTenants : []).filter(t => String(t.loginId || '').toUpperCase() !== normalizedLoginId);
+            localTenants = (Array.isArray(localTenants) ? localTenants : []).filter(t => {
+                const tLogin = String(t.loginId || '').toUpperCase();
+                const tId = String(t._id || t.id || t.dbId || '');
+                if (normalizedLoginId && tLogin === normalizedLoginId) return false;
+                if (normalizedDbId && tId === normalizedDbId) return false;
+                return true;
+            });
             localStorage.setItem('roomhy_tenants', JSON.stringify(localTenants));
 
             // Avoid reappearing rows if backend delete is blocked by role/token.
             const deletedIds = JSON.parse(localStorage.getItem('roomhy_deleted_tenants') || '[]');
-            let updatedDeletedIds = Array.from(new Set([...(Array.isArray(deletedIds) ? deletedIds : []), normalizedLoginId]));
+            const deleteMarker = normalizedLoginId || normalizedDbId;
+            let updatedDeletedIds = Array.from(new Set([...(Array.isArray(deletedIds) ? deletedIds : []), deleteMarker]));
             if (deletedInBackend) {
-                updatedDeletedIds = updatedDeletedIds.filter(v => String(v || '').toUpperCase() !== normalizedLoginId);
+                updatedDeletedIds = updatedDeletedIds.filter(v => String(v || '').toUpperCase() !== String(deleteMarker || '').toUpperCase());
             }
             localStorage.setItem('roomhy_deleted_tenants', JSON.stringify(updatedDeletedIds));
 

@@ -140,14 +140,22 @@ lucide.createIcons();
                             if (idx > -1) merged[idx] = { ...merged[idx], ...bt };
                             else merged.push(bt);
                         });
-                        tenants = merged.filter(t => !deletedTenantIds.has(String(t.loginId || '').toUpperCase()));
+                        tenants = merged.filter(t => {
+                            const key = String(t.loginId || '').toUpperCase();
+                            const idKey = String(t._id || t.id || t.dbId || '').toUpperCase();
+                            return !deletedTenantIds.has(key) && !deletedTenantIds.has(idKey);
+                        });
                         localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
                     }
                 }
             } catch (err) {
                 console.warn('tenantrec backend sync failed, using local cache only', err && err.message);
             }
-            tenants = tenants.filter(t => !deletedTenantIds.has(String(t.loginId || '').toUpperCase()));
+            tenants = tenants.filter(t => {
+                const key = String(t.loginId || '').toUpperCase();
+                const idKey = String(t._id || t.id || t.dbId || '').toUpperCase();
+                return !deletedTenantIds.has(key) && !deletedTenantIds.has(idKey);
+            });
             // Build a property map so we can resolve property IDs to names/location codes
             let propMap = {};
             try {
@@ -316,7 +324,7 @@ lucide.createIcons();
 
                         <!-- 8. Actions (Delete) -->
                         <td class="text-right">
-                             <button onclick="deleteTenant('${t.loginId}')" class="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded transition" title="Permanently Delete">
+                             <button onclick="deleteTenant('${t.loginId || ''}','${t._id || t.id || t.dbId || ''}')" class="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded transition" title="Permanently Delete">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </td>
@@ -351,18 +359,22 @@ lucide.createIcons();
         }
 
         // --- Delete Logic ---
-        async function deleteTenant(loginId) {
+        async function deleteTenant(loginId, dbId) {
             if (!confirm("Permanently delete this record? This cannot be undone.")) return;
 
             const normalizedLoginId = String(loginId || '').toUpperCase();
+            const normalizedDbId = String(dbId || '').trim();
             const deletedKey = 'roomhy_deleted_tenants_owner';
             const target = (Array.isArray(tenantRecordsCache) ? tenantRecordsCache : [])
-                .find(t => String(t.loginId || '').toUpperCase() === normalizedLoginId);
+                .find(t =>
+                    (normalizedLoginId && String(t.loginId || '').toUpperCase() === normalizedLoginId) ||
+                    (normalizedDbId && String(t._id || t.id || t.dbId || '') === normalizedDbId)
+                );
 
             let deletedInBackend = false;
             try {
                 const token = localStorage.getItem('token');
-                const backendId = target && (target._id || target.id || target.dbId);
+                const backendId = normalizedDbId || (target && (target._id || target.id || target.dbId));
                 if (token && backendId) {
                     const res = await fetch(`${API_URL}/api/tenants/${encodeURIComponent(String(backendId))}`, {
                         method: 'DELETE',
@@ -375,7 +387,13 @@ lucide.createIcons();
             }
 
             let tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-            tenants = (Array.isArray(tenants) ? tenants : []).filter(t => String(t.loginId || '').toUpperCase() !== normalizedLoginId);
+            tenants = (Array.isArray(tenants) ? tenants : []).filter(t => {
+                const tLogin = String(t.loginId || '').toUpperCase();
+                const tId = String(t._id || t.id || t.dbId || '');
+                if (normalizedLoginId && tLogin === normalizedLoginId) return false;
+                if (normalizedDbId && tId === normalizedDbId) return false;
+                return true;
+            });
             localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
 
             try {
@@ -385,7 +403,7 @@ lucide.createIcons();
                     if (!Array.isArray(room.beds)) return;
                     room.beds.forEach((bed, i) => {
                         const bedTenantId = String((bed && bed.tenantId) || '').toUpperCase();
-                        if (bedTenantId === normalizedLoginId) {
+                        if ((normalizedLoginId && bedTenantId === normalizedLoginId) || (normalizedDbId && bedTenantId === normalizedDbId.toUpperCase())) {
                             room.beds[i] = { status: 'available', tenantId: null, tenantName: null };
                             touched = true;
                         }
@@ -395,9 +413,10 @@ lucide.createIcons();
             } catch (_) {}
 
             const deletedIds = JSON.parse(localStorage.getItem(deletedKey) || '[]');
-            let updatedDeleted = Array.from(new Set([...(Array.isArray(deletedIds) ? deletedIds : []), normalizedLoginId]));
+            const deleteMarker = normalizedLoginId || normalizedDbId;
+            let updatedDeleted = Array.from(new Set([...(Array.isArray(deletedIds) ? deletedIds : []), deleteMarker]));
             if (deletedInBackend) {
-                updatedDeleted = updatedDeleted.filter(v => String(v || '').toUpperCase() !== normalizedLoginId);
+                updatedDeleted = updatedDeleted.filter(v => String(v || '').toUpperCase() !== String(deleteMarker || '').toUpperCase());
             }
             localStorage.setItem(deletedKey, JSON.stringify(updatedDeleted));
 
