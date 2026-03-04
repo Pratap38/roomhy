@@ -48,11 +48,9 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
       submitBtn.textContent = 'Submitting...';
 
       try {
-        const checkin = await getWithFallback(`/api/checkin/tenant/${encodeURIComponent(loginId)}`);
-        const kyc = checkin?.record?.tenantKyc || {};
-        if (!(kyc.otpVerified || kyc.digilockerVerified)) {
-          throw new Error('Complete KYC verification first (OTP or DigiLocker)');
-        }
+        // Do not block on stale local check-in reads.
+        // Backend /tenant/final-submit already validates OTP/DigiLocker from both
+        // CheckinRecord and Tenant model and returns authoritative result.
         await postWithFallback('/api/checkin/tenant/agreement', { loginId, eSignName, accepted: true });
 
         await postWithFallback('/api/checkin/tenant/final-submit', { loginId });
