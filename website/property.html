@@ -1765,6 +1765,7 @@
                 async function submitBookingRequest(user, name, email, userId, scheduleForm) {
                     // Get property details from page
                     const propertyId = getParam('id') || '1';
+                    const ownerIdFromQuery = getParam('ownerId') || getParam('owner_id') || getParam('ownerLoginId') || '';
                     const propertyName = document.getElementById('property-title')?.textContent || 'Property';
                     const area = document.querySelector('[id="property-location"]')?.textContent || 'Unknown';
                     const propertyType = document.querySelector('[data-field="property-type"]')?.textContent || 'PG';
@@ -1787,7 +1788,7 @@
                                (obj.propertyInfo && (obj.propertyInfo.ownerId || obj.propertyInfo.ownerLoginId || obj.propertyInfo.owner_id));
                     };
 
-                    propertyOwnerId = resolveOwnerId(activePropertyData);
+                    propertyOwnerId = ownerIdFromQuery || resolveOwnerId(activePropertyData);
                     if (!propertyOwnerId) {
                         try {
                             const storedProperty = JSON.parse(sessionStorage.getItem('currentProperty') || '{}');
@@ -1802,7 +1803,8 @@
                         const foundVisit = visits.find(x => 
                             String(x._id) === propertyId_str || 
                             String(x.id) === propertyId_str || 
-                            String(x.visitId) === propertyId_str
+                            String(x.visitId) === propertyId_str ||
+                            String(x.propertyId || x.property_id || '') === propertyId_str
                         );
                         
                         if (foundVisit) {
@@ -1813,6 +1815,39 @@
                             }
                             
                             propertyOwnerId = resolveOwnerId(foundVisit);
+                        }
+                    }
+
+                    // Backend record fallback: resolve owner from selected property payload
+                    if (!propertyOwnerId) {
+                        try {
+                            const propsRes = await fetch(`${API_URL}/api/approved-properties/public/approved`);
+                            if (propsRes.ok) {
+                                const payload = await propsRes.json();
+                                const properties = Array.isArray(payload)
+                                    ? payload
+                                    : (Array.isArray(payload.properties) ? payload.properties : []);
+
+                                const foundProperty = properties.find((p) => {
+                                    const ids = [
+                                        p && p._id,
+                                        p && p.id,
+                                        p && p.visitId,
+                                        p && p.propertyId,
+                                        p && p.property_id,
+                                        p && p.enquiry_id,
+                                        p && p.propertyInfo && p.propertyInfo.propertyId,
+                                        p && p.propertyInfo && p.propertyInfo._id
+                                    ].filter(Boolean).map((v) => String(v));
+                                    return ids.includes(propertyId_str);
+                                });
+
+                                if (foundProperty) {
+                                    propertyOwnerId = resolveOwnerId(foundProperty);
+                                }
+                            }
+                        } catch (resolveErr) {
+                            console.warn('Property owner fallback lookup failed:', resolveErr);
                         }
                     }
 
