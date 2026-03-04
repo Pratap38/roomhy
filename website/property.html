@@ -2441,27 +2441,121 @@
             let currentIndex = 0;
             let zoomLevel = 1;
 
-            function loadProfessionalPhotos() {
+            function normalizePhotoUrl(item) {
+                if (!item) return '';
+                if (typeof item === 'string') return item.trim();
+                if (typeof item === 'object') {
+                    return String(
+                        item.secure_url ||
+                        item.url ||
+                        item.image ||
+                        item.src ||
+                        item.path ||
+                        item.dataUrl ||
+                        ''
+                    ).trim();
+                }
+                return '';
+            }
+
+            function collectPhotosFromRecord(record) {
+                if (!record || typeof record !== 'object') return [];
+                const buckets = [
+                    record.professionalPhotos,
+                    record.professional_photos,
+                    record.propertyPhotos,
+                    record.property_photos,
+                    record.photos,
+                    record.images,
+                    record.gallery,
+                    record.media && record.media.professionalPhotos,
+                    record.media && record.media.photos,
+                    record.propertyInfo && record.propertyInfo.professionalPhotos,
+                    record.propertyInfo && record.propertyInfo.propertyPhotos,
+                    record.propertyInfo && record.propertyInfo.photos
+                ];
+                const urls = [];
+                buckets.forEach((bucket) => {
+                    if (Array.isArray(bucket)) {
+                        bucket.forEach((entry) => {
+                            const url = normalizePhotoUrl(entry);
+                            if (url) urls.push(url);
+                        });
+                    }
+                });
+                return urls;
+            }
+
+            function matchesProperty(record, propertyId) {
+                if (!propertyId) return true;
+                const rid = String(propertyId);
+                const ids = [
+                    record && record._id,
+                    record && record.id,
+                    record && record.visitId,
+                    record && record.propertyId,
+                    record && record.property_id,
+                    record && record.enquiry_id,
+                    record && record.propertyNumber,
+                    record && record.propertyInfo && record.propertyInfo.propertyId,
+                    record && record.propertyInfo && record.propertyInfo._id
+                ]
+                    .filter(Boolean)
+                    .map((v) => String(v));
+                return ids.includes(rid);
+            }
+
+            async function loadProfessionalPhotos() {
                 try {
-                    // Collect professionalPhotos arrays from visits for this property (if property id available in query)
                     const params = new URLSearchParams(window.location.search);
                     const propertyId = params.get('id') || null;
-                    const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
-                    // Filter visits for this propertyId (or show all professionalPhotos if none)
                     let photos = [];
-                    visits.forEach(v => {
-                        if (Array.isArray(v.professionalPhotos) && v.professionalPhotos.length>0) {
-                            if (!propertyId || (v.propertyId && String(v.propertyId) === String(propertyId)) || (v._id && String(v._id) === String(propertyId))) {
-                                photos = photos.concat(v.professionalPhotos);
-                            }
-                        }
-                    });
 
-                    // Deduplicate and limit to 50 (safe guard)
-                    const unique = Array.from(new Set(photos)).slice(0, 50);
+                    // 1) Current property payload (most accurate for selected page)
+                    try {
+                        const currentProperty = JSON.parse(sessionStorage.getItem('currentProperty') || 'null');
+                        if (currentProperty && matchesProperty(currentProperty, propertyId)) {
+                            photos = photos.concat(collectPhotosFromRecord(currentProperty));
+                        }
+                    } catch (_) {}
+
+                    // 2) Local visits cache
+                    try {
+                        const visits = JSON.parse(localStorage.getItem('roomhy_visits') || '[]');
+                        if (Array.isArray(visits)) {
+                            visits.forEach((v) => {
+                                if (matchesProperty(v, propertyId)) {
+                                    photos = photos.concat(collectPhotosFromRecord(v));
+                                }
+                            });
+                        }
+                    } catch (_) {}
+
+                    // 3) Backend fallback for complete photo set
+                    try {
+                        const resp = await fetch(`${API_URL}/api/approved-properties/public/approved`);
+                        if (resp.ok) {
+                            const payload = await resp.json();
+                            const records = Array.isArray(payload)
+                                ? payload
+                                : (Array.isArray(payload.properties) ? payload.properties : []);
+                            records.forEach((rec) => {
+                                if (matchesProperty(rec, propertyId)) {
+                                    photos = photos.concat(collectPhotosFromRecord(rec));
+                                }
+                            });
+                        }
+                    } catch (err) {
+                        console.warn('Backend photo fallback failed:', err);
+                    }
+
+                    // Deduplicate and limit
+                    const unique = Array.from(new Set(photos.filter(Boolean))).slice(0, 80);
                     galleryPhotos = unique;
                     renderGallery();
-                } catch (e) { console.warn('Failed loading professional photos', e); }
+                } catch (e) {
+                    console.warn('Failed loading professional photos', e);
+                }
             }
 
             function renderGallery() {
