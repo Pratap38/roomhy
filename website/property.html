@@ -1700,14 +1700,17 @@
                     scheduleForm.addEventListener('submit', async (e) => {
                         e.preventDefault();
 
-                        // Check if user is logged in
-                        const user = (typeof AuthUtils !== 'undefined' && AuthUtils.getCurrentUser) ? AuthUtils.getCurrentUser() : null;
-                        if (!user || !user.loginId) {
-                            if (typeof AuthUtils !== 'undefined' && AuthUtils.showAuthPromptModal) {
-                                AuthUtils.showAuthPromptModal('Please login/signup to submit a request.');
-                            }
+                        // Fast-bidding style auth check
+                        if (typeof AuthUtils !== 'undefined' && AuthUtils.ensureValidSessionOrPrompt) {
+                            const ok = await AuthUtils.ensureValidSessionOrPrompt('Please login/signup to submit a request.');
+                            if (!ok) return;
+                        } else if (typeof AuthUtils !== 'undefined' && AuthUtils.showAuthPromptModal) {
+                            AuthUtils.showAuthPromptModal('Please login/signup to submit a request.');
                             return;
                         }
+
+                        const user = (typeof AuthUtils !== 'undefined' && AuthUtils.getCurrentUser) ? AuthUtils.getCurrentUser() : null;
+                        if (!user) return;
 
                         const name = document.getElementById('visit-name').value;
                         const emailInput = document.getElementById('visit-email').value;
@@ -1718,35 +1721,43 @@
                             return;
                         }
 
-                        // Validate email
                         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                         if (!emailRegex.test(email)) {
                             alert('Please enter a valid email address');
                             return;
                         }
 
-                        // âœ… CHECK IF EMAIL HAS USER ID IN NEW_SIGNUPS
-                        const kycTableKey = 'roomhy_kyc_verification';
-                        const signupUsers = JSON.parse(localStorage.getItem(kycTableKey) || '[]');
-                        const userSignup = signupUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+                        // Fast-bidding style signup lookup: API first, then local fallback.
+                        let signedUpUser = user;
+                        try {
+                            if (!signedUpUser || !(signedUpUser.loginId || signedUpUser.id || signedUpUser._id)) {
+                                const signupRes = await fetch(`${API_URL}/api/kyc`);
+                                if (signupRes.ok) {
+                                    const signupUsers = await signupRes.json();
+                                    if (Array.isArray(signupUsers)) {
+                                        signedUpUser = signupUsers.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+                                    }
+                                }
+                            }
+                        } catch (lookupErr) {
+                            console.warn('Signup lookup API failed, trying local fallback:', lookupErr);
+                        }
 
-                        let userId = null;
-                        if (userSignup && userSignup.id) {
-                            // User found in new_signups with user ID
-                            userId = userSignup.id;
-                            console.log('âœ… User found in new_signups with ID:', userId);
-                            // Proceed directly with booking
-                            await submitBookingRequest(user, name, email, userId, scheduleForm);
-                        } else {
-                            // User not found - show attractive modal popup
-                            console.warn('âš ï¸ Email not found in new_signups, showing signup modal');
-                            
-                            // Show modal with callback for guest proceed
+                        if (!signedUpUser || !(signedUpUser.loginId || signedUpUser.id || signedUpUser._id)) {
+                            const signupUsersLocal = JSON.parse(localStorage.getItem('roomhy_kyc_verification') || '[]');
+                            const localUser = signupUsersLocal.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+                            if (localUser) signedUpUser = localUser;
+                        }
+
+                        if (!signedUpUser || !(signedUpUser.loginId || signedUpUser.id || signedUpUser._id)) {
                             showSignupModal(email, async () => {
-                                // Guest proceed callback - continue with booking request without signup user ID
                                 await submitBookingRequest(user, name, email, null, scheduleForm);
                             });
+                            return;
                         }
+
+                        const signupUserId = signedUpUser.loginId || signedUpUser.id || signedUpUser._id;
+                        await submitBookingRequest(user, name, email, signupUserId, scheduleForm);
                     });
                 }
 
@@ -1899,13 +1910,8 @@
 
                             alert(`Thank you ${name}! Your request has been sent to the property owner. We'll contact you soon.`);
                             scheduleForm.reset();
-                            
-                            // âœ… REDIRECT TO INDEX PAGE ONLY
-                            setTimeout(() => {
-                                window.location.href = 'index.html';
 
-                                }, 1500);
-                            } else {
+                        } else {
                                 const error = await response.json();
                                 alert('Error: ' + (error.message || 'Could not submit request'));
                             }
@@ -2324,7 +2330,7 @@
         /* Request Button Logic - simplified: single Request flow */
         const requestBtn = document.getElementById('request-btn');
 
-        if (requestBtn) {
+        if (requestBtn && !document.getElementById('schedule-form')) {
             requestBtn.addEventListener('click', async () => {
                 if (!window.isAuthenticated || !window.isAuthenticated()) {
                     window.promptLogin();
