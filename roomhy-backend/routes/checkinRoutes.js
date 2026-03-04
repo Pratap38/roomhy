@@ -905,9 +905,11 @@ router.post('/tenant/final-submit', async (req, res) => {
         const tenantModelVerified = Boolean(
             tenantModel &&
             (
-                tenantModel.kycStatus === 'verified' ||
+                String(tenantModel.kycStatus || '').toLowerCase() === 'verified' ||
                 tenantModel.kyc?.digilockerVerified ||
-                tenantModel.kyc?.otpVerified
+                tenantModel.kyc?.otpVerified ||
+                tenantModel.digitalCheckin?.kyc?.digilockerVerified ||
+                tenantModel.digitalCheckin?.kyc?.otpVerified
             )
         );
         if (!record.tenantKyc || (!isTenantKycVerified(record) && !tenantModelVerified)) {
@@ -915,9 +917,15 @@ router.post('/tenant/final-submit', async (req, res) => {
         }
         if (tenantModelVerified && !isTenantKycVerified(record)) {
             record.tenantKyc = record.tenantKyc || {};
-            record.tenantKyc.digilockerVerified = true;
-            record.tenantKyc.digilockerStatus = 'verified';
-            record.tenantKyc.digilockerVerifiedAt = new Date();
+            if (tenantModel.kyc?.otpVerified || tenantModel.digitalCheckin?.kyc?.otpVerified) {
+                record.tenantKyc.otpVerified = true;
+                record.tenantKyc.otpVerifiedAt = record.tenantKyc.otpVerifiedAt || new Date();
+            }
+            if (tenantModel.kyc?.digilockerVerified || tenantModel.digitalCheckin?.kyc?.digilockerVerified || String(tenantModel.kycStatus || '').toLowerCase() === 'verified') {
+                record.tenantKyc.digilockerVerified = true;
+                record.tenantKyc.digilockerStatus = 'verified';
+                record.tenantKyc.digilockerVerifiedAt = record.tenantKyc.digilockerVerifiedAt || new Date();
+            }
         }
         if (!record.tenantAgreement || !record.tenantAgreement.acceptedAt) {
             return res.status(400).json({ success: false, message: 'Accept rental agreement first' });
