@@ -87,6 +87,9 @@ lucide.createIcons();
 
         function resolveTenantPropertyText(t) {
             if (!t) return 'Unknown Property';
+            const roomAssignedProperty = getAssignedPropertyFromRooms(t);
+            if (roomAssignedProperty) return roomAssignedProperty;
+
             const profilePropertyTitle = (t.digitalCheckin && t.digitalCheckin.profile && t.digitalCheckin.profile.propertyName) || '';
             if (profilePropertyTitle) return profilePropertyTitle;
 
@@ -106,6 +109,68 @@ lucide.createIcons();
             }
 
             return 'Unknown Property';
+        }
+
+        function getRoomAssignmentForTenant(tenant) {
+            if (!tenant) return null;
+            try {
+                const rooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
+                if (!Array.isArray(rooms) || rooms.length === 0) return null;
+
+                const tenantKeys = [
+                    tenant.loginId,
+                    tenant.id,
+                    tenant._id,
+                    tenant.dbId
+                ]
+                    .filter(Boolean)
+                    .map(v => String(v).toUpperCase());
+
+                const roomNo = String(tenant.roomNo || '').trim();
+                const bedNo = String(tenant.bedNo || '').trim();
+
+                for (const room of rooms) {
+                    const beds = Array.isArray(room.beds) ? room.beds : [];
+                    for (let i = 0; i < beds.length; i++) {
+                        const bed = beds[i] || {};
+                        if (String(bed.status || '').toLowerCase() !== 'occupied') continue;
+
+                        const bedTenantId = String(bed.tenantId || '').toUpperCase();
+                        const bedMatchesTenant = bedTenantId && tenantKeys.includes(bedTenantId);
+                        const slotMatchesTenant = roomNo && String(room.number || '').trim() === roomNo
+                            && (!bedNo || String(i + 1) === bedNo || String.fromCharCode(65 + i) === bedNo.toUpperCase());
+
+                        if (bedMatchesTenant || slotMatchesTenant) {
+                            return { room, bedIndex: i };
+                        }
+                    }
+                }
+            } catch (_) {}
+            return null;
+        }
+
+        function getAssignedPropertyFromRooms(tenant) {
+            const assignment = getRoomAssignmentForTenant(tenant);
+            if (!assignment) return '';
+
+            const room = assignment.room || {};
+            const fromRoom = String(room.propertyTitle || room.propertyName || '').trim();
+            if (fromRoom) return fromRoom;
+
+            const propertyId = String(room.propertyId || '').trim();
+            if (!propertyId) return '';
+
+            try {
+                const props = JSON.parse(localStorage.getItem('roomhy_properties') || '[]');
+                if (!Array.isArray(props)) return '';
+                const found = props.find(p => {
+                    const pid = String(p && (p._id || p.id || p.propertyId || '')).trim();
+                    return pid && pid === propertyId;
+                });
+                return found ? String(found.title || found.name || found.propertyName || '').trim() : '';
+            } catch (_) {
+                return '';
+            }
         }
 
         function loadTenants() {
@@ -150,6 +215,28 @@ lucide.createIcons();
                             if (!t.digitalCheckin.profile.propertyName || t.digitalCheckin.profile.propertyName !== cachedPropertyName) {
                                 t.digitalCheckin.profile.propertyName = cachedPropertyName;
                             }
+                            return t;
+                        }).map((t) => {
+                            const assignment = getRoomAssignmentForTenant(t);
+                            if (!assignment) return t;
+
+                            const room = assignment.room || {};
+                            const bedIndex = assignment.bedIndex;
+                            const assignedProperty = getAssignedPropertyFromRooms(t);
+
+                            if (assignedProperty) {
+                                t.propertyTitle = assignedProperty;
+                                t.propertyName = assignedProperty;
+                                t.digitalCheckin = t.digitalCheckin || {};
+                                t.digitalCheckin.profile = t.digitalCheckin.profile || {};
+                                if (!t.digitalCheckin.profile.propertyName || t.digitalCheckin.profile.propertyName !== assignedProperty) {
+                                    t.digitalCheckin.profile.propertyName = assignedProperty;
+                                }
+                            }
+
+                            if (!t.roomNo) t.roomNo = room.number || t.roomNo;
+                            if (!t.bedNo) t.bedNo = String((bedIndex || 0) + 1);
+
                             return t;
                         });
                         if (tenants.length > 0) {
