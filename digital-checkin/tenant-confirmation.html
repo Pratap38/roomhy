@@ -8,18 +8,18 @@
 </head>
 <body>
   <div class="card">
-    <div class="icon">✓</div>
+    <div class="icon">&#10003;</div>
     <h1>Welcome to RoomHy</h1>
     <p>Your tenant agreement has been submitted successfully.</p>
     <p>We have sent the login link to your registered Gmail.</p>
     <div class="meta" id="redirectText">Redirecting to login page in 5 seconds...</div>
-    <a class="btn" id="continueBtn" href="../propertyowner/index.html">Go to Tenant Login Now</a>
+    <a class="btn" id="continueBtn" href="../tenant/tenantlogin.html">Go to Tenant Login Now</a>
   </div>
 
   <script>
     const nextUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:5001/propertyowner/index.html'
-      : 'https://app.roomhy.com/propertyowner/index.html';
+      ? 'http://localhost:5001/tenant/tenantlogin.html'
+      : 'https://app.roomhy.com/tenant/tenantlogin.html';
     const continueBtn = document.getElementById('continueBtn');
     continueBtn.href = nextUrl;
 
@@ -33,3 +33,4 @@
   </script>
 </body>
 </html>
+

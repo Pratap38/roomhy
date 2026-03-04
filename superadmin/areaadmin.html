@@ -138,6 +138,93 @@
             }
         }
 
+        function parseCountPayload(payload) {
+            if (Array.isArray(payload)) return payload.length;
+            if (Array.isArray(payload?.data)) return payload.data.length;
+            if (Array.isArray(payload?.items)) return payload.items.length;
+            if (Array.isArray(payload?.visits)) return payload.visits.length;
+            if (Array.isArray(payload?.tenants)) return payload.tenants.length;
+            if (Array.isArray(payload?.complaints)) return payload.complaints.length;
+            if (typeof payload?.count === 'number') return payload.count;
+            if (typeof payload?.total === 'number') return payload.total;
+            if (typeof payload?.totalCount === 'number') return payload.totalCount;
+            return 0;
+        }
+
+        async function getCountFromApi(path) {
+            try {
+                const res = await fetch(`${API_URL}${path}`);
+                if (!res.ok) return 0;
+                const data = await res.json().catch(() => ({}));
+                return parseCountPayload(data);
+            } catch (_) {
+                return 0;
+            }
+        }
+
+        function renderDashboardWidgets() {
+            const grid = document.getElementById('dashboardWidgetGrid');
+            if (!grid) return;
+
+            const cards = [
+                { id: 'properties', page: 'properties.html', label: 'Properties', desc: 'Manage Listings', icon: 'home', color: 'blue', countId: 'widgetPropertiesCount' },
+                { id: 'tenants', page: 'tenant.html', label: 'Tenants', desc: 'Active Residents', icon: 'users', color: 'green', countId: 'widgetTenantsCount' },
+                { id: 'complaint_history', page: 'complaint-history.html', label: 'Complaints', desc: 'View Issues', icon: 'alert-circle', color: 'red', countId: 'widgetComplaintsCount' },
+                { id: 'visits', page: 'visit.html', label: 'Visit Reports', desc: 'Total Visit Reports', icon: 'clipboard-list', color: 'purple', countId: 'widgetVisitsCount' }
+            ].filter(card => allowedModules.includes(card.id));
+
+            grid.innerHTML = cards.map(card => `
+                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer"
+                     onclick="loadPage('${card.page}', null)">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-${card.color}-50 rounded-lg text-${card.color}-600">
+                            <i data-lucide="${card.icon}" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800">${card.label}</h3>
+                            <p class="text-xs text-gray-500">${card.desc}</p>
+                            <p id="${card.countId}" class="text-sm font-semibold text-slate-700 mt-1">0</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        async function loadDashboardWidgetCounts() {
+            if (allowedModules.includes('properties')) {
+                const propertyEl = document.getElementById('widgetPropertiesCount');
+                const statsEl = document.getElementById('totalPropertiesCountArea');
+                if (propertyEl) {
+                    const value = (statsEl && statsEl.innerText && statsEl.innerText !== '-') ? statsEl.innerText : String(await getCountFromApi('/api/properties'));
+                    propertyEl.innerText = value;
+                }
+            }
+
+            if (allowedModules.includes('tenants')) {
+                const tenantEl = document.getElementById('widgetTenantsCount');
+                if (tenantEl) tenantEl.innerText = String(await getCountFromApi('/api/tenants'));
+            }
+
+            if (allowedModules.includes('complaint_history')) {
+                const complaintsEl = document.getElementById('widgetComplaintsCount');
+                if (complaintsEl) complaintsEl.innerText = String(await getCountFromApi('/api/complaints'));
+            }
+
+            if (allowedModules.includes('visits')) {
+                const visitsEl = document.getElementById('widgetVisitsCount');
+                let visitCount = await getCountFromApi('/api/visits');
+                if (!visitCount) {
+                    try {
+                        const localVisits = JSON.parse(localStorage.getItem('roomhy_visit_reports') || '[]');
+                        visitCount = Array.isArray(localVisits) ? localVisits.length : 0;
+                    } catch (_) {}
+                }
+                if (visitsEl) visitsEl.innerText = String(visitCount || 0);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const nav = document.getElementById('dynamicSidebarNav');
             let html = '';
@@ -198,6 +285,9 @@
 
             // Hide salary for employees
             if(user.role === 'employee') document.getElementById('salaryBadge').style.display = 'none';
+
+            renderDashboardWidgets();
+            loadDashboardWidgetCounts();
             
             // Load and display profile photo from employee data
             try {
@@ -313,36 +403,12 @@
                                 </div>
                             <div id="salaryBadge" class="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-right hidden md:block">
                                 <p class="text-xs text-gray-500 uppercase font-semibold tracking-wider">Current Salary</p>
-                                <p class="text-lg font-bold text-green-600">₹ --</p>
+                                <p class="text-lg font-bold text-green-600">&#8377; --</p>
                             </div>
                         </div>
 
                         <!-- Dynamic Widgets -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <!-- These will only show if the permission exists in myPermissions list -->
-                            
-                            <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer" onclick="if(allowedModules.includes('properties')) loadPage('properties.html', this)">
-                                <div class="flex items-center gap-4">
-                                    <div class="p-3 bg-blue-50 rounded-lg text-blue-600"><i data-lucide="home" class="w-6 h-6"></i></div>
-                                    <div><h3 class="font-bold text-slate-800">Properties</h3><p class="text-xs text-gray-500">Manage Listings</p></div>
-                                </div>
-                            </div>
-
-                            <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer" onclick="if(allowedModules.includes('tenants')) loadPage('tenant.html', this)">
-                                <div class="flex items-center gap-4">
-                                    <div class="p-3 bg-green-50 rounded-lg text-green-600"><i data-lucide="users" class="w-6 h-6"></i></div>
-                                    <div><h3 class="font-bold text-slate-800">Tenants</h3><p class="text-xs text-gray-500">Active Residents</p></div>
-                                </div>
-                            </div>
-
-                            <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition cursor-pointer" onclick="if(allowedModules.includes('complaint_history')) loadPage('complaint-history.html', this)">
-                                <div class="flex items-center gap-4">
-                                    <div class="p-3 bg-red-50 rounded-lg text-red-600"><i data-lucide="alert-circle" class="w-6 h-6"></i></div>
-                                    <div><h3 class="font-bold text-slate-800">Complaints</h3><p class="text-xs text-gray-500">View Issues</p></div>
-                                </div>
-                            </div>
-                        </div>
-                        
+                        <div id="dashboardWidgetGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
                         <div class="mt-8 p-8 bg-white rounded-xl border border-gray-200 text-center">
                             <h3 class="text-lg font-medium text-gray-800">Select a module from the sidebar</h3>
                             <p class="text-gray-500 text-sm mt-1">Your access is limited to the specific permissions assigned to your Team role.</p>
@@ -386,6 +452,7 @@
         <script src="./mobile-sidebar.js"></script>
 </body>
 </html>
+
 
 
 

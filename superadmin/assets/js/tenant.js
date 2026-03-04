@@ -55,7 +55,8 @@ lucide.createIcons();
             const profile = (t && t.digitalCheckin && t.digitalCheckin.profile) || {};
             const kyc = (t && t.digitalCheckin && t.digitalCheckin.kyc) || {};
             const propertyObj = (t && t.property && typeof t.property === 'object') ? t.property : null;
-            const propertyTitle = (propertyObj && (propertyObj.title || propertyObj.name)) || t.propertyTitle || profile.propertyName || t.propertyName || '';
+            // Prefer tenant-profile-entered property name over populated property document title.
+            const propertyTitle = profile.propertyName || t.propertyTitle || t.propertyName || (propertyObj && (propertyObj.title || propertyObj.name)) || '';
             const aadhaarNumber = (t.kyc && (t.kyc.aadhaarNumber || t.kyc.aadhar)) || kyc.aadhaarNumber || '';
             const aadhaarFront = (t.kyc && (t.kyc.idProofFile || t.kyc.aadhaarFront || t.kyc.aadharFile)) || kyc.aadhaarFront || '';
             const aadhaarBack = (t.kyc && t.kyc.aadhaarBack) || kyc.aadhaarBack || '';
@@ -86,14 +87,17 @@ lucide.createIcons();
 
         function resolveTenantPropertyText(t) {
             if (!t) return 'Unknown Property';
+            const profilePropertyTitle = (t.digitalCheckin && t.digitalCheckin.profile && t.digitalCheckin.profile.propertyName) || '';
+            if (profilePropertyTitle) return profilePropertyTitle;
+
+            const directTitle = t.propertyTitle || t.propertyName || '';
+            if (directTitle) return directTitle;
+
             const propObj = (t.property && typeof t.property === 'object') ? t.property : null;
             if (propObj) {
                 const title = propObj.title || propObj.name || '';
                 if (title) return title + (propObj.locationCode ? ` (${propObj.locationCode})` : '');
             }
-
-            const directTitle = t.propertyTitle || t.propertyName || '';
-            if (directTitle) return directTitle;
 
             if (typeof t.property === 'string') {
                 const raw = String(t.property).trim();
