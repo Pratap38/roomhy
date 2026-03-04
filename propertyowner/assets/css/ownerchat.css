@@ -7,7 +7,20 @@ body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
         
         /* Chat UI Specifics */
-        .message-bubble { max-width: 80%; position: relative; }
+        .message-bubble { max-width: 80%; position: relative; min-width: 0; }
+        .message-bubble p { overflow-wrap: anywhere; word-break: break-word; }
+        .chat-link { overflow-wrap: anywhere; word-break: break-word; }
+        .booking-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 999px;
+            padding: 0.2rem 0.65rem;
+            font-size: 0.75rem;
+            margin-top: 0.2rem;
+        }
         .message-bubble.owner { 
             background: #7e22ce; color: white; border-radius: 16px 16px 4px 16px; 
             box-shadow: 0 4px 6px -1px rgba(126, 34, 206, 0.2);
@@ -134,4 +147,41 @@ body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
 
         .popup-btn-secondary:hover {
             background: #e5e7eb;
+        }
+
+        @media (max-width: 767px) {
+            body {
+                height: 100dvh;
+            }
+
+            #contacts-panel,
+            #chat-canvas {
+                width: 100%;
+                min-width: 0;
+            }
+
+            #chat-canvas.mobile-active {
+                display: flex !important;
+                flex-direction: column;
+            }
+
+            #messages {
+                padding: 0.85rem;
+            }
+
+            .message-bubble {
+                max-width: 92%;
+            }
+
+            #chat-active > .bg-white:first-child {
+                padding: 0.7rem 0.85rem;
+            }
+
+            #chat-active .p-4.bg-white.border-t {
+                padding: 0.6rem 0.7rem;
+            }
+
+            #reaction-bar {
+                flex-wrap: wrap;
+            }
         }

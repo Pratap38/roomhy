@@ -171,13 +171,17 @@ let currentOwner = null;
                 if (currentChat) {
                     contactsPanel.classList.add('hidden');
                     chatCanvas.classList.remove('hidden');
+                    chatCanvas.classList.add('flex', 'mobile-active');
                 } else {
                     contactsPanel.classList.remove('hidden');
                     chatCanvas.classList.add('hidden');
+                    chatCanvas.classList.remove('mobile-active');
                 }
             } else {
                 contactsPanel.classList.remove('hidden');
                 chatCanvas.classList.remove('hidden');
+                chatCanvas.classList.add('flex');
+                chatCanvas.classList.remove('mobile-active');
             }
         }
 
@@ -440,7 +444,12 @@ let currentOwner = null;
                     let displayText = String(msg.message || '').replace(/\d{10,}/g, '***');
                     displayText = displayText.replace(/((?:https?:\/\/[^\s]+|\/(?:propertyowner\/)?booking-form\.html[^\s]*))/gi, (full) => {
                         const safeLink = /booking-form\.html/i.test(full) ? normalizeBookingLink(full) : full;
-                        return `<a href="${safeLink}" target="_blank" class="text-blue-500 hover:text-blue-700 hover:underline">${full}</a>`;
+                        const isBookingLink = /booking-form\.html/i.test(full);
+                        const label = isBookingLink ? 'Open Booking Form' : full;
+                        const linkClass = isBookingLink
+                            ? 'chat-link booking-link text-blue-600 hover:text-blue-800 underline font-semibold'
+                            : 'chat-link text-blue-500 hover:text-blue-700 hover:underline';
+                        return `<a href="${safeLink}" target="_blank" rel="noopener noreferrer" class="${linkClass}">${label}</a>`;
                     });
 
                     msgContainer.innerHTML = `

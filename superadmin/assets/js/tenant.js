@@ -87,14 +87,14 @@ lucide.createIcons();
 
         function resolveTenantPropertyText(t) {
             if (!t) return 'Unknown Property';
-            const roomAssignedProperty = getAssignedPropertyFromRooms(t);
-            if (roomAssignedProperty) return roomAssignedProperty;
-
             const profilePropertyTitle = (t.digitalCheckin && t.digitalCheckin.profile && t.digitalCheckin.profile.propertyName) || '';
             if (profilePropertyTitle) return profilePropertyTitle;
 
             const directTitle = t.propertyTitle || t.propertyName || '';
             if (directTitle) return directTitle;
+
+            const roomAssignedProperty = getAssignedPropertyFromRooms(t);
+            if (roomAssignedProperty) return roomAssignedProperty;
 
             const propObj = (t.property && typeof t.property === 'object') ? t.property : null;
             if (propObj) {
@@ -183,6 +183,11 @@ lucide.createIcons();
                 } catch (_) {
                     cachedTenants = [];
                 }
+                const deletedTenantIds = new Set(
+                    (JSON.parse(localStorage.getItem('roomhy_deleted_tenants') || '[]') || [])
+                        .map(v => String(v || '').toUpperCase())
+                        .filter(Boolean)
+                );
                 const cachedByLoginId = new Map(
                     (Array.isArray(cachedTenants) ? cachedTenants : [])
                         .filter(t => t && t.loginId)
@@ -196,7 +201,10 @@ lucide.createIcons();
                     if (res.ok) {
                         const data = await res.json();
                         const raw = Array.isArray(data) ? data : (Array.isArray(data.tenants) ? data.tenants : []);
-                        tenants = raw.map(normalizeTenantRecord).map((t) => {
+                        tenants = raw.map(normalizeTenantRecord).filter((t) => {
+                            const key = String(t.loginId || '').toUpperCase();
+                            return !deletedTenantIds.has(key);
+                        }).map((t) => {
                             const key = String(t.loginId || '').toUpperCase();
                             const cached = cachedByLoginId.get(key);
                             if (!cached) return t;
@@ -224,7 +232,8 @@ lucide.createIcons();
                             const bedIndex = assignment.bedIndex;
                             const assignedProperty = getAssignedPropertyFromRooms(t);
 
-                            if (assignedProperty) {
+                            const profilePropertyName = (t.digitalCheckin && t.digitalCheckin.profile && t.digitalCheckin.profile.propertyName) || '';
+                            if (assignedProperty && !profilePropertyName) {
                                 t.propertyTitle = assignedProperty;
                                 t.propertyName = assignedProperty;
                                 t.digitalCheckin = t.digitalCheckin || {};
@@ -364,13 +373,44 @@ lucide.createIcons();
             }
         }
 
-        function deleteTenant(loginId) {
+        async function deleteTenant(loginId) {
             if(!confirm("Permanently delete this tenant record?")) return;
-             
-            let tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-            tenants = tenants.filter(t => t.loginId !== loginId);
-            localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
-            
+
+            const normalizedLoginId = String(loginId || '').toUpperCase();
+            const tenants = Array.isArray(window.__tenantCache) ? window.__tenantCache : [];
+            const target = tenants.find(t => String(t.loginId || '').toUpperCase() === normalizedLoginId);
+
+            let deletedInBackend = false;
+            try {
+                const token = localStorage.getItem('token');
+                const backendId = target && (target._id || target.id || target.dbId);
+                if (token && backendId) {
+                    const res = await fetch(`${API_URL}/api/tenants/${encodeURIComponent(String(backendId))}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    deletedInBackend = res.ok;
+                }
+            } catch (err) {
+                console.warn('Tenant backend delete failed:', err);
+            }
+
+            let localTenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+            localTenants = (Array.isArray(localTenants) ? localTenants : []).filter(t => String(t.loginId || '').toUpperCase() !== normalizedLoginId);
+            localStorage.setItem('roomhy_tenants', JSON.stringify(localTenants));
+
+            // Avoid reappearing rows if backend delete is blocked by role/token.
+            const deletedIds = JSON.parse(localStorage.getItem('roomhy_deleted_tenants') || '[]');
+            let updatedDeletedIds = Array.from(new Set([...(Array.isArray(deletedIds) ? deletedIds : []), normalizedLoginId]));
+            if (deletedInBackend) {
+                updatedDeletedIds = updatedDeletedIds.filter(v => String(v || '').toUpperCase() !== normalizedLoginId);
+            }
+            localStorage.setItem('roomhy_deleted_tenants', JSON.stringify(updatedDeletedIds));
+
+            if (!deletedInBackend) {
+                console.warn(`Tenant ${normalizedLoginId} removed only from UI/local cache (backend delete not confirmed).`);
+            }
+
             loadTenants();
         }
 

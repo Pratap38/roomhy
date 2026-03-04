@@ -52,6 +52,7 @@ lucide.createIcons();
         
         // Variable to store filtered tenants for export
         let tenantsForExport = [];
+        let tenantRecordsCache = [];
 
         // Sidebar & Mobile Menu Logic
         function toggleMobileMenu() {
@@ -98,6 +99,8 @@ lucide.createIcons();
 
         async function loadTenantRecords() {
             let tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]').map(normalizeTenantRecord);
+            const deletedKey = 'roomhy_deleted_tenants_owner';
+            const deletedTenantIds = new Set((JSON.parse(localStorage.getItem(deletedKey) || '[]') || []).map(v => String(v || '').toUpperCase()).filter(Boolean));
             // Pull latest tenants from backend and merge into local cache.
             try {
                 const res = await fetch(API_URL + '/api/tenants');
@@ -137,13 +140,14 @@ lucide.createIcons();
                             if (idx > -1) merged[idx] = { ...merged[idx], ...bt };
                             else merged.push(bt);
                         });
-                        tenants = merged;
+                        tenants = merged.filter(t => !deletedTenantIds.has(String(t.loginId || '').toUpperCase()));
                         localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
                     }
                 }
             } catch (err) {
                 console.warn('tenantrec backend sync failed, using local cache only', err && err.message);
             }
+            tenants = tenants.filter(t => !deletedTenantIds.has(String(t.loginId || '').toUpperCase()));
             // Build a property map so we can resolve property IDs to names/location codes
             let propMap = {};
             try {
@@ -207,6 +211,7 @@ lucide.createIcons();
                 }
                 return copy;
             });
+            tenantRecordsCache = resolved;
             tenantsForExport = resolved;
 
             if (filteredTenants.length === 0) {
@@ -346,14 +351,57 @@ lucide.createIcons();
         }
 
         // --- Delete Logic ---
-        function deleteTenant(loginId) {
-             if(!confirm("âš ï¸ Permanently delete this record? This cannot be undone.")) return;
-             
-             let tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
-             const newTenants = tenants.filter(t => t.loginId !== loginId);
-             
-             localStorage.setItem('roomhy_tenants', JSON.stringify(newTenants));
-             loadTenantRecords();
+        async function deleteTenant(loginId) {
+            if (!confirm("Permanently delete this record? This cannot be undone.")) return;
+
+            const normalizedLoginId = String(loginId || '').toUpperCase();
+            const deletedKey = 'roomhy_deleted_tenants_owner';
+            const target = (Array.isArray(tenantRecordsCache) ? tenantRecordsCache : [])
+                .find(t => String(t.loginId || '').toUpperCase() === normalizedLoginId);
+
+            let deletedInBackend = false;
+            try {
+                const token = localStorage.getItem('token');
+                const backendId = target && (target._id || target.id || target.dbId);
+                if (token && backendId) {
+                    const res = await fetch(`${API_URL}/api/tenants/${encodeURIComponent(String(backendId))}`, {
+                        method: 'DELETE',
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    deletedInBackend = res.ok;
+                }
+            } catch (err) {
+                console.warn('tenantrec backend delete failed:', err);
+            }
+
+            let tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
+            tenants = (Array.isArray(tenants) ? tenants : []).filter(t => String(t.loginId || '').toUpperCase() !== normalizedLoginId);
+            localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
+
+            try {
+                const rooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
+                let touched = false;
+                (Array.isArray(rooms) ? rooms : []).forEach(room => {
+                    if (!Array.isArray(room.beds)) return;
+                    room.beds.forEach((bed, i) => {
+                        const bedTenantId = String((bed && bed.tenantId) || '').toUpperCase();
+                        if (bedTenantId === normalizedLoginId) {
+                            room.beds[i] = { status: 'available', tenantId: null, tenantName: null };
+                            touched = true;
+                        }
+                    });
+                });
+                if (touched) localStorage.setItem('roomhy_rooms', JSON.stringify(rooms));
+            } catch (_) {}
+
+            const deletedIds = JSON.parse(localStorage.getItem(deletedKey) || '[]');
+            let updatedDeleted = Array.from(new Set([...(Array.isArray(deletedIds) ? deletedIds : []), normalizedLoginId]));
+            if (deletedInBackend) {
+                updatedDeleted = updatedDeleted.filter(v => String(v || '').toUpperCase() !== normalizedLoginId);
+            }
+            localStorage.setItem(deletedKey, JSON.stringify(updatedDeleted));
+
+            loadTenantRecords();
         }
 
         // Mobile menu handlers
