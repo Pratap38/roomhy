@@ -33,8 +33,9 @@ function loadKycState() {
     if (!document.getElementById('loginId').value && state.loginId) document.getElementById('loginId').value = state.loginId;
     if (state.aadhaarNumber) document.getElementById('aadhaarNumber').value = state.aadhaarNumber;
     if (state.aadhaarLinkedPhone) document.getElementById('aadhaarLinkedPhone').value = state.aadhaarLinkedPhone;
+    // Do not auto-fill stale DigiLocker reference on initial page load.
+    // Reference should appear only after Start/Callback in current flow.
     if (state.referenceId) {
-      document.getElementById('digilockerRef').value = state.referenceId;
       lastRefId = state.referenceId;
     }
   } catch (_) {}
@@ -70,6 +71,11 @@ function applyCallbackParams() {
 
 loadKycState();
 applyCallbackParams();
+if (!new URLSearchParams(window.location.search).get('reference_id')
+  && !new URLSearchParams(window.location.search).get('ref_id')
+  && !new URLSearchParams(window.location.search).get('referenceId')) {
+  document.getElementById('digilockerRef').value = '';
+}
 
 document.getElementById('startDigiLockerBtn').onclick = async () => {
   try {
