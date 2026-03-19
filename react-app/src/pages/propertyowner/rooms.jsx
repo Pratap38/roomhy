@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PropertyOwnerLayout from "../../components/propertyowner/PropertyOwnerLayout";
+import { fetchJson } from "../../utils/api";
 import { useHtmlPage } from "../../utils/htmlPage";
 import {
   assignTenant,
@@ -96,9 +97,10 @@ export default function Rooms() {
       currentProperty?.name,
       currentProperty?.propertyName,
       currentProperty?.displayName,
-      currentProperty?.propName
-    ) || "Loading Property...",
-    [currentProperty]
+      currentProperty?.propName,
+      owner?.propertyName
+    ),
+    [currentProperty, owner]
   );
   const currentPropertyLocation = useMemo(
     () => firstValidValue(
@@ -106,12 +108,23 @@ export default function Rooms() {
       currentProperty?.locationCode,
       currentProperty?.area,
       currentProperty?.city,
-      currentProperty?.address
+      currentProperty?.address,
+      owner?.location,
+      owner?.checkinArea,
+      owner?.area,
+      owner?.locationCode,
+      owner?.address,
+      owner?.checkinAddress
     ),
-    [currentProperty]
+    [currentProperty, owner]
   );
   const currentPropertyDisplay = useMemo(
-    () => (currentPropertyLocation ? `${currentPropertyTitle} (${currentPropertyLocation})` : currentPropertyTitle),
+    () => {
+      if (currentPropertyTitle && currentPropertyLocation) return `${currentPropertyTitle} (${currentPropertyLocation})`;
+      if (currentPropertyTitle) return currentPropertyTitle;
+      if (currentPropertyLocation) return `Location: ${currentPropertyLocation}`;
+      return "Loading Property...";
+    },
     [currentPropertyLocation, currentPropertyTitle]
   );
   const unassignedTenants = useMemo(
@@ -123,11 +136,15 @@ export default function Rooms() {
     setLoading(true);
     setErrorMsg("");
     try {
-      const [propertyList, roomData, tenantList] = await Promise.all([
+      const [propertyList, roomData, tenantList, ownerProfile] = await Promise.all([
         fetchOwnerProperties(session.loginId),
         fetchOwnerRooms(session.loginId),
-        fetchOwnerTenants(session.loginId)
+        fetchOwnerTenants(session.loginId),
+        fetchJson(`/api/owners/${encodeURIComponent(session.loginId)}`).catch(() => null)
       ]);
+      if (ownerProfile) {
+        setOwner((prev) => ({ ...(prev || {}), ...ownerProfile }));
+      }
       setProperties(propertyList.length ? propertyList : roomData.properties || []);
       setRooms(roomData.rooms || []);
       setTenants(tenantList || []);
@@ -381,7 +398,7 @@ export default function Rooms() {
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div>
                   <p className="text-gray-500 uppercase font-semibold">Property</p>
-                  <p className="text-gray-800 font-semibold truncate">{currentPropertyTitle === "Loading Property..." ? "-" : currentPropertyDisplay}</p>
+                  <p className="text-gray-800 font-semibold truncate">{currentPropertyDisplay === "Loading Property..." ? "-" : currentPropertyDisplay}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 uppercase font-semibold">Room</p>
