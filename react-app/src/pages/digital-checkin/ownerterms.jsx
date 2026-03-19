@@ -60,7 +60,11 @@ export default function DigitalCheckinOwnerterms() {
 
         {finalConfirmation?.dashboardUrl && (
           <div className="status">
-            Submitted. Continue to dashboard: <a href={finalConfirmation.dashboardUrl}>Open Dashboard</a>
+            <strong>Welcome to RoomHy.</strong><br />
+            Your owner digital check-in has been submitted successfully.<br />
+            Please login through this page:
+            {" "}
+            <a href={finalConfirmation.dashboardUrl}>Property Owner Login</a>
           </div>
         )}
       </div>

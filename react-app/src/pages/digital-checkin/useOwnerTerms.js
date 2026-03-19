@@ -40,8 +40,11 @@ export const useOwnerTerms = () => {
         apiBases
       );
       if (!submitResp.success) return alert(submitResp.message || "Submit failed");
-      setFinalConfirmation({ dashboardUrl: submitResp.dashboardUrl || "" });
-      setStatus("Submitted successfully.");
+      setFinalConfirmation({
+        dashboardUrl: submitResp.dashboardUrl || "",
+        message: submitResp.message || "Owner digital check-in submitted successfully."
+      });
+      setStatus("");
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
