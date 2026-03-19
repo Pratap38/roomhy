@@ -47,31 +47,46 @@ const generateWebsiteUserIdFromBooking = (booking) => {
 };
 
 const resolveWebsiteUserId = (booking) => {
-  const raw = String(
-    booking?.signup_user_id ||
-    booking?.user_id ||
-    booking?.user_login_id ||
+  // First try to get pre-generated roomhyweb ID
+  const preGenerated = (
     booking?.website_user_id ||
-    booking?.booking_details?.signup_user_id ||
-    booking?.booking_details?.user_id ||
-    booking?.booking_details?.user_login_id ||
-    booking?.userId ||
+    booking?.websiteUserId ||
     ""
   ).trim().toLowerCase();
+  if (WEBSITE_USER_ID_REGEX.test(preGenerated)) return preGenerated;
 
+  // Try signup_user_id or user_login_id (if already normalized)
+  const raw = String(
+    booking?.signup_user_id ||
+    booking?.user_login_id ||
+    booking?.userLoginId ||
+    ""
+  ).trim().toLowerCase();
+  
   const normalized = normalizeWebsiteUserId(raw);
   if (normalized) return normalized;
 
+  // Try email-based generation (most reliable for matching website users)
   const emailBased = generateWebsiteUserIdFromEmail(
     booking?.email ||
     booking?.userEmail ||
     booking?.gmail ||
     booking?.contactEmail ||
-    booking?.booking_details?.email
+    booking?.booking_details?.email ||
+    booking?.user_email
   );
   if (emailBased) return emailBased;
 
-  return generateWebsiteUserIdFromBooking(booking) || raw;
+  // Last resort: try to extract from any remaining ID fields
+  const fallbackRaw = String(
+    booking?.user_id ||
+    booking?.userId ||
+    booking?.booking_details?.user_id ||
+    booking?.booking_details?.userId ||
+    ""
+  ).trim().toLowerCase();
+  
+  return generateWebsiteUserIdFromBooking(booking) || normalizeWebsiteUserId(fallbackRaw) || fallbackRaw;
 };
 
 const getBookingDisplayName = (booking) => {
@@ -277,8 +292,10 @@ export default function Ownerchat() {
 
   const sendMessage = () => {
     if (!draft.trim() || !currentChat || !socketRef.current || !owner?.loginId) return;
-    const userId = resolveWebsiteUserId(currentChat);
-    if (!OWNER_LOGIN_ID_REGEX.test(String(owner.loginId || "").trim().toUpperCase()) || !WEBSITE_USER_ID_REGEX.test(String(userId || "").trim().toLowerCase())) {
+    // Use the pre-resolved userId from currentChat, not recalculated one
+    const userId = currentChat.userId || resolveWebsiteUserId(currentChat);
+    if (!userId || !OWNER_LOGIN_ID_REGEX.test(String(owner.loginId || "").trim().toUpperCase()) || !WEBSITE_USER_ID_REGEX.test(String(userId || "").trim().toLowerCase())) {
+      console.warn("Invalid message recipients:", { userId, ownerLoginId: owner.loginId });
       return;
     }
     socketRef.current.emit("send_message", { to_login_id: userId, message: draft.trim() });
