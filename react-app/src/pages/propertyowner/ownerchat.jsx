@@ -54,7 +54,7 @@ export default function Ownerchat() {
 
   useEffect(() => {
     if (window.lucide?.createIcons) window.lucide.createIcons();
-  }, [bookings, currentChat, messages, mobileChatOpen]);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -104,7 +104,7 @@ export default function Ownerchat() {
 
   useEffect(() => {
     if (!owner?.loginId) return;
-    const socket = io(getSocketUrl(), { transports: ["websocket", "polling"] });
+    const socket = io(getSocketUrl(), { transports: ["polling", "websocket"] });
     socketRef.current = socket;
     socket.emit("join_room", {
       login_id: owner.loginId,

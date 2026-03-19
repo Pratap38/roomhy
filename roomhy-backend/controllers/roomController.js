@@ -37,15 +37,39 @@ exports.createRoom = async (req, res) => {
         });
 
         // Notify superadmins and area manager
-        const notifications = [];
-        const superAdmins = await User.find({ role: 'superadmin' }).lean();
-        superAdmins.forEach(sa => notifications.push(Notification.create({ recipient: sa._id, type: 'room_added', message: `New room added to ${property.title}`, meta: { roomId: room._id, propertyId } })));
-        if (property.owner) {
-            // Also notify area manager(s) via VisitReport areaManager if available (best effort)
-            // For simplicity, notify property.owner as well (owner will see their own action)
-            notifications.push(Notification.create({ recipient: property.owner, type: 'room_added_owner', message: `Room added: ${title}`, meta: { roomId: room._id } }));
+        try {
+            const notifications = [];
+            const superAdmins = await User.find({ role: 'superadmin' }).lean();
+            superAdmins.forEach((sa) => notifications.push(Notification.create({
+                toRole: 'superadmin',
+                toLoginId: sa.loginId || '',
+                from: String(user.loginId || user._id || 'owner'),
+                type: 'room_added',
+                meta: {
+                    roomId: room._id,
+                    propertyId,
+                    propertyTitle: property.title || '',
+                    roomTitle: String(title).trim()
+                }
+            })));
+            if (user.loginId) {
+                notifications.push(Notification.create({
+                    toRole: 'owner',
+                    toLoginId: String(user.loginId),
+                    from: String(user.loginId),
+                    type: 'room_added_owner',
+                    meta: {
+                        roomId: room._id,
+                        propertyId,
+                        propertyTitle: property.title || '',
+                        roomTitle: String(title).trim()
+                    }
+                }));
+            }
+            await Promise.all(notifications);
+        } catch (notifyErr) {
+            console.warn('createRoom notification warning:', notifyErr.message);
         }
-        await Promise.all(notifications);
 
         return res.status(201).json({ success: true, room });
     } catch (err) {
