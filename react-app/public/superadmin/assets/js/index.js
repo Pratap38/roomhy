@@ -13,6 +13,15 @@ lucide.createIcons();
                 console.warn('[Login] Failed to persist window.name session:', e);
             }
         }
+
+        function buildStaffRedirect(user) {
+            const base = resolvePanelPath('employee', 'areaadmin');
+            try {
+                return `${base}?staff=${encodeURIComponent(JSON.stringify(user || {}))}`;
+            } catch (e) {
+                return base;
+            }
+        }
         
         // Unified Login Handler - Auto-detects user role by ID (optimized for speed)
         function handleUnifiedLogin() {
@@ -283,7 +292,7 @@ lucide.createIcons();
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = resolvePanelPath('employee', 'areaadmin');
+                window.location.href = buildStaffRedirect(user);
             } else {
                 console.warn('[Staff Login] Area Manager not found or password mismatch for:', loginId);
                 showError('Invalid credentials.', errorMsg);
@@ -341,7 +350,7 @@ lucide.createIcons();
              // Clear owner sessions to prevent crosstalk
              sessionStorage.removeItem('owner_session');
              localStorage.removeItem('owner_user');
-             window.location.href = resolvePanelPath('employee', 'areaadmin');
+             window.location.href = buildStaffRedirect(user);
         }
 
         // Tenant Login

@@ -10,6 +10,14 @@ const WINDOW_NAME_SESSION_PREFIX = "__ROOMHY_STAFF_SESSION__:";
 
 const getStaffUser = () => {
   try {
+    const params = new URLSearchParams(window.location.search || "");
+    const staff = params.get("staff");
+    if (staff) return JSON.parse(decodeURIComponent(staff));
+  } catch (e) {
+    // ignore
+  }
+
+  try {
     const raw =
       sessionStorage.getItem("manager_user") ||
       sessionStorage.getItem("user") ||

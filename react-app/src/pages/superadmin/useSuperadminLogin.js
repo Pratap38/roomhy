@@ -15,6 +15,15 @@ const persistWindowSession = (user) => {
   }
 };
 
+const buildStaffRedirect = (user) => {
+  const base = resolvePanelPath("employee", "areaadmin");
+  try {
+    return `${base}?staff=${encodeURIComponent(JSON.stringify(user || {}))}`;
+  } catch (e) {
+    return base;
+  }
+};
+
 const loadScript = (src) =>
   new Promise((resolve, reject) => {
     const existing = document.querySelector(`script[src="${src}"]`);
@@ -220,7 +229,7 @@ export const useSuperadminLogin = () => {
       persistWindowSession(user);
       sessionStorage.removeItem("owner_session");
       localStorage.removeItem("owner_user");
-      window.location.href = resolvePanelPath("employee", "areaadmin");
+      window.location.href = buildStaffRedirect(user);
     },
     [showLoginError]
   );
@@ -254,7 +263,7 @@ export const useSuperadminLogin = () => {
       persistWindowSession(user);
       sessionStorage.removeItem("owner_session");
       localStorage.removeItem("owner_user");
-      window.location.href = resolvePanelPath("employee", "areaadmin");
+      window.location.href = buildStaffRedirect(user);
     },
     [showLoginError]
   );
