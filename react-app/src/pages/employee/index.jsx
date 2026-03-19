@@ -3,11 +3,7 @@ import { useHtmlPage } from "../../utils/htmlPage";
 import { fetchJson } from "../../utils/api";
 
 const resolvePanelPath = (folder, fileName) => {
-  const path = (window.location.pathname || "").toLowerCase();
-  if (path.includes(`/${folder}/`)) {
-    return `/${folder}/${fileName}`;
-  }
-  return `/${fileName}`;
+  return `/${folder}/${fileName}`;
 };
 
 export default function Index() {

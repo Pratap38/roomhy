@@ -1,14 +1,7 @@
 lucide.createIcons();
 
         function resolvePanelPath(folder, fileName) {
-            const path = (window.location.pathname || '').toLowerCase();
-            // Supports both deploy styles:
-            // 1) /superadmin/index.html  -> /superadmin/superadmin.html
-            // 2) /index.html (admin root)-> /superadmin.html
-            if (path.includes(`/${folder}/`)) {
-                return `/${folder}/${fileName}`;
-            }
-            return `/${fileName}`;
+            return `/${folder}/${fileName}`;
         }
         
         // Unified Login Handler - Auto-detects user role by ID (optimized for speed)
