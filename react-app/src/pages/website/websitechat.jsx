@@ -112,9 +112,14 @@ export default function WebsiteWebsitechat() {
     };
     socket.on("connect", joinRoom);
     socket.on("reconnect", joinRoom);
-    socket.on("receive_message", () => {
-      if (activeChatRef.current) {
-        loadMessages(activeChatRef.current);
+    socket.on("receive_message", (message) => {
+      const activeChat = activeChatRef.current;
+      const latestUser = currentUserRef.current;
+      if (!activeChat || !latestUser) return;
+      const senderId = String(message?.sender_login_id || "").trim().toLowerCase();
+      const expectedSenderId = String(activeChat.owner_id || "").trim().toLowerCase();
+      if (senderId === expectedSenderId) {
+        setMessages((prev) => [...prev, message]);
       }
     });
     socketRef.current = socket;
@@ -215,9 +220,21 @@ export default function WebsiteWebsitechat() {
     if (!socketRef.current) {
       connectSocket(userId, currentUser.firstName || currentUser.name || "Website User");
     }
+    // Send message via socket
     socketRef.current?.emit("send_message", { to_login_id: ownerId, message: messageText });
+    
+    // Add message to local state immediately
+    setMessages((prev) => [
+      ...prev,
+      {
+        _id: `${Date.now()}-local`,
+        sender_login_id: userId,
+        sender_name: currentUser.firstName || currentUser.name || "You",
+        message: messageText.trim(),
+        created_at: new Date().toISOString()
+      }
+    ]);
     setMessageText("");
-    setTimeout(() => loadMessages(activeChat), 150);
   };
 
   const sendReaction = (type) => {
@@ -225,8 +242,20 @@ export default function WebsiteWebsitechat() {
     const ownerId = String(activeChat.owner_id || "").trim().toUpperCase();
     const userId = resolveWebsiteUserId(currentUser);
     if (!socketRef.current) connectSocket(userId, currentUser.firstName || currentUser.name || "Website User");
-    socketRef.current?.emit("send_message", { to_login_id: ownerId, message: type === "like" ? "LIKE" : "DISLIKE" });
-    setTimeout(() => loadMessages(activeChat), 150);
+    const reactionMessage = type === "like" ? "LIKE" : "DISLIKE";
+    socketRef.current?.emit("send_message", { to_login_id: ownerId, message: reactionMessage });
+    
+    // Add reaction to local state immediately
+    setMessages((prev) => [
+      ...prev,
+      {
+        _id: `${Date.now()}-local`,
+        sender_login_id: userId,
+        sender_name: currentUser.firstName || currentUser.name || "You",
+        message: reactionMessage,
+        created_at: new Date().toISOString()
+      }
+    ]);
   };
 
   useHtmlPage({
