@@ -699,12 +699,12 @@ export default function WebsiteProperty() {
   };
 
   const handleLogout = () => {
-    logoutWebsite("login");
+    logoutWebsite("signup");
   };
 
   const handleAuthLogin = () => {
     setShowAuthModal(false);
-    window.location.href = "login";
+    window.location.href = "signup";
   };
 
   const handleAuthSignup = () => {
@@ -737,7 +737,7 @@ export default function WebsiteProperty() {
     setShowSignupModal(false);
   };
   useHtmlPage({
-    title: "Athena House, Hinjawadi - Roomhy",
+    title: "Roomhy Property",
     bodyClass: "text-gray-800",
     htmlAttrs: {
   "lang": "en",
@@ -926,9 +926,9 @@ export default function WebsiteProperty() {
                   </div>
                   
                   <div className="p-4 space-y-3 border-t flex-shrink-0">
-                      <a href="/website/login" className="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                      <a href="/website/signup" className="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
                           <i data-lucide="log-in" className="w-4 h-4 inline mr-2"></i>
-                          Login
+                          Sign Up
                       </a>
                       <a href="/website/signup" className="block w-full text-center border-2 border-blue-600 text-blue-600 font-medium py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors">
                           <i data-lucide="user-plus" className="w-4 h-4 inline mr-2"></i>
@@ -1280,8 +1280,8 @@ export default function WebsiteProperty() {
                               <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-200 flex items-center gap-3">
                                   <i data-lucide="map" className="w-5 h-5 text-red-600 flex-shrink-0"></i>
                                   <div>
-                                      <p className="text-sm text-red-700 font-semibold">Hinjawadi, Pune - One of India's Most Sought-After Locations</p>
-                                      <p className="text-xs text-red-600 mt-1">Premium connectivity with top educational institutions and workplaces</p>
+                                      <p className="text-sm text-red-700 font-semibold">{normalized.locationText || "Location details available for this property"}</p>
+                                      <p className="text-xs text-red-600 mt-1">Map and nearby places are based on this property's current area and city.</p>
                                   </div>
                               </div>
                               
@@ -1536,10 +1536,10 @@ export default function WebsiteProperty() {
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
                       <i data-lucide="lock" className="w-6 h-6 text-white"></i>
                   </div>
-                  <h3 className="text-2xl font-bold mb-2 text-gray-900">Login Required</h3>
-                  <p className="text-sm text-gray-600 mb-6">You need an account to Request or Bid. Please login or signup to proceed.</p>
+                  <h3 className="text-2xl font-bold mb-2 text-gray-900">Signup Required</h3>
+                  <p className="text-sm text-gray-600 mb-6">You need an account to Request or Bid. Please sign up to proceed.</p>
                   <div className="flex gap-3 justify-center flex-col sm:flex-row">
-                      <button id="auth-modal-login" onClick={handleAuthLogin} className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300">Login</button>
+                      <button id="auth-modal-login" onClick={handleAuthLogin} className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300">Sign Up</button>
                       <button id="auth-modal-signup" onClick={handleAuthSignup} className="px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300">Sign up</button>
                   </div>
                   <div className="mt-4">

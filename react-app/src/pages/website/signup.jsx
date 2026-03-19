@@ -37,6 +37,27 @@ export default function WebsiteSignup() {
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   }, []);
 
+  const normalizeLoginIdentifier = useCallback((value) => {
+    const trimmedValue = String(value || "").trim();
+    if (!trimmedValue) return "";
+    if (trimmedValue.includes("@")) return trimmedValue.toLowerCase();
+    if (/^roomhy/i.test(trimmedValue)) return trimmedValue.toUpperCase();
+    return trimmedValue;
+  }, []);
+
+  const redirectAfterLogin = useCallback((user) => {
+    if (!user) return;
+    if (user.role === "superadmin") {
+      window.location.href = "/superadmin/superadmin";
+    } else if (user.role === "areamanager" || user.role === "manager" || user.role === "employee") {
+      window.location.href = "/employee/areaadmin";
+    } else if (user.role === "owner") {
+      window.location.href = "/propertyowner/index";
+    } else {
+      window.location.href = "/website/index";
+    }
+  }, []);
+
   const scrollToAuth = useCallback(() => {
     if (window.innerWidth <= 768) {
       document.getElementById("auth-container")?.scrollIntoView({ behavior: "smooth" });
@@ -54,10 +75,10 @@ export default function WebsiteSignup() {
   const handleLoginSubmit = useCallback(
     async (event) => {
       event.preventDefault();
-      const identifier = loginId.trim().toLowerCase();
+      const identifier = normalizeLoginIdentifier(loginId);
       const password = loginPassword.trim();
       if (!identifier || !password) {
-        showToast("Please enter email/phone and password", "error");
+        showToast("Please enter email or login ID and password", "error");
         return;
       }
       try {
@@ -74,13 +95,13 @@ export default function WebsiteSignup() {
         setWebsiteSession(data.user, data.token);
         showToast("Login successful! Redirecting...", "success");
         setTimeout(() => {
-          window.location.href = "/website/index";
+          redirectAfterLogin(data.user);
         }, 800);
       } catch (err) {
         showToast("Unable to login right now. Please try again.", "error");
       }
     },
-    [apiUrl, loginId, loginPassword, showToast]
+    [apiUrl, loginId, loginPassword, normalizeLoginIdentifier, redirectAfterLogin, showToast]
   );
 
   const handleSignupChange = useCallback((field, value) => {
@@ -304,11 +325,11 @@ export default function WebsiteSignup() {
       
                                   <form className="space-y-4 md:space-y-5" onSubmit={handleLoginSubmit}>
                                       <div className="space-y-1.5">
-                                          <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Email or Phone</label>
+                                          <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Email or Login ID</label>
                                           <input
                                               type="text"
                                               className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-50/50 outline-none transition-all"
-                                              placeholder="Enter your details"
+                                              placeholder="Enter email or ROOMHY ID"
                                               value={loginId}
                                               onChange={(e) => setLoginId(e.target.value)}
                                           />
@@ -322,7 +343,7 @@ export default function WebsiteSignup() {
                                               value={loginPassword}
                                               onChange={(e) => setLoginPassword(e.target.value)}
                                           />
-                                          <button type="button" className="text-xs text-blue-600 font-bold block text-right mt-1.5 hover:underline" onClick={() => showToast("Use the login screen on the login page for password reset.", "info")}>Forgot Password?</button>
+                                          <button type="button" className="text-xs text-blue-600 font-bold block text-right mt-1.5 hover:underline" onClick={() => showToast("Use your registered email or owner/tenant portal forgot password option.", "info")}>Forgot Password?</button>
                                       </div>
                                       <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-100 transition-all active:scale-[0.98]">Log in</button>
                                   </form>
