@@ -46,12 +46,12 @@ lucide.createIcons();
         function globalLogout() {
             // Use AuthUtils if available, otherwise do it manually
             if (typeof AuthUtils !== 'undefined' && AuthUtils.logout) {
-                AuthUtils.logout('login.html');
+                AuthUtils.logout('/website/login');
             } else {
                 // Manual logout
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = 'login.html';
+                window.location.href = '/website/login';
             }
         }
         

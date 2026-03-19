@@ -51,14 +51,14 @@ lucide.createIcons();
         function redirectAfterLogin(user) {
             try {
                 if (user.role === 'superadmin') {
-                    window.location.href = '/superadmin/superadmin.html';
+                    window.location.href = '/superadmin/superadmin';
                 } else if (user.role === 'areamanager') {
-                    window.location.href = '/superadmin/areaadmin.html';
+                    window.location.href = '/employee/areaadmin';
                 } else if (user.role === 'owner') {
-                    window.location.href = '/propertyowner/index.html';
+                    window.location.href = '/propertyowner/index';
                 } else {
                     // Default to website index for tenants and others
-                    window.location.href = 'index.html';
+                    window.location.href = '/website/index';
                 }
             } catch (e) {
                 showToast('Redirect failed', 'error');

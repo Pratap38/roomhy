@@ -39,12 +39,12 @@ if (typeof lucide !== 'undefined') {
         function globalLogout() {
             // Use AuthUtils if available, otherwise do it manually
             if (typeof AuthUtils !== 'undefined' && AuthUtils.logout) {
-                AuthUtils.logout('login.html');
+                AuthUtils.logout('/website/login');
             } else {
                 // Manual logout
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = 'login.html';
+                window.location.href = '/website/login';
             }
         }
         
@@ -326,7 +326,7 @@ if (typeof lucide !== 'undefined') {
             } else {
                 console.error('[WebsiteChat] ❌ No user session found');
                 alert('Please login to continue');
-                window.location.href = 'signup.html';
+                window.location.href = '/website/signup';
             }
         }
 
@@ -680,8 +680,8 @@ if (typeof lucide !== 'undefined') {
                         : 'https://api.roomhy.com';
                     const parsed = new URL(rawLink, defaultBase);
 
-                    if (/booking-form\.html$/i.test(parsed.pathname)) {
-                        parsed.pathname = '/propertyowner/booking-form.html';
+                    if (/booking-form(?:\.html)?$/i.test(parsed.pathname)) {
+                        parsed.pathname = '/propertyowner/booking-form';
                     }
 
                     if (!parsed.hostname || parsed.hostname === window.location.hostname) {
@@ -696,7 +696,7 @@ if (typeof lucide !== 'undefined') {
 
             function formatMessageText(rawText) {
                 const safe = String(rawText || '').replace(/\d{10,}/g, '***');
-                const bookingLinkMatch = safe.match(/((?:https?:\/\/[^\s]*|\/)?(?:propertyowner\/)?booking-form\.html[^\s]*)/i);
+                const bookingLinkMatch = safe.match(/((?:https?:\/\/[^\s]*|\/)?(?:propertyowner\/)?booking-form(?:\.html)?[^\s]*)/i);
                 if (bookingLinkMatch) {
                     const link = normalizeBookingLink(bookingLinkMatch[1]);
                     return `<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-3">
@@ -824,7 +824,7 @@ if (typeof lucide !== 'undefined') {
                                                 const bookingBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                                                     ? 'http://localhost:5001'
                                                     : 'https://api.roomhy.com';
-                                                const bookingFormLink = `${bookingBase}/propertyowner/booking-form.html?bookingId=${bookingId}&userId=${userId}`;
+                                                const bookingFormLink = `${bookingBase}/propertyowner/booking-form?bookingId=${bookingId}&userId=${userId}`;
 
                         // Save booking details to MongoDB
                         try {
@@ -1002,7 +1002,7 @@ if (typeof lucide !== 'undefined') {
             localStorage.removeItem('user');
             localStorage.removeItem('token');
             sessionStorage.clear();
-            window.location.href = 'tenantlogin.html';
+            window.location.href = '/tenant/tenantlogin';
         }
         
         // Call on page load

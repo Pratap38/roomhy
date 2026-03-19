@@ -4,6 +4,11 @@ console.log('[Manager] Storage - User:', localStorage.getItem('user') ? 'YES' : 
 console.log('[Manager] Storage - Token:', localStorage.getItem('token') ? 'YES' : 'NO');
 console.log('[Manager] SessionStorage - Token:', sessionStorage.getItem('token') ? 'YES' : 'NO');
 
+const API_BASE = window.API_BASE || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5001'
+    : 'https://api.roomhy.com');
+window.API_BASE = API_BASE;
+
 // Persist auth info to window if available
 if (localStorage.getItem('token')) {
     window.authToken = localStorage.getItem('token');
@@ -14,11 +19,16 @@ if (localStorage.getItem('user')) {
     console.log('[Manager] Set window.authUser from localStorage');
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+function initManagerSocket() {
     if (window.connectSocket) {
         window.connectSocket('manager');
     }
-});
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initManagerSocket);
+} else {
+    initManagerSocket();
+}
 
 lucide.createIcons();
         let currentTeamFilter = 'All';
@@ -44,23 +54,32 @@ lucide.createIcons();
             { id: 'bookings', label: 'Bookings' },
             { id: 'reviews', label: 'Reviews' },
             { id: 'complaint_history', label: 'Complaint History' },
+            { id: 'kyc_verification', label: 'KYC Verification' },
             { id: 'live_properties', label: 'Live Properties' },
             { id: 'rent_collections', label: 'Rent Collections' },
             { id: 'commissions', label: 'Commissions' },
             { id: 'refunds', label: 'Refunds' },
             { id: 'locations', label: 'Locations' },
-            { id: 'visits', label: 'Visit Reports' }
+            { id: 'visits', label: 'Visit Reports' },
+            { id: 'reports', label: 'Reports' },
+            { id: 'profile', label: 'Profile' },
+            { id: 'settings', label: 'Settings' }
         ];
         let selectedPermissions = new Set();
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            loadLocationsFromStorage();
-            renderPermissions();
-            await syncEmployeesFromBackend(); // Fetch employees from backend first
-            loadEmployees();
-            updateCounts();
-            initLocationSync();
-        });
+async function initManagerApp() {
+    loadLocationsFromStorage();
+    renderPermissions();
+    await syncEmployeesFromBackend(); // Fetch employees from backend first
+    loadEmployees();
+    updateCounts();
+    initLocationSync();
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initManagerApp);
+} else {
+    initManagerApp();
+}
 
         // Load employees from localStorage cache (fallback when backend is unavailable)
         function loadEmployeesFromCache() {
@@ -458,11 +477,17 @@ lucide.createIcons();
         function clearPerms() { selectedPermissions.forEach(id => togglePerm(id, document.querySelectorAll('.permission-item')[allPermissions.findIndex(p=>p.id===id)])); }
 
         // --- Actions ---
+        function getLocalCode() {
+            const area = document.getElementById('modalArea')?.value || '';
+            const city = document.getElementById('modalCity')?.value || '';
+            const base = (area || city || '').replace(/[^A-Za-z]/g, '').toUpperCase();
+            return base.slice(0, 4);
+        }
+
         function generateCreds() {
-            // Generate login id using RY + area code if set, else EMP fallback
-            const area = document.getElementById('modalArea').value || '';
-            const areaCode = (area || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0,4);
-            const prefix = areaCode ? `RY${areaCode}` : 'EMP';
+            // Generate login id using RY + local code (area/city) + 4 digits
+            const localCode = getLocalCode();
+            const prefix = localCode ? `RY${localCode}` : 'RY';
             const genId = prefix + Math.floor(1000 + Math.random() * 9000);
             document.getElementById('empLoginId').value = genId;
             document.getElementById('empPassword').value = Math.random().toString(36).slice(-8).toUpperCase();
@@ -531,8 +556,8 @@ lucide.createIcons();
             const role = document.getElementById('empRole').value;
             const city = document.getElementById('modalCity').value;
             const area = document.getElementById('modalArea').value;
-            // derive areaCode as first two letters (letters only) of the area
-            const areaCode = (area || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0,2);
+            // derive areaCode as first three letters (letters only) of the area/city
+            const areaCode = getLocalCode();
             const phone = document.getElementById('empPhone').value.trim();
             const email = document.getElementById('empEmail').value.trim();
             const loginId = document.getElementById('empLoginId').value;
@@ -544,10 +569,10 @@ lucide.createIcons();
             
             const db = Array.isArray(employeesCache) ? employeesCache : [];
 
-            // Enforce login ID prefix: RY + areaCode (or just RY if no areaCode). If the entered loginId doesn't start with RY, generate one.
+            // Enforce login ID prefix: RY + local code (or just RY).
             const desiredPrefix = 'RY' + (areaCode || '');
             let finalLoginId = (loginId || '').toString().toUpperCase();
-            if (!finalLoginId.startsWith('RY')) {
+            if (!finalLoginId.startsWith(desiredPrefix)) {
                 finalLoginId = desiredPrefix + Math.floor(1000 + Math.random() * 9000);
                 document.getElementById('empLoginId').value = finalLoginId;
             }
@@ -630,6 +655,7 @@ lucide.createIcons();
                 const parent = document.getElementById('employeeModal').dataset.parentLogin;
                 if (parent) newEmp.parentLoginId = parent;
                 db.push(newEmp);
+                let createdOnBackend = false;
                 // Try backend create
                 try {
                     const res = await fetch(`${API_BASE}/api/employees`, {
@@ -649,12 +675,29 @@ lucide.createIcons();
                             }
                         }
                         await syncEmployeesFromBackend();
+                        loadEmployees(true);
                         console.log('Employee created on backend and cache refreshed');
+                        createdOnBackend = true;
+                    } else if (res.status === 409) {
+                        const data = await res.json().catch(() => ({}));
+                        const reason = data.error || data.message || 'Duplicate record';
+                        alert(`Employee not created: ${reason}. Use a different email or login ID.`);
+                        // Remove optimistic entry
+                        const idx = db.findIndex(e => e.loginId === finalLoginId && e.email === email);
+                        if (idx >= 0) db.splice(idx, 1);
                     } else {
                         console.warn('Employee create API returned', res.status);
                     }
                 } catch (err) {
                     console.warn('Employee create API failed, kept in memory:', err.message);
+                }
+                if (!createdOnBackend) {
+                    // Do not persist credentials or close modal if backend create failed
+                    employeesCache = Array.isArray(db) ? db : employeesCache;
+                    try {
+                        localStorage.setItem('roomhy_employees_cache', JSON.stringify(employeesCache));
+                    } catch (e) {}
+                    return;
                 }
             }
 
@@ -919,3 +962,4 @@ lucide.createIcons();
             navigator.clipboard.writeText(document.getElementById(id).innerText);
             alert("Copied!");
         }
+

@@ -1,0 +1,318 @@
+import React from "react";
+import { useHtmlPage } from "../../utils/htmlPage";
+import { useLegacySidebar } from "../../utils/legacyUi";
+
+export default function Security() {
+  useHtmlPage({
+    title: "Roomhy - Security Settings",
+    bodyClass: "text-slate-800",
+    htmlAttrs: {
+  "lang": "en"
+},
+    metas: [
+  {
+  "charset": "UTF-8"
+},
+  {
+  "name": "viewport",
+  "content": "width=device-width, initial-scale=1.0"
+}
+],
+    bases: [],
+    links: [
+  {
+  "rel": "preconnect",
+  "href": "https://fonts.googleapis.com"
+},
+  {
+  "rel": "preconnect",
+  "href": "https://fonts.gstatic",
+  "crossorigin": true
+},
+  {
+  "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
+  "rel": "stylesheet"
+},
+  {
+  "rel": "stylesheet",
+  "href": "/superadmin/assets/css/security.css"
+}
+],
+    styles: [],
+    scripts: [
+  {
+  "src": "https://cdn.tailwindcss.com"
+},
+  {
+  "src": "https://unpkg.com/lucide@latest"
+}
+],
+    inlineScripts: []
+  });
+
+  useLegacySidebar();
+
+  return (
+    <div className="html-page" dangerouslySetInnerHTML={{ __html: `
+<div class="flex h-screen overflow-hidden">
+                <!-- Sidebar -->
+        <aside class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar">
+            <div class="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827] z-10">
+                 <div class="flex items-center gap-3">
+                     
+                     <div><img src="/website/images/whitelogo.jpeg" alt="Roomhy Logo" class="h-16 w-auto"><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
+                 </div>
+            </div>
+            <nav id="dynamicSidebarNav" className="flex-1 py-6 space-y-1"></nav>
+        </aside>
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden bg-[#f3f4f6]">
+            <!-- Top Header -->
+            <header class="bg-white h-16 flex items-center justify-between px-6 shadow-sm z-10">
+                <div class="flex items-center">
+                    <button id="mobile-menu-open" class="md:hidden mr-4 text-slate-500"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <div class="flex items-center text-sm">
+                        <span class="text-slate-500 font-medium">System Settings</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 mx-2 text-slate-400"></i>
+                        <span class="text-slate-800 font-semibold">Security</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="text-slate-400 hover:text-slate-600"><i data-lucide="bell" class="w-5 h-5"></i></button>
+                    <div class="relative group">
+                        <button class="flex items-center gap-3 hover:bg-gray-50 p-1.5 rounded-full transition-colors">
+                            <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-xs">SP</div>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <main class="flex-1 overflow-y-auto p-6 md:p-8">
+                <div class="max-w-7xl mx-auto">
+                    
+                    <!-- Page Header -->
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-800">Security Settings</h1>
+                            <p class="text-sm text-slate-500 mt-1">Configure authentication policies, access controls, and security protocols.</p>
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center shadow-sm transition-all">
+                                <i data-lucide="save" class="w-4 h-4 mr-2"></i> Save Policy
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Security Policies Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        
+                        <!-- Password Policy -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                                    <i data-lucide="key" class="w-5 h-5 text-purple-600 mr-2"></i> Password Policy
+                                </h3>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-700">Minimum Length</p>
+                                        <p class="text-xs text-gray-500">Min chars required for passwords</p>
+                                    </div>
+                                    <select class="w-20 border-gray-300 rounded-md shadow-sm text-sm focus:ring-purple-500 focus:border-purple-500">
+                                        <option>8</option>
+                                        <option selected>10</option>
+                                        <option>12</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-700">Complexity Requirement</p>
+                                        <p class="text-xs text-gray-500">Require uppercase, numbers, symbols</p>
+                                    </div>
+                                    <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                                        <input type="checkbox" checked id="complexityToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300"/>
+                                        <label for="complexityToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-green-500 cursor-pointer"></label>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-700">Password Expiry</p>
+                                        <p class="text-xs text-gray-500">Force reset after days</p>
+                                    </div>
+                                    <select class="w-32 border-gray-300 rounded-md shadow-sm text-sm focus:ring-purple-500 focus:border-purple-500">
+                                        <option>Never</option>
+                                        <option>30 Days</option>
+                                        <option selected>90 Days</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2FA Settings -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                            <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                                    <i data-lucide="shield-check" class="w-5 h-5 text-green-600 mr-2"></i> Two-Factor Auth (2FA)
+                                </h3>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-700">Admin Accounts</p>
+                                        <p class="text-xs text-gray-500">Enforce 2FA for all admins</p>
+                                    </div>
+                                    <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                                        <input type="checkbox" checked id="admin2FAToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300"/>
+                                        <label for="admin2FAToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-green-500 cursor-pointer"></label>
+                                    </div>
+                                </div>
+                                 <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-700">Property Owners</p>
+                                        <p class="text-xs text-gray-500">Optional but recommended</p>
+                                    </div>
+                                    <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                                        <input type="checkbox" id="owner2FAToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300"/>
+                                        <label for="owner2FAToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                                    </div>
+                                </div>
+                                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 mt-2">
+                                    <p class="text-xs text-blue-700">
+                                        <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
+                                        2FA codes will be sent via SMS (using configured provider) or Email.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Session Management -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                            <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                                    <i data-lucide="monitor" class="w-5 h-5 text-blue-600 mr-2"></i> Active Sessions
+                                </h3>
+                                <button class="text-xs text-red-600 hover:text-red-800 font-medium border border-red-200 bg-red-50 px-3 py-1 rounded transition-colors">
+                                    Logout All Users
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead>
+                                        <tr class="text-gray-500 border-b border-gray-100">
+                                            <th class="pb-2 font-medium">User</th>
+                                            <th class="pb-2 font-medium">Role</th>
+                                            <th class="pb-2 font-medium">IP Address</th>
+                                            <th class="pb-2 font-medium">Device</th>
+                                            <th class="pb-2 font-medium">Last Active</th>
+                                            <th class="pb-2 font-medium text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-700">
+                                        <tr class="border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                                            <td class="py-3">Ajay Kumar</td>
+                                            <td><span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-xs">Admin</span></td>
+                                            <td class="font-mono text-xs">192.168.1.45</td>
+                                            <td>Chrome / Windows</td>
+                                            <td class="text-green-600">Now</td>
+                                            <td class="text-right"><span class="text-gray-400 italic text-xs">Current</span></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                                            <td class="py-3">Rajesh Kumar</td>
+                                            <td><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">Owner</span></td>
+                                            <td class="font-mono text-xs">10.0.0.12</td>
+                                            <td>Safari / iPhone</td>
+                                            <td>5m ago</td>
+                                            <td class="text-right">
+                                                <button class="text-red-500 hover:text-red-700" title="Revoke Session"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Access Control -->
+                         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+                            <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+                                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                                    <i data-lucide="globe-lock" class="w-5 h-5 text-orange-600 mr-2"></i> IP Whitelisting
+                                </h3>
+                                <button onclick="toggleModal('addIpModal')" class="text-xs text-purple-600 font-medium hover:text-purple-800 flex items-center">
+                                    <i data-lucide="plus" class="w-3 h-3 mr-1"></i> Add IP
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-4">Restrict Admin Panel access to specific IP addresses for enhanced security.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <div class="bg-gray-100 border border-gray-200 rounded-full px-3 py-1 flex items-center text-sm text-gray-700">
+                                    <span class="font-mono text-xs mr-2">192.168.1.0/24</span>
+                                    <span class="text-xs text-gray-400 mr-2">(Office)</span>
+                                    <button class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                </div>
+                                 <div class="bg-gray-100 border border-gray-200 rounded-full px-3 py-1 flex items-center text-sm text-gray-700">
+                                    <span class="font-mono text-xs mr-2">45.22.19.110</span>
+                                    <span class="text-xs text-gray-400 mr-2">(VPN)</span>
+                                    <button class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden backdrop-blur-sm" onclick="toggleMobileMenu()"></div>
+        <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-[#111827] z-40 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col overflow-y-auto">
+            <div class="h-16 flex items-center justify-between px-6 border-b border-gray-800 sticky top-0 bg-[#111827]">
+                 <img src="/website/images/whitelogo.jpeg" alt="Roomhy Logo" class="h-16 w-auto">
+                 <button id="mobile-menu-close"><i data-lucide="x" class="w-6 h-6 text-gray-400"></i></button>
+            </div>
+            <nav id="dynamicSidebarNav" className="flex-1 py-6 space-y-1"></nav>
+        </aside>
+    </div>
+
+    <!-- Add IP Modal -->
+    <div id="addIpModal" class="modal fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="toggleModal('addIpModal')"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex justify-between items-center mb-4">
+                         <h3 class="text-lg leading-6 font-bold text-gray-900">Allow New IP Address</h3>
+                         <button onclick="toggleModal('addIpModal')" class="text-gray-400 hover:text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    <form class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">IP Address / CIDR</label>
+                            <input type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm" placeholder="e.g. 192.168.1.100">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Label (Optional)</label>
+                            <input type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm" placeholder="e.g. Home Office">
+                        </div>
+                    </form>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                    <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none sm:w-auto sm:text-sm">
+                        Add to Whitelist
+                    </button>
+                    <button type="button" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:w-auto sm:text-sm" onclick="toggleModal('addIpModal')">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+` }} />
+  );
+}
+
+
+
+

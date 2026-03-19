@@ -252,7 +252,7 @@ lucide.createIcons();
         }
 
         // Populate auth UI and load visits
-        document.addEventListener('DOMContentLoaded', async () => {
+        const initVisitPage = async () => {
             const user = JSON.parse(sessionStorage.getItem('manager_user') || sessionStorage.getItem('user') || localStorage.getItem('manager_user') || localStorage.getItem('user') || 'null');
             if (!user) return;
             
@@ -298,7 +298,12 @@ lucide.createIcons();
 
             // Load and display visits (from localStorage or synced data)
             loadVisits();
-        });
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initVisitPage);
+        } else {
+            initVisitPage();
+        }
 
         // Open modal: set visit id, date, staff and try to get geolocation
         function openModal() {
@@ -1262,25 +1267,32 @@ lucide.createIcons();
                 }
                 
                 if (!saveSuccess) {
-                    console.warn('âš ï¸ Visit may not have been saved. Please check console.');
-                } else {
-                    // Also save to backend database as backup
-                    console.log('ðŸ’¾ Attempting to save visit to backend...');
+                    console.warn('⚠️ Visit may not have been saved locally. Continuing with backend sync...');
+                }
+                // Also save to backend database (even if local storage failed)
+                console.log('?? Attempting to save visit to backend...');
+                try {
+                    let token = '';
                     try {
-                        const backendRes = await fetch(API_URL + '/api/visits', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(mode === 'create' ? newVisit : visits[idx])
-                        });
-                        if (backendRes.ok) {
-                            console.log('✅ Visit saved to backend database');
-                        } else {
-                            console.warn('âš ï¸ Backend save failed:', backendRes.status);
-                        }
-                    } catch (err) {
-                        console.warn('âš ï¸ Could not save to backend:', err.message);
-                        // This is non-critical - data is safe in localStorage
+                        token = sessionStorage.getItem('token') || localStorage.getItem('token') || '';
+                    } catch (tokenErr) {
+                        console.warn('?? Could not read token from storage:', tokenErr.message);
                     }
+                    const backendRes = await fetch(API_URL + '/api/visits', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(token ? { 'Authorization': token } : {})
+                        },
+                        body: JSON.stringify(mode === 'create' ? newVisit : visits[idx])
+                    });
+                    if (backendRes.ok) {
+                        console.log('? Visit saved to backend database');
+                    } else {
+                        console.warn('?? Backend save failed:', backendRes.status);
+                    }
+                } catch (err) {
+                    console.warn('?? Could not save to backend:', err.message);
                 }
                 // Rooms are now added only by property owners in their dashboard
             } else {

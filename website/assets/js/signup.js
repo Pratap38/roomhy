@@ -97,7 +97,7 @@ lucide.createIcons();
                     }
 
                     showToast('Login successful! Redirecting...', 'success');
-                    setTimeout(() => { window.location.href = 'index.html'; }, 800);
+                    setTimeout(() => { window.location.href = '/website/index'; }, 800);
                 } catch (err) {
                     console.error('Login failed:', err);
                     showToast('Unable to login right now. Please try again.', 'error');
@@ -207,7 +207,7 @@ lucide.createIcons();
                     }
 
                     showToast(data.message || 'Account created successfully', 'success');
-                    setTimeout(() => { location.href = 'index.html'; }, 900);
+                    setTimeout(() => { location.href = '/website/index'; }, 900);
                 } catch (err) {
                     console.warn('Signup OTP verify failed:', err.message);
                     showToast(err.message || 'Unable to verify code', 'error');

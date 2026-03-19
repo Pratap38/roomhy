@@ -5,11 +5,11 @@
         // Global Logout Function
         function globalLogout() {
             if (typeof AuthUtils !== 'undefined') {
-                AuthUtils.logout('login.html');
+                AuthUtils.logout('/website/login');
             } else {
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = 'login.html';
+                window.location.href = '/website/login';
             }
         }
 

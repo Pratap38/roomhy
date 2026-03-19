@@ -682,7 +682,7 @@ lucide.createIcons();
 
             return `
                 <div class="property-card-pro h-full flex flex-col">
-                    <a href="property.html?id=${propertyId}" class="group block flex-grow">
+                    <a href="/website/property?id=${propertyId}" class="group block flex-grow">
                         <div class="property-image-wrap">
                             <img src="${img}" alt="${title}" class="w-full h-44 sm:h-52 object-cover">
                             <button class="favorite-btn absolute top-3 left-3 bg-white/95 hover:bg-red-50 text-gray-600 hover:text-red-500 p-2 rounded-full shadow-sm transition-colors" data-property-id="${rawPropertyId}" data-property='${propertyDataStr}' title="Add to favorites">
@@ -717,7 +717,7 @@ lucide.createIcons();
                     </a>
 
                     <div class="px-4 pb-4">
-                        <a href="property.html?id=${propertyId}" class="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm">
+                        <a href="/website/property?id=${propertyId}" class="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm">
                             <i data-lucide="message-square" class="w-4 h-4"></i>
                             View & Bid
                         </a>
@@ -1145,12 +1145,12 @@ lucide.createIcons();
         function globalLogout() {
             // Use AuthUtils if available, otherwise do it manually
             if (typeof AuthUtils !== 'undefined' && AuthUtils.logout) {
-                AuthUtils.logout('login.html');
+                AuthUtils.logout('/website/login');
             } else {
                 // Manual logout
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = 'signup.html';
+                window.location.href = '/website/signup';
             }
         }
         

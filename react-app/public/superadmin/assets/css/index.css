@@ -1,0 +1,51 @@
+body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #1F2937;
+            min-height: 100vh;
+        }
+        .card-light { 
+            background: #FFFFFF; 
+            border-radius: 16px; 
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid #e5e7eb;
+        }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .btn-primary { background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); cursor: pointer; }
+        .btn-primary:hover { background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%); }
+        .input-focus:focus { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+        .error-msg { color: #dc2626; font-size: 0.875rem; margin-top: 0.5rem; }
+
+        /* Mobile responsiveness for all superadmin pages */
+        @media (max-width: 768px) {
+            .html-page .flex.h-screen { height: auto; min-height: 100vh; }
+            .html-page header { padding-left: 1rem; padding-right: 1rem; }
+            .html-page main { padding: 1rem !important; }
+            .html-page .sidebar { width: 18rem; }
+            .html-page .sidebar-link { font-size: 0.85rem; padding: 0.6rem 1rem; }
+            .html-page .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+
+            /* Hide desktop sidebar on mobile, use mobile sidebar instead */
+            .html-page .sidebar.hidden.md\\:flex,
+            .html-page .sidebar:not(#mobile-sidebar) {
+                display: none !important;
+            }
+            .html-page #mobile-menu-open {
+                display: inline-flex !important;
+            }
+
+            /* Make wide tables scroll on small screens */
+            .html-page table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .html-page thead, .html-page tbody, .html-page tr { display: table; width: 100%; table-layout: auto; }
+
+            /* Generic layout guards for superadmin pages */
+            .html-page .grid[class*="grid-cols-"] { grid-template-columns: 1fr !important; }
+            .html-page .flex.items-center { flex-wrap: wrap; gap: 0.5rem; }
+            .html-page .w-72 { width: 18rem; }
+            .html-page img { max-width: 100%; height: auto; }
+            .html-page input, .html-page select, .html-page textarea, .html-page button { max-width: 100%; }
+        }

@@ -293,6 +293,9 @@ document.addEventListener("DOMContentLoaded", function() {
         // ======================================================
         // END: JAVASCRIPT TESTIMONIAL DATA
         // ======================================================
+        
+        // Expose testimonialData globally for React components
+        window.testimonialData = testimonialData;
 
         // ======================================================
         // START: `rebuildCityList` FUNCTION (Replaces the infinite slider logic)
@@ -355,7 +358,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const carouselId = `carousel-${city.name.replace(/\s+/g, '-')}`;
                 
                 return `
-                <div class="city-filter group flex flex-col items-center justify-start text-center flex-shrink-0 w-28 space-y-2 cursor-pointer" onclick="window.location.href = 'ourproperty.html?city=' + encodeURIComponent('${city.name}')">
+                <div class="city-filter group flex flex-col items-center justify-start text-center flex-shrink-0 w-28 space-y-2 cursor-pointer" onclick="window.location.href = '/website/ourproperty?city=' + encodeURIComponent('${city.name}')">
                     <div class="w-24 h-24 rounded-full relative overflow-hidden neon-border" id="${carouselId}" onmouseenter="startAreaCarousel(this);" onmouseleave="stopAreaCarousel(this);">
                         <!-- City Image (always visible initially) -->
                         <img src="${city.img || ''}" alt="Photo of ${city.name}" class="absolute inset-0 w-full h-full object-cover city-main-image transition-opacity duration-500" data-index="0">
@@ -515,7 +518,7 @@ document.addEventListener("DOMContentLoaded", function() {
             document.querySelectorAll('.city-filter h3').forEach(heading => {
                 heading.addEventListener('click', function(e) {
                     const cityName = this.textContent.trim();
-                    window.location.href = `ourproperty.html?city=${encodeURIComponent(cityName)}`;
+                    window.location.href = `/website/ourproperty?city=${encodeURIComponent(cityName)}`;
                 });
             });
         }
@@ -882,7 +885,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                     </div>
                                 </div>
 
-                                <a href="property.html?id=${space.id || ''}" class="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors mt-auto pt-2.5">
+                                <a href="/website/property?id=${space.id || ''}" class="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors mt-auto pt-2.5">
                                     View Details
                                 </a>
                             </div>
@@ -1312,6 +1315,42 @@ document.addEventListener("DOMContentLoaded", function() {
         window.addEventListener('scroll', updatePathDrawing);
         window.addEventListener('resize', setupHowItWorksPaths); // Recalculate on resize
         
+        // ======================================================
+        // EXPOSE GLOBAL FUNCTION FOR TESTIMONIALS (React)
+        // ======================================================
+        // Define buildTestimonialRow globally so React components can call it
+        window.buildTestimonialRow = function(data, containerId) {
+            const track = document.getElementById(containerId);
+            if (!track) return;
+
+            let cardsHTML = '';
+            data.forEach(item => {
+                cardsHTML += `
+                    <div class="testimonial-card">
+                        <div class="flex items-start mb-4">
+                            <img src="${item.img}" alt="${item.name}" class="w-12 h-12 rounded-full mr-4 flex-shrink-0">
+                            <div>
+                                <h4 class="font-bold text-gray-900">${item.name}</h4>
+                                <p class="text-sm text-gray-500">${item.location}</p>
+                            </div>
+                        </div>
+                        <div class="flex mb-3">
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                            <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-current"></i>
+                        </div>
+                        <p class="text-gray-600 text-base break-words whitespace-normal">${item.text}</p>
+                    </div>
+                `;
+            });
+            
+            // Duplicate the cards to create a seamless loop
+            track.innerHTML = cardsHTML + cardsHTML;
+        };
+        // ======================================================
+        
         // Initial setup for path lengths and icons
         document.addEventListener('DOMContentLoaded', () => {
             // Build the city list with hover effects
@@ -1434,12 +1473,12 @@ document.addEventListener("DOMContentLoaded", function() {
         function globalLogout() {
             // Use AuthUtils if available, otherwise do it manually
             if (typeof AuthUtils !== 'undefined' && AuthUtils.logout) {
-                AuthUtils.logout('login.html');
+                AuthUtils.logout('/website/login');
             } else {
                 // Manual logout
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = 'signup.html';
+                window.location.href = '/website/signup';
             }
         }
         
@@ -1660,7 +1699,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 e.preventDefault();
                 const searchTerm = heroSearchInput.value.trim();
                 if (searchTerm) {
-                    window.location.href = `ourproperty.html?search=${encodeURIComponent(searchTerm)}`;
+                    window.location.href = `/website/ourproperty?search=${encodeURIComponent(searchTerm)}`;
                 }
             });
 
@@ -1670,7 +1709,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     e.preventDefault();
                     const searchTerm = heroSearchInput.value.trim();
                     if (searchTerm) {
-                        window.location.href = `ourproperty.html?search=${encodeURIComponent(searchTerm)}`;
+                        window.location.href = `/website/ourproperty?search=${encodeURIComponent(searchTerm)}`;
                     }
                 }
             });

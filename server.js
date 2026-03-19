@@ -2,10 +2,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 
-dotenv.config();
+// Load root .env first, then roomhy-backend/.env (override) to ensure SMTP config is correct.
+dotenv.config({ path: path.join(__dirname, '.env') });
+dotenv.config({ path: path.join(__dirname, 'roomhy-backend', '.env'), override: true });
 
 const app = express();
 const server = http.createServer(app);
@@ -271,7 +274,6 @@ const PORT = process.env.PORT || 5001;
 
 // Fallback middleware: serve index.html for any unmatched route (SPA fallback)
 // Must come AFTER all other routes and static middleware
-const path = require('path');
 const fs = require('fs');
 
 // React app fallback - try React build first

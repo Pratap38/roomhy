@@ -1,6 +1,6 @@
 lucide.createIcons();
         const user = JSON.parse(localStorage.getItem('tenant_user') || localStorage.getItem('user') || 'null');
-        if (!user || user.role !== 'tenant') try { window.location.href = 'tenantlogin.html'; } catch(e) {}
+        if (!user || user.role !== 'tenant') try { window.location.href = '/tenant/tenantlogin'; } catch(e) {}
 
         document.addEventListener("DOMContentLoaded", function() {
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
@@ -25,6 +25,6 @@ lucide.createIcons();
                 localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
                 
                 alert("?? Onboarding Complete! Redirecting to Dashboard...");
-                window.location.href = 'tenantdashboard.html';
+                window.location.href = '/tenant/tenantdashboard';
             }
         }

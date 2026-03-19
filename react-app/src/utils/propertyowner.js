@@ -1,0 +1,247 @@
+import { fetchJson, getApiBase } from "./api";
+import { getOwnerSession } from "./ownerSession";
+
+const readJson = (key, fallback) => {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (_) {
+    return fallback;
+  }
+};
+
+const writeJson = (key, value) => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (_) {
+    // ignore
+  }
+};
+
+export const getOwnerRuntimeSession = () => {
+  const session = getOwnerSession();
+  if (session?.loginId) return session;
+  if (typeof window === "undefined") return null;
+  const loginId = new URLSearchParams(window.location.search).get("loginId");
+  return loginId ? { loginId: String(loginId).toUpperCase(), name: "Owner" } : null;
+};
+
+export const clearOwnerRuntimeSession = () => {
+  try {
+    sessionStorage.removeItem("owner_session");
+    sessionStorage.removeItem("owner_user");
+    sessionStorage.removeItem("user");
+    localStorage.removeItem("user");
+  } catch (_) {
+    // ignore
+  }
+};
+
+export const formatDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+};
+
+export const formatMoney = (value) => {
+  const amount = Number(value || 0);
+  return `Rs ${Number.isFinite(amount) ? amount : 0}`;
+};
+
+export const normalizeTenant = (tenant = {}, propertyMap = new Map()) => {
+  const propertyId = tenant.property?._id || tenant.property || tenant.propertyId;
+  const propertyObj = typeof propertyId === "string" ? propertyMap.get(String(propertyId)) : tenant.property;
+  return {
+    ...tenant,
+    key: tenant._id || tenant.id || tenant.loginId || tenant.email || Math.random().toString(36).slice(2),
+    displayName: tenant.name || tenant.fullName || "Tenant",
+    loginId: tenant.loginId || tenant.tenantLoginId || "-",
+    email: tenant.email || tenant.gmail || "-",
+    phone: tenant.phone || tenant.mobile || "-",
+    propertyObj: propertyObj || tenant.property || null,
+    propertyTitle: tenant.property?.title || propertyObj?.title || tenant.propertyName || tenant.propertyTitle || "-",
+    roomNumber: tenant.room?.number || tenant.roomNo || tenant.roomNumber || "-",
+    rent: tenant.rentAmount || tenant.rent || tenant.roomRent || "-",
+    status: tenant.status || (tenant.moveOutDate ? "moved out" : "active"),
+    moveInDate: tenant.moveInDate || tenant.createdAt || null,
+    moveOutDate: tenant.moveOutDate || null,
+    locationCode: tenant.locationCode || propertyObj?.locationCode || tenant.area || "-",
+    kycStatus: tenant.kycStatus || tenant.kycVerificationStatus || "pending"
+  };
+};
+
+export const normalizeBooking = (item = {}) => ({
+  ...item,
+  key: item._id || item.id || item.bookingId || item.user_id || Math.random().toString(36).slice(2),
+  propertyId: item.property_id || item.propertyId || item.property?._id || "-",
+  propertyName: item.property_name || item.propertyName || item.property?.title || "-",
+  ownerName: item.owner_name || item.ownerName || item.owner || "-",
+  area: item.area || item.property?.area || item.locationCode || "-",
+  type: item.request_type || item.type || item.propertyType || "-",
+  rent: item.rent || item.rentAmount || item.price || "-",
+  userId: item.user_id || item.userId || item.signup_user_id || "-",
+  userName: item.name || item.tenantName || item.fullName || "-",
+  phone: item.phone || item.mobile || "-",
+  email: item.email || "-",
+  status: item.status || "pending"
+});
+
+export const normalizeBid = (item = {}) => ({
+  ...item,
+  key: item._id || item.id || item.bidId || Math.random().toString(36).slice(2),
+  bidId: item.bidId || item._id || item.id || "-",
+  propertyId: item.property_id || item.propertyId || "-",
+  propertyName: item.property_name || item.propertyName || "-",
+  ownerName: item.owner_name || item.ownerName || "-",
+  fullName: item.fullName || item.name || "-",
+  email: item.gmail || item.email || "-",
+  gender: item.gender || "-",
+  city: item.city || "-",
+  area: item.area || "-",
+  minPrice: item.minPrice || "-",
+  maxPrice: item.maxPrice || "-",
+  propertyType: item.propertyType || "-",
+  budgetRange: item.budgetRange || ((item.minPrice || item.maxPrice) ? `${item.minPrice || "-"} - ${item.maxPrice || "-"}` : "-"),
+  status: item.status || "pending",
+  submittedAt: item.createdAt || item.submittedAt || null
+});
+
+export const downloadCsv = (filename, rows) => {
+  if (typeof window === "undefined" || !rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const escapeCell = (value) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`;
+  const csv = [headers.join(","), ...rows.map((row) => headers.map((header) => escapeCell(row[header])).join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+export const fetchOwnerProperties = async (loginId) => {
+  const response = await fetchJson(`/api/owners/${encodeURIComponent(loginId)}/properties`);
+  const properties = response?.properties || [];
+  writeJson("roomhy_properties", properties);
+  return properties;
+};
+
+export const fetchOwnerRooms = async (loginId) => {
+  const response = await fetchJson(`/api/owners/${encodeURIComponent(loginId)}/rooms`);
+  const rooms = response?.rooms || [];
+  if (rooms.length) {
+    writeJson("roomhy_rooms", rooms);
+  }
+  return { rooms, properties: response?.properties || [] };
+};
+
+export const fetchOwnerTenants = async (loginId) => {
+  try {
+    const response = await fetchJson("/api/tenants");
+    const tenants = (Array.isArray(response) ? response : response?.tenants || response?.data || []).filter((tenant) => {
+      const ownerLogin =
+        tenant.property?.ownerLoginId ||
+        tenant.ownerLoginId ||
+        tenant.property?.owner ||
+        tenant.owner;
+      return ownerLogin ? String(ownerLogin).toUpperCase() === String(loginId).toUpperCase() : false;
+    });
+    writeJson("roomhy_tenants", tenants);
+    return tenants;
+  } catch (_) {
+    try {
+      const response = await fetchJson(`/api/tenants/owner/${encodeURIComponent(loginId)}`);
+      const tenants = Array.isArray(response) ? response : response?.tenants || response?.data || [];
+      writeJson("roomhy_tenants", tenants);
+      return tenants;
+    } catch (_) {
+      const response = await fetchJson(`/api/owners/${encodeURIComponent(loginId)}/tenants`);
+      const tenants = response?.tenants || [];
+      writeJson("roomhy_tenants", tenants);
+      return tenants;
+    }
+  }
+};
+
+export const fetchAllTenants = async () => {
+  const response = await fetchJson("/api/tenants");
+  const tenants = Array.isArray(response) ? response : response?.tenants || response?.data || [];
+  writeJson("roomhy_tenants", tenants);
+  return tenants;
+};
+
+export const fetchPropertyMap = async () => {
+  try {
+    const response = await fetchJson("/api/properties");
+    const properties = Array.isArray(response) ? response : response?.properties || response?.data || [];
+    writeJson("roomhy_properties", properties);
+    return new Map(properties.map((item) => [String(item._id || item.id), item]));
+  } catch (_) {
+    const properties = readJson("roomhy_properties", []);
+    return new Map(properties.map((item) => [String(item._id || item.id), item]));
+  }
+};
+
+export const createRoom = async (payload) => {
+  const response = await fetchJson("/api/rooms", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+  return response?.room || response?.data || response;
+};
+
+export const assignTenant = async (payload) => fetchJson("/api/tenants/assign", {
+  method: "POST",
+  body: JSON.stringify(payload)
+});
+
+export const deleteTenantRecord = async (id) => fetchJson(`/api/tenants/${encodeURIComponent(id)}`, {
+  method: "DELETE"
+});
+
+export const updateBookingDecision = async (bookingId, action) => {
+  const endpoint = action === "approve" ? "approve" : "reject";
+  return fetchJson(`/api/bookings/requests/${encodeURIComponent(bookingId)}/${endpoint}`, { method: "PUT" });
+};
+
+export const fetchBookingRequestsForOwner = async (ownerId) => {
+  const response = await fetchJson(`/api/bookings/requests?owner_id=${encodeURIComponent(ownerId)}`);
+  return Array.isArray(response) ? response : response?.requests || response?.data || [];
+};
+
+export const fetchBids = async () => {
+  try {
+    const response = await fetchJson("/api/bids");
+    return Array.isArray(response) ? response : response?.data || [];
+  } catch (_) {
+    return [];
+  }
+};
+
+export const createOwnerChatRoom = async ({ bookingId, userName, userEmail, ownerId }) =>
+  fetchJson("/api/chat/create", {
+    method: "POST",
+    body: JSON.stringify({ bookingId, userName, userEmail, ownerId })
+  });
+
+export const fetchConversation = async (ownerId, userId) =>
+  fetchJson(`/api/chat/conversation?user1=${encodeURIComponent(ownerId)}&user2=${encodeURIComponent(userId)}`);
+
+export const buildBookingFormLink = (booking) => {
+  const base = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+  const params = new URLSearchParams({
+    bookingId: booking._id || booking.id || "",
+    userId: booking.user_id || booking.userId || booking.signup_user_id || "",
+    ownerId: booking.ownerId || booking.ownerLoginId || "",
+    propertyId: booking.property_id || booking.propertyId || "",
+    propertyName: booking.property_name || booking.propertyName || ""
+  });
+  return `${base}/propertyowner/booking-form?${params.toString()}`;
+};
+
+export const getSocketUrl = () => getApiBase();

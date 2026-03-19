@@ -24,6 +24,22 @@ router.get('/', async (req, res) => {
     }
 });
 
+// 1b. Get tenants by owner loginId
+router.get('/owner/:ownerId', async (req, res) => {
+    try {
+        const ownerId = String(req.params.ownerId || '').trim().toUpperCase();
+        const properties = await Property.find({ ownerLoginId: ownerId }).select('_id');
+        const propertyIds = properties.map((property) => property._id);
+        const tenants = await Tenant.find({ property: { $in: propertyIds } })
+            .populate('property', 'title roomType locationCode owner ownerLoginId')
+            .populate('room', 'number type rent')
+            .lean();
+        res.json({ tenants });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // 2. Get tenant by ID
 router.get('/:id', async (req, res) => {
     try {

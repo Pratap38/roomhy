@@ -554,7 +554,7 @@ exports.approveBooking = async (req, res) => {
                     message: `Your booking for ${propertyName} has been accepted`,
                     type: 'booking_accept',
                     relatedId: request._id,
-                    actionUrl: 'mystays.html'
+                    actionUrl: '/website/mystays'
                 })
             }).catch(err => console.log('Notification API call failed:', err.message));
         } catch (emailErr) {

@@ -2,26 +2,33 @@ const https = require('https');
 const nodemailer = require('nodemailer');
 
 function getMailerConfig() {
+    // Use Gmail SMTP only (Nodemailer)
     return {
-        mailjetApiKey: process.env.MAILJET_API_KEY || process.env.MJ_APIKEY_PUBLIC || '',
-        mailjetSecretKey: process.env.MAILJET_SECRET_KEY || process.env.MJ_APIKEY_PRIVATE || '',
-        mailjetEndpoint: process.env.MAILJET_ENDPOINT || 'https://api.mailjet.com/v3.1/send',
-        fromEmail: process.env.MAILJET_FROM_EMAIL || process.env.FROM_EMAIL || 'no-reply@roomhy.com',
-        fromName: process.env.MAILJET_FROM_NAME || process.env.FROM_NAME || 'RoomHy',
-        smtpHost: process.env.SMTP_HOST || '',
+        fromEmail: process.env.FROM_EMAIL || 'no-reply@roomhy.com',
+        fromName: process.env.FROM_NAME || 'RoomHy',
+        smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
         smtpPort: Number(process.env.SMTP_PORT || 587),
         smtpSecure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
-        smtpUser: process.env.SMTP_USER || '',
-        smtpPass: process.env.SMTP_PASS || ''
+        smtpUser: (process.env.SMTP_USER || '').trim(),
+        smtpPass: (process.env.SMTP_PASS || '').replace(/\s+/g, ''),
+        smtpDebug: true,
+        smtpTlsRejectUnauthorized: false,
+        smtpConnectionTimeout: 30000,
+        smtpGreetingTimeout: 30000,
+        smtpSocketTimeout: 30000,
+        whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
+        whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+        whatsappApiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
+        whatsappDefaultCountryCode: process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || '91'
     };
-}
-
-function isMailjetConfigured(cfg) {
-    return Boolean(cfg.mailjetApiKey && cfg.mailjetSecretKey);
 }
 
 function isSmtpConfigured(cfg) {
     return Boolean(cfg.smtpHost && cfg.smtpUser && cfg.smtpPass);
+}
+
+function isWhatsAppConfigured(cfg) {
+    return Boolean(cfg.whatsappAccessToken && cfg.whatsappPhoneNumberId);
 }
 
 function normalizeRecipients(to) {
@@ -74,6 +81,141 @@ function postJson(urlString, body, headers = {}) {
     });
 }
 
+function normalizePhoneNumber(rawPhone, defaultCountryCode = '91') {
+    if (!rawPhone) return '';
+    const cleaned = String(rawPhone).trim().replace(/[^0-9+]/g, '');
+    const digitsOnly = cleaned.replace(/\D/g, '');
+    if (!digitsOnly) return '';
+
+    if (digitsOnly.length === 10) {
+        return `${defaultCountryCode}${digitsOnly}`;
+    }
+
+    if (digitsOnly.length === 11 && digitsOnly.startsWith('0')) {
+        return `${defaultCountryCode}${digitsOnly.slice(1)}`;
+    }
+
+    if (digitsOnly.length >= 11 && digitsOnly.length <= 15) {
+        return digitsOnly;
+    }
+
+    return '';
+}
+
+function stripHtmlTags(html) {
+    return String(html || '')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\r/g, '')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
+function buildWhatsAppMessage(subject, text, html) {
+    const plain = String(text || '').trim() || stripHtmlTags(html);
+    const heading = String(subject || 'RoomHy Notification').trim();
+    const body = plain ? `${heading}\n\n${plain}` : heading;
+    return body.slice(0, 3900);
+}
+
+async function resolvePhoneByEmail(email) {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!normalizedEmail) return '';
+
+    try {
+        const User = require('../models/user');
+        const userDoc = await User.findOne({ email: normalizedEmail }).select('phone').lean();
+        if (userDoc && userDoc.phone) return userDoc.phone;
+    } catch (_) {}
+
+    try {
+        const Tenant = require('../models/Tenant');
+        const tenantDoc = await Tenant.findOne({ email: normalizedEmail }).select('phone').lean();
+        if (tenantDoc && tenantDoc.phone) return tenantDoc.phone;
+    } catch (_) {}
+
+    try {
+        const Owner = require('../models/Owner');
+        const ownerDoc = await Owner.findOne({
+            $or: [{ email: normalizedEmail }, { 'profile.email': normalizedEmail }]
+        }).select('phone profile.phone').lean();
+        if (ownerDoc) {
+            return ownerDoc.phone || (ownerDoc.profile && ownerDoc.profile.phone) || '';
+        }
+    } catch (_) {}
+
+    try {
+        const AreaManager = require('../models/AreaManager');
+        const managerDoc = await AreaManager.findOne({ email: normalizedEmail }).select('phone').lean();
+        if (managerDoc && managerDoc.phone) return managerDoc.phone;
+    } catch (_) {}
+
+    return '';
+}
+
+async function sendWhatsAppMessage(toPhone, body, cfg) {
+    if (!toPhone || !body) return false;
+
+    const endpoint = `https://graph.facebook.com/${cfg.whatsappApiVersion}/${cfg.whatsappPhoneNumberId}/messages`;
+    const payload = {
+        messaging_product: 'whatsapp',
+        to: toPhone,
+        type: 'text',
+        text: {
+            preview_url: false,
+            body
+        }
+    };
+
+    const response = await postJson(endpoint, payload, {
+        Authorization: `Bearer ${cfg.whatsappAccessToken}`
+    });
+
+    if (response.status >= 200 && response.status < 300) {
+        console.log('WhatsApp sent to', toPhone);
+        return true;
+    }
+
+    console.warn('WhatsApp send failed:', response.status, response.body);
+    return false;
+}
+
+async function sendWhatsAppByEmailRecipients(recipients, subject, text, html, cfg) {
+    if (!isWhatsAppConfigured(cfg) || !Array.isArray(recipients) || !recipients.length) {
+        return 0;
+    }
+
+    const message = buildWhatsAppMessage(subject, text, html);
+    const deliveredPhones = new Set();
+
+    for (const recipient of recipients) {
+        const email = recipient && recipient.Email ? recipient.Email : '';
+        if (!email) continue;
+
+        try {
+            const resolvedPhone = await resolvePhoneByEmail(email);
+            const toPhone = normalizePhoneNumber(resolvedPhone, cfg.whatsappDefaultCountryCode);
+            if (!toPhone || deliveredPhones.has(toPhone)) continue;
+
+            const delivered = await sendWhatsAppMessage(toPhone, message, cfg);
+            if (delivered) deliveredPhones.add(toPhone);
+        } catch (err) {
+            console.warn('WhatsApp dispatch error for recipient', email, '-', err && err.message);
+        }
+    }
+
+    return deliveredPhones.size;
+}
+
 async function sendMail(to, subject, text, html) {
     const cfg = getMailerConfig();
     const recipients = normalizeRecipients(to);
@@ -81,18 +223,26 @@ async function sendMail(to, subject, text, html) {
         console.warn('sendMail skipped: no valid recipients');
         return false;
     }
+    let emailSent = false;
 
-    // Prefer SMTP when configured (stable for your current setup), then fallback to Mailjet.
-    if (isSmtpConfigured(cfg)) {
+    // SMTP (Nodemailer) only.
+    if (!emailSent && isSmtpConfigured(cfg)) {
         try {
             const transporter = nodemailer.createTransport({
                 host: cfg.smtpHost,
                 port: cfg.smtpPort,
                 secure: cfg.smtpSecure,
+                connectionTimeout: cfg.smtpConnectionTimeout,
+                greetingTimeout: cfg.smtpGreetingTimeout,
+                socketTimeout: cfg.smtpSocketTimeout,
+                tls: {
+                    rejectUnauthorized: cfg.smtpTlsRejectUnauthorized
+                },
                 auth: {
                     user: cfg.smtpUser,
                     pass: cfg.smtpPass
-                }
+                },
+                debug: cfg.smtpDebug
             });
 
             await transporter.sendMail({
@@ -104,54 +254,94 @@ async function sendMail(to, subject, text, html) {
             });
 
             console.log('Email sent via SMTP to', recipients.map((x) => x.Email).join(', '), 'subject:', subject);
-            return true;
+            emailSent = true;
         } catch (err) {
             console.error('Failed sending email via SMTP:', err && err.message);
         }
     }
 
-    if (isMailjetConfigured(cfg)) {
-        try {
-            const auth = Buffer.from(`${cfg.mailjetApiKey}:${cfg.mailjetSecretKey}`).toString('base64');
-            const payload = {
-                Messages: [
-                    {
-                        From: { Email: cfg.fromEmail, Name: cfg.fromName },
-                        To: recipients,
-                        Subject: subject || 'RoomHy Notification',
-                        TextPart: text || '',
-                        HTMLPart: html || ''
-                    }
-                ]
-            };
-
-            const response = await postJson(cfg.mailjetEndpoint, payload, {
-                Authorization: `Basic ${auth}`
-            });
-
-            if (response.status >= 200 && response.status < 300) {
-                console.log('Email sent via Mailjet to', recipients.map((x) => x.Email).join(', '), 'subject:', subject);
-                return true;
-            }
-
-            console.error('Mailjet send failed:', response.status, response.body);
-        } catch (err) {
-            console.error('Failed sending email via Mailjet:', err && err.message);
-        }
+    // WhatsApp copy for the same recipient (resolved by email -> phone), if configured.
+    let whatsappSent = false;
+    try {
+        const whatsappDeliveredCount = await sendWhatsAppByEmailRecipients(recipients, subject, text, html, cfg);
+        whatsappSent = whatsappDeliveredCount > 0;
+    } catch (err) {
+        console.warn('WhatsApp notification copy failed:', err && err.message);
     }
 
-    console.warn('sendMail skipped: no mail provider configured (set Mailjet or SMTP env values)');
-    return false;
+    if (!emailSent && !isSmtpConfigured(cfg)) {
+        console.warn('sendMail skipped: no SMTP mail provider configured (set SMTP env values)');
+    }
+
+    return emailSent || whatsappSent;
 }
 
 function credentialsHtml(loginId, password, role = 'Account') {
-    return `<div style="font-family: Arial, Helvetica, sans-serif; font-size:14px; color:#111">
-        <h3>${role} Credentials</h3>
-        <p>Your account has been created. Use the credentials below to login:</p>
-        <p><strong>Login ID:</strong> ${loginId}</p>
-        <p><strong>Password:</strong> ${password}</p>
-        <p style="font-size:12px;color:#666">You can change your password after first login. If you did not request this, ignore.</p>
-    </div>`;
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoomHy Login Credentials</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; }
+        .container { max-width: 500px; margin: 40px auto; padding: 20px; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; }
+        .header h1 { margin: 0; color: white; font-size: 28px; font-weight: 600; }
+        .header p { margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 14px; }
+        .content { padding: 30px; }
+        .greeting { color: #333; font-size: 16px; margin-bottom: 20px; }
+        .credential-card { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%); border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #667eea; }
+        .credential-item { margin: 15px 0; }
+        .credential-label { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .credential-value { color: #333; font-size: 18px; font-weight: 600; background: white; padding: 10px 15px; border-radius: 8px; display: inline-block; }
+        .copy-hint { color: #999; font-size: 11px; margin-top: 4px; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee; }
+        .footer p { margin: 0; color: #999; font-size: 12px; }
+        .warning { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin-top: 20px; font-size: 13px; color: #856404; }
+        .btn { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; margin-top: 20px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>🏠 RoomHy</h1>
+                <p>Your Account Has Been Created</p>
+            </div>
+            <div class="content">
+                <p class="greeting">Hello! Your <strong>${role}</strong> account has been created successfully. Here are your login credentials:</p>
+                
+                <div class="credential-card">
+                    <div class="credential-item">
+                        <div class="credential-label">Login ID / Username</div>
+                        <div class="credential-value">${loginId}</div>
+                        <div class="copy-hint">Use this to login to RoomHy</div>
+                    </div>
+                    <div class="credential-item">
+                        <div class="credential-label">Password</div>
+                        <div class="credential-value">${password}</div>
+                        <div class="copy-hint">Keep this secure</div>
+                    </div>
+                </div>
+                
+                <div class="warning">
+                    ⚠️ <strong>Important:</strong> Please change your password after first login for security.
+                </div>
+                
+                <div style="text-align: center;">
+                    <a href="https://admin.roomhy.com" class="btn">Login to RoomHy</a>
+                </div>
+            </div>
+            <div class="footer">
+                <p>© 2025 RoomHy. All rights reserved.</p>
+                <p>Need help? Contact us at support@roomhy.com</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
 }
 
 async function sendCredentials(toEmail, loginId, password, role = 'Account') {

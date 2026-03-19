@@ -20,7 +20,7 @@ async function sendBookingAcceptanceEmail(userEmail, userName, propertyName, own
                 
                 <p>You can now view your booking details and communicate with the owner through our chat feature.</p>
                 <p>
-                    <a href="https://roomhy.com/website/mystays.html" style="background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    <a href="https://roomhy.com/website/mystays" style="background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
                         View Your Booking
                     </a>
                 </p>
@@ -60,7 +60,7 @@ async function sendNewChatNotificationEmail(userEmail, userName, senderName, mes
                 
                 <p>Reply now to continue the conversation!</p>
                 <p>
-                    <a href="https://roomhy.com/website/websitechat.html" style="background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    <a href="https://roomhy.com/website/websitechat" style="background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
                         View Chat
                     </a>
                 </p>

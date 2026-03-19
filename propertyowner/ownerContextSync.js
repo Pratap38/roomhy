@@ -370,8 +370,13 @@
       const href = a.getAttribute('href') || '';
       if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('javascript:')) return;
       try {
-        const u = new URL(href, window.location.origin + window.location.pathname);
+        const base = href.startsWith('/') ? window.location.origin : window.location.origin + window.location.pathname;
+        const u = new URL(href, base);
         if (!u.searchParams.get('loginId')) u.searchParams.set('loginId', loginId);
+        if (href.startsWith('/')) {
+          a.setAttribute('href', `${u.pathname}${u.search}${u.hash || ''}`);
+          return;
+        }
         a.setAttribute('href', `${u.pathname.split('/').pop()}${u.search}${u.hash || ''}`);
       } catch (_) {}
     });
@@ -437,4 +442,3 @@
 
   syncOwnerContext();
 })();
-

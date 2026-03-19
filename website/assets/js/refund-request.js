@@ -214,20 +214,20 @@ let currentBooking = null;
                     console.log('✅ Request submitted to API:', result);
                     showNotification('Request submitted successfully!', 'success');
                     setTimeout(() => {
-                        window.location.href = 'mystays.html';
+                        window.location.href = '/website/mystays';
                     }, 2000);
                 } else {
                     console.warn('API submission returned status:', response.status);
                     showNotification('Request saved locally. Our team will review it soon!', 'success');
                     setTimeout(() => {
-                        window.location.href = 'mystays.html';
+                        window.location.href = '/website/mystays';
                     }, 2000);
                 }
             } catch (apiError) {
                 console.warn('API request failed, data saved locally:', apiError.message);
                 showNotification('Request saved locally. Our team will review it soon!', 'success');
                 setTimeout(() => {
-                    window.location.href = 'mystays.html';
+                    window.location.href = '/website/mystays';
                 }, 2000);
             }
 
@@ -252,7 +252,7 @@ let currentBooking = null;
 
     // Go back to My Stays
     function goBackToMyStays() {
-        window.location.href = 'mystays.html';
+        window.location.href = '/website/mystays';
     }
 
     // Logout
@@ -263,7 +263,7 @@ let currentBooking = null;
             localStorage.removeItem('bookingConfirmation');
             sessionStorage.removeItem('bookingConfirmation');
             localStorage.removeItem('lastBooking');
-            window.location.href = 'index.html';
+            window.location.href = '/website/index';
         }
     }
 

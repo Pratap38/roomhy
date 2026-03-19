@@ -1,0 +1,13 @@
+* { font-family: 'Inter', sans-serif; }
+        body { background-color: #f9fafb; color: #1f2937; }
+        .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%); color: white; font-weight: 600; transition: all 0.3s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(59,130,246,0.4); }
+        .btn-secondary { background: white; border: 2px solid #3b82f6; color: #3b82f6; font-weight: 600; }
+        .btn-secondary:hover { background: #eff6ff; }
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-info { background: #dbeafe; color: #0c3a6e; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .locked-state { opacity: 0.5; pointer-events: none; }

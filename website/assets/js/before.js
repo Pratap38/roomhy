@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function() {
             
             if (isLoggedIn) {
                 // User is logged in, redirect to index.html
-                window.location.href = 'index.html';
+                window.location.href = '/website/index';
             } else {
                 // User is not logged in, show signup modal
                 showSignupModal(cityName);
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 // Update button click handler
                 redirectBtn.onclick = function() {
-                    window.location.href = 'signup.html';
+                    window.location.href = '/website/signup';
                 };
             }
         }
@@ -511,7 +511,7 @@ document.addEventListener("DOMContentLoaded", function() {
             document.querySelectorAll('.city-filter h3').forEach(heading => {
                 heading.addEventListener('click', function(e) {
                     const cityName = this.textContent.trim();
-                    window.location.href = `ourproperty.html?city=${encodeURIComponent(cityName)}`;
+                    window.location.href = `/website/ourproperty?city=${encodeURIComponent(cityName)}`;
                 });
             });
         }
@@ -878,7 +878,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                     </div>
                                 </div>
 
-                                <a href="property.html?id=${space.id || ''}" class="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors mt-auto pt-2.5">
+                                <a href="/website/property?id=${space.id || ''}" class="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors mt-auto pt-2.5">
                                     View Details
                                 </a>
                             </div>
@@ -1551,7 +1551,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 e.preventDefault();
                 const searchTerm = heroSearchInput.value.trim();
                 if (searchTerm) {
-                    window.location.href = `ourproperty.html?search=${encodeURIComponent(searchTerm)}`;
+                    window.location.href = `/website/ourproperty?search=${encodeURIComponent(searchTerm)}`;
                 }
             });
 
@@ -1561,7 +1561,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     e.preventDefault();
                     const searchTerm = heroSearchInput.value.trim();
                     if (searchTerm) {
-                        window.location.href = `ourproperty.html?search=${encodeURIComponent(searchTerm)}`;
+                        window.location.href = `/website/ourproperty?search=${encodeURIComponent(searchTerm)}`;
                     }
                 }
             });

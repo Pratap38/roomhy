@@ -19,7 +19,7 @@ let userEmailForSignup = '';
         function redirectToSignup() {
             const email = userEmailForSignup;
             const returnUrl = window.location.href;
-            window.location.href = './signup.html?email=' + encodeURIComponent(email) + '&return=' + encodeURIComponent(returnUrl);
+            window.location.href = '/website/signup?email=' + encodeURIComponent(email) + '&return=' + encodeURIComponent(returnUrl);
         }
 
         // Continue as guest

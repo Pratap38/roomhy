@@ -19,3 +19,32 @@ body {
         .btn-primary:hover { background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%); }
         .input-focus:focus { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
         .error-msg { color: #dc2626; font-size: 0.875rem; margin-top: 0.5rem; }
+
+        /* Mobile responsiveness for all superadmin pages */
+        @media (max-width: 768px) {
+            .flex.h-screen { height: auto; min-height: 100vh; }
+            header { padding-left: 1rem; padding-right: 1rem; }
+            main { padding: 1rem !important; }
+            .sidebar { width: 18rem; }
+            .sidebar-link { font-size: 0.85rem; padding: 0.6rem 1rem; }
+            .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+            /* Hide desktop sidebar on mobile, use mobile sidebar instead */
+            .sidebar.hidden.md\\:flex,
+            .sidebar:not(#mobile-sidebar) {
+                display: none !important;
+            }
+            #mobile-menu-open {
+                display: inline-flex !important;
+            }
+
+            /* Make wide tables scroll on small screens */
+            table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            thead, tbody, tr { display: table; width: 100%; table-layout: auto; }
+
+            /* Generic layout guards for superadmin pages */
+            .grid[class*="grid-cols-"] { grid-template-columns: 1fr !important; }
+            .flex.items-center { flex-wrap: wrap; gap: 0.5rem; }
+            .w-72 { width: 18rem; }
+            img { max-width: 100%; height: auto; }
+            input, select, textarea, button { max-width: 100%; }
+        }

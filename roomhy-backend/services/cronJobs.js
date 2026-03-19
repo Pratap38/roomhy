@@ -138,6 +138,20 @@ const autoReminderSchedule = cron.schedule('30 10 * * *', async () => {
 // Send rent reminder email
 async function sendRentReminderEmail(rent) {
     try {
+        const appBaseUrl = (process.env.APP_BASE_URL || 'https://app.roomhy.com').replace(/\/$/, '');
+        const dashboardUrl = `${appBaseUrl}/tenant/tenantdashboard`;
+        const onlinePayUrl = `${dashboardUrl}?pay=online`;
+        const cashPayUrl = `${dashboardUrl}?pay=cash`;
+        const text = [
+            `Hi ${rent.tenantName || 'Tenant'},`,
+            `Rent due reminder for ${rent.propertyName || 'your property'}.`,
+            `Amount: INR ${Number(rent.rentAmount || 0)}`,
+            `Due: 15th of ${rent.collectionMonth || 'this month'}`,
+            '',
+            'Payment options:',
+            `1) Online (Razorpay): ${onlinePayUrl}`,
+            `2) Cash + OTP flow: ${cashPayUrl}`
+        ].join('\n');
         const mailOptions = {
                         to: rent.tenantEmail,
                         subject: `🔔 Rent Due Reminder - ${rent.propertyName}`,
@@ -177,11 +191,14 @@ async function sendRentReminderEmail(rent) {
                                 <strong>Important:</strong> Please complete your payment by 15th to avoid late fees.
                             </div>
                             
-                            <p>You can pay online using multiple methods including cards, UPI, and e-wallets.</p>
-                            
+                            <p>Choose a payment method below:</p>
                             <center>
-                                <a href="https://app.roomhy.com/tenant/tenantdashboard.html" class="button">Pay Now</a>
+                                <a href="${onlinePayUrl}" class="button" style="margin-right: 8px;">Pay Online (Razorpay)</a>
+                                <a href="${cashPayUrl}" class="button" style="background-color:#16a34a;">Pay by Cash</a>
                             </center>
+                            <p style="font-size: 13px; color:#555;">
+                                Cash flow: request cash in dashboard, owner marks received, then verify OTP.
+                            </p>
                             
                             <p>If you have already made the payment, please disregard this message.</p>
                             
@@ -196,7 +213,7 @@ async function sendRentReminderEmail(rent) {
             `
         };
 
-        await sendMail(mailOptions.to, mailOptions.subject, '', mailOptions.html);
+        await sendMail(mailOptions.to, mailOptions.subject, text, mailOptions.html);
         console.log('✅ Rent reminder email sent to', rent.tenantEmail);
         return true;
     } catch (err) {
@@ -211,6 +228,19 @@ async function sendDelayedReminderEmail(rent, reminderNumber = 1) {
         const urgencyLevels = ['', 'URGENT', 'VERY URGENT', 'FINAL NOTICE'];
         const urgency = urgencyLevels[reminderNumber] || 'FINAL NOTICE';
         const daysOverdue = Math.floor((new Date() - new Date(rent.overdueStartDate)) / (1000 * 60 * 60 * 24));
+        const appBaseUrl = (process.env.APP_BASE_URL || 'https://app.roomhy.com').replace(/\/$/, '');
+        const dashboardUrl = `${appBaseUrl}/tenant/tenantdashboard`;
+        const onlinePayUrl = `${dashboardUrl}?pay=online`;
+        const cashPayUrl = `${dashboardUrl}?pay=cash`;
+        const text = [
+            `${urgency} - Overdue rent payment`,
+            `Property: ${rent.propertyName || '-'}`,
+            `Outstanding: INR ${Number((rent.totalDue || 0) - (rent.paidAmount || 0))}`,
+            `Days overdue: ${daysOverdue}`,
+            '',
+            `Pay online: ${onlinePayUrl}`,
+            `Pay by cash: ${cashPayUrl}`
+        ].join('\n');
         
         const mailOptions = {
                         to: rent.tenantEmail,
@@ -267,7 +297,8 @@ async function sendDelayedReminderEmail(rent, reminderNumber = 1) {
                             </ul>
                             
                             <center>
-                                <a href="https://app.roomhy.com/tenant/tenantdashboard.html" class="button">Pay Immediately</a>
+                                <a href="${onlinePayUrl}" class="button" style="margin-right:8px;">Pay Online (Razorpay)</a>
+                                <a href="${cashPayUrl}" class="button" style="background-color:#16a34a;">Pay by Cash</a>
                             </center>
                             
                             <p style="margin-top: 20px; color: #6b7280;"><strong>Need help?</strong> Contact your property manager immediately.</p>
@@ -283,7 +314,7 @@ async function sendDelayedReminderEmail(rent, reminderNumber = 1) {
             `
         };
 
-        await sendMail(mailOptions.to, mailOptions.subject, '', mailOptions.html);
+        await sendMail(mailOptions.to, mailOptions.subject, text, mailOptions.html);
         console.log(`✅ Delayed payment reminder #${reminderNumber} sent to`, rent.tenantEmail);
         return true;
     } catch (err) {

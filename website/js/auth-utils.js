@@ -173,7 +173,7 @@ function getUserRole() {
  * @param {boolean} showModal - Show session modal instead of redirect
  * @param {string} modalId - ID of modal element to show
  */
-function requireAuth(loginPage = 'login.html', showModal = false, modalId = null) {
+function requireAuth(loginPage = '/website/login', showModal = false, modalId = null) {
     if (!isLoggedIn()) {
         if (showModal && modalId) {
             const modal = document.getElementById(modalId);
@@ -220,7 +220,7 @@ async function validateToken() {
     }
 }
 
-async function ensureValidSession(redirectPage = 'signup.html') {
+async function ensureValidSession(redirectPage = '/website/signup') {
     const result = await validateToken();
     if (result.valid) return true;
     window.location.href = redirectPage;
@@ -270,10 +270,10 @@ function showAuthPromptModal(message = 'Please login or signup to continue.') {
         document.body.appendChild(overlay);
 
         document.getElementById('roomhy-auth-login-btn')?.addEventListener('click', () => {
-            window.location.href = 'login.html';
+            window.location.href = '/website/login';
         });
         document.getElementById('roomhy-auth-signup-btn')?.addEventListener('click', () => {
-            window.location.href = 'signup.html';
+            window.location.href = '/website/signup';
         });
         document.getElementById('roomhy-auth-close-btn')?.addEventListener('click', () => {
             overlay.remove();
@@ -298,7 +298,7 @@ async function ensureValidSessionOrPrompt(message = 'Please login or signup to c
  * @param {string} redirectPage - URL to redirect after logout (relative to website folder)
  * @param {Function} callback - Optional callback before redirect
  */
-function logout(redirectPage = 'login.html', callback = null) {
+function logout(redirectPage = '/website/login', callback = null) {
     // Clear all session data from localStorage
     clearWebsiteSession();
     localStorage.removeItem('USER_KEY');
@@ -369,7 +369,7 @@ function updateSidebarUserInfo(options = {}) {
  */
 function initAuth(config = {}) {
     const {
-        loginPage = 'login.html',
+        loginPage = '/website/login',
         requireAuth: shouldRequire = true,
         userIdDisplaySelector = '.user-id-display'
     } = config;
@@ -413,7 +413,7 @@ if (typeof window !== 'undefined') {
     // Show centered login/signup prompt on protected website pages (no redirect)
     (function autoPromptOnPageLoad() {
         const currentPage = (window.location.pathname.split('/').pop() || '').toLowerCase();
-        const publicPages = new Set(['signup.html', 'login.html']);
+        const publicPages = new Set(['/website/signup', '/website/login', 'signup.html', 'login.html']);
         if (publicPages.has(currentPage)) return;
 
         document.addEventListener('DOMContentLoaded', async () => {

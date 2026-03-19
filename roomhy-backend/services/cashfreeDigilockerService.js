@@ -4,6 +4,18 @@ function getBaseUrl() {
     return env === 'production' ? 'https://api.cashfree.com' : 'https://sandbox.cashfree.com';
 }
 
+function isBypassEnabled() {
+    return String(process.env.CASHFREE_DIGILOCKER_BYPASS || '').toLowerCase() === 'true';
+}
+
+function buildMockVerifyUrl(redirectUrl, verificationId) {
+    const url = new URL(String(redirectUrl || 'http://localhost:5173/digital-checkin/ownerprofile'));
+    url.searchParams.set('verification_id', verificationId);
+    url.searchParams.set('reference_id', verificationId);
+    url.searchParams.set('mock_digilocker', '1');
+    return url.toString();
+}
+
 function getHeaders() {
     const clientId = process.env.CASHFREE_CLIENT_ID;
     const clientSecret = process.env.CASHFREE_CLIENT_SECRET;
@@ -52,6 +64,16 @@ async function callJson(method, path, { body, query } = {}) {
 }
 
 async function verifyDigilockerAccount({ verificationId, mobileNumber, aadhaarNumber }) {
+    if (isBypassEnabled()) {
+        return {
+            success: true,
+            mock: true,
+            account_exists: false,
+            verification_id: verificationId,
+            mobile_number: mobileNumber || '',
+            aadhaar_number: aadhaarNumber || ''
+        };
+    }
     return callJson('POST', '/verification/digilocker/verify-account', {
         body: {
             verification_id: verificationId,
@@ -62,6 +84,20 @@ async function verifyDigilockerAccount({ verificationId, mobileNumber, aadhaarNu
 }
 
 async function createDigilockerUrl({ verificationId, redirectUrl, userFlow = 'signin', documents = ['AADHAAR'] }) {
+    if (isBypassEnabled()) {
+        const verifyUrl = buildMockVerifyUrl(redirectUrl, verificationId);
+        return {
+            success: true,
+            mock: true,
+            verification_id: verificationId,
+            reference_id: verificationId,
+            user_flow: userFlow,
+            document_requested: documents,
+            redirect_url: redirectUrl,
+            url: verifyUrl,
+            verification_url: verifyUrl
+        };
+    }
     return callJson('POST', '/verification/digilocker', {
         body: {
             verification_id: verificationId,
@@ -73,6 +109,15 @@ async function createDigilockerUrl({ verificationId, redirectUrl, userFlow = 'si
 }
 
 async function getDigilockerVerificationStatus({ verificationId, referenceId }) {
+    if (isBypassEnabled()) {
+        return {
+            success: true,
+            mock: true,
+            verification_id: verificationId || referenceId,
+            reference_id: referenceId || verificationId,
+            status: 'VERIFIED'
+        };
+    }
     return callJson('GET', '/verification/digilocker', {
         query: {
             verification_id: verificationId,
@@ -82,6 +127,17 @@ async function getDigilockerVerificationStatus({ verificationId, referenceId }) 
 }
 
 async function getDigilockerDocument({ documentType = 'AADHAAR', verificationId, referenceId }) {
+    if (isBypassEnabled()) {
+        return {
+            success: true,
+            mock: true,
+            document_type: documentType,
+            verification_id: verificationId || referenceId,
+            reference_id: referenceId || verificationId,
+            document_id: `mock-${String(documentType || 'AADHAAR').toLowerCase()}`,
+            status: 'AVAILABLE'
+        };
+    }
     return callJson('GET', `/verification/digilocker/document/${documentType}`, {
         query: {
             verification_id: verificationId,

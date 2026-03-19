@@ -1,0 +1,16 @@
+body { font-family: Arial, sans-serif; background: #f4f6fb; margin: 0; }
+    .wrap { max-width: 900px; margin: 30px auto; background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+    h1 { margin-top: 0; }
+    .terms { border: 1px solid #d7ddea; border-radius: 8px; padding: 16px; max-height: 420px; overflow: auto; background: #fbfcff; }
+    .line { margin-bottom: 12px; line-height: 1.45; }
+    button { margin-top: 14px; background: #1f4fd6; color: #fff; border: 0; border-radius: 8px; padding: 11px 16px; cursor: pointer; font-weight: 700; }
+    .row { margin-top: 14px; }
+    input[type="checkbox"] { transform: scale(1.2); margin-right: 8px; }
+    .details { margin-top: 20px; border: 1px solid #d7ddea; border-radius: 8px; background: #fbfcff; padding: 14px; }
+    .details h3 { margin: 0 0 10px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+    .kv { font-size: 13px; color: #374151; }
+    .kv strong { color: #111827; }
+    .edit-row { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-muted { background: #334155; }
+    .status { margin-top: 10px; font-size: 13px; color: #334155; }

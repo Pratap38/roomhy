@@ -190,14 +190,24 @@ const API_URL = (window.location.hostname === 'localhost' || window.location.hos
 
         // Mobile menu functionality
         function toggleMobileMenu() {
-            const mobileSidebar = document.querySelector('aside');
-            const mobileOverlay = document.getElementById('mobile-overlay');
+            const mobileSidebar = document.getElementById('mobile-sidebar');
+            const mobileOverlay = document.getElementById('mobile-sidebar-overlay');
             
-            if (mobileSidebar.classList.contains('hidden')) {
-                mobileSidebar.classList.remove('hidden');
-                mobileSidebar.classList.add('fixed', 'inset-y-0', 'left-0');
-                mobileOverlay.classList.remove('hidden');
-            } else {
+            if (mobileSidebar && mobileOverlay) {
+                const isHidden = mobileSidebar.classList.contains('-translate-x-full') || 
+                               mobileSidebar.classList.contains('hidden');
+                
+                if (isHidden) {
+                    mobileSidebar.classList.remove('-translate-x-full');
+                    mobileSidebar.classList.remove('hidden');
+                    mobileOverlay.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    mobileSidebar.classList.add('-translate-x-full');
+                    mobileOverlay.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
+            }
                 mobileSidebar.classList.add('hidden');
                 mobileSidebar.classList.remove('fixed', 'inset-y-0', 'left-0');
                 mobileOverlay.classList.add('hidden');

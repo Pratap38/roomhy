@@ -108,7 +108,7 @@ router.patch('/:loginId', auditTrail('owners'), async (req, res) => {
 // 6. Get rooms for owner by loginId (Preserved - Used by Dashboard)
 router.get('/:loginId/rooms', async (req, res) => {
     try {
-        const loginId = req.params.loginId;
+        const loginId = String(req.params.loginId || '').trim().toUpperCase();
         // Find properties owned by this owner
         const properties = await Property.find({ ownerLoginId: loginId }).select('_id title');
         const propertyIds = properties.map(p => p._id);
@@ -126,7 +126,7 @@ router.get('/:loginId/rooms', async (req, res) => {
 // 7. Get properties for owner by loginId
 router.get('/:loginId/properties', async (req, res) => {
     try {
-        const loginId = req.params.loginId;
+        const loginId = String(req.params.loginId || '').trim().toUpperCase();
         const properties = await Property.find({ ownerLoginId: loginId });
         return res.json({ properties });
     } catch (err) {
@@ -175,7 +175,7 @@ router.post('/:loginId/properties', auditTrail('owners'), async (req, res) => {
 // 8. Get rent collected for owner by loginId
 router.get('/:loginId/rent', async (req, res) => {
     try {
-        const loginId = req.params.loginId;
+        const loginId = String(req.params.loginId || '').trim().toUpperCase();
         // Find properties owned by this owner
         const properties = await Property.find({ ownerLoginId: loginId }).select('_id');
         const propertyIds = properties.map(p => p._id);
@@ -190,6 +190,19 @@ router.get('/:loginId/rent', async (req, res) => {
         return res.json({ totalRent });
     } catch (err) {
         console.error('❌ Error fetching owner rent:', err.message);
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+router.get('/:loginId/tenants', async (req, res) => {
+    try {
+        const loginId = String(req.params.loginId || '').trim().toUpperCase();
+        const properties = await Property.find({ ownerLoginId: loginId }).select('_id');
+        const propertyIds = properties.map((p) => p._id);
+        const tenants = await require('../models/Tenant').find({ property: { $in: propertyIds } });
+        return res.json({ tenants });
+    } catch (err) {
+        console.error('âŒ Error fetching owner tenants:', err.message);
         return res.status(500).json({ error: err.message });
     }
 });

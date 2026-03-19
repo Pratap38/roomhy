@@ -700,5 +700,5 @@ lucide.createIcons();
 
         // Proceed to signup
         function proceedToSignup() {
-            window.location.href = 'signup.html';
+            window.location.href = '/website/signup';
         }

@@ -71,7 +71,7 @@ lucide.createIcons();
 
         function toggleMobileMenu() {
             const sidebar = document.getElementById('mobile-sidebar');
-            const overlay = document.getElementById('mobile-overlay');
+            const overlay = document.getElementById('mobile-sidebar-overlay');
             if (sidebar.classList.contains('-translate-x-full')) {
                 sidebar.classList.remove('-translate-x-full');
                 overlay.classList.remove('hidden');

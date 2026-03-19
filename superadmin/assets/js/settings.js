@@ -16,7 +16,7 @@ lucide.createIcons();
         // Mobile menu functionality
         function toggleMobileMenu() {
             const mobileSidebar = document.querySelector('aside');
-            const mobileOverlay = document.getElementById('mobile-overlay');
+            const mobileOverlay = document.getElementById('mobile-sidebar-overlay');
             
             if (mobileSidebar.classList.contains('hidden')) {
                 mobileSidebar.classList.remove('hidden');

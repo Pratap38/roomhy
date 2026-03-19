@@ -1,0 +1,4 @@
+body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; color: #1F2937; }
+        .light-card { background: #FFFFFF; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

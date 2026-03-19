@@ -1,0 +1,252 @@
+.shared-shell {
+  min-height: 100vh;
+  display: flex;
+  background: #f5f6fa;
+  color: #111827;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.shared-sidebar {
+  width: 240px;
+  background: #0f172a;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.shared-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.shared-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.shared-brand img {
+  height: 28px;
+  width: auto;
+}
+
+.shared-sidebar-close {
+  display: none;
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #e2e8f0;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.shared-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 4px;
+}
+
+.shared-nav-link {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #cbd5f5;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.shared-nav-link:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: #fff;
+}
+
+.shared-nav-link.is-active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #fff;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.shared-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.shared-header {
+  height: 56px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.shared-menu-btn {
+  background: #0f172a;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  display: none;
+}
+
+.shared-header-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #111827;
+}
+
+.shared-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shared-user-pill {
+  background: #0f172a;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.shared-content {
+  padding: 16px;
+  min-height: calc(100vh - 56px);
+}
+
+.shared-shell .html-page header,
+.shared-shell .html-page .sidebar,
+.shared-shell .html-page #mobile-sidebar,
+.shared-shell .html-page #mobile-overlay,
+.shared-shell .html-page #mobile-sidebar-overlay,
+.shared-shell .html-page #mobile-menu-open,
+.shared-shell .html-page #mobile-sidebar-close {
+  display: none !important;
+}
+
+.shared-shell .html-page .flex.h-screen {
+  min-height: auto;
+  height: auto;
+}
+
+.shared-shell .html-page .flex-1 {
+  width: 100%;
+}
+
+.shared-shell-superadmin .shared-superadmin-overlay {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .shared-shell {
+    flex-direction: column;
+  }
+
+  .shared-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 50;
+  }
+
+  .shared-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .shared-sidebar-close {
+    display: inline-flex;
+  }
+
+  .shared-menu-btn {
+    display: inline-flex;
+  }
+
+  .shared-main {
+    width: 100%;
+  }
+
+  .shared-shell-superadmin .shared-superadmin-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 60;
+  }
+
+  .shared-shell-superadmin .shared-superadmin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  body.superadmin-menu-open .shared-shell-superadmin .shared-superadmin-sidebar {
+    transform: translateX(0);
+  }
+
+  .shared-shell-superadmin .shared-superadmin-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 50;
+    display: none;
+  }
+
+  .shared-shell-superadmin .shared-superadmin-overlay.is-open {
+    display: block;
+  }
+
+  body.superadmin-menu-open .shared-shell-superadmin .shared-superadmin-overlay {
+    display: block;
+  }
+
+  .shared-shell-superadmin .shared-superadmin-close {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
+  .shared-shell-superadmin .shared-header {
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .shared-shell-superadmin .shared-header h2 {
+    font-size: 14px;
+    flex-wrap: wrap;
+  }
+
+  .shared-shell-superadmin .shared-header .flex.items-center.gap-2 {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .shared-shell-superadmin .shared-header .flex.items-center.gap-4 {
+    gap: 8px;
+  }
+
+  .shared-shell-superadmin #mobile-menu-open {
+    display: inline-flex;
+    margin-right: 8px;
+  }
+}

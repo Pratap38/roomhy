@@ -24,7 +24,8 @@ try {
 
 console.log('🚀 Starting server...');
 
-dotenv.config();
+// Always load env from this folder, regardless of where the process was started.
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const server = http.createServer(app);
@@ -45,9 +46,20 @@ const localOrigins = [
     'http://localhost:3000',
     'http://localhost:5000',
     'http://localhost:5001',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176',
+    'http://localhost:5177',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:5000',
-    'http://127.0.0.1:5001'
+    'http://127.0.0.1:5001',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174'
+    ,
+    'http://127.0.0.1:5175',
+    'http://127.0.0.1:5176',
+    'http://127.0.0.1:5177'
 ];
 const allowedOrigins = Array.from(new Set([...(envOrigins.length ? envOrigins : defaultOrigins), ...localOrigins]));
 const corsOptions = {

@@ -294,7 +294,7 @@ exports.forgotPasswordReset = async (req, res) => {
         res.json({ 
             success: true, 
             message: 'Password reset successful. You can now login with your new password.',
-            redirect: '/index.html'
+            redirect: '/website/index'
         });
 
     } catch (err) {

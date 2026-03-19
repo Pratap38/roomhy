@@ -106,5 +106,5 @@ const API_BASE = (location.hostname === 'localhost' || location.hostname === '12
         }
       } catch (_) {}
 
-      location.href = `tenantkyc.html?loginId=${encodeURIComponent(payload.loginId)}`;
+      location.href = `/digital-checkin/tenantkyc?loginId=${encodeURIComponent(payload.loginId)}`;
     });

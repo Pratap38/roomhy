@@ -123,7 +123,7 @@ lucide.createIcons();
                             <i data-lucide="${city.icon || 'map-pin'}" class="w-9 h-9 text-gray-600"></i>
                         </div>
                     </div>
-                    <h3 class="text-sm font-medium text-gray-800 leading-tight cursor-pointer" onclick="window.location.href = \`ourproperty.html?city=\${encodeURIComponent('${city.name}')}\`">${city.name}</h3>
+                    <h3 class="text-sm font-medium text-gray-800 leading-tight cursor-pointer" onclick="window.location.href = \`/website/ourproperty?city=\${encodeURIComponent('${city.name}')}\`">${city.name}</h3>
                 </div>
                 `;
             };
@@ -219,7 +219,7 @@ lucide.createIcons();
             document.querySelectorAll('.city-filter h3').forEach(heading => {
                 heading.addEventListener('click', function(e) {
                     const cityName = this.textContent.trim();
-                    window.location.href = `ourproperty.html?city=${encodeURIComponent(cityName)}`;
+                    window.location.href = `/website/ourproperty?city=${encodeURIComponent(cityName)}`;
                 });
             });
         };
@@ -247,7 +247,7 @@ lucide.createIcons();
                     const city = this.dataset.city;
                     if (city) {
                         // Navigate to ourproperty.html with city parameter
-                        window.location.href = `ourproperty.html?city=${encodeURIComponent(city)}`;
+                        window.location.href = `/website/ourproperty?city=${encodeURIComponent(city)}`;
                     }
                 });
             });
@@ -423,7 +423,7 @@ lucide.createIcons();
                                     </div>
                                 </div>
 
-                                <a href="property.html?id=${space.id || ''}" class="block w-full text-center bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors mt-4">
+                                <a href="/website/property?id=${space.id || ''}" class="block w-full text-center bg-blue-600 text-white font-medium py-2.5 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors mt-4">
                                     View Details
                                 </a>
                             </div>
@@ -588,7 +588,7 @@ lucide.createIcons();
                             </div>
                             <div class="flex justify-between items-center">
                                 <p class="text-lg font-bold text-blue-600">?${propertyPrice}</p>
-                                <a href="property.html?id=${propertyId}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                                <a href="/website/property?id=${propertyId}" class="text-blue-600 hover:text-blue-700 font-medium text-sm">
                                     View Details
                                 </a>
                             </div>

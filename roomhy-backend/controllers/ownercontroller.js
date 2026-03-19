@@ -184,9 +184,10 @@ exports.updateOwnerKyc = async (req, res) => {
 // Get Single Owner
 exports.getOwnerById = async (req, res) => {
     try {
-        const owner = await Owner.findOne({ loginId: req.params.loginId }).lean();
+        const normalizedLoginId = String(req.params.loginId || '').trim().toUpperCase();
+        const owner = await Owner.findOne({ loginId: normalizedLoginId }).lean();
         if (!owner) return res.status(404).json({ message: 'Owner not found' });
-        const checkin = await CheckinRecord.findOne({ role: 'owner', loginId: req.params.loginId.toUpperCase() }).lean();
+        const checkin = await CheckinRecord.findOne({ role: 'owner', loginId: normalizedLoginId }).lean();
         res.json({
             ...owner,
             name: owner.profile?.name || owner.name || 'Unknown',

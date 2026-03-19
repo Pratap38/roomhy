@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { sendMail } = require('../utils/mailer');
-const { formLimiter, captchaProtection } = require('../middleware/security');
+const { formLimiter } = require('../middleware/security');
 
 // POST: Send an email
-router.post('/send', formLimiter, captchaProtection({ required: true }), async (req, res) => {
+router.post('/send', formLimiter, async (req, res) => {
     try {
         const { to, subject, html, text } = req.body;
 
@@ -88,7 +88,7 @@ router.post('/signup', async (req, res) => {
 
                         <p>You can now log in to your account and start exploring properties, making bookings, and connecting with property owners.</p>
 
-                        <a href="${process.env.FRONTEND_URL || 'https://roomhy.com'}/website/signup.html" class="button">Go to Roomhy</a>
+                        <a href="${process.env.FRONTEND_URL || 'https://roomhy.com'}/website/signup" class="button">Go to Roomhy</a>
 
                         <p style="margin-top: 30px;">If you have any questions, feel free to contact our support team at <strong>hello@roomhy.com</strong></p>
                     </div>

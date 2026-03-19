@@ -15,23 +15,42 @@ lucide.createIcons();
             }
         }
         
+        // Mobile menu is now handled by mobile-sidebar.js
+        // This function delegates to the global mobile sidebar handler
         function toggleMobileMenu() {
-            const mobileSidebar = document.querySelector('aside');
-            const mobileOverlay = document.getElementById('mobile-overlay');
+            const mobileSidebar = document.getElementById('mobile-sidebar');
+            const overlay = document.getElementById('mobile-sidebar-overlay');
             
-            if (mobileSidebar.classList.contains('hidden')) {
+            if (!mobileSidebar || !overlay) return;
+            
+            // Check current state
+            const isHidden = mobileSidebar.classList.contains('-translate-x-full') || 
+                           mobileSidebar.classList.contains('hidden');
+            
+            if (isHidden) {
+                // Open sidebar
+                mobileSidebar.classList.remove('-translate-x-full');
                 mobileSidebar.classList.remove('hidden');
-                mobileSidebar.classList.add('fixed', 'inset-y-0', 'left-0');
-                mobileOverlay.classList.remove('hidden');
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
             } else {
-                mobileSidebar.classList.add('hidden');
-                mobileSidebar.classList.remove('fixed', 'inset-y-0', 'left-0');
-                mobileOverlay.classList.add('hidden');
+                // Close sidebar
+                mobileSidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
             }
         }
 
-        // Add event listener for mobile menu
-        document.getElementById('mobile-menu-open').addEventListener('click', toggleMobileMenu);
+        // Add event listener for mobile menu (fallback if mobile-sidebar.js not loaded)
+        try {
+            const menuBtn = document.getElementById('mobile-menu-open');
+            if (menuBtn && !menuBtn._mobileMenuListenerAdded) {
+                menuBtn.addEventListener('click', toggleMobileMenu);
+                menuBtn._mobileMenuListenerAdded = true;
+            }
+        } catch (e) {
+            console.debug('Mobile menu setup skipped:', e);
+        }
 
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', (e) => {

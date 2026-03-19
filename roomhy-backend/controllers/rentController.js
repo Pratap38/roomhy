@@ -373,7 +373,22 @@ exports.sendDelayedPaymentReminder = async (req, res) => {
 // Email function for rent reminder
 async function sendRentReminderEmail(rent, type = 'initial') {
     try {
+        const appBaseUrl = (process.env.APP_BASE_URL || 'https://app.roomhy.com').replace(/\/$/, '');
+        const dashboardUrl = `${appBaseUrl}/tenant/tenantdashboard`;
+        const onlinePayUrl = `${dashboardUrl}?pay=online`;
+        const cashPayUrl = `${dashboardUrl}?pay=cash`;
         const subject = `Rent Due Reminder - ${rent.propertyName}`;
+        const text = [
+            `Hi ${rent.tenantName || 'Tenant'},`,
+            `Your rent for ${rent.propertyName || 'your property'} is due by 15th (${rent.collectionMonth || 'current month'}).`,
+            `Amount: INR ${Number(rent.rentAmount || 0)}`,
+            '',
+            'Payment options:',
+            `1) Pay Online (Razorpay): ${onlinePayUrl}`,
+            `2) Pay by Cash (Owner collection + OTP): ${cashPayUrl}`,
+            '',
+            'If already paid, please ignore this reminder.'
+        ].join('\n');
         const html = `
                 <h2>Rent Due Reminder</h2>
                 <p>Dear ${rent.tenantName},</p>
@@ -388,15 +403,21 @@ async function sendRentReminderEmail(rent, type = 'initial') {
                     <li>Current Month: ${rent.collectionMonth}</li>
                 </ul>
                 <p style="color: #d32f2f;"><strong>Please complete your payment by 15th to avoid late fees.</strong></p>
-                <p>Click the button below to pay online:</p>
-                <a href="https://app.roomhy.com/tenant/tenantlogin.html" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay Now</a>
+                <p>Choose a payment method:</p>
+                <p>
+                    <a href="${onlinePayUrl}" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 8px;">Pay Online (Razorpay)</a>
+                    <a href="${cashPayUrl}" style="background-color: #16a34a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay by Cash</a>
+                </p>
+                <p style="font-size: 13px; color: #444;">
+                    Cash flow: Request cash in tenant dashboard, owner marks received, then enter OTP to complete.
+                </p>
             `;
 
         if (rent.tenantEmail) {
-            await sendMail(rent.tenantEmail, subject, '', html);
+            await sendMail(rent.tenantEmail, subject, text, html);
         }
         if (process.env.ADMIN_EMAIL) {
-            await sendMail(process.env.ADMIN_EMAIL, `[Copy] ${subject}`, '', html);
+            await sendMail(process.env.ADMIN_EMAIL, `[Copy] ${subject}`, text, html);
         }
 
         console.log('Rent reminder email attempted for', rent.tenantEmail || 'no-tenant-email');
@@ -412,8 +433,23 @@ async function sendDelayedReminderEmail(rent, reminderType) {
     try {
         const reminderNumber = reminderType.split('_')[1];
         const urgency = ['', 'URGENT', 'VERY URGENT', 'FINAL NOTICE'];
+        const appBaseUrl = (process.env.APP_BASE_URL || 'https://app.roomhy.com').replace(/\/$/, '');
+        const dashboardUrl = `${appBaseUrl}/tenant/tenantdashboard`;
+        const onlinePayUrl = `${dashboardUrl}?pay=online`;
+        const cashPayUrl = `${dashboardUrl}?pay=cash`;
 
         const subject = `${urgency[reminderNumber]} - Overdue Rent Payment - ${rent.propertyName}`;
+        const text = [
+            `${urgency[reminderNumber]}: Overdue rent payment`,
+            `Property: ${rent.propertyName || '-'}`,
+            `Room: ${rent.roomNumber || '-'}`,
+            `Amount Due: INR ${Number((rent.totalDue || 0) - (rent.paidAmount || 0))}`,
+            `Days Overdue: ${getDaysOverdue(rent.overdueStartDate)}`,
+            '',
+            'Pay now using:',
+            `1) Razorpay Online: ${onlinePayUrl}`,
+            `2) Cash + OTP flow: ${cashPayUrl}`
+        ].join('\n');
         const html = `
                 <h2 style="color: #d32f2f;">${urgency[reminderNumber]}</h2>
                 <p>Dear ${rent.tenantName},</p>
@@ -430,14 +466,17 @@ async function sendDelayedReminderEmail(rent, reminderType) {
                 <p style="color: #d32f2f; background-color: #fff3cd; padding: 10px; border-left: 4px solid #d32f2f;">
                     <strong>Reminder #${reminderNumber}:</strong> Please arrange payment immediately to avoid late fees and legal action.
                 </p>
-                <a href="https://app.roomhy.com/tenant/tenantlogin.html" style="background-color: #d32f2f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay Now</a>
+                <p>
+                    <a href="${onlinePayUrl}" style="background-color: #d32f2f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 8px;">Pay Online (Razorpay)</a>
+                    <a href="${cashPayUrl}" style="background-color: #16a34a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Pay by Cash</a>
+                </p>
             `;
 
         if (rent.tenantEmail) {
-            await sendMail(rent.tenantEmail, subject, '', html);
+            await sendMail(rent.tenantEmail, subject, text, html);
         }
         if (process.env.ADMIN_EMAIL) {
-            await sendMail(process.env.ADMIN_EMAIL, `[Copy] ${subject}`, '', html);
+            await sendMail(process.env.ADMIN_EMAIL, `[Copy] ${subject}`, text, html);
         }
 
         console.log(`Delayed payment reminder #${reminderNumber} attempted for`, rent.tenantEmail || 'no-tenant-email');
@@ -633,7 +672,7 @@ exports.requestCashPayment = async (req, res) => {
                     process.env.APP_BASE_URL ||
                     'https://api.roomhy.com'
                 ).replace(/\/$/, '');
-                const receivedUrl = `${ownerPortalBaseUrl}/propertyowner/payment-received.html?rentId=${encodeURIComponent(String(rent._id))}&ownerLoginId=${encodeURIComponent(ownerId)}`;
+                const receivedUrl = `${ownerPortalBaseUrl}/propertyowner/payment-received?rentId=${encodeURIComponent(String(rent._id))}&ownerLoginId=${encodeURIComponent(ownerId)}`;
                 const html = `
                     <div style="font-family:Arial,sans-serif;">
                         <h3>Cash Payment Request</h3>

@@ -213,9 +213,9 @@ router.post('/owner/kyc/verify-otp', otpLimiter, async (req, res) => {
 
         // Send login credentials email
         if (owner && owner.email) {
-            const baseUrl = process.env.FRONTEND_URL || 'https://admin.roomhy.com';
+            const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'http://localhost:5173';
             const ownerPassword = owner.checkinPassword || owner.credentials?.password || 'default';
-            const fullLoginUrl = `${baseUrl}/propertyowner/index.html`;
+            const fullLoginUrl = `${baseUrl}/propertyowner/index`;
             
             const emailHtml = `
                 <!DOCTYPE html>
@@ -317,7 +317,7 @@ router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
         }
 
         const ref = createDigilockerRef(loginId);
-        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/ownerkyc.html`;
+        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/ownerkyc`;
 
         const accountCheck = await verifyDigilockerAccount({
             verificationId: ref,
@@ -506,7 +506,7 @@ router.post('/owner/final-submit', async (req, res) => {
         const owner = ownerDoc || await Owner.findOne({ loginId: normalizedLoginId }).lean();
         const targetEmail = (owner && owner.email) || (record.ownerProfile && record.ownerProfile.email) || '';
         const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
-        const dashboardUrl = `${baseUrl}/propertyowner/index.html`;
+        const dashboardUrl = `${baseUrl}/propertyowner/index`;
         let loginEmailSent = false;
 
         if (targetEmail) {
@@ -689,7 +689,7 @@ router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
         }
         const normalizedLoginId = String(loginId).toUpperCase();
         const ref = createDigilockerRef(normalizedLoginId);
-        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/tenantkyc.html`;
+        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/tenantkyc`;
 
         const accountCheck = await verifyDigilockerAccount({
             verificationId: ref,
@@ -902,31 +902,6 @@ router.post('/tenant/final-submit', async (req, res) => {
         const record = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'tenant' });
         if (!record) return res.status(404).json({ success: false, message: 'Tenant check-in record not found' });
         const tenantModel = await Tenant.findOne({ loginId: normalizedLoginId });
-        const tenantModelVerified = Boolean(
-            tenantModel &&
-            (
-                String(tenantModel.kycStatus || '').toLowerCase() === 'verified' ||
-                tenantModel.kyc?.digilockerVerified ||
-                tenantModel.kyc?.otpVerified ||
-                tenantModel.digitalCheckin?.kyc?.digilockerVerified ||
-                tenantModel.digitalCheckin?.kyc?.otpVerified
-            )
-        );
-        if (!record.tenantKyc || (!isTenantKycVerified(record) && !tenantModelVerified)) {
-            return res.status(400).json({ success: false, message: 'Complete KYC verification first (OTP or DigiLocker)' });
-        }
-        if (tenantModelVerified && !isTenantKycVerified(record)) {
-            record.tenantKyc = record.tenantKyc || {};
-            if (tenantModel.kyc?.otpVerified || tenantModel.digitalCheckin?.kyc?.otpVerified) {
-                record.tenantKyc.otpVerified = true;
-                record.tenantKyc.otpVerifiedAt = record.tenantKyc.otpVerifiedAt || new Date();
-            }
-            if (tenantModel.kyc?.digilockerVerified || tenantModel.digitalCheckin?.kyc?.digilockerVerified || String(tenantModel.kycStatus || '').toLowerCase() === 'verified') {
-                record.tenantKyc.digilockerVerified = true;
-                record.tenantKyc.digilockerStatus = 'verified';
-                record.tenantKyc.digilockerVerifiedAt = record.tenantKyc.digilockerVerifiedAt || new Date();
-            }
-        }
         if (!record.tenantAgreement || !record.tenantAgreement.acceptedAt) {
             return res.status(400).json({ success: false, message: 'Accept rental agreement first' });
         }
@@ -942,24 +917,24 @@ router.post('/tenant/final-submit', async (req, res) => {
         tenant.digitalCheckin = tenant.digitalCheckin || {};
         tenant.digitalCheckin.submittedAt = new Date();
         tenant.status = 'active';
-        tenant.kycStatus = 'verified';
+        tenant.kycStatus = tenant.kycStatus || 'submitted';
         tenant.updatedAt = new Date();
         await tenant.save();
 
         const targetEmail = tenant.email || record?.tenantProfile?.email || '';
         const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
-        const tenantLoginUrl = `${baseUrl}/propertyowner/index.html`;
-        const dashboardUrl = `${baseUrl}/propertyowner/index.html`;
+        const tenantLoginUrl = `${baseUrl}/tenant/tenantlogin`;
+        const dashboardUrl = `${baseUrl}/tenant/tenantdashboard`;
         let loginEmailSent = false;
 
         if (targetEmail) {
             const html = `
                 <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
                     <div style="background:#16a34a;color:#fff;padding:16px 20px;">
-                        <h2 style="margin:0;font-size:20px;">RoomHy Tenant KYC Completed</h2>
+                        <h2 style="margin:0;font-size:20px;">RoomHy Tenant Check-in Completed</h2>
                     </div>
                     <div style="padding:18px 20px;color:#111827;line-height:1.55;">
-                        <p style="margin-top:0;">Your tenant digital check-in is fully submitted and verified.</p>
+                        <p style="margin-top:0;">Your tenant digital check-in is fully submitted.</p>
                         <p style="margin:14px 0 18px;">
                             <a href="${dashboardUrl}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:700;">Open Login Page</a>
                         </p>
@@ -1003,5 +978,3 @@ router.get('/:role/:loginId', async (req, res) => {
 });
 
 module.exports = router;
-
-

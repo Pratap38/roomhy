@@ -1,0 +1,79 @@
+body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        /* --- Sidebar Styling (Dark Theme) --- */
+        .sidebar {
+            background-color: #111827;
+            color: #9ca3af;
+        }
+        .sidebar-link {
+            color: #9ca3af;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+        .sidebar-link:hover {
+            color: #f3f4f6; 
+            background-color: #1f2937;
+        }
+        .sidebar-link.active {
+            background-color: #1f2937;
+            color: #ffffff;
+            border-left-color: #a855f7; /* Purple-500 */
+        }
+
+        /* Submenu Styling */
+        .submenu {
+            background-color: #0f172a;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            max-height: 0;
+        }
+        .submenu.open {
+            max-height: 500px;
+        }
+        .submenu a {
+            padding-left: 3.5rem;
+            font-size: 0.85rem;
+        }
+        
+        /* Table Styling */
+        .data-table th {
+            background-color: #f9fafb;
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0.75rem 1.5rem;
+            text-align: left;
+        }
+        .data-table td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 1.5rem;
+            font-size: 0.875rem;
+            color: #1f2937;
+        }
+        .data-table tr:hover td {
+            background-color: #f9fafb;
+        }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        /* Modal Transitions */
+        .modal { transition: opacity 0.25s ease; }

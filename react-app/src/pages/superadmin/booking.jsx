@@ -1,0 +1,384 @@
+import { useHeadAssets } from "../../utils/useHeadAssets.js";
+import { useTailwindProcessor } from "../../utils/useTailwindProcessor.js";
+
+const title = "Roomhy - Bookings";
+const metas = [
+  {
+    "charset": "UTF-8"
+  },
+  {
+    "name": "viewport",
+    "content": "width=device-width, initial-scale=1.0"
+  }
+];
+const links = [
+{
+    "rel": "preconnect",
+    "href": "https://fonts.googleapis.com"
+  },
+  {
+    "rel": "preconnect",
+    "href": "https://fonts.gstatic",
+    "crossorigin": true
+  },
+  {
+    "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
+    "rel": "stylesheet"
+  },
+  {
+    "rel": "stylesheet",
+    "href": "/superadmin/assets/css/booking.css"
+  }
+];
+const scripts = [
+  {
+    "content": "const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') \r\n            ? 'http://localhost:5001' \r\n            : 'https://api.roomhy.com';"
+  },
+  {
+    "src": "https://cdn.tailwindcss.com"
+  },
+  {
+    "src": "https://unpkg.com/lucide@latest"
+  },
+  {
+    "content": "lucide.createIcons();\r\n\r\n        // Load all bookings (confirmed and pending)\r\n        async function loadBookings() {\r\n            try {\r\n                // Fetch all confirmed bookings (regardless of visit schedule)\r\n                const response = await fetch(`${API_URL}/api/booking/requests?status=confirmed`);\r\n                const data = await response.json();\r\n                const allBookings = data.data || [];\r\n\r\n                const tableBody = document.getElementById('bookingsTableBody');\r\n\r\n                if (allBookings.length === 0) {\r\n                    tableBody.innerHTML = `\r\n                        <tr>\r\n                            <td colspan=\"22\" class=\"py-8 text-center text-gray-500\">\r\n                                <i data-lucide=\"inbox\" class=\"w-12 h-12 mx-auto mb-3 opacity-50\"></i>\r\n                                <p>No confirmed bookings found</p>\r\n                            </td>\r\n                        </tr>\r\n                    `;\r\n                    lucide.createIcons();\r\n                    return;\r\n                }\r\n\r\n                tableBody.innerHTML = allBookings.map(booking => {\r\n                    // Extract payment details - handle different payment structures\r\n                    let paymentTypeDisplay = 'N/A';\r\n                    let cardDetails = 'N/A';\r\n                    \r\n                    if (booking.payment_method) {\r\n                        const method = booking.payment_method.toLowerCase();\r\n                        if (method.includes('upi')) {\r\n                            paymentTypeDisplay = 'UPI';\r\n                            cardDetails = booking.upi_id || booking.payment_details?.upi_id || booking.upi || booking.upi_address || 'N/A';\r\n                        } else if (method.includes('card')) {\r\n                            paymentTypeDisplay = 'Card';\r\n                            if (booking.card_last_four) {\r\n                                cardDetails = `****${booking.card_last_four}`;\r\n                            } else if (booking.payment_details?.card_last_four) {\r\n                                cardDetails = `****${booking.payment_details.card_last_four}`;\r\n                            } else if (booking.card_number) {\r\n                                cardDetails = `****${booking.card_number.slice(-4)}`;\r\n                            } else if (booking.payment_details?.card_number) {\r\n                                cardDetails = `****${booking.payment_details.card_number.slice(-4)}`;\r\n                            } else {\r\n                                cardDetails = 'Card Payment';\r\n                            }\r\n                        } else if (method.includes('other') || method.includes('cash') || method.includes('bank')) {\r\n                            paymentTypeDisplay = booking.payment_method;\r\n                            cardDetails = booking.payment_details?.reference_id || booking.reference_id || booking.transaction_id || booking.bank_name || 'Payment Pending';\r\n                        } else {\r\n                            paymentTypeDisplay = booking.payment_method;\r\n                            cardDetails = booking.payment_details?.id || booking.payment_id || booking.transaction_id || 'N/A';\r\n                        }\r\n                    }\r\n\r\n                    // Get full address - enhanced fallback handling\r\n                    let fullAddress = 'N/A';\r\n                    if (booking.address_street || booking.address_city || booking.address_state || booking.address_postal_code) {\r\n                        fullAddress = `${booking.address_street || ''}, ${booking.address_city || ''}, ${booking.address_state || ''}, ${booking.address_postal_code || ''}`.replace(/^,\\s*|,\\s*$/g, '').trim();\r\n                    } else if (booking.address) {\r\n                        fullAddress = typeof booking.address === 'string' ? booking.address : `${booking.address.street || ''}, ${booking.address.city || ''}, ${booking.address.state || ''}, ${booking.address.postalCode || ''}`.trim();\r\n                    } else if (booking.full_address) {\r\n                        fullAddress = booking.full_address;\r\n                    }\r\n\r\n                    // Get payment amount - check multiple field names\r\n                    const paymentAmt = booking.payment_amount || booking.paymentAmount || booking.advance_amount || booking.amount || 0;\r\n                    \r\n                    // Get rent amount\r\n                    const rentAmt = booking.rent_amount || booking.rent || booking.monthly_rent || 0;\r\n                    \r\n                    // Get guardian details - handle missing fields\r\n                    const guardianName = booking.guardian_name || booking.guardianName || 'N/A';\r\n                    const guardianPhone = booking.guardian_phone || booking.guardianPhone || 'N/A';\r\n                    \r\n                    // Get tenant details\r\n                    const tenantName = booking.name || booking.tenant_name || booking.full_name || booking.fullName || 'N/A';\r\n                    const tenantPhone = booking.phone || booking.contact_phone || booking.mobile || 'N/A';\r\n                    const tenantEmail = booking.email || booking.contact_email || 'N/A';\r\n\r\n                    return `\r\n                    <tr class=\"hover:bg-gray-50 text-sm border-b border-gray-200\">\r\n                        <td class=\"px-4 py-3 text-gray-900 font-medium whitespace-nowrap\">${booking.property_id || booking.propertyId || booking.property || 'N/A'}</td>\r\n                        <td class=\"px-4 py-3 text-gray-900 whitespace-nowrap\">${booking.property_name || booking.propertyName || booking.property_name || 'N/A'}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap\">${booking.area || booking.location || booking.city || 'N/A'}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap\">${booking.property_type || booking.roomType || booking.type || 'N/A'}</td>\r\n                        <td class=\"px-4 py-3 text-gray-900 font-semibold whitespace-nowrap\">₹${rentAmt}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap font-medium\">${booking.user_id || booking.userId || booking.customer_id || 'N/A'}</td>\r\n                        <td class=\"px-4 py-3 text-gray-900 font-medium whitespace-nowrap\">${tenantName}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap font-semibold\">${tenantPhone}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap text-sm\">${tenantEmail}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap\">${guardianName}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap font-semibold\">${guardianPhone}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap text-xs max-w-xs truncate\" title=\"${fullAddress}\">${fullAddress}</td>\r\n                        <td class=\"px-4 py-3 text-gray-900 font-mono whitespace-nowrap text-xs\">${booking.payment_id || booking.paymentId || booking.razorpay_payment_id || booking.transaction_id || 'N/A'}</td>\r\n                        <td class=\"px-4 py-3 text-gray-900 font-semibold whitespace-nowrap\">₹${paymentAmt}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap capitalize\">${booking.payment_method || booking.paymentMethod || 'N/A'}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap font-medium\">${paymentTypeDisplay}</td>\r\n                        <td class=\"px-4 py-3 text-gray-900 whitespace-nowrap font-mono text-xs\" title=\"${cardDetails}\">${cardDetails && cardDetails.length > 15 ? cardDetails.substring(0, 15) + '...' : cardDetails}</td>\r\n                        <td class=\"px-4 py-3 whitespace-nowrap\">\r\n                            <span class=\"px-2 py-1 rounded-full text-xs font-semibold ${booking.payment_status === 'completed' || booking.payment_status === 'success' ? 'bg-green-100 text-green-800' : booking.payment_status === 'failed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}\">\r\n                                ${booking.payment_status || booking.status || 'Pending'}\r\n                            </span>\r\n                        </td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap\">${booking.request_type || booking.requestType || booking.type || 'Booking'}</td>\r\n                        <td class=\"px-4 py-3 text-gray-900 font-semibold whitespace-nowrap\">₹${booking.bid_amount || booking.bidAmount || 0}</td>\r\n                        <td class=\"px-4 py-3 text-gray-600 whitespace-nowrap max-w-xs truncate\" title=\"${booking.message || booking.notes || ''}\">${booking.message || booking.notes || booking.comment || 'N/A'}</td>\r\n                        <td class=\"px-4 py-3 whitespace-nowrap text-right\">\r\n                            <button onclick=\"viewBooking('${booking._id}')\" class=\"px-3 py-1 rounded bg-purple-100 text-purple-700 text-sm hover:bg-purple-200 transition-colors\">View</button>\r\n                        </td>\r\n                    </tr>\r\n                    `;\r\n                }).join('');\r\n\r\n                lucide.createIcons();\r\n            } catch (error) {\r\n                console.error('Error loading bookings:', error);\r\n                document.getElementById('bookingsTableBody').innerHTML = `\r\n                    <tr>\r\n                        <td colspan=\"22\" class=\"py-8 text-center text-red-500\">\r\n                            <i data-lucide=\"alert-circle\" class=\"w-12 h-12 mx-auto mb-3\"></i>\r\n                            <p>Error loading bookings</p>\r\n                        </td>\r\n                    </tr>\r\n                `;\r\n                lucide.createIcons();\r\n            }\r\n        }\r\n\r\n        function viewBooking(bookingId) {\r\n            // Could open a modal or redirect to detail page\r\n            alert('Booking details for ID: ' + bookingId);\r\n        }\r\n\r\n        // Sidebar Submenu\r\n        function toggleSubmenu(id, element) {\r\n            const submenu = document.getElementById(id);\r\n            const chevron = element.querySelector('.lucide-chevron-down');\r\n            if (submenu.classList.contains('open')) {\r\n                submenu.classList.remove('open');\r\n                chevron.style.transform = 'rotate(0deg)';\r\n            } else {\r\n                submenu.classList.add('open');\r\n                chevron.style.transform = 'rotate(180deg)';\r\n            }\r\n        }\r\n\r\n        // Mobile Menu\r\n        function toggleMobileMenu() {\r\n            const mobileSidebar = document.getElementById('mobile-sidebar');\r\n            const mobileOverlay = document.getElementById('mobile-overlay');\r\n            const isClosed = mobileSidebar.classList.contains('-translate-x-full');\r\n\r\n            if (isClosed) {\r\n                mobileSidebar.classList.remove('-translate-x-full');\r\n                mobileOverlay.classList.remove('hidden');\r\n            } else {\r\n                mobileSidebar.classList.add('-translate-x-full');\r\n                mobileOverlay.classList.add('hidden');\r\n            }\r\n        }\r\n        document.getElementById('mobile-menu-open').addEventListener('click', toggleMobileMenu);\r\n\r\n        // Modal Logic\r\n        function toggleModal(modalID){\r\n            const modal = document.getElementById(modalID);\r\n            if(modal.classList.contains('hidden')){\r\n                modal.classList.remove('hidden');\r\n                modal.classList.add('flex');\r\n            } else {\r\n                modal.classList.add('hidden');\r\n                modal.classList.remove('flex');\r\n            }\r\n        }\r\n\r\n        // Initialize\r\n        loadBookings();\r\n        \r\n        // Mobile sidebar toggle\r\n        const mobileMenuOpen = document.getElementById('mobile-menu-open');\r\n        const mobileSidebar = document.getElementById('mobile-sidebar');\r\n        const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');\r\n        const mobileSidebarClose = document.getElementById('mobile-sidebar-close');\r\n\r\n        if (mobileMenuOpen && mobileSidebar && mobileSidebarOverlay && mobileSidebarClose) {\r\n            const openSidebar = () => {\r\n                mobileSidebar.classList.remove('hidden');\r\n                mobileSidebarOverlay.classList.remove('hidden');\r\n                setTimeout(() => {\r\n                    mobileSidebar.classList.remove('-translate-x-full');\r\n                }, 10);\r\n            };\r\n\r\n            const closeSidebar = () => {\r\n                mobileSidebar.classList.add('-translate-x-full');\r\n                mobileSidebarOverlay.classList.add('hidden');\r\n                setTimeout(() => {\r\n                    mobileSidebar.classList.add('hidden');\r\n                }, 300);\r\n            };\r\n\r\n            mobileMenuOpen.addEventListener('click', openSidebar);\r\n            mobileSidebarClose.addEventListener('click', closeSidebar);\r\n            mobileSidebarOverlay.addEventListener('click', closeSidebar);\r\n\r\n            mobileSidebar.querySelectorAll('a').forEach(link => {\r\n                link.addEventListener('click', closeSidebar);\r\n            });\r\n        }"
+  },
+  {
+    "src": "/superadmin/js/SuperAdminNotificationManager.js"
+  },
+  {
+    "src": "/superadmin/assets/js/booking.js"
+  }
+];
+const htmlAttrs = {
+  "lang": "en"
+};
+const bodyAttrs = {
+  "class": "text-slate-800"
+};
+const bodyHtml = `<!-- Mobile Overlay -->
+    <div id="mobile-sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+    
+    <div class="flex h-screen overflow-hidden">
+             <!-- Sidebar -->
+        <aside id="mobile-sidebar" class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+            <div class="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827] z-10">
+                 <div class="flex items-center gap-3">
+                     
+                     <div><img src="/website/images/whitelogo.jpeg" alt="Roomhy Logo" class="h-16 w-auto"><span class="text-[10px] text-gray-500">SUPER ADMIN</span></div>
+                 </div>
+                 <button id="mobile-sidebar-close" class="md:hidden ml-auto p-2 text-gray-400 hover:text-white">
+                     <i data-lucide="x" class="w-5 h-5"></i>
+                 </button>
+            </div>
+            <nav class="flex-1 py-6 space-y-1">
+                <div class="px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Overview</div>
+                <a href="/superadmin/superadmin" class="sidebar-link"><i data-lucide="layout-dashboard" class="w-5 h-5 mr-3"></i> Dashboard</a>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Management</div>
+                <a href="/superadmin/manager" class="sidebar-link"><i data-lucide="map-pin" class="w-5 h-5 mr-3"></i> Teams</a>
+                <a href="/superadmin/owner" class="sidebar-link"><i data-lucide="briefcase" class="w-5 h-5 mr-3"></i> Property Owners</a>
+                <a href="/superadmin/properties" class="sidebar-link"><i data-lucide="home" class="w-5 h-5 mr-3"></i> Properties</a>
+                <a href="/superadmin/tenant" class="sidebar-link"><i data-lucide="users" class="w-5 h-5 mr-3"></i> Tenants</a>
+                <a href="/superadmin/new_signups" class="sidebar-link"><i data-lucide="file-badge" class="w-5 h-5 mr-3"></i> New Signups</a>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Operations</div>
+                <a href="/superadmin/websiteenq" class="sidebar-link"><i data-lucide="folder-open" class="w-5 h-5 mr-3"></i> Web Enquiry</a>
+                <a href="/superadmin/enquiry" class="sidebar-link"><i data-lucide="help-circle" class="w-5 h-5 mr-3"></i> Enquiries</a>
+                <a href="/superadmin/booking" class="sidebar-link"><i data-lucide="calendar-check" class="w-5 h-5 mr-3"></i> Bookings</a>
+                <a href="/superadmin/reviews" class="sidebar-link"><i data-lucide="star" class="w-5 h-5 mr-3"></i> Reviews</a>
+                <a href="/superadmin/complaint-history" class="sidebar-link"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Complaint History</a>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Website</div>
+                <a href="/superadmin/website" class="sidebar-link"><i data-lucide="globe" class="w-5 h-5 mr-3"></i> Live Properties</a>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Finance</div>
+                <div class="group">
+                    <div class="sidebar-link justify-between" onclick="toggleSubmenu('finance-submenu', this)">
+                        <div class="flex items-center"><i data-lucide="wallet" class="w-5 h-5 mr-3"></i> Finance</div>
+                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i>
+                    </div>
+                    <div id="finance-submenu" class="submenu">
+                        <a href="/superadmin/rentcollection" class="sidebar-link text-sm hover:text-white">Rent Collections</a>
+                        <a href="/superadmin/platform" class="sidebar-link text-sm hover:text-white">Commissions</a>
+                        <a href="/superadmin/refund" class="sidebar-link text-sm hover:text-white">Refunds</a>
+                    </div>
+                </div>
+                <div class="mt-6 px-6 pb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">System</div>
+                 <a href="/superadmin/location" class="sidebar-link"><i data-lucide="globe" class="w-5 h-5 mr-3"></i> Locations</a>
+            </nav>
+        </aside>
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden bg-[#f3f4f6]">
+            <!-- Top Header -->
+            <header class="bg-white h-16 flex items-center justify-between px-6 shadow-sm z-10">
+                <div class="flex items-center">
+                    <button id="mobile-menu-open" class="md:hidden mr-4 text-slate-500"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <div class="flex items-center text-sm">
+                        <span class="text-slate-500 font-medium">Operations</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 mx-2 text-slate-400"></i>
+                        <span class="text-slate-800 font-semibold">Bookings</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Notification Bell with Badge -->
+                    <div class="relative">
+                        <button id="notificationBellBtn" class="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-lg transition-colors">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+                        </button>
+                        
+                        <!-- Notification Dropdown -->
+                        <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg py-2 ring-1 ring-black ring-opacity-5 z-50">
+                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                <h3 class="font-semibold text-gray-800">Notifications</h3>
+                                <div class="flex gap-2">
+                                    <button onclick="markAllRead()" class="text-xs text-purple-600 hover:text-purple-800">Mark all read</button>
+                                    <button onclick="clearAll()" class="text-xs text-gray-400 hover:text-gray-600">Clear</button>
+                                </div>
+                            </div>
+                            <div id="notificationList" class="max-h-96 overflow-y-auto custom-scrollbar">
+                                <div class="px-4 py-8 text-center text-gray-400">
+                                    <i data-lucide="bell-off" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                                    <p>No notifications yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="relative group">
+                        <button class="flex items-center gap-3 hover:bg-gray-50 p-1.5 rounded-full transition-colors">
+                            <div class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold text-xs">SP</div>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <main class="flex-1 overflow-y-auto p-6 md:p-8">
+                <div class="max-w-7xl mx-auto">
+                    
+                    <!-- Page Header -->
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-800">Booking Requests</h1>
+                            <p class="text-sm text-slate-500 mt-1">Manage new booking requests, verify payments, and schedule move-ins.</p>
+                        </div>
+                        <button onclick="toggleModal('createBookingModal')" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center shadow-md transition-all hover:shadow-lg">
+                            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Create Booking
+                        </button>
+                    </div>
+
+                    <!-- Filters Toolbar -->
+                    <div class="bg-white p-4 rounded-t-xl border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
+                        <!-- Search -->
+                        <div class="relative w-full md:w-96">
+                            <input type="text" placeholder="Search Booking ID, Tenant Name..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
+                            <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-3"></i>
+                        </div>
+                        
+                        <!-- Filters -->
+                        <div class="flex items-center gap-3 w-full md:w-auto flex-wrap md:flex-nowrap">
+                            <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-600">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending Approval</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                             <div class="flex bg-gray-100 rounded-lg p-1">
+                                <button class="p-2 hover:bg-white rounded-md text-gray-600 transition-all shadow-sm" title="Export"><i data-lucide="download" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="bg-white rounded-b-xl shadow-sm overflow-hidden border border-gray-200 border-t-0">
+                        <div class="overflow-x-auto">
+                            <table class="w-full data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Property ID</th>
+                                        <th>Property Name</th>
+                                        <th>Area</th>
+                                        <th>Type</th>
+                                        <th>Rent</th>
+                                        <th>User ID</th>
+                                        <th>Tenant Name</th>
+                                        <th>Phone</th>
+                                        <th>Email</th>
+                                        <th>Guardian Name</th>
+                                        <th>Guardian Phone</th>
+                                        <th>Address</th>
+                                        <th>Payment ID</th>
+                                        <th>Payment Amount</th>
+                                        <th>Payment Method</th>
+                                        <th>Payment Type</th>
+                                        <th>Card/UPI Details</th>
+                                        <th>Payment Status</th>
+                                        <th>Request Type</th>
+                                        <th>Bid Amount</th>
+                                        <th>Message</th>
+                                        <th class="text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bookingsTableBody">
+                                    <tr class="text-center py-8 text-gray-500">
+                                        <td colspan="22" class="py-8">
+                                            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                                            <p>Loading bookings...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="mobile-overlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden backdrop-blur-sm" onclick="toggleMobileMenu()"></div>
+        <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 bg-[#111827] z-40 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col">
+            <nav class="flex-1 py-4 space-y-1 px-2">
+                 <a href="/superadmin/superadmin" class="flex items-center px-4 py-3 text-sm font-medium rounded-md text-gray-400 hover:bg-gray-800">Dashboard</a>
+                 <a href="#" class="flex items-center px-4 py-3 text-sm font-medium rounded-md bg-gray-800 text-white border-l-4 border-purple-500">Bookings</a>
+            </nav>
+        </aside>
+    </div>
+
+    <!-- View Booking Modal -->
+    <div id="viewBookingModal" class="modal fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="toggleModal('viewBookingModal')"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                         <h3 class="text-lg leading-6 font-bold text-gray-900">Booking #BK-2024-88</h3>
+                         <button onclick="toggleModal('viewBookingModal')" class="text-gray-400 hover:text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-3 rounded-md border border-gray-200">
+                            <h4 class="text-xs font-bold text-gray-500 uppercase mb-2">Tenant Info</h4>
+                            <p class="text-sm font-medium text-gray-900">Vikram Kumar</p>
+                            <p class="text-sm text-gray-600">+91 99880 11223 | vikram.k@email.com</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Property</h4>
+                                <p class="text-sm text-gray-800">Sai Residency</p>
+                            </div>
+                             <div>
+                                <h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Room Type</h4>
+                                <p class="text-sm text-gray-800">Double Sharing (Non-AC)</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Move-in Date</h4>
+                                <p class="text-sm text-gray-800">25 Oct 2025</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Duration</h4>
+                                <p class="text-sm text-gray-800">11 Months</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-green-50 p-3 rounded-md border border-green-200">
+                            <h4 class="text-xs font-bold text-green-700 uppercase mb-2">Payment Details</h4>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Booking Amount Paid:</span>
+                                <span class="font-bold text-gray-900">?5,000</span>
+                            </div>
+                            <div class="flex justify-between text-sm mt-1">
+                                <span class="text-gray-600">Payment Mode:</span>
+                                <span class="text-gray-800">UPI (Transaction ID: 882...991)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                    <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:w-auto sm:text-sm">
+                        Approve Booking
+                    </button>
+                    <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:w-auto sm:text-sm">
+                        Reject
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Booking Modal -->
+    <div id="createBookingModal" class="modal fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="toggleModal('createBookingModal')"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex justify-between items-center mb-5 border-b pb-2">
+                         <h3 class="text-lg leading-6 font-bold text-gray-900">Create Manual Booking</h3>
+                         <button onclick="toggleModal('createBookingModal')" class="text-gray-400 hover:text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    
+                    <form class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                             <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700">Select Property</label>
+                                <select class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                                    <option>Sai Residency (Koramangala)</option>
+                                    <option>Green View PG (Indiranagar)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Tenant Name</label>
+                                <input type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                                <input type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Room Type</label>
+                                <select class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                                    <option>Single</option>
+                                    <option>Double Sharing</option>
+                                    <option>Triple Sharing</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Move-in Date</label>
+                                <input type="date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm">
+                            </div>
+                             <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700">Advance Payment Amount</label>
+                                <div class="relative mt-1 rounded-md shadow-sm">
+                                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                        <span class="text-gray-500 sm:text-sm">?</span>
+                                    </div>
+                                    <input type="text" class="block w-full rounded-md border-gray-300 pl-7 focus:border-purple-500 focus:ring-purple-500 sm:text-sm" placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Confirm Booking
+                    </button>
+                    <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="toggleModal('createBookingModal')">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    
+    <!-- Notification System -->`;
+
+export default function SuperadminBookingPage() {
+  useHeadAssets({ title, metas, links, scripts, htmlAttrs, bodyAttrs });
+  return (
+    <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+  );
+}

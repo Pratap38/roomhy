@@ -23,7 +23,7 @@ const NOTIFICATION_SERVICE = {
                                 `Your booking for ${booking.propertyName} has been accepted`,
                                 'booking_accept',
                                 booking.id,
-                                'mystays.html'
+                                '/website/mystays'
                             );
 
                             // Mark as notified
@@ -57,7 +57,7 @@ const NOTIFICATION_SERVICE = {
                             latestMessage.preview || 'You have a new message',
                             'new_message',
                             latestMessage.id,
-                            'websitechat.html'
+                            '/website/websitechat'
                         );
 
                         localStorage.setItem(`notified_msg_${latestMessage.id}`, 'true');

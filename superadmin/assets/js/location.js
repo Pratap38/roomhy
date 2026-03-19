@@ -25,11 +25,11 @@ const isLocalHost = window.location.hostname === 'localhost' || window.location.
                 const result = await response.json();
                 citiesData = (result.data || []).map(city => ({
                     _id: city._id || city.id,
-                    name: city.name,
-                    state: city.state,
+                    name: city.name || city.cityName || '',
+                    state: city.state || '',
                     imageUrl: city.imageUrl || city.image,
                     imagePublicId: city.imagePublicId,
-                    status: city.status,
+                    status: city.status || 'Active',
                     ...city
                 }));
                 // Sync to localStorage for manager.html compatibility
@@ -37,7 +37,13 @@ const isLocalHost = window.location.hostname === 'localhost' || window.location.
                 renderCitiesTable();
             } catch (error) {
                 console.error('Error loading cities:', error);
-                showError('Failed to load cities: ' + error.message);
+                const fallback = JSON.parse(localStorage.getItem('roomhy_cities') || '[]');
+                if (Array.isArray(fallback) && fallback.length) {
+                    citiesData = fallback;
+                    renderCitiesTable();
+                } else {
+                    showError('Failed to load cities: ' + error.message);
+                }
             }
         }
 
@@ -52,13 +58,13 @@ const isLocalHost = window.location.hostname === 'localhost' || window.location.
                 const result = await response.json();
                 areasData = (result.data || []).map(area => ({
                     _id: area._id || area.id,
-                    name: area.name,
+                    name: area.name || area.areaName || '',
                     city: area.city,
                     cityId: (area.city && area.city._id) ? area.city._id : (typeof area.city === 'string' ? area.city : ''),
                     cityName: area.cityName || (area.city && area.city.name) || '',
                     imageUrl: area.imageUrl || area.image,
                     imagePublicId: area.imagePublicId,
-                    status: area.status,
+                    status: area.status || 'Active',
                     ...area
                 }));
                 // Sync to localStorage for manager.html compatibility
@@ -66,7 +72,13 @@ const isLocalHost = window.location.hostname === 'localhost' || window.location.
                 renderAreasTable();
             } catch (error) {
                 console.error('Error loading areas:', error);
-                showError('Failed to load areas: ' + error.message);
+                const fallback = JSON.parse(localStorage.getItem('roomhy_areas') || '[]');
+                if (Array.isArray(fallback) && fallback.length) {
+                    areasData = fallback;
+                    renderAreasTable();
+                } else {
+                    showError('Failed to load areas: ' + error.message);
+                }
             }
         }
 
@@ -228,6 +240,10 @@ const isLocalHost = window.location.hostname === 'localhost' || window.location.
          */
         function renderCitiesTable() {
             const tbody = document.getElementById('citiesTableBody');
+            if (!citiesData.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-6">No cities found</td></tr>';
+                return;
+            }
             tbody.innerHTML = citiesData.map(city => `
                 <tr class="hover:bg-gray-50">
                     <td><span class="font-medium text-gray-900">${city.name}</span></td>
@@ -253,6 +269,10 @@ const isLocalHost = window.location.hostname === 'localhost' || window.location.
          */
         function renderAreasTable() {
             const tbody = document.getElementById('areasTableBody');
+            if (!areasData.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-gray-400 py-6">No areas found</td></tr>';
+                return;
+            }
             tbody.innerHTML = areasData.map(area => `
                 <tr class="hover:bg-gray-50">
                     <td><span class="font-medium text-gray-900">${area.name}</span></td>
@@ -476,7 +496,7 @@ const isLocalHost = window.location.hostname === 'localhost' || window.location.
         // Mobile Menu
         document.getElementById('mobile-menu-open').addEventListener('click', () => {
              const sidebar = document.querySelector('aside');
-             const overlay = document.getElementById('mobile-overlay');
+             const overlay = document.getElementById('mobile-sidebar-overlay');
              sidebar.classList.remove('hidden');
              sidebar.classList.add('flex', 'absolute', 'inset-y-0', 'left-0', 'w-72', 'z-40');
              if(overlay) overlay.classList.remove('hidden');

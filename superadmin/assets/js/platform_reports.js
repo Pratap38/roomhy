@@ -16,7 +16,7 @@ lucide.createIcons();
         // Mobile Menu
         function toggleMobileMenu() {
             const mobileSidebar = document.getElementById('mobile-sidebar');
-            const mobileOverlay = document.getElementById('mobile-overlay');
+            const mobileOverlay = document.getElementById('mobile-sidebar-overlay');
             const isClosed = mobileSidebar.classList.contains('-translate-x-full');
             
             if (isClosed) {

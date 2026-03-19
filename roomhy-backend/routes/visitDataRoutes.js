@@ -347,9 +347,9 @@ router.post('/approve', async (req, res) => {
 
             if (ownerEmail) {
                 emailAttempted = true;
-                const baseWebUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
-                const mainCheckinLink = `${baseWebUrl}/digital-checkin/index.html`;
-                const directCheckinLink = `${baseWebUrl}/digital-checkin/ownerprofile.html?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
+                const baseWebUrl = 'http://localhost:5173';
+                const mainCheckinLink = `${baseWebUrl}/digital-checkin/index`;
+                const directCheckinLink = `${baseWebUrl}/digital-checkin/ownerprofile?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
                 const subject = 'RoomHy Property Approved - Complete Digital Check-In';
                 const text = `Property approved\nLogin ID: ${finalLoginId}\nTemporary Password: ${finalPassword}\nDigital Check-In: ${mainCheckinLink}\nDirect Link: ${directCheckinLink}`;
                 const html = `
@@ -710,6 +710,120 @@ router.get('/:visitId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching visit',
+            error: error.message
+        });
+    }
+});
+
+// ============================================================
+// PUT: Update full visit details
+// ============================================================
+router.put('/:visitId', async (req, res) => {
+    try {
+        const {
+            propertyName,
+            propertyType,
+            propertyId,
+            address,
+            area,
+            areaLocality,
+            city,
+            landmark,
+            nearbyLocation,
+            ownerName,
+            ownerEmail,
+            contactPhone,
+            gender,
+            monthlyRent,
+            deposit,
+            electricityCharges,
+            foodCharges,
+            maintenanceCharges,
+            minStay,
+            entryExit,
+            amenities,
+            cleanlinessRating,
+            ownerBehaviourPublic,
+            studentReviewsRating,
+            employeeRating,
+            visitorsAllowed,
+            cookingAllowed,
+            smokingAllowed,
+            petsAllowed,
+            internalRemarks,
+            studentReviews,
+            cleanlinessNote,
+            ownerBehaviour,
+            latitude,
+            longitude,
+            photos,
+            professionalPhotos,
+            locationCode
+        } = req.body;
+
+        const visit = await VisitData.findOneAndUpdate(
+            { visitId: req.params.visitId },
+            {
+                ...(propertyName !== undefined && { propertyName }),
+                ...(propertyType !== undefined && { propertyType }),
+                ...(propertyId !== undefined && { propertyId }),
+                ...(address !== undefined && { address }),
+                ...(area !== undefined && { area }),
+                ...(areaLocality !== undefined && { areaLocality }),
+                ...(city !== undefined && { city }),
+                ...(landmark !== undefined && { landmark }),
+                ...(nearbyLocation !== undefined && { nearbyLocation }),
+                ...(ownerName !== undefined && { ownerName }),
+                ...(ownerEmail !== undefined && { ownerEmail }),
+                ...(contactPhone !== undefined && { contactPhone, ownerPhone: contactPhone }),
+                ...(gender !== undefined && { gender }),
+                ...(monthlyRent !== undefined && { monthlyRent: parseInt(monthlyRent, 10) || 0 }),
+                ...(deposit !== undefined && { deposit: parseInt(deposit, 10) || 0 }),
+                ...(electricityCharges !== undefined && { electricityCharges: parseInt(electricityCharges, 10) || 0 }),
+                ...(foodCharges !== undefined && { foodCharges: parseInt(foodCharges, 10) || 0 }),
+                ...(maintenanceCharges !== undefined && { maintenanceCharges: parseInt(maintenanceCharges, 10) || 0 }),
+                ...(minStay !== undefined && { minStay: parseInt(minStay, 10) || 0 }),
+                ...(entryExit !== undefined && { entryExit }),
+                ...(amenities !== undefined && { amenities: Array.isArray(amenities) ? amenities : (amenities ? [amenities] : []) }),
+                ...(cleanlinessRating !== undefined && { cleanlinessRating: parseInt(cleanlinessRating, 10) || 0 }),
+                ...(ownerBehaviourPublic !== undefined && { ownerBehaviourPublic }),
+                ...(studentReviewsRating !== undefined && { studentReviewsRating: parseInt(studentReviewsRating, 10) || 0 }),
+                ...(employeeRating !== undefined && { employeeRating: parseInt(employeeRating, 10) || 0 }),
+                ...(visitorsAllowed !== undefined && { visitorsAllowed: stringToBoolean(visitorsAllowed) }),
+                ...(cookingAllowed !== undefined && { cookingAllowed: stringToBoolean(cookingAllowed) }),
+                ...(smokingAllowed !== undefined && { smokingAllowed: stringToBoolean(smokingAllowed) }),
+                ...(petsAllowed !== undefined && { petsAllowed: stringToBoolean(petsAllowed) }),
+                ...(internalRemarks !== undefined && { internalRemarks }),
+                ...(studentReviews !== undefined && { studentReviews }),
+                ...(cleanlinessNote !== undefined && { cleanlinessNote }),
+                ...(ownerBehaviour !== undefined && { ownerBehaviour }),
+                ...(latitude !== undefined && { latitude }),
+                ...(longitude !== undefined && { longitude }),
+                ...(photos !== undefined && { photos: Array.isArray(photos) ? photos : (photos ? [photos] : []) }),
+                ...(professionalPhotos !== undefined && { professionalPhotos: Array.isArray(professionalPhotos) ? professionalPhotos : (professionalPhotos ? [professionalPhotos] : []) }),
+                ...(locationCode !== undefined && { locationCode }),
+                updatedAt: new Date()
+            },
+            { new: true }
+        );
+
+        if (!visit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Visit not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Visit updated successfully',
+            visit
+        });
+    } catch (error) {
+        console.error('Error updating visit:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating visit',
             error: error.message
         });
     }

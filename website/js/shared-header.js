@@ -2,13 +2,13 @@
 // This provides consistent navigation, notifications, and mobile responsiveness
 
 const WEBSITE_PAGES = [
-    { name: 'Home', url: 'index.html', icon: 'home' },
-    { name: 'Our Properties', url: 'ourproperty.html', icon: 'building-2' },
-    { name: 'My Stays', url: 'mystays.html', icon: 'building' },
-    { name: 'Favorites', url: 'fav.html', icon: 'heart' },
-    { name: 'Chat', url: 'websitechat.html', icon: 'message-square' },
-    { name: 'About Us', url: 'about.html', icon: 'info' },
-    { name: 'Contact Us', url: 'contact.html', icon: 'phone' },
+    { name: 'Home', url: '/website/index', icon: 'home' },
+    { name: 'Our Properties', url: '/website/ourproperty', icon: 'building-2' },
+    { name: 'My Stays', url: '/website/mystays', icon: 'building' },
+    { name: 'Favorites', url: '/website/fav', icon: 'heart' },
+    { name: 'Chat', url: '/website/websitechat', icon: 'message-square' },
+    { name: 'About Us', url: '/website/about', icon: 'info' },
+    { name: 'Contact Us', url: '/website/contact', icon: 'phone' },
 ];
 
 function injectSharedHeader() {
@@ -19,17 +19,17 @@ function injectSharedHeader() {
                 
                 <!-- Logo -->
                 <div class="flex items-center">
-                    <a href="index.html" class="flex-shrink-0">
+                    <a href="/website/index" class="flex-shrink-0">
                         <img src="images/logoroomhy.jpg" alt="Roomhy Logo" class="h-10 w-25">
                     </a>
                 </div>
                 
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center space-x-6">
-                    <a href="ourproperty.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Our Properties</a>
-                    <a href="mystays.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">My Stays</a>
-                    <a href="fav.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Favorites</a>
-                    <a href="websitechat.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Chat</a>
+                    <a href="/website/ourproperty" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Our Properties</a>
+                    <a href="/website/mystays" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">My Stays</a>
+                    <a href="/website/fav" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Favorites</a>
+                    <a href="/website/websitechat" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Chat</a>
                 </nav>
 
                 <!-- Right Side Icons -->
@@ -53,7 +53,7 @@ function injectSharedHeader() {
                     </div>
 
                     <!-- Post Property Button -->
-                    <a href="list.html" class="hidden sm:flex flex-shrink-0 items-center space-x-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                    <a href="/website/list" class="hidden sm:flex flex-shrink-0 items-center space-x-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
                         <span>Post Property</span>
                     </a>
@@ -91,11 +91,11 @@ function injectSharedHeader() {
         </nav>
 
         <div class="p-4 border-t flex-shrink-0 space-y-2">
-            <a href="list.html" class="flex items-center space-x-2 w-full bg-blue-100 text-blue-700 font-semibold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">
+            <a href="/website/list" class="flex items-center space-x-2 w-full bg-blue-100 text-blue-700 font-semibold py-2 px-4 rounded-lg hover:bg-blue-200 transition-colors">
                 <i data-lucide="plus-circle" class="w-5 h-5"></i>
                 <span>Post Property</span>
             </a>
-            <a href="logout.html" class="flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
+            <a href="/website/login" class="flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
                 <i data-lucide="log-out" class="w-5 h-5"></i>
                 <span>Logout</span>
             </a>

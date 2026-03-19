@@ -108,9 +108,9 @@ exports.approveVisit = async (req, res) => {
             const ownerArea = visit.area || (visit.propertyInfo && visit.propertyInfo.area) || '';
             console.log('Approving visit:', visitId, 'ownerEmail:', ownerEmail, 'loginId:', finalLoginId);
             if (ownerEmail) {
-                const baseWebUrl = process.env.FRONTEND_URL || 'https://admin.roomhy.com';
-                const mainCheckinLink = `${baseWebUrl}/digital-checkin/index.html`;
-                const directCheckinLink = `${baseWebUrl}/digital-checkin/ownerprofile.html?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
+                const baseWebUrl = 'http://localhost:5173';
+                const mainCheckinLink = `${baseWebUrl}/digital-checkin/index`;
+                const directCheckinLink = `${baseWebUrl}/digital-checkin/ownerprofile?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
                 const subject = 'RoomHy Property Approved - Complete Digital Check-In';
                 const html = `
                     <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111">

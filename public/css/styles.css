@@ -26,9 +26,6 @@
 .fixed {
   position: fixed;
 }
-.fixed\! {
-  position: fixed !important;
-}
 .relative {
   position: relative;
 }
@@ -52,9 +49,6 @@
 }
 .top-full {
   top: 100%;
-}
-.-left-\[29px\] {
-  left: calc(29px * -1);
 }
 .left-1\/2 {
   left: calc(1 / 2 * 100%);
@@ -83,9 +77,6 @@
 .z-50 {
   z-index: 50;
 }
-.z-60 {
-  z-index: 60;
-}
 .z-\[60\] {
   z-index: 60;
 }
@@ -94,6 +85,12 @@
 }
 .z-\[70\] {
   z-index: 70;
+}
+.z-\[80\] {
+  z-index: 80;
+}
+.z-\[9999\] {
+  z-index: 9999;
 }
 .col-span-1 {
   grid-column: span 1 / span 1;
@@ -133,9 +130,6 @@
 }
 .mt-auto {
   margin-top: auto;
-}
-.mr-auto {
-  margin-right: auto;
 }
 .ml-auto {
   margin-left: auto;
@@ -200,8 +194,8 @@
 .h-\[10\%\] {
   height: 10%;
 }
-.h-\[28rem\] {
-  height: 28rem;
+.h-\[24rem\] {
+  height: 24rem;
 }
 .h-\[80vh\] {
   height: 80vh;
@@ -227,6 +221,9 @@
 .h-full {
   height: 100%;
 }
+.h-px {
+  height: 1px;
+}
 .h-screen {
   height: 100vh;
 }
@@ -247,6 +244,9 @@
 }
 .min-h-\[88px\] {
   min-height: 88px;
+}
+.min-h-\[300px\] {
+  min-height: 300px;
 }
 .min-h-\[350px\] {
   min-height: 350px;
@@ -293,6 +293,9 @@
 .max-w-none {
   max-width: none;
 }
+.min-w-\[20px\] {
+  min-width: 20px;
+}
 .min-w-\[120px\] {
   min-width: 120px;
 }
@@ -308,14 +311,14 @@
 .min-w-\[1000px\] {
   min-width: 1000px;
 }
+.min-w-\[1400px\] {
+  min-width: 1400px;
+}
 .min-w-full {
   min-width: 100%;
 }
 .flex-1 {
   flex: 1;
-}
-.flex-shrink {
-  flex-shrink: 1;
 }
 .flex-shrink-0 {
   flex-shrink: 0;
@@ -456,6 +459,9 @@
 .items-start {
   align-items: flex-start;
 }
+.items-stretch {
+  align-items: stretch;
+}
 .justify-around {
   justify-content: space-around;
 }
@@ -517,6 +523,10 @@
   border-style: var(--tw-border-style);
   border-width: 1px;
 }
+.border-0 {
+  border-style: var(--tw-border-style);
+  border-width: 0px;
+}
 .border-2 {
   border-style: var(--tw-border-style);
   border-width: 2px;
@@ -561,6 +571,10 @@
   border-bottom-style: var(--tw-border-style);
   border-bottom-width: 2px;
 }
+.border-b-4 {
+  border-bottom-style: var(--tw-border-style);
+  border-bottom-width: 4px;
+}
 .border-b-\[10px\] {
   border-bottom-style: var(--tw-border-style);
   border-bottom-width: 10px;
@@ -568,10 +582,6 @@
 .border-l {
   border-left-style: var(--tw-border-style);
   border-left-width: 1px;
-}
-.border-l-2 {
-  border-left-style: var(--tw-border-style);
-  border-left-width: 2px;
 }
 .border-l-4 {
   border-left-style: var(--tw-border-style);
@@ -611,6 +621,10 @@
   --tw-gradient-position: to bottom in oklab;
   background-image: linear-gradient(var(--tw-gradient-stops));
 }
+.bg-gradient-to-bl {
+  --tw-gradient-position: to bottom left in oklab;
+  background-image: linear-gradient(var(--tw-gradient-stops));
+}
 .bg-gradient-to-br {
   --tw-gradient-position: to bottom right in oklab;
   background-image: linear-gradient(var(--tw-gradient-stops));
@@ -621,6 +635,10 @@
 }
 .bg-gradient-to-t {
   --tw-gradient-position: to top in oklab;
+  background-image: linear-gradient(var(--tw-gradient-stops));
+}
+.bg-gradient-to-tr {
+  --tw-gradient-position: to top right in oklab;
   background-image: linear-gradient(var(--tw-gradient-stops));
 }
 .bg-\[url\(\'https\:\/\/www\.transparenttextures\.com\/patterns\/cubes\.png\'\)\] {
@@ -663,14 +681,14 @@
 .text-\[7px\] {
   font-size: 7px;
 }
-.text-\[8px\] {
-  font-size: 8px;
-}
 .text-\[9px\] {
   font-size: 9px;
 }
 .text-\[10px\] {
   font-size: 10px;
+}
+.text-\[11px\] {
+  font-size: 11px;
 }
 .leading-none {
   --tw-leading: 1;
@@ -687,9 +705,6 @@
 }
 .whitespace-nowrap {
   white-space: nowrap;
-}
-.whitespace-pre-wrap {
-  white-space: pre-wrap;
 }
 .text-transparent {
   color: transparent;
@@ -727,9 +742,6 @@
 .opacity-30 {
   opacity: 30%;
 }
-.opacity-40 {
-  opacity: 40%;
-}
 .opacity-50 {
   opacity: 50%;
 }
@@ -748,10 +760,6 @@
 .opacity-100 {
   opacity: 100%;
 }
-.ring {
-  --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
-  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-}
 .ring-1 {
   --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
   box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
@@ -763,10 +771,6 @@
 .outline {
   outline-style: var(--tw-outline-style);
   outline-width: 1px;
-}
-.grayscale {
-  --tw-grayscale: grayscale(100%);
-  filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
 }
 .filter {
   filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
@@ -812,6 +816,10 @@
 .duration-300 {
   --tw-duration: 300ms;
   transition-duration: 300ms;
+}
+.duration-400 {
+  --tw-duration: 400ms;
+  transition-duration: 400ms;
 }
 .duration-500 {
   --tw-duration: 500ms;
@@ -860,6 +868,16 @@
     }
   }
 }
+.group-hover\:scale-150 {
+  &:is(:where(.group):hover *) {
+    @media (hover: hover) {
+      --tw-scale-x: 150%;
+      --tw-scale-y: 150%;
+      --tw-scale-z: 150%;
+      scale: var(--tw-scale-x) var(--tw-scale-y);
+    }
+  }
+}
 .group-hover\:underline {
   &:is(:where(.group):hover *) {
     @media (hover: hover) {
@@ -871,13 +889,6 @@
   &:is(:where(.group):hover *) {
     @media (hover: hover) {
       opacity: 0%;
-    }
-  }
-}
-.group-hover\:opacity-90 {
-  &:is(:where(.group):hover *) {
-    @media (hover: hover) {
-      opacity: 90%;
     }
   }
 }
@@ -964,22 +975,9 @@
     }
   }
 }
-.hover\:opacity-100 {
-  &:hover {
-    @media (hover: hover) {
-      opacity: 100%;
-    }
-  }
-}
 .focus\:border-transparent {
   &:focus {
     border-color: transparent;
-  }
-}
-.focus\:ring-0 {
-  &:focus {
-    --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
-    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
 }
 .focus\:ring-1 {
@@ -1041,6 +1039,11 @@
 .disabled\:opacity-50 {
   &:disabled {
     opacity: 50%;
+  }
+}
+.disabled\:opacity-60 {
+  &:disabled {
+    opacity: 60%;
   }
 }
 @property --tw-translate-x {

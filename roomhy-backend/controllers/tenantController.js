@@ -129,8 +129,8 @@ exports.assignTenant = async (req, res) => {
         console.log(`[RENT RECORD CREATED] Rent ID: ${rent._id}, Amount: ₹${rentAmount}`);
 
         // Send email to tenant with loginId, tempPassword and digital check-in link (non-blocking)
-        const baseWebUrl = process.env.FRONTEND_URL || 'https://admin.roomhy.com';
-        const tenantCheckinLink = `${baseWebUrl}/digital-checkin/tenantprofile.html?loginId=${encodeURIComponent(tenant.loginId)}`;
+        const baseWebUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
+        const tenantCheckinLink = `${baseWebUrl}/digital-checkin/tenantprofile?loginId=${encodeURIComponent(tenant.loginId)}`;
         try {
             if (tenant.email) {
                 const subject = 'Your RoomHy Tenant Login Credentials + Digital Check-In Link';
