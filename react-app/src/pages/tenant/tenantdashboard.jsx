@@ -24,6 +24,7 @@ export default function Tenantdashboard() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [payOpen, setPayOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (window?.lucide) window.lucide.createIcons();
@@ -82,13 +83,16 @@ export default function Tenantdashboard() {
 
   return (
     <div className="html-page">
-      <div className="flex flex-col h-screen overflow-hidden">
-        <nav className="top-navbar">
+      <div className="flex flex-col min-h-screen overflow-hidden bg-slate-50">
+        <nav className="top-navbar sticky top-0 z-30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-8">
-                <div className="flex items-center">
-                  <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-16 w-auto" />
+            <div className="flex items-center justify-between min-h-16 py-3 gap-3">
+              <div className="flex items-center gap-3 md:gap-8 min-w-0">
+                <button type="button" className="md:hidden inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-600" onClick={() => setMobileMenuOpen((open) => !open)}>
+                  <i data-lucide={mobileMenuOpen ? "x" : "menu"} className="w-5 h-5"></i>
+                </button>
+                <div className="flex items-center min-w-0">
+                  <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-12 sm:h-16 w-auto" />
                 </div>
                 <div className="hidden md:flex items-center gap-1">
                   <a href="/tenant/tenantdashboard" className="nav-item active">
@@ -99,8 +103,8 @@ export default function Tenantdashboard() {
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <a href="/tenant/tenantcomplints" className="nav-item">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <a href="/tenant/tenantcomplints" className="hidden sm:inline-flex nav-item">
                   <i data-lucide="flag" className="w-4 h-4 mr-2"></i>Complaints
                 </a>
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm">
@@ -108,21 +112,32 @@ export default function Tenantdashboard() {
                 </div>
               </div>
             </div>
+            <div className={`${mobileMenuOpen ? "grid" : "hidden"} md:hidden gap-2 pb-3`}>
+              <a href="/tenant/tenantdashboard" className="nav-item active justify-center">
+                <i data-lucide="home" className="w-4 h-4 mr-2"></i>Dashboard
+              </a>
+              <button onClick={() => setPayOpen(true)} className="nav-item justify-center">
+                <i data-lucide="credit-card" className="w-4 h-4 mr-2"></i>Pay Rent
+              </button>
+              <a href="/tenant/tenantcomplints" className="nav-item justify-center">
+                <i data-lucide="flag" className="w-4 h-4 mr-2"></i>Complaints
+              </a>
+            </div>
           </div>
         </nav>
 
         <div className="flex-1 overflow-y-auto">
-          <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8">
             <div>
-              <h2 className="text-4xl font-bold text-slate-900">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 leading-tight">
                 Welcome back, <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{tenant?.name || "Tenant"}</span>
               </h2>
-              <p className="text-slate-500 mt-2">Here's your rental summary and account overview</p>
+              <p className="text-sm sm:text-base text-slate-500 mt-2">Here's your rental summary and account overview</p>
             </div>
 
             {errorMsg && <div className="text-sm text-red-600">{errorMsg}</div>}
 
-            <div className="rent-banner p-8 rounded-2xl shadow-xl relative overflow-hidden">
+            <div className="rent-banner p-5 sm:p-8 rounded-2xl shadow-xl relative overflow-hidden">
               <div className="relative z-10 grid md:grid-cols-2 gap-8">
                 <div>
                   <div className="flex items-center gap-2 text-blue-100 mb-3">
@@ -140,7 +155,7 @@ export default function Tenantdashboard() {
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-col justify-between items-start md:items-end gap-6 text-white/90 text-sm">
+                <div className="flex flex-col justify-between items-start md:items-end gap-4 sm:gap-6 text-white/90 text-sm">
                   <p><strong>Property:</strong> {tenant?.propertyTitle || tenant?.property?.title || "-"}</p>
                   <p><strong>Room:</strong> {tenant?.roomNo || "-"}</p>
                   <p><strong>Login ID:</strong> <span className="font-mono">{tenant?.loginId || "--"}</span></p>
@@ -151,14 +166,14 @@ export default function Tenantdashboard() {
               </div>
             </div>
 
-            <div className="dashboard-card p-8">
-              <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+            <div className="dashboard-card p-5 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-5 sm:mb-6 flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                   <i data-lucide="home" className="w-6 h-6 text-blue-600"></i>
                 </div>
                 Your Current Stay
               </h3>
-              <div className="grid md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
                 <div className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-100">
                   <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">Property</p>
                   <p className="text-lg font-bold text-slate-900">{tenant?.propertyTitle || tenant?.property?.title || "-"}</p>

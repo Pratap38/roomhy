@@ -1455,7 +1455,7 @@ export default function WebsiteProperty() {
                   
                   <div className="footer-logo">
                       
-                      <img src="https://placehold.co/180x40/0f172a/ffffff?text=Roomhy+Logo" alt="Roomhy Logo" />
+                      <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-10 w-auto" />
                       <p className="mt-4">Discover Your Next Home, Together. Zero Brokerage, Student-First Approach.</p>
                   </div>
       

@@ -454,11 +454,10 @@ export default function WebsiteSignup() {
               </div>
             </div>
           
-            <div className="footer-main container mx-auto">
+              <div className="footer-main container mx-auto">
               <div className="footer-logo">
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i data-lucide="home" className="text-white w-5 h-5"></i></div>
-                    <span className="text-xl font-black text-slate-900">Roomhy</span>
+                    <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-10 w-auto" />
                 </div>
                 <p className="text-slate-500 font-medium text-sm md:text-base">Discover Your Next Home, Together.</p>
               </div>

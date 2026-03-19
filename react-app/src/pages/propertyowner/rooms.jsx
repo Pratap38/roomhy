@@ -108,6 +108,33 @@ const mergeRoomSources = (ownerLoginId, property, backendRooms) => {
   return merged;
 };
 
+const findCachedPropertyRecord = (ownerLoginId, currentProperty) => {
+  const propertyId = currentProperty?._id || currentProperty?.id || currentProperty?.propertyId || "";
+  const cachedProperties = readJson("roomhy_properties", []);
+  const propertyMatch = cachedProperties.find((item) => {
+    const candidateOwner = String(item?.ownerLoginId || item?.ownerId || item?.owner || "").toUpperCase();
+    const candidateId = String(item?._id || item?.id || item?.propertyId || "");
+    return (
+      (candidateOwner && candidateOwner === String(ownerLoginId || "").toUpperCase()) ||
+      (propertyId && candidateId === String(propertyId))
+    );
+  });
+  if (propertyMatch) return propertyMatch;
+
+  const visits = readJson("roomhy_visits", []);
+  const visitMatch = visits.find((visit) => {
+    const generatedLoginId = String(
+      visit?.generatedCredentials?.loginId ||
+      visit?.generatedCreds?.loginId ||
+      visit?.generatedId ||
+      visit?.loginId ||
+      ""
+    ).toUpperCase();
+    return generatedLoginId && generatedLoginId === String(ownerLoginId || "").toUpperCase();
+  });
+  return visitMatch?.propertyInfo || visitMatch?.property || visitMatch?.propertyDetails || visitMatch || null;
+};
+
 const findVacantBeds = (room) =>
   toLegacyBeds(room).map((bed, index) => ({
     index,
@@ -174,6 +201,18 @@ export default function Rooms() {
   }, [rooms, properties, tenants, roomModalOpen, assignModalOpen]);
 
   const currentProperty = useMemo(() => properties[0] || null, [properties]);
+  const cachedProperty = useMemo(
+    () => findCachedPropertyRecord(owner?.loginId, currentProperty),
+    [owner?.loginId, currentProperty]
+  );
+  const ownerContext = useMemo(
+    () => (typeof window !== "undefined" ? window.__ownerContext || {} : {}),
+    []
+  );
+  const roomPropertyTitle = useMemo(
+    () => firstValidValue(...rooms.map((room) => room?.propertyTitle)),
+    [rooms]
+  );
   const currentPropertyTitle = useMemo(
     () => firstValidValue(
       currentProperty?.title,
@@ -181,9 +220,14 @@ export default function Rooms() {
       currentProperty?.propertyName,
       currentProperty?.displayName,
       currentProperty?.propName,
+      cachedProperty?.title,
+      cachedProperty?.name,
+      cachedProperty?.propertyName,
+      roomPropertyTitle,
+      ownerContext?.propertyName,
       owner?.propertyName
     ),
-    [currentProperty, owner]
+    [cachedProperty, currentProperty, owner, ownerContext, roomPropertyTitle]
   );
   const currentPropertyLocation = useMemo(
     () => firstValidValue(
@@ -192,6 +236,14 @@ export default function Rooms() {
       currentProperty?.area,
       currentProperty?.city,
       currentProperty?.address,
+      cachedProperty?.location,
+      cachedProperty?.locationCode,
+      cachedProperty?.area,
+      cachedProperty?.city,
+      cachedProperty?.address,
+      ownerContext?.propertyLocation,
+      ownerContext?.area,
+      ownerContext?.locationCode,
       owner?.location,
       owner?.checkinArea,
       owner?.area,
@@ -199,7 +251,7 @@ export default function Rooms() {
       owner?.address,
       owner?.checkinAddress
     ),
-    [currentProperty, owner]
+    [cachedProperty, currentProperty, owner, ownerContext]
   );
   const currentPropertyDisplay = useMemo(
     () => {
@@ -318,7 +370,17 @@ export default function Rooms() {
         ownerId: session.loginId,
         ownerLoginId: session.loginId,
         propertyId,
-        propertyTitle: firstValidValue(currentProperty?.title, currentProperty?.name, "Owner Property"),
+        propertyTitle: firstValidValue(
+          currentProperty?.title,
+          currentProperty?.name,
+          cachedProperty?.title,
+          cachedProperty?.name,
+          cachedProperty?.propertyName,
+          roomPropertyTitle,
+          ownerContext?.propertyName,
+          owner?.propertyName,
+          "Owner Property"
+        ),
         number: roomForm.roomNo,
         roomNo: roomForm.roomNo,
         title: roomForm.roomNo,

@@ -594,8 +594,11 @@ exports.tenantForgotPasswordReset = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { identifier, password } = req.body; // identifier = email or loginId
-        if (!identifier || !password) return res.status(400).json({ message: 'Missing credentials' });
-        const user = await User.findOne({ $or: [{ email: identifier }, { loginId: identifier }] });
+        const normalizedIdentifier = String(identifier || '').trim();
+        const emailIdentifier = normalizedIdentifier.includes('@') ? normalizedIdentifier.toLowerCase() : normalizedIdentifier;
+        const loginIdentifier = /^roomhy/i.test(normalizedIdentifier) ? normalizedIdentifier.toUpperCase() : normalizedIdentifier;
+        if (!normalizedIdentifier || !password) return res.status(400).json({ message: 'Missing credentials' });
+        const user = await User.findOne({ $or: [{ email: emailIdentifier }, { loginId: loginIdentifier }] });
         if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
         // Block disabled users
@@ -604,7 +607,7 @@ exports.login = async (req, res) => {
         }
 
         // Owners must login only using their generated loginId — disallow email-based login for owners
-        if (user.role === 'owner' && identifier !== user.loginId) {
+        if (user.role === 'owner' && loginIdentifier !== user.loginId) {
             return res.status(403).json({ message: 'Owners must login using their Owner ID' });
         }
 

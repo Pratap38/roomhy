@@ -64,7 +64,10 @@ router.post('/signup/request-otp', otpLimiter, captchaProtection({ required: fal
 
         const existingSignup = await KYCVerification.findOne({ email });
         if (existingSignup && existingSignup.status !== 'rejected') {
-            return res.status(400).json({ message: 'Email already registered' });
+            const existingSignupUser = await User.findOne({ $or: [{ email }, { loginId: email }] });
+            if (existingSignupUser) {
+                return res.status(400).json({ message: 'Email already registered' });
+            }
         }
 
         const otp = generateSignupOtp();
@@ -73,6 +76,22 @@ router.post('/signup/request-otp', otpLimiter, captchaProtection({ required: fal
             expiresAt: Date.now() + 10 * 60 * 1000,
             payload: { firstName, lastName, email, phone, password }
         });
+
+        if (existingSignup) {
+            await KYCVerification.findOneAndUpdate(
+                { email },
+                {
+                    $set: {
+                        firstName,
+                        lastName,
+                        phone,
+                        role: existingSignup.role || 'tenant',
+                        status: existingSignup.status === 'rejected' ? 'pending' : existingSignup.status,
+                        kycStatus: existingSignup.kycStatus === 'rejected' ? 'pending' : existingSignup.kycStatus
+                    }
+                }
+            );
+        }
 
         await mailer.sendMail(
             email,
