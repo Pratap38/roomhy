@@ -116,6 +116,25 @@ const getOwnerPrimaryPropertyTitle = (owner) =>
     owner?.profile?.propertyName
   );
 
+const getSessionOwnerContext = () => {
+  if (typeof window === "undefined") return {};
+  let sessionOwner = {};
+  try {
+    sessionOwner = JSON.parse(sessionStorage.getItem("owner_session") || "null") || {};
+  } catch {
+    sessionOwner = {};
+  }
+  const storedOwner =
+    readJson("owner_user", null) ||
+    readJson("user", null) ||
+    sessionOwner ||
+    {};
+  return {
+    ...(storedOwner && typeof storedOwner === "object" ? storedOwner : {}),
+    ...(window.__ownerContext || {})
+  };
+};
+
 const findCachedPropertyRecord = (ownerLoginId, currentProperty) => {
   const propertyId = currentProperty?._id || currentProperty?.id || currentProperty?.propertyId || "";
   const cachedProperties = readJson("roomhy_properties", []);
@@ -140,7 +159,19 @@ const findCachedPropertyRecord = (ownerLoginId, currentProperty) => {
     ).toUpperCase();
     return generatedLoginId && generatedLoginId === String(ownerLoginId || "").toUpperCase();
   });
-  return visitMatch?.propertyInfo || visitMatch?.property || visitMatch?.propertyDetails || visitMatch || null;
+  if (!visitMatch) return null;
+  const visitProperty = visitMatch?.propertyInfo || visitMatch?.property || visitMatch?.propertyDetails || null;
+  if (visitProperty) return visitProperty;
+  return {
+    title: visitMatch?.propertyName || visitMatch?.name || "",
+    name: visitMatch?.propertyName || visitMatch?.name || "",
+    propertyName: visitMatch?.propertyName || visitMatch?.name || "",
+    location: visitMatch?.location || visitMatch?.area || visitMatch?.city || visitMatch?.address || "",
+    area: visitMatch?.area || "",
+    city: visitMatch?.city || "",
+    address: visitMatch?.address || "",
+    locationCode: visitMatch?.locationCode || visitMatch?.area || ""
+  };
 };
 
 const findVacantBeds = (room) =>
@@ -214,7 +245,7 @@ export default function Rooms() {
     [owner?.loginId, currentProperty]
   );
   const ownerContext = useMemo(
-    () => (typeof window !== "undefined" ? window.__ownerContext || {} : {}),
+    () => getSessionOwnerContext(),
     []
   );
   const roomPropertyTitle = useMemo(
@@ -224,6 +255,8 @@ export default function Rooms() {
   const currentPropertyTitle = useMemo(
     () => firstValidValue(
       getOwnerPrimaryPropertyTitle(owner),
+      owner?.profile?.propertyName,
+      owner?.profile?.propertyTitle,
       currentProperty?.title,
       currentProperty?.name,
       currentProperty?.propertyName,
@@ -234,6 +267,7 @@ export default function Rooms() {
       cachedProperty?.propertyName,
       roomPropertyTitle,
       ownerContext?.propertyName,
+      ownerContext?.propertyTitle,
       owner?.propertyName
     ),
     [cachedProperty, currentProperty, owner, ownerContext, roomPropertyTitle]
