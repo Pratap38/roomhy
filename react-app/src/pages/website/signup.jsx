@@ -10,8 +10,9 @@ export default function WebsiteSignup() {
 
   const apiUrl = useMemo(() => getWebsiteApiUrl(), []);
   const [signupActive, setSignupActive] = useState(false);
-  const [loginId, setLoginId] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginOtp, setLoginOtp] = useState("");
+  const [loginCodeSent, setLoginCodeSent] = useState(false);
   const [signup, setSignup] = useState({
     firstName: "",
     lastName: "",
@@ -24,6 +25,8 @@ export default function WebsiteSignup() {
   const [verificationVisible, setVerificationVisible] = useState(false);
   const [loadingCreate, setLoadingCreate] = useState(false);
   const [loadingVerify, setLoadingVerify] = useState(false);
+  const [loadingLoginSend, setLoadingLoginSend] = useState(false);
+  const [loadingLoginVerify, setLoadingLoginVerify] = useState(false);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
@@ -48,14 +51,6 @@ export default function WebsiteSignup() {
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   }, []);
 
-  const normalizeLoginIdentifier = useCallback((value) => {
-    const trimmedValue = String(value || "").trim();
-    if (!trimmedValue) return "";
-    if (trimmedValue.includes("@")) return trimmedValue.toLowerCase();
-    if (/^roomhy/i.test(trimmedValue)) return trimmedValue.toUpperCase();
-    return trimmedValue;
-  }, []);
-
   const redirectAfterLogin = useCallback((user) => {
     if (!user) return;
     if (user.role === "superadmin") {
@@ -78,29 +73,70 @@ export default function WebsiteSignup() {
   const toggleSignup = useCallback(
     (value) => {
       setSignupActive(value);
+      if (value) {
+        setLoginCodeSent(false);
+        setLoginOtp("");
+      }
       scrollToAuth();
     },
     [scrollToAuth]
   );
 
-  const handleLoginSubmit = useCallback(
+  const handleLoginRequestCode = useCallback(
     async (event) => {
       event.preventDefault();
-      const identifier = normalizeLoginIdentifier(loginId);
-      const password = loginPassword.trim();
-      if (!identifier || !password) {
-        showToast("Please enter email or login ID and password", "error");
+      const email = String(loginEmail || "").trim().toLowerCase();
+      if (!email || !email.includes("@")) {
+        showToast("Please enter your Gmail ID", "error");
         return;
       }
+      setLoadingLoginSend(true);
       try {
-        const response = await fetch(`${apiUrl}/api/auth/login`, {
+        const response = await fetch(`${apiUrl}/api/kyc/login/request-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ identifier, password })
+          body: JSON.stringify({ email })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          showToast(data.message || "Unable to send login code", "error");
+          return;
+        }
+        setLoginEmail(email);
+        setLoginCodeSent(true);
+        showToast("Verification code sent to your Gmail. Enter the code to login.", "success");
+      } catch (err) {
+        showToast("Unable to send login code right now. Please try again.", "error");
+      } finally {
+        setLoadingLoginSend(false);
+      }
+    },
+    [apiUrl, loginEmail, showToast]
+  );
+
+  const handleLoginVerify = useCallback(
+    async (event) => {
+      event.preventDefault();
+      const email = String(loginEmail || "").trim().toLowerCase();
+      const otpValue = String(loginOtp || "").trim();
+      if (!email || !email.includes("@")) {
+        showToast("Please enter your Gmail ID", "error");
+        return;
+      }
+      if (!/^\d{6}$/.test(otpValue)) {
+        showToast("Enter a valid 6-digit verification code", "error");
+        return;
+      }
+      setLoadingLoginVerify(true);
+      try {
+        const response = await fetch(`${apiUrl}/api/kyc/login/verify-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp: otpValue })
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || !data.token || !data.user) {
-          showToast(data.message || "Invalid login credentials", "error");
+          showToast(data.message || "Invalid verification code", "error");
           return;
         }
         setWebsiteSession(data.user, data.token);
@@ -110,9 +146,11 @@ export default function WebsiteSignup() {
         }, 800);
       } catch (err) {
         showToast("Unable to login right now. Please try again.", "error");
+      } finally {
+        setLoadingLoginVerify(false);
       }
     },
-    [apiUrl, loginId, loginPassword, normalizeLoginIdentifier, redirectAfterLogin, showToast]
+    [apiUrl, loginEmail, loginOtp, redirectAfterLogin, showToast]
   );
 
   const handleSignupChange = useCallback((field, value) => {
@@ -334,31 +372,46 @@ export default function WebsiteSignup() {
                                   <h2 className="text-2xl md:text-3xl font-black text-slate-900 mb-2">Log in</h2>
                                   <p className="text-sm md:text-base text-slate-500 mb-6 md:mb-8 font-medium">Welcome back! Please enter your details.</p>
       
-                                  <form className="space-y-4 md:space-y-5" onSubmit={handleLoginSubmit}>
+                                  <form className="space-y-4 md:space-y-5" onSubmit={loginCodeSent ? handleLoginVerify : handleLoginRequestCode}>
                                       <div className="space-y-1.5">
-                                          <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Email or Login ID</label>
+                                          <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Gmail ID</label>
+                                          <input
+                                              type="email"
+                                              autoComplete="email"
+                                              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-50/50 outline-none transition-all"
+                                              placeholder="Enter your Gmail ID"
+                                              value={loginEmail}
+                                              onChange={(e) => setLoginEmail(e.target.value)}
+                                          />
+                                      </div>
+                                      {loginCodeSent && (
+                                      <div className="space-y-1.5">
+                                          <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Verification Code</label>
                                           <input
                                               type="text"
-                                              autoComplete="username"
+                                              inputMode="numeric"
                                               className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-50/50 outline-none transition-all"
-                                              placeholder="Enter email or ROOMHY ID"
-                                              value={loginId}
-                                              onChange={(e) => setLoginId(e.target.value)}
+                                              placeholder="Enter 6-digit code"
+                                              value={loginOtp}
+                                              onChange={(e) => setLoginOtp(e.target.value)}
                                           />
                                       </div>
-                                      <div className="space-y-1.5">
-                                          <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Password</label>
-                                          <input
-                                              type="password"
-                                              autoComplete="current-password"
-                                              className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-50/50 outline-none transition-all"
-                                              placeholder="********"
-                                              value={loginPassword}
-                                              onChange={(e) => setLoginPassword(e.target.value)}
-                                          />
-                                          <button type="button" className="text-xs text-blue-600 font-bold block text-right mt-1.5 hover:underline" onClick={() => showToast("Use your registered email or owner/tenant portal forgot password option.", "info")}>Forgot Password?</button>
-                                      </div>
-                                      <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-100 transition-all active:scale-[0.98]">Log in</button>
+                                      )}
+                                      <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-100 transition-all active:scale-[0.98]" disabled={loginCodeSent ? loadingLoginVerify : loadingLoginSend}>
+                                          {loginCodeSent
+                                            ? (loadingLoginVerify ? "Verifying..." : "Verify & Log in")
+                                            : (loadingLoginSend ? "Sending Code..." : "Send Login Code")}
+                                      </button>
+                                      {loginCodeSent && (
+                                        <button
+                                          type="button"
+                                          className="w-full text-sm text-blue-600 font-bold hover:underline"
+                                          onClick={handleLoginRequestCode}
+                                          disabled={loadingLoginSend}
+                                        >
+                                          {loadingLoginSend ? "Sending..." : "Resend Code"}
+                                        </button>
+                                      )}
                                   </form>
                                   
                                   <div className="relative my-7">
@@ -366,7 +419,7 @@ export default function WebsiteSignup() {
                                       <div className="relative flex justify-center"><span className="bg-white px-4 text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest">OR CONTINUE WITH</span></div>
                                   </div>
                                   
-                                  <button className="w-full flex items-center justify-center gap-3 p-3.5 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-semibold text-slate-700 active:scale-[0.98]">
+                                  <button type="button" className="w-full flex items-center justify-center gap-3 p-3.5 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-semibold text-slate-700 active:scale-[0.98]" onClick={() => showToast("Use your Gmail ID above. We will send a verification code if it exists in new signups.", "info")}>
                                       <img src="https://www.svgrepo.com/show/355037/google.svg" className="w-5 h-5" alt="G" /> Google
                                   </button>
       

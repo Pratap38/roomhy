@@ -9,6 +9,7 @@ const { formLimiter, otpLimiter, captchaProtection } = require('../middleware/se
 
 // Temporary OTP store (for production, move to Redis/database)
 const signupOtpStore = new Map();
+const loginOtpStore = new Map();
 
 function generateSignupOtp() {
     return String(Math.floor(100000 + Math.random() * 900000));
@@ -30,6 +31,25 @@ function renderOtpHtml(firstName, otp) {
                     <h2 style="color: #2563eb;">Roomhy Signup Verification</h2>
                     <p>Hi ${firstName || 'User'},</p>
                     <p>Use this verification code to complete your account signup:</p>
+                    <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                        <div style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #1d4ed8;">${otp}</div>
+                        <div style="margin-top: 8px; color: #64748b;">Valid for 10 minutes</div>
+                    </div>
+                    <p>If you did not request this, please ignore this email.</p>
+                </div>
+            </body>
+        </html>
+    `;
+}
+
+function renderLoginOtpHtml(firstName, otp) {
+    return `
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #2563eb;">Roomhy Login Verification</h2>
+                    <p>Hi ${firstName || 'User'},</p>
+                    <p>Use this verification code to login to your Roomhy account:</p>
                     <div style="background: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
                         <div style="font-size: 32px; font-weight: 700; letter-spacing: 6px; color: #1d4ed8;">${otp}</div>
                         <div style="margin-top: 8px; color: #64748b;">Valid for 10 minutes</div>
@@ -242,6 +262,114 @@ router.post('/signup/verify-and-create', async (req, res) => {
     } catch (error) {
         console.error('signup/verify-and-create error:', error);
         return res.status(500).json({ message: 'Unable to complete signup', error: error.message });
+    }
+});
+
+// Request OTP for website login using email from new signups
+router.post('/login/request-otp', otpLimiter, captchaProtection({ required: false }), async (req, res) => {
+    try {
+        const email = (req.body.email || '').toString().trim().toLowerCase();
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const signup = await KYCVerification.findOne({ email });
+        if (!signup) {
+            return res.status(404).json({ message: 'This Gmail is not available in new signups' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'Account is not ready for login yet. Please complete signup first.' });
+        }
+
+        if (user.isActive === false) {
+            return res.status(403).json({ message: 'Account disabled' });
+        }
+
+        const otp = generateSignupOtp();
+        loginOtpStore.set(email, {
+            otp,
+            expiresAt: Date.now() + 10 * 60 * 1000,
+            email
+        });
+
+        await mailer.sendMail(
+            email,
+            'Roomhy - Your Login Verification Code',
+            `Your Roomhy login verification code is ${otp}. It is valid for 10 minutes.`,
+            renderLoginOtpHtml(signup.firstName || user.name, otp)
+        );
+
+        return res.json({
+            success: true,
+            message: 'Login verification code sent to your email',
+            ...(process.env.NODE_ENV === 'development' && { demoOtp: otp })
+        });
+    } catch (error) {
+        console.error('login/request-otp error:', error);
+        return res.status(500).json({ message: 'Unable to send login verification code', error: error.message });
+    }
+});
+
+// Verify OTP and login website user using email from new signups
+router.post('/login/verify-otp', async (req, res) => {
+    try {
+        const email = (req.body.email || '').toString().trim().toLowerCase();
+        const otp = (req.body.otp || '').toString().trim();
+
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Email and verification code are required' });
+        }
+
+        const otpEntry = loginOtpStore.get(email);
+        if (!otpEntry) {
+            return res.status(401).json({ message: 'Verification code expired or not requested' });
+        }
+        if (Date.now() > otpEntry.expiresAt) {
+            loginOtpStore.delete(email);
+            return res.status(401).json({ message: 'Verification code has expired' });
+        }
+        if (otpEntry.otp !== otp) {
+            return res.status(401).json({ message: 'Invalid verification code' });
+        }
+
+        const signup = await KYCVerification.findOne({ email });
+        if (!signup) {
+            loginOtpStore.delete(email);
+            return res.status(404).json({ message: 'Signup record not found for this email' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            loginOtpStore.delete(email);
+            return res.status(404).json({ message: 'Account is not ready for login yet. Please contact support.' });
+        }
+
+        if (user.isActive === false) {
+            loginOtpStore.delete(email);
+            return res.status(403).json({ message: 'Account disabled' });
+        }
+
+        loginOtpStore.delete(email);
+
+        const token = generateToken(user);
+        return res.json({
+            success: true,
+            message: 'Login successful',
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                loginId: user.loginId
+            }
+        });
+    } catch (error) {
+        console.error('login/verify-otp error:', error);
+        return res.status(500).json({ message: 'Unable to verify login code', error: error.message });
     }
 });
 
