@@ -1,29 +1,16 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useHtmlPage } from "../../utils/htmlPage";
 import { fetchJson } from "../../utils/api";
 
 const WINDOW_NAME_SESSION_PREFIX = "__ROOMHY_STAFF_SESSION__:";
 
-const getBaseUrl = () => {
-  const hostname = window.location.hostname;
-  // On VPS live host or production domain
-  if (hostname === "admin.roomhy.com") {
-    return "https://admin.roomhy.com";
-  }
-  // On localhost or development
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return window.location.origin;
-  }
-  // Default to current origin
-  return window.location.origin;
-};
-
 const resolvePanelPath = (folder, fileName) => {
-  const baseUrl = getBaseUrl();
-  return `${baseUrl}/${folder}/${fileName}`;
+  return `/${folder}/${fileName}`;
 };
 
 export default function Index() {
+  const navigate = useNavigate();
   useHtmlPage({
     title: "RoomHy - Staff Login",
     bodyClass: "flex items-center justify-center p-4",
@@ -87,13 +74,13 @@ export default function Index() {
     if (!db && identifier === "roomhyadmin@gmail.com" && pass === "admin@123") {
       const user = { id: "SUPER_ADMIN", loginId: "SUPER_ADMIN", email: identifier, name: "Super Admin", role: "superadmin" };
       setStaffSession(user, "superadmin_token");
-      window.location.href = resolvePanelPath("superadmin", "superadmin");
+      navigate(resolvePanelPath("superadmin", "superadmin"));
       return true;
     }
     if (db && db.email === identifier && db.password === pass) {
       const user = { ...db, loginId: db.loginId || db.id || "SUPER_ADMIN", role: "superadmin" };
       setStaffSession(user, "superadmin_token");
-      window.location.href = resolvePanelPath("superadmin", "superadmin");
+      navigate(resolvePanelPath("superadmin", "superadmin"));
       return true;
     }
 
@@ -111,7 +98,7 @@ export default function Index() {
         localStorage.setItem("staff_token", data.token);
         sessionStorage.removeItem("owner_session");
         localStorage.removeItem("owner_user");
-        window.location.href = resolvePanelPath("superadmin", "superadmin");
+        navigate(resolvePanelPath("superadmin", "superadmin"));
         return true;
       }
     } catch (_) {}
@@ -130,7 +117,7 @@ export default function Index() {
           user.areaCode = user.areaCode || user.area || user.areaName || "";
           user.areaName = user.areaName || user.area || "";
           setStaffSession(user, "manager_token");
-          window.location.href = resolvePanelPath("employee", "areaadmin");
+          navigate(resolvePanelPath("employee", "areaadmin"));
           return true;
         }
       }
@@ -158,7 +145,7 @@ export default function Index() {
             areaCode: emp.areaCode || ""
           };
           setStaffSession(user, "employee_token");
-          window.location.href = resolvePanelPath("employee", "areaadmin");
+          navigate(resolvePanelPath("employee", "areaadmin"));
           return true;
         }
       }
@@ -206,15 +193,15 @@ export default function Index() {
         sessionStorage.setItem("user", JSON.stringify(data.user));
         const role = data.user.role;
         if (role === "superadmin" || role === "admin") {
-          window.location.href = resolvePanelPath("superadmin", "superadmin");
+          navigate(resolvePanelPath("superadmin", "superadmin"));
         } else if (role === "areamanager" || role === "manager" || role === "employee") {
-          window.location.href = resolvePanelPath("employee", "areaadmin");
+          navigate(resolvePanelPath("employee", "areaadmin"));
         } else if (role === "owner") {
-          window.location.href = resolvePanelPath("propertyowner", "admin");
+          navigate(resolvePanelPath("propertyowner", "admin"));
         } else if (role === "tenant") {
-          window.location.href = resolvePanelPath("tenant", "tenantdashboard");
+          navigate(resolvePanelPath("tenant", "tenantdashboard"));
         } else {
-          window.location.href = resolvePanelPath("superadmin", "superadmin");
+          navigate(resolvePanelPath("superadmin", "superadmin"));
         }
         return;
       }
