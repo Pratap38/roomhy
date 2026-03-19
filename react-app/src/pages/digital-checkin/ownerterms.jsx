@@ -18,16 +18,10 @@ export default function DigitalCheckinOwnerterms() {
   });
 
   const {
-    summary,
     status,
     acceptTerms,
     setAcceptTerms,
-    finalVerify,
-    setFinalVerify,
-    handleAccept,
-    handleFinalSubmit,
-    editProfileUrl,
-    editKycUrl,
+    handleSubmit,
     finalConfirmation
   } = useOwnerTerms();
 
@@ -35,27 +29,8 @@ export default function DigitalCheckinOwnerterms() {
     <div className="html-page">
       <div className="wrap">
         <h1>Owner Terms & Conditions</h1>
-        <p>Please read and accept before final submission.</p>
-        <div className="details">
-          <h3>Owner Details Summary</h3>
-          <div className="grid">
-            <div className="kv"><strong>Login ID:</strong> <span>{summary.loginId}</span></div>
-            <div className="kv"><strong>Name:</strong> <span>{summary.name}</span></div>
-            <div className="kv"><strong>Email:</strong> <span>{summary.email}</span></div>
-            <div className="kv"><strong>Phone:</strong> <span>{summary.phone}</span></div>
-            <div className="kv"><strong>Area:</strong> <span>{summary.area}</span></div>
-            <div className="kv"><strong>Address:</strong> <span>{summary.address}</span></div>
-            <div className="kv"><strong>Aadhaar Linked Phone:</strong> <span>{summary.kycPhone}</span></div>
-            <div className="kv"><strong>Aadhaar Number:</strong> <span>{summary.aadhaar}</span></div>
-            <div className="kv"><strong>KYC Verified:</strong> <span>{summary.kycVerified}</span></div>
-            <div className="kv"><strong>Terms Accepted:</strong> <span>{summary.termsAccepted}</span></div>
-          </div>
-          <div className="edit-row">
-            <a className="btn-muted" href={editProfileUrl}>Edit Profile</a>
-            <a className="btn-muted" href={editKycUrl}>Edit Verification</a>
-          </div>
-          <div className="status">{status}</div>
-        </div>
+        <p>Read and accept the terms below to complete owner onboarding.</p>
+        {status ? <div className="status">{status}</div> : null}
         <div className="terms">
           <div className="line"><strong>1. Introduction</strong><br />By registering as a Property Owner/Landlord on Roomhy ("Platform"), you agree to comply with and be bound by these Terms & Conditions. These terms govern your access to and use of the Platform to list properties, manage tenants, and receive payments.</div>
           <div className="line"><strong>2. Eligibility</strong><br />You confirm that: You are the legal owner or authorized representative of the property listed. The property details shared are accurate and lawful. You have the legal right to rent/lease the property.</div>
@@ -81,18 +56,7 @@ export default function DigitalCheckinOwnerterms() {
             I accept the Terms & Conditions.
           </label>
         </div>
-        <div className="row">
-          <label>
-            <input
-              type="checkbox"
-              checked={finalVerify}
-              onChange={(e) => setFinalVerify(e.target.checked)}
-            />
-            Final verify before submit.
-          </label>
-        </div>
-        <button type="button" onClick={handleAccept}>Accept Terms</button>
-        <button type="button" onClick={handleFinalSubmit}>Final Verify & Submit</button>
+        <button type="button" onClick={handleSubmit}>Accept & Submit</button>
 
         {finalConfirmation?.dashboardUrl && (
           <div className="status">
