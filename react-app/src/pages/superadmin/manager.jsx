@@ -540,6 +540,7 @@ export default function Manager() {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
         await syncEmployeesFromBackend();
         closeEmployeeModal();
 
@@ -566,6 +567,17 @@ export default function Manager() {
 
         setCredsData({ loginId: finalLoginId, password });
         setShowCredModal(true);
+
+        const emailMeta = data?.email || {};
+        if (email) {
+          if (emailMeta.attempted && emailMeta.sent) {
+            alert("Employee created successfully. Login credentials were sent to Gmail.");
+          } else if (emailMeta.attempted && !emailMeta.sent) {
+            alert(`Employee created successfully, but credential email failed: ${emailMeta.error || "Unknown email error"}`);
+          } else {
+            alert("Employee created successfully. Email was not attempted.");
+          }
+        }
       } else if (res.status === 409) {
         const data = await res.json().catch(() => ({}));
         const reason = data.error || data.message || "Duplicate record";
