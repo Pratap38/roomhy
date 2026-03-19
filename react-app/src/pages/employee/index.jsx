@@ -4,8 +4,23 @@ import { fetchJson } from "../../utils/api";
 
 const WINDOW_NAME_SESSION_PREFIX = "__ROOMHY_STAFF_SESSION__:";
 
+const getBaseUrl = () => {
+  const hostname = window.location.hostname;
+  // On VPS live host or production domain
+  if (hostname === "admin.roomhy.com") {
+    return "https://admin.roomhy.com";
+  }
+  // On localhost or development
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return window.location.origin;
+  }
+  // Default to current origin
+  return window.location.origin;
+};
+
 const resolvePanelPath = (folder, fileName) => {
-  return `/${folder}/${fileName}`;
+  const baseUrl = getBaseUrl();
+  return `${baseUrl}/${folder}/${fileName}`;
 };
 
 export default function Index() {
