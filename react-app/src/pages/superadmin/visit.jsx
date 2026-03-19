@@ -31,6 +31,76 @@ const pickFirstText = (...values) => {
   return "";
 };
 
+const normalizeIdentity = (value) => String(value || "").trim().toLowerCase();
+
+const visitBelongsToEmployee = (visit, user) => {
+  if (!visit || !user) return false;
+
+  const userIds = [
+    user?.loginId,
+    user?.staffId,
+    user?.id,
+    user?._id
+  ]
+    .map(normalizeIdentity)
+    .filter(Boolean);
+
+  const userNames = [
+    user?.name,
+    user?.staffName,
+    user?.fullName,
+    user?.employeeName
+  ]
+    .map(normalizeIdentity)
+    .filter(Boolean);
+
+  const visitIds = [
+    visit?.staffId,
+    visit?.submittedById,
+    visit?.employeeId,
+    visit?.employee_id,
+    visit?.createdBy,
+    visit?.created_by,
+    visit?.addedBy,
+    visit?.added_by,
+    visit?.propertyInfo?.staffId,
+    visit?.propertyInfo?.submittedById,
+    visit?.propertyInfo?.employeeId,
+    visit?.propertyInfo?.employee_id,
+    visit?.propertyInfo?.createdBy,
+    visit?.propertyInfo?.created_by,
+    visit?.propertyInfo?.addedBy,
+    visit?.propertyInfo?.added_by
+  ]
+    .map(normalizeIdentity)
+    .filter(Boolean);
+
+  const visitNames = [
+    visit?.staffName,
+    visit?.submittedBy,
+    visit?.employeeName,
+    visit?.createdByName,
+    visit?.addedByName,
+    visit?.propertyInfo?.staffName,
+    visit?.propertyInfo?.submittedBy,
+    visit?.propertyInfo?.employeeName,
+    visit?.propertyInfo?.createdByName,
+    visit?.propertyInfo?.addedByName
+  ]
+    .map(normalizeIdentity)
+    .filter(Boolean);
+
+  if (userIds.length && visitIds.some((value) => userIds.includes(value))) {
+    return true;
+  }
+
+  if (userNames.length && visitNames.some((value) => userNames.includes(value))) {
+    return true;
+  }
+
+  return false;
+};
+
 const toDataUrl = (file) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -127,7 +197,9 @@ export default function Visit() {
       setErrorMsg("");
       const query = staffId || staffName ? `?staffId=${encodeURIComponent(staffId)}&staffName=${encodeURIComponent(staffName)}` : "";
       const data = await fetchJson(`/api/visits${query}`);
-      const list = (data?.visits || data || []).map(normalizeVisit);
+      const list = (data?.visits || data || [])
+        .map(normalizeVisit)
+        .filter((visit) => visitBelongsToEmployee(visit, user || { loginId: staffId, name: staffName }));
       setVisits(list);
       setLoading(false);
     } catch (err) {
@@ -212,7 +284,7 @@ export default function Visit() {
     loadVisits();
     const interval = setInterval(loadVisits, 15000);
     return () => clearInterval(interval);
-  }, [staffId, staffName]);
+  }, [staffId, staffName, user]);
 
   useEffect(() => {
     if (window?.lucide) window.lucide.createIcons();
