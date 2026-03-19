@@ -24,10 +24,11 @@ export default function DigitalCheckinTenantkyc() {
     setAadhaarNumber,
     aadhaarLinkedPhone,
     setAadhaarLinkedPhone,
-    digilockerRef,
-    setDigilockerRef,
+    otp,
+    setOtp,
     otpMsg,
     nextVisible,
+    otpSent,
     handleStart,
     handleComplete,
     handleNext
@@ -57,12 +58,12 @@ export default function DigitalCheckinTenantkyc() {
             <input value={aadhaarLinkedPhone} onChange={(e) => setAadhaarLinkedPhone(e.target.value)} required />
           </div>
           <div>
-            <label>DigiLocker Reference ID</label>
-            <input value={digilockerRef} onChange={(e) => setDigilockerRef(e.target.value)} />
+            <label>OTP</label>
+            <input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter OTP from Aadhaar-linked mobile" />
           </div>
         </div>
-        <button type="button" onClick={handleStart}>Start DigiLocker Verification</button>
-        <button type="button" onClick={handleComplete}>Complete Verification</button>
+        <button type="button" onClick={handleStart}>Send OTP</button>
+        <button type="button" onClick={handleComplete}>{otpSent ? "Verify OTP & Complete" : "Complete Verification"}</button>
         {otpMsg && <p className="muted">{otpMsg}</p>}
         {nextVisible && (
           <button type="button" onClick={handleNext}>Continue to Rental Agreement</button>

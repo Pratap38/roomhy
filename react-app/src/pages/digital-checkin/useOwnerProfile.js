@@ -32,12 +32,11 @@ export const useOwnerProfile = () => {
   const [autoInfo, setAutoInfo] = useState({ email: "", area: "", password: "" });
   const [aadhaarLinkedPhone, setAadhaarLinkedPhone] = useState("");
   const [aadhaarNumber, setAadhaarNumber] = useState("");
-  const [digilockerRef, setDigilockerRef] = useState("");
+  const [otp, setOtp] = useState("");
   const [kycStatus, setKycStatus] = useState({ type: "", text: "" });
   const [loadingStart, setLoadingStart] = useState(false);
   const [loadingComplete, setLoadingComplete] = useState(false);
-  const [lastRefId, setLastRefId] = useState("");
-  const [lastVerificationId, setLastVerificationId] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
 
   const updateForm = useCallback((patch) => {
     setForm((prev) => ({ ...prev, ...patch }));
@@ -90,14 +89,13 @@ export const useOwnerProfile = () => {
             ownerEmail: autoInfo.email || form.email.trim(),
             aadhaarLinkedPhone: aadhaarLinkedPhone.trim(),
             aadhaarNumber: aadhaarNumber.trim().replace(/\D/g, ""),
-            referenceId: digilockerRef.trim() || lastRefId || "",
-            verificationId: lastVerificationId || "",
+            otpSent,
             ...extra
           })
         );
       } catch (_) {}
     },
-    [aadhaarLinkedPhone, aadhaarNumber, autoInfo.email, digilockerRef, form.email, form.loginId, lastRefId, lastVerificationId]
+    [aadhaarLinkedPhone, aadhaarNumber, autoInfo.email, form.email, form.loginId, otpSent]
   );
 
   useEffect(() => {
@@ -117,24 +115,9 @@ export const useOwnerProfile = () => {
       if (!state || typeof state !== "object") return;
       if (state.aadhaarLinkedPhone) setAadhaarLinkedPhone(state.aadhaarLinkedPhone);
       if (state.aadhaarNumber) setAadhaarNumber(formatAadhaarWithSpaces(state.aadhaarNumber));
-      if (state.referenceId) {
-        setDigilockerRef(state.referenceId);
-        setLastRefId(state.referenceId);
-      }
-      if (state.verificationId) setLastVerificationId(state.verificationId);
+      if (state.otpSent) setOtpSent(true);
     } catch (_) {}
   }, []);
-
-  useEffect(() => {
-    const referenceFromCallback = getParamValue(["reference_id", "ref_id", "referenceId"]);
-    const verificationFromCallback = getParamValue(["verification_id", "verificationId"]);
-    if (!referenceFromCallback) return;
-    setDigilockerRef(referenceFromCallback);
-    setLastRefId(referenceFromCallback);
-    if (verificationFromCallback) setLastVerificationId(verificationFromCallback);
-    saveKycState({ referenceId: referenceFromCallback, verificationId: verificationFromCallback || "" });
-    setKycStatus({ type: "success", text: "DigiLocker callback received. Complete verification below." });
-  }, [saveKycState]);
 
   useEffect(() => {
     const hydrateFromOwner = async () => {
@@ -179,7 +162,7 @@ export const useOwnerProfile = () => {
         if (storedAadhaar) setAadhaarNumber((prev) => prev || formatAadhaarWithSpaces(storedAadhaar));
         if (storedPhone) setAadhaarLinkedPhone((prev) => prev || storedPhone);
         if (owner.kyc?.status === "submitted") {
-          setKycStatus({ type: "success", text: "DigiLocker verification already completed." });
+          setKycStatus({ type: "success", text: "Aadhaar OTP verification already completed." });
         }
       } catch (_) {}
     };
@@ -203,28 +186,20 @@ export const useOwnerProfile = () => {
       await saveProfile(form, autoInfo);
       setLoadingStart(true);
       const emailValue = autoInfo.email || form.email.trim();
-      const redirectUrl = `${window.location.origin}${window.location.pathname}?loginId=${encodeURIComponent(trimmedLogin)}${
-        emailValue ? `&email=${encodeURIComponent(emailValue)}` : ""
-      }`;
-      const data = await postExpectSuccess(
-        "/api/checkin/owner/kyc/digilocker/start",
+      await postExpectSuccess(
+        "/api/checkin/owner/kyc/send-otp",
         {
           loginId: trimmedLogin,
           aadhaarLinkedPhone: aadhaarLinkedPhone.trim(),
           aadhaarNumber: aadhaarRaw,
-          email: emailValue,
-          redirectUrl
+          email: emailValue
         },
         apiBases
       );
-
-      const referenceId = data.referenceId || "";
-      setLastRefId(referenceId);
-      setLastVerificationId(data.verificationId || "");
-      setDigilockerRef(referenceId);
-      saveKycState({ referenceId, verificationId: data.verificationId || "" });
-      setKycStatus({ type: "success", text: "DigiLocker verification started. Finish auth and return here." });
-      if (data.verifyUrl) window.location.href = data.verifyUrl;
+      setOtpSent(true);
+      saveKycState({ otpSent: true });
+      setKycStatus({ type: "success", text: "OTP sent to Aadhaar-linked mobile. Enter OTP and complete verification." });
+      setLoadingStart(false);
     } catch (err) {
       setKycStatus({ type: "error", text: `Error: ${err.message}` });
       setLoadingStart(false);
@@ -234,20 +209,18 @@ export const useOwnerProfile = () => {
   const handleCompleteVerification = useCallback(async () => {
     const trimmedLogin = form.loginId.trim();
     const aadhaarRaw = aadhaarNumber.trim().replace(/\s/g, "");
-    const referenceId = digilockerRef.trim() || lastRefId;
-    const verificationId = lastVerificationId;
 
     if (!trimmedLogin) return alert("Login ID is required");
     if (!/^\d{12}$/.test(aadhaarRaw)) return alert("Aadhaar must be 12 digits");
-    if (!referenceId && !verificationId) return alert("DigiLocker verification details are missing");
+    if (!otp.trim()) return alert("OTP is required");
 
     try {
       setLoadingComplete(true);
       const payload = await saveProfile(form, autoInfo);
-      saveKycState({ referenceId, verificationId });
+      saveKycState({ otpSent: true });
       await postExpectSuccess(
-        "/api/checkin/owner/kyc/digilocker/complete",
-        { loginId: trimmedLogin, aadhaarNumber: aadhaarRaw, referenceId, verificationId },
+        "/api/checkin/owner/kyc/verify-otp",
+        { loginId: trimmedLogin, aadhaarNumber: aadhaarRaw, otp: otp.trim() },
         apiBases
       );
       window.location.href = `/digital-checkin/ownerterms?loginId=${encodeURIComponent(payload.loginId)}&email=${encodeURIComponent(
@@ -257,7 +230,7 @@ export const useOwnerProfile = () => {
       setKycStatus({ type: "error", text: `Error: ${err.message}` });
       setLoadingComplete(false);
     }
-  }, [aadhaarNumber, apiBases, autoInfo, digilockerRef, form, lastRefId, lastVerificationId, saveKycState, saveProfile]);
+  }, [aadhaarNumber, apiBases, autoInfo, form, otp, saveKycState, saveProfile]);
 
   const handleSubmit = useCallback(
     async (event) => {
@@ -266,7 +239,7 @@ export const useOwnerProfile = () => {
         await saveProfile(form, autoInfo);
         setKycStatus({
           type: "success",
-          text: "Profile saved. Complete DigiLocker verification below to continue."
+          text: "Profile saved. Send OTP and complete Aadhaar verification below to continue."
         });
       } catch (err) {
         alert(`Error: ${err.message}`);
@@ -284,8 +257,9 @@ export const useOwnerProfile = () => {
     setAadhaarLinkedPhone,
     aadhaarNumber,
     handleAadhaarChange,
-    digilockerRef,
-    setDigilockerRef,
+    otp,
+    setOtp,
+    otpSent,
     kycStatus,
     loadingStart,
     loadingComplete,

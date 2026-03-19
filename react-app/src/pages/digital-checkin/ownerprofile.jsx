@@ -26,8 +26,9 @@ export default function DigitalCheckinOwnerprofile() {
     setAadhaarLinkedPhone,
     aadhaarNumber,
     handleAadhaarChange,
-    digilockerRef,
-    setDigilockerRef,
+    otp,
+    setOtp,
+    otpSent,
     kycStatus,
     loadingStart,
     loadingComplete,
@@ -144,8 +145,8 @@ export default function DigitalCheckinOwnerprofile() {
             </div>
           </div>
           <div className="full">
-            <h2>DigiLocker Verification</h2>
-            <p>Complete owner verification here. Once it is verified, you will be moved to the next page automatically.</p>
+            <h2>Aadhaar OTP Verification</h2>
+            <p>Send OTP to the Aadhaar-linked mobile number and complete owner verification on this page.</p>
           </div>
           <div>
             <label>Mobile Number (linked with Aadhaar)</label>
@@ -168,12 +169,12 @@ export default function DigitalCheckinOwnerprofile() {
             />
           </div>
           <div className="full">
-            <label>DigiLocker Reference ID</label>
+            <label>OTP</label>
             <input
-              value={digilockerRef}
-              onChange={(e) => setDigilockerRef(e.target.value)}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
               type="text"
-              placeholder="Auto-filled after starting DigiLocker"
+              placeholder="Enter OTP received on Aadhaar-linked phone"
             />
           </div>
           {kycStatus.text ? (
@@ -184,10 +185,10 @@ export default function DigitalCheckinOwnerprofile() {
           <div className="full actions-row">
             <button type="submit" className="secondary-btn">Save Profile</button>
             <button type="button" onClick={handleStartVerification} disabled={loadingStart}>
-              {loadingStart ? "Starting..." : "Start DigiLocker"}
+              {loadingStart ? "Sending OTP..." : "Send OTP"}
             </button>
             <button type="button" onClick={handleCompleteVerification} disabled={loadingComplete}>
-              {loadingComplete ? "Verifying..." : "Complete Verification"}
+              {loadingComplete ? "Verifying..." : otpSent ? "Verify OTP & Complete" : "Complete Verification"}
             </button>
           </div>
         </form>

@@ -594,7 +594,7 @@ router.post('/tenant/profile', async (req, res) => {
 router.post('/tenant/kyc/send-otp', otpLimiter, async (req, res) => {
     try {
         const { loginId, aadhaarLinkedPhone, aadhaarNumber, aadhaarFront, aadhaarBack } = req.body || {};
-        if (!loginId || !aadhaarLinkedPhone || !aadhaarNumber || !aadhaarFront || !aadhaarBack) {
+        if (!loginId || !aadhaarLinkedPhone || !aadhaarNumber) {
             return res.status(400).json({ success: false, message: 'Missing tenant KYC fields' });
         }
         const normalizedLoginId = String(loginId).toUpperCase();
@@ -611,8 +611,8 @@ router.post('/tenant/kyc/send-otp', otpLimiter, async (req, res) => {
         tenant.kyc.aadhaarNumber = aadhaarNumber;
         tenant.kyc.aadhar = aadhaarNumber;
         tenant.kyc.aadhaarLinkedPhone = aadhaarLinkedPhone;
-        tenant.kyc.aadhaarFront = aadhaarFront;
-        tenant.kyc.aadhaarBack = aadhaarBack;
+        tenant.kyc.aadhaarFront = aadhaarFront || tenant.kyc.aadhaarFront || null;
+        tenant.kyc.aadhaarBack = aadhaarBack || tenant.kyc.aadhaarBack || null;
         tenant.kyc.otpVerified = false;
         tenant.kyc.uploadedAt = new Date();
         tenant.kycStatus = 'submitted';
@@ -622,8 +622,8 @@ router.post('/tenant/kyc/send-otp', otpLimiter, async (req, res) => {
             ...(tenant.digitalCheckin.kyc || {}),
             aadhaarLinkedPhone,
             aadhaarNumber,
-            aadhaarFront,
-            aadhaarBack,
+            aadhaarFront: aadhaarFront || tenant.digitalCheckin?.kyc?.aadhaarFront || null,
+            aadhaarBack: aadhaarBack || tenant.digitalCheckin?.kyc?.aadhaarBack || null,
             otpVerified: false
         };
         tenant.updatedAt = new Date();
