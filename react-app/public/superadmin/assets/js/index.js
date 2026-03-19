@@ -277,7 +277,7 @@ lucide.createIcons();
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
-                window.location.href = resolvePanelPath('superadmin', 'areaadmin');
+                window.location.href = resolvePanelPath('employee', 'areaadmin');
             } else {
                 console.warn('[Staff Login] Area Manager not found or password mismatch for:', loginId);
                 showError('Invalid credentials.', errorMsg);
@@ -334,7 +334,7 @@ lucide.createIcons();
              // Clear owner sessions to prevent crosstalk
              sessionStorage.removeItem('owner_session');
              localStorage.removeItem('owner_user');
-             window.location.href = resolvePanelPath('superadmin', 'areaadmin');
+             window.location.href = resolvePanelPath('employee', 'areaadmin');
         }
 
         // Tenant Login

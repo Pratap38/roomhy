@@ -215,7 +215,7 @@ export const useSuperadminLogin = () => {
       localStorage.setItem("staff_token", "manager_token");
       sessionStorage.removeItem("owner_session");
       localStorage.removeItem("owner_user");
-      window.location.href = resolvePanelPath("superadmin", "areaadmin");
+      window.location.href = resolvePanelPath("employee", "areaadmin");
     },
     [showLoginError]
   );
@@ -248,7 +248,7 @@ export const useSuperadminLogin = () => {
       localStorage.setItem("staff_token", "employee_token");
       sessionStorage.removeItem("owner_session");
       localStorage.removeItem("owner_user");
-      window.location.href = resolvePanelPath("superadmin", "areaadmin");
+      window.location.href = resolvePanelPath("employee", "areaadmin");
     },
     [showLoginError]
   );
