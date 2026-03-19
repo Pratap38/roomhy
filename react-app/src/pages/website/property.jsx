@@ -18,6 +18,7 @@ export default function WebsiteProperty() {
   const [showShare, setShowShare] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [favorites, setFavorites] = useState([]);
+  const [approvedProperties, setApprovedProperties] = useState([]);
   const [bannerPhoto, setBannerPhoto] = useState("");
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -108,6 +109,16 @@ export default function WebsiteProperty() {
     return Math.max(0, Math.min(5, parsed));
   };
 
+  const buildStarsDisplay = (value) => {
+    const rating = parseRatingValueSafe(value);
+    const stars = [];
+    const full = rating === null ? 0 : Math.floor(rating);
+    for (let i = 0; i < 5; i += 1) {
+      stars.push(i < full ? "\u2605" : "\u2606");
+    }
+    return { rating, stars };
+  };
+
   const buildStarsSafe = (value) => {
     const rating = parseRatingValueSafe(value);
     const stars = [];
@@ -179,9 +190,10 @@ export default function WebsiteProperty() {
                 ? payload.properties
                 : Array.isArray(payload?.visits)
                   ? payload.visits
-                  : Array.isArray(payload?.data)
-                    ? payload.data
-                    : [];
+                : Array.isArray(payload?.data)
+                  ? payload.data
+                  : [];
+            if (mounted) setApprovedProperties(records);
             const approvedRecord = records.find((item) => matchesProperty(item, propertyId)) || null;
             if (approvedRecord) {
               record = approvedRecord;
@@ -256,6 +268,56 @@ export default function WebsiteProperty() {
       amenities
     };
   }, [propertyData]);
+
+  const mapQuery = useMemo(() => {
+    const parts = [
+      normalized.title,
+      normalized.area,
+      normalized.city,
+      propertyData?.propertyInfo?.address,
+      propertyData?.address
+    ].filter(Boolean);
+    return parts.join(", ");
+  }, [normalized.title, normalized.area, normalized.city, propertyData]);
+
+  const recommendedProperties = useMemo(() => {
+    const currentId = String(
+      propertyData?._id ||
+      propertyData?.id ||
+      propertyData?.visitId ||
+      propertyData?.propertyId ||
+      propertyData?.propertyInfo?.propertyId ||
+      ""
+    );
+    const targetArea = String(normalized.area || "").trim().toLowerCase();
+    const targetCity = String(normalized.city || "").trim().toLowerCase();
+
+    return approvedProperties
+      .filter((item) => {
+        const info = item?.propertyInfo || {};
+        const itemId = String(item?._id || item?.id || item?.visitId || item?.propertyId || info.propertyId || "");
+        if (currentId && itemId === currentId) return false;
+        const itemArea = String(info.area || info.locality || item.area || item.locality || "").trim().toLowerCase();
+        const itemCity = String(info.city || info.cityName || item.city || item.location || "").trim().toLowerCase();
+        if (targetArea && itemArea) return itemArea === targetArea;
+        if (targetCity && itemCity) return itemCity === targetCity;
+        return false;
+      })
+      .slice(0, 8)
+      .map((item) => {
+        const info = item?.propertyInfo || {};
+        const photos = collectPhotosFromRecord(item);
+        return {
+          id: item?._id || item?.id || item?.visitId || item?.propertyId || info.propertyId,
+          title: info.name || info.title || info.propertyName || item.property_name || item.title || "Property",
+          area: info.area || info.locality || item.locality || item.area || "",
+          city: info.city || info.cityName || item.city || item.location || "",
+          type: info.propertyType || item.propertyType || item.property_type || "Listing",
+          rent: item.monthlyRent || item.rent || item.price || info.monthlyRent || info.rent || 0,
+          image: photos[0] || "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2000&auto=format&fit=crop"
+        };
+      });
+  }, [approvedProperties, normalized.area, normalized.city, propertyData]);
 
   const quickFacts = useMemo(() => {
     const record = propertyData || {};
@@ -352,8 +414,8 @@ export default function WebsiteProperty() {
     );
   }, [propertyData]);
 
-  const studentRating = useMemo(() => buildStarsSafe(studentRatingValue), [studentRatingValue]);
-  const employeeRating = useMemo(() => buildStarsSafe(employeeRatingValue), [employeeRatingValue]);
+  const studentRating = useMemo(() => buildStarsDisplay(studentRatingValue), [studentRatingValue]);
+  const employeeRating = useMemo(() => buildStarsDisplay(employeeRatingValue), [employeeRatingValue]);
 
   const studentRatingComment =
     propertyData?.studentReviews ||
@@ -392,6 +454,64 @@ export default function WebsiteProperty() {
       employeeCommentEl.textContent = employeeRatingComment;
     }
   }, [studentRating, employeeRating, studentRatingComment, employeeRatingComment]);
+
+  useEffect(() => {
+    const iframe = document.getElementById("propertyMapIframe");
+    if (iframe) {
+      const query = mapQuery || normalized.locationText || normalized.title;
+      iframe.setAttribute("src", `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`);
+    }
+
+    const nearbyEl = document.getElementById("whats-nearby-dynamic");
+    if (nearbyEl) {
+      const nearbyItems = String(normalized.nearbyLocation || "").trim()
+        ? String(normalized.nearbyLocation)
+            .split(/[,|]/)
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .slice(0, 6)
+        : [normalized.area || "Area not specified", normalized.city || "City not specified"];
+
+      nearbyEl.innerHTML = nearbyItems
+        .map(
+          (item, index) => `
+            <div class="rounded-xl border border-red-100 bg-white p-4 shadow-sm">
+              <div class="flex items-start gap-3">
+                <i data-lucide="${index % 2 === 0 ? "navigation" : "map-pin"}" class="w-5 h-5 text-red-600 mt-0.5"></i>
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-red-600">Nearby ${index + 1}</p>
+                  <p class="text-sm text-gray-700 mt-1">${item}</p>
+                </div>
+              </div>
+            </div>`
+        )
+        .join("");
+    }
+
+    const recommendedEl = document.getElementById("recommended-slider");
+    if (recommendedEl) {
+      recommendedEl.innerHTML = recommendedProperties.length
+        ? recommendedProperties
+            .map(
+              (item) => `
+                <a href="/website/property?id=${encodeURIComponent(String(item.id || ""))}" class="group block flex-shrink-0 snap-start w-80">
+                  <div class="property-card-small">
+                    <img src="${item.image}" alt="${item.title}" class="property-image-small" />
+                    <div class="property-info-small">
+                      <p class="text-xs font-bold text-blue-600 uppercase tracking-wide mb-2">${item.type}</p>
+                      <p class="property-name-small">${item.title}</p>
+                      <p class="property-location-small"><i data-lucide="map-pin" class="w-4 h-4"></i>${[item.area, item.city].filter(Boolean).join(", ") || "Location unavailable"}</p>
+                      <p class="property-price-small">${formatInr(item.rent)}<span class="text-sm font-normal text-gray-500"> / mo</span></p>
+                    </div>
+                  </div>
+                </a>`
+            )
+            .join("")
+        : `<div class="w-full rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500">No matching recommendations found for this area yet.</div>`;
+    }
+
+    if (window.lucide?.createIcons) window.lucide.createIcons();
+  }, [mapQuery, normalized.locationText, normalized.title, normalized.nearbyLocation, normalized.area, normalized.city, recommendedProperties]);
 
   const getThemeClasses = (color) => {
     const themes = {
