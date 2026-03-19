@@ -2,6 +2,10 @@ const VisitReport = require('../models/VisitReport');
 const Property = require('../models/Property');
 const User = require('../models/user');
 const Owner = require('../models/Owner');
+const CheckinRecord = require('../models/CheckinRecord');
+
+const APP_URL = process.env.APP_URL || process.env.APP_BASE_URL || process.env.WEB_APP_URL || 'https://app.roomhy.com';
+const DIGITAL_CHECKIN_URL = process.env.DIGITAL_CHECKIN_URL || process.env.FRONTEND_URL || 'https://admin.roomhy.com';
 
 const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
 
@@ -104,13 +108,22 @@ exports.approveVisit = async (req, res) => {
         // 5. Send credentials via email (non-blocking)
         try {
             const mailer = require('../utils/mailer');
-            const ownerEmail = info.ownerGmail || info.email || null;
+            const ownerFromDb = await Owner.findOne({ loginId: finalLoginId }).select('email profile.email').lean();
+            const checkinRecord = await CheckinRecord.findOne({ loginId: finalLoginId, role: 'owner' })
+                .select('ownerProfile.email')
+                .lean();
+            const ownerEmail =
+                info.ownerGmail ||
+                info.email ||
+                (ownerFromDb && (ownerFromDb.email || (ownerFromDb.profile && ownerFromDb.profile.email))) ||
+                (checkinRecord && checkinRecord.ownerProfile && checkinRecord.ownerProfile.email) ||
+                null;
             const ownerArea = visit.area || (visit.propertyInfo && visit.propertyInfo.area) || '';
             console.log('Approving visit:', visitId, 'ownerEmail:', ownerEmail, 'loginId:', finalLoginId);
             if (ownerEmail) {
-                const baseWebUrl = 'http://localhost:5173';
-                const mainCheckinLink = `${baseWebUrl}/digital-checkin/index`;
-                const directCheckinLink = `${baseWebUrl}/digital-checkin/ownerprofile?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
+                const mainCheckinLink = `${DIGITAL_CHECKIN_URL}/digital-checkin/index`;
+                const directCheckinLink = `${DIGITAL_CHECKIN_URL}/digital-checkin/ownerprofile?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
+                const loginPageLink = `${APP_URL}/propertyowner/ownerlogin`;
                 const subject = 'RoomHy Property Approved - Complete Digital Check-In';
                 const html = `
                     <div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#111">
@@ -120,9 +133,10 @@ exports.approveVisit = async (req, res) => {
                         <p><strong>Area:</strong> ${ownerArea || 'N/A'}</p>
                         <p><strong>Digital Check-In (Main):</strong><br><a href="${mainCheckinLink}">${mainCheckinLink}</a></p>
                         <p><strong>Owner Check-In (Direct):</strong><br><a href="${directCheckinLink}">${directCheckinLink}</a></p>
+                        <p><strong>Owner Login Page:</strong><br><a href="${loginPageLink}">${loginPageLink}</a></p>
                     </div>
                 `;
-                const text = `Owner credentials\nLogin ID: ${finalLoginId}\nPassword: ${finalPassword}\nArea: ${ownerArea || 'N/A'}\nDigital Check-In: ${mainCheckinLink}\nDirect Link: ${directCheckinLink}`;
+                const text = `Owner credentials\nLogin ID: ${finalLoginId}\nPassword: ${finalPassword}\nArea: ${ownerArea || 'N/A'}\nDigital Check-In: ${mainCheckinLink}\nDirect Link: ${directCheckinLink}\nLogin Page: ${loginPageLink}`;
                 // do not await - send in background and do not affect workflow
                 mailer.sendMail(ownerEmail, subject, text, html).catch(e => console.warn('Mail send failed:', e && e.message));
             } else {

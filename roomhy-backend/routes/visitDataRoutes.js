@@ -3,8 +3,12 @@ const router = express.Router();
 const VisitData = require('../models/VisitData');
 const User = require('../models/user');
 const Owner = require('../models/Owner');
+const CheckinRecord = require('../models/CheckinRecord');
 const mailer = require('../utils/mailer');
 const { notifySuperadmin } = require('../utils/superadminNotifier');
+
+const APP_URL = process.env.APP_URL || process.env.APP_BASE_URL || process.env.WEB_APP_URL || 'https://app.roomhy.com';
+const DIGITAL_CHECKIN_URL = process.env.DIGITAL_CHECKIN_URL || process.env.FRONTEND_URL || 'https://admin.roomhy.com';
 
 // Helper function to convert string to boolean
 function stringToBoolean(value) {
@@ -332,9 +336,17 @@ router.post('/approve', async (req, res) => {
         let emailAttempted = false;
         let emailSent = false;
         try {
+            const ownerFromDb = await Owner.findOne({ loginId: finalLoginId })
+                .select('email profile.email')
+                .lean();
+            const checkinRecord = await CheckinRecord.findOne({ loginId: finalLoginId, role: 'owner' })
+                .select('ownerProfile.email')
+                .lean();
             const ownerEmail =
                 visit.ownerEmail ||
                 (visit.propertyInfo && (visit.propertyInfo.ownerEmail || visit.propertyInfo.ownerGmail)) ||
+                (ownerFromDb && (ownerFromDb.email || (ownerFromDb.profile && ownerFromDb.profile.email))) ||
+                (checkinRecord && checkinRecord.ownerProfile && checkinRecord.ownerProfile.email) ||
                 '';
             const ownerName =
                 visit.ownerName ||
@@ -347,11 +359,11 @@ router.post('/approve', async (req, res) => {
 
             if (ownerEmail) {
                 emailAttempted = true;
-                const baseWebUrl = 'http://localhost:5173';
-                const mainCheckinLink = `${baseWebUrl}/digital-checkin/index`;
-                const directCheckinLink = `${baseWebUrl}/digital-checkin/ownerprofile?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
+                const mainCheckinLink = `${DIGITAL_CHECKIN_URL}/digital-checkin/index`;
+                const directCheckinLink = `${DIGITAL_CHECKIN_URL}/digital-checkin/ownerprofile?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
+                const loginPageLink = `${APP_URL}/propertyowner/ownerlogin`;
                 const subject = 'RoomHy Property Approved - Complete Digital Check-In';
-                const text = `Property approved\nLogin ID: ${finalLoginId}\nTemporary Password: ${finalPassword}\nDigital Check-In: ${mainCheckinLink}\nDirect Link: ${directCheckinLink}`;
+                const text = `Property approved\nLogin ID: ${finalLoginId}\nTemporary Password: ${finalPassword}\nDigital Check-In: ${mainCheckinLink}\nDirect Link: ${directCheckinLink}\nLogin Page: ${loginPageLink}`;
                 const html = `
                     <div style="font-family: Arial, sans-serif; font-size: 14px; color: #111;">
                         <h2>Property Approved</h2>
@@ -362,6 +374,7 @@ router.post('/approve', async (req, res) => {
                         <p><strong>Area:</strong> ${ownerArea || 'N/A'}</p>
                         <p><strong>Digital Check-In (Main):</strong><br><a href="${mainCheckinLink}">${mainCheckinLink}</a></p>
                         <p><strong>Owner Check-In (Direct):</strong><br><a href="${directCheckinLink}">${directCheckinLink}</a></p>
+                        <p><strong>Owner Login Page:</strong><br><a href="${loginPageLink}">${loginPageLink}</a></p>
                     </div>
                 `;
                 emailSent = await mailer.sendMail(ownerEmail, subject, text, html);
