@@ -14,7 +14,7 @@ export const getAuthHeader = () => {
   } catch (_) {
     token = "";
   }
-  return token ? { Authorization: token } : {};
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 export const fetchJson = async (path, options = {}) => {

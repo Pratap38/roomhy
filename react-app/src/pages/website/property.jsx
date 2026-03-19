@@ -704,12 +704,12 @@ export default function WebsiteProperty() {
 
   const handleAuthLogin = () => {
     setShowAuthModal(false);
-    window.location.href = "signup";
+    window.location.href = "/website/signup?mode=login";
   };
 
   const handleAuthSignup = () => {
     setShowAuthModal(false);
-    window.location.href = "signup";
+    window.location.href = "/website/signup?mode=signup";
   };
 
   const handleCloseGalleryModal = () => {
@@ -1539,7 +1539,7 @@ export default function WebsiteProperty() {
                   <h3 className="text-2xl font-bold mb-2 text-gray-900">Signup Required</h3>
                   <p className="text-sm text-gray-600 mb-6">You need an account to Request or Bid. Please sign up to proceed.</p>
                   <div className="flex gap-3 justify-center flex-col sm:flex-row">
-                      <button id="auth-modal-login" onClick={handleAuthLogin} className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300">Sign Up</button>
+                      <button id="auth-modal-login" onClick={handleAuthLogin} className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300">Login</button>
                       <button id="auth-modal-signup" onClick={handleAuthSignup} className="px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-300">Sign up</button>
                   </div>
                   <div className="mt-4">

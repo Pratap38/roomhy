@@ -363,25 +363,60 @@ export default function Rooms() {
     if (!owner?.loginId || !selectedRoom) return;
     try {
       setErrorMsg("");
-      const payload = assignMode === "existing"
-        ? {
-            ownerLoginId: owner.loginId,
-            roomId: selectedRoom._id || selectedRoom.id,
-            tenantId: selectedTenantId,
-            bedIndex: selectedBedIndex,
-            propertyId: currentProperty?._id || selectedRoom.property?._id || selectedRoom.property
-          }
-        : {
-            ownerLoginId: owner.loginId,
-            roomId: selectedRoom._id || selectedRoom.id,
-            bedIndex: selectedBedIndex,
-            propertyId: currentProperty?._id || selectedRoom.property?._id || selectedRoom.property,
-            tenant: {
-              name: newTenantForm.name,
-              phone: newTenantForm.phone,
-              email: newTenantForm.email
-            }
-          };
+      const propertyId = currentProperty?._id || selectedRoom.property?._id || selectedRoom.property || selectedRoom.propertyId || "";
+      const roomNo = selectedRoom.number || selectedRoom.roomNo || selectedRoom.title || "";
+      const agreedRent = Number(selectedRoom.rent ?? selectedRoom.price ?? 0);
+      const moveInDate = new Date().toISOString().split("T")[0];
+      let payload;
+      let assignedTenantName = "Tenant";
+      let assignedTenantId = selectedTenantId || `TNT-${Date.now()}`;
+
+      if (assignMode === "existing") {
+        const existingTenant = tenants.find((tenant) => (tenant._id || tenant.id || tenant.loginId) === selectedTenantId);
+        if (!existingTenant) {
+          setErrorMsg("Select a tenant.");
+          return;
+        }
+        if (!existingTenant.name || !existingTenant.phone || !existingTenant.email) {
+          setErrorMsg("Selected tenant must have name, phone, and email.");
+          return;
+        }
+        payload = {
+          name: existingTenant.name,
+          phone: existingTenant.phone,
+          email: existingTenant.email,
+          propertyId,
+          roomNo,
+          bedNo: Number(selectedBedIndex) + 1,
+          moveInDate,
+          agreedRent,
+          ownerLoginId: owner.loginId,
+          propertyTitle: firstValidValue(selectedRoom.propertyTitle, currentProperty?.title, currentProperty?.name),
+          locationCode: firstValidValue(currentProperty?.locationCode, currentProperty?.area, owner?.locationCode, owner?.area)
+        };
+        assignedTenantName = existingTenant.name;
+        assignedTenantId = existingTenant._id || existingTenant.id || existingTenant.loginId;
+      } else {
+        if (!newTenantForm.name || !newTenantForm.phone || !newTenantForm.email) {
+          setErrorMsg("Name, phone and email are required.");
+          return;
+        }
+        payload = {
+          name: newTenantForm.name,
+          phone: newTenantForm.phone,
+          email: newTenantForm.email,
+          propertyId,
+          roomNo,
+          bedNo: Number(selectedBedIndex) + 1,
+          moveInDate,
+          agreedRent,
+          ownerLoginId: owner.loginId,
+          propertyTitle: firstValidValue(selectedRoom.propertyTitle, currentProperty?.title, currentProperty?.name),
+          locationCode: firstValidValue(currentProperty?.locationCode, currentProperty?.area, owner?.locationCode, owner?.area)
+        };
+        assignedTenantName = newTenantForm.name;
+      }
+
       await assignTenant(payload);
       persistRooms((allRooms) => {
         const next = [...allRooms];
@@ -391,10 +426,8 @@ export default function Rooms() {
         const beds = toLegacyBeds(room);
         beds[selectedBedIndex] = {
           status: "occupied",
-          tenantId: selectedTenantId || `TNT-${Date.now()}`,
-          tenantName: assignMode === "existing"
-            ? (tenants.find((tenant) => (tenant._id || tenant.id || tenant.loginId) === selectedTenantId)?.name || "Tenant")
-            : newTenantForm.name
+          tenantId: assignedTenantId,
+          tenantName: assignedTenantName
         };
         next[roomIndex] = { ...room, beds };
         return next;

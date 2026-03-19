@@ -31,6 +31,17 @@ export default function WebsiteSignup() {
     if (toastTimer.current) clearTimeout(toastTimer.current);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const mode = String(params.get("mode") || "").toLowerCase();
+    if (mode === "signup") {
+      setSignupActive(true);
+    } else if (mode === "login") {
+      setSignupActive(false);
+    }
+  }, []);
+
   const showToast = useCallback((message, type = "info") => {
     setToast({ message, type });
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -328,6 +339,7 @@ export default function WebsiteSignup() {
                                           <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Email or Login ID</label>
                                           <input
                                               type="text"
+                                              autoComplete="username"
                                               className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-50/50 outline-none transition-all"
                                               placeholder="Enter email or ROOMHY ID"
                                               value={loginId}
@@ -338,6 +350,7 @@ export default function WebsiteSignup() {
                                           <label className="text-xs md:text-sm font-bold text-slate-700 ml-1">Password</label>
                                           <input
                                               type="password"
+                                              autoComplete="current-password"
                                               className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-50/50 outline-none transition-all"
                                               placeholder="********"
                                               value={loginPassword}
@@ -371,12 +384,12 @@ export default function WebsiteSignup() {
       
                                   <form id="signup-form" className="space-y-4" onSubmit={handleSignupSubmit}>
                                       <div className="grid grid-cols-2 gap-3">
-                                          <input id="firstName" name="firstName" type="text" placeholder="First Name" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" required value={signup.firstName} onChange={(e) => handleSignupChange("firstName", e.target.value)} />
-                                          <input id="lastName" name="lastName" type="text" placeholder="Last Name" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" value={signup.lastName} onChange={(e) => handleSignupChange("lastName", e.target.value)} />
+                                          <input id="firstName" name="firstName" type="text" autoComplete="given-name" placeholder="First Name" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" required value={signup.firstName} onChange={(e) => handleSignupChange("firstName", e.target.value)} />
+                                          <input id="lastName" name="lastName" type="text" autoComplete="family-name" placeholder="Last Name" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" value={signup.lastName} onChange={(e) => handleSignupChange("lastName", e.target.value)} />
                                       </div>
-                                      <input id="email" name="email" type="email" placeholder="Email" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" required value={signup.email} onChange={(e) => handleSignupChange("email", e.target.value)} />
-                                      <input id="phone" name="phone" type="tel" placeholder="Phone Number" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" pattern="[0-9]{10}" minLength="10" maxLength="10" required value={signup.phone} onChange={(e) => handleSignupChange("phone", e.target.value)} />
-                                      <input id="password" name="password" type="password" placeholder="Password" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" required value={signup.password} onChange={(e) => handleSignupChange("password", e.target.value)} />
+                                      <input id="email" name="email" type="email" autoComplete="email" placeholder="Email" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" required value={signup.email} onChange={(e) => handleSignupChange("email", e.target.value)} />
+                                      <input id="phone" name="phone" type="tel" autoComplete="tel" placeholder="Phone Number" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" pattern="[0-9]{10}" minLength="10" maxLength="10" required value={signup.phone} onChange={(e) => handleSignupChange("phone", e.target.value)} />
+                                      <input id="password" name="password" type="password" autoComplete="new-password" placeholder="Password" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" required value={signup.password} onChange={(e) => handleSignupChange("password", e.target.value)} />
                                       <div id="verificationBlock" className={`${verificationVisible ? "space-y-3" : "hidden space-y-3"}`}>
                                           <input id="verificationCode" name="verificationCode" type="text" placeholder="Enter Verification Code" className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 text-sm md:text-base" minLength="6" maxLength="6" inputMode="numeric" value={otp} onChange={(e) => setOtp(e.target.value)} />
                                           <button type="button" id="verifyAccountBtn" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold shadow-lg transition-all active:scale-[0.98]" onClick={handleVerify} disabled={loadingVerify}>{loadingVerify ? "Verifying..." : "Verify & Create Account"}</button>
