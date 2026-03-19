@@ -11,6 +11,17 @@ function getApiBase() {
     return CASHFREE_API_BASES[env] || CASHFREE_API_BASES.sandbox;
 }
 
+function isAadhaarBypassEnabled() {
+    const aadhaarBypass = String(process.env.CASHFREE_AADHAAR_BYPASS || '').toLowerCase() === 'true';
+    const digilockerBypass = String(process.env.CASHFREE_DIGILOCKER_BYPASS || '').toLowerCase() === 'true';
+    const env = String(process.env.CASHFREE_ENV || 'sandbox').toLowerCase();
+    return aadhaarBypass || (env === 'sandbox' && digilockerBypass);
+}
+
+function getMockOtp() {
+    return String(process.env.CASHFREE_MOCK_OTP || '123456').trim();
+}
+
 function getHeaders() {
     const clientId = process.env.CASHFREE_CLIENT_ID;
     const clientSecret = process.env.CASHFREE_CLIENT_SECRET;
@@ -65,6 +76,16 @@ async function callCashfree(path, payload) {
 }
 
 async function requestAadhaarOtp(aadhaarNumber) {
+    if (isAadhaarBypassEnabled()) {
+        return {
+            referenceId: `mock-${String(aadhaarNumber || '').trim()}`,
+            raw: {
+                mock: true,
+                mockOtp: getMockOtp()
+            }
+        };
+    }
+
     let data;
     try {
         data = await callCashfree('/verification/offline-aadhaar/otp', {
@@ -98,6 +119,21 @@ async function requestAadhaarOtp(aadhaarNumber) {
 }
 
 async function verifyAadhaarOtp(referenceId, otp) {
+    if (isAadhaarBypassEnabled()) {
+        const expectedOtp = getMockOtp();
+        if (String(otp || '').trim() !== expectedOtp) {
+            const err = new Error('Invalid OTP');
+            err.code = 'invalid_otp';
+            throw err;
+        }
+        return {
+            success: true,
+            mock: true,
+            reference_id: referenceId,
+            status: 'VALID'
+        };
+    }
+
     const data = await callCashfree('/verification/offline-aadhaar/verify', {
         reference_id: referenceId,
         ref_id: referenceId,

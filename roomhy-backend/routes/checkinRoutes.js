@@ -179,14 +179,15 @@ router.post('/owner/kyc/send-otp', otpLimiter, async (req, res) => {
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
-        const { referenceId } = await requestAadhaarOtp(aadhaarNumber);
+        const { referenceId, raw } = await requestAadhaarOtp(aadhaarNumber);
         const k = keyFor('owner', loginId, aadhaarNumber);
         otpStore.set(k, { referenceId, expiresAt: Date.now() + 10 * 60 * 1000 });
 
         return res.json({
             success: true,
             message: 'OTP sent to Aadhaar linked mobile number',
-            provider: 'cashfree'
+            provider: 'cashfree',
+            mockOtp: raw?.mockOtp || undefined
         });
     } catch (err) {
         console.error('owner/kyc/send-otp error:', err);
@@ -629,14 +630,15 @@ router.post('/tenant/kyc/send-otp', otpLimiter, async (req, res) => {
         tenant.updatedAt = new Date();
         await tenant.save();
 
-        const { referenceId } = await requestAadhaarOtp(aadhaarNumber);
+        const { referenceId, raw } = await requestAadhaarOtp(aadhaarNumber);
         const k = keyFor('tenant', normalizedLoginId, aadhaarNumber);
         otpStore.set(k, { referenceId, expiresAt: Date.now() + 10 * 60 * 1000 });
         console.log('[CHECKIN OTP] tenant', normalizedLoginId, aadhaarNumber, 'Cashfree OTP requested');
         return res.json({
             success: true,
             message: 'OTP sent to Aadhaar linked mobile number',
-            provider: 'cashfree'
+            provider: 'cashfree',
+            mockOtp: raw?.mockOtp || undefined
         });
     } catch (err) {
         console.error('tenant/kyc/send-otp error:', err);

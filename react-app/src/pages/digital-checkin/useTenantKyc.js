@@ -50,7 +50,7 @@ export const useTenantKyc = () => {
       const aadhaarRaw = aadhaarNumber.trim().replace(/\D/g, "");
       if (!/^\d{12}$/.test(aadhaarRaw)) return alert("Aadhaar must be 12 digits");
 
-      await postExpectSuccess(
+      const data = await postExpectSuccess(
         "/api/checkin/tenant/kyc/send-otp",
         {
           loginId: loginId.trim(),
@@ -61,7 +61,7 @@ export const useTenantKyc = () => {
       );
       setOtpSent(true);
       saveKycState({ otpSent: true });
-      setOtpMsg("OTP sent to Aadhaar-linked mobile. Enter OTP and complete verification.");
+      setOtpMsg(data?.mockOtp ? `OTP sent. Sandbox mock OTP: ${data.mockOtp}` : "OTP sent to Aadhaar-linked mobile. Enter OTP and complete verification.");
     } catch (err) {
       alert(`Error: ${err.message}`);
     }

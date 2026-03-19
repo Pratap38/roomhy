@@ -186,7 +186,7 @@ export const useOwnerProfile = () => {
       await saveProfile(form, autoInfo);
       setLoadingStart(true);
       const emailValue = autoInfo.email || form.email.trim();
-      await postExpectSuccess(
+      const data = await postExpectSuccess(
         "/api/checkin/owner/kyc/send-otp",
         {
           loginId: trimmedLogin,
@@ -198,7 +198,12 @@ export const useOwnerProfile = () => {
       );
       setOtpSent(true);
       saveKycState({ otpSent: true });
-      setKycStatus({ type: "success", text: "OTP sent to Aadhaar-linked mobile. Enter OTP and complete verification." });
+      setKycStatus({
+        type: "success",
+        text: data?.mockOtp
+          ? `OTP sent. Sandbox mock OTP: ${data.mockOtp}`
+          : "OTP sent to Aadhaar-linked mobile. Enter OTP and complete verification."
+      });
       setLoadingStart(false);
     } catch (err) {
       setKycStatus({ type: "error", text: `Error: ${err.message}` });

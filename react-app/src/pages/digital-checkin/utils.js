@@ -1,7 +1,7 @@
 export const isLocalHost = () =>
   window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
-export const getApiBases = () => (isLocalHost() ? ["http://localhost:5001"] : ["", "https://api.roomhy.com"]);
+export const getApiBases = () => (isLocalHost() ? ["http://localhost:5001"] : ["https://api.roomhy.com", ""]);
 
 export const getParamValue = (names) => {
   const params = new URLSearchParams(window.location.search);
