@@ -47,15 +47,26 @@ const generateWebsiteUserIdFromBooking = (booking) => {
 };
 
 const resolveWebsiteUserId = (booking) => {
-  // First try to get pre-generated roomhyweb ID
+  // First priority: Check for email (most reliable - matches website user generation)
+  const email = booking?.email || booking?.userEmail || booking?.gmail || booking?.contactEmail || booking?.user_email || "";
+  if (email && email !== "-") {
+    const emailHash = generateWebsiteUserIdFromEmail(email);
+    console.log("🐛 Resolved from email:", { email, emailHash });
+    if (emailHash) return emailHash;
+  }
+
+  // Second: Check for pre-generated website_user_id
   const preGenerated = (
     booking?.website_user_id ||
     booking?.websiteUserId ||
     ""
   ).trim().toLowerCase();
-  if (WEBSITE_USER_ID_REGEX.test(preGenerated)) return preGenerated;
+  if (WEBSITE_USER_ID_REGEX.test(preGenerated)) {
+    console.log("🐛 Resolved from preGenerated:", { preGenerated });
+    return preGenerated;
+  }
 
-  // Try signup_user_id or user_login_id (if already normalized)
+  // Third: Try signup_user_id or user_login_id (if already normalized)
   const raw = String(
     booking?.signup_user_id ||
     booking?.user_login_id ||
@@ -64,29 +75,21 @@ const resolveWebsiteUserId = (booking) => {
   ).trim().toLowerCase();
   
   const normalized = normalizeWebsiteUserId(raw);
-  if (normalized) return normalized;
+  if (normalized) {
+    console.log("🐛 Resolved from normalized:", { raw, normalized });
+    return normalized;
+  }
 
-  // Try email-based generation (most reliable for matching website users)
-  const emailBased = generateWebsiteUserIdFromEmail(
-    booking?.email ||
-    booking?.userEmail ||
-    booking?.gmail ||
-    booking?.contactEmail ||
-    booking?.booking_details?.email ||
-    booking?.user_email
-  );
-  if (emailBased) return emailBased;
+  // Fourth: Try to extract from booking ID
+  const bookingGenerated = generateWebsiteUserIdFromBooking(booking);
+  if (bookingGenerated) {
+    console.log("🐛 Resolved from booking ID:", { bookingGenerated });
+    return bookingGenerated;
+  }
 
-  // Last resort: try to extract from any remaining ID fields
-  const fallbackRaw = String(
-    booking?.user_id ||
-    booking?.userId ||
-    booking?.booking_details?.user_id ||
-    booking?.booking_details?.userId ||
-    ""
-  ).trim().toLowerCase();
-  
-  return generateWebsiteUserIdFromBooking(booking) || normalizeWebsiteUserId(fallbackRaw) || fallbackRaw;
+  // Last resort: return empty string (don't use MongoDB ID)
+  console.warn("🐛 Unable to resolve website user ID, returning empty string. Booking:", booking);
+  return "";
 };
 
 const getBookingDisplayName = (booking) => {
@@ -294,8 +297,17 @@ export default function Ownerchat() {
     if (!draft.trim() || !currentChat || !socketRef.current || !owner?.loginId) return;
     // Use the pre-resolved userId from currentChat, not recalculated one
     const userId = currentChat.userId || resolveWebsiteUserId(currentChat);
+    
+    // Debug logging
+    console.log('🐛 SendMessage Debug:', {
+      currentChatEmail: currentChat?.email,
+      resolvedUserId: userId,
+      ownerLoginId: owner.loginId,
+      currentChat_userId: currentChat.userId
+    });
+    
     if (!userId || !OWNER_LOGIN_ID_REGEX.test(String(owner.loginId || "").trim().toUpperCase()) || !WEBSITE_USER_ID_REGEX.test(String(userId || "").trim().toLowerCase())) {
-      console.warn("Invalid message recipients:", { userId, ownerLoginId: owner.loginId });
+      console.warn("❌ Invalid message recipients:", { userId, ownerLoginId: owner.loginId });
       return;
     }
     socketRef.current.emit("send_message", { to_login_id: userId, message: draft.trim() });

@@ -69,10 +69,21 @@ export default function WebsiteWebsitechat() {
   useLucideIcons([chats, activeChat, messages, showLikePopup, showDislikePopup]);
 
   const resolveWebsiteUserId = useCallback((user) => {
-    const fromUser = normalizeWebsiteUserId(user?.loginId || user?.id || "");
-    if (fromUser) return fromUser;
+    // First priority: Email-based generation (must match owner's resolution)
     const fromEmail = generateWebsiteUserIdFromEmail(user?.email || "");
-    if (fromEmail) return fromEmail;
+    if (fromEmail) {
+      console.log("🐛 Website user ID from email:", { email: user?.email, userId: fromEmail });
+      return fromEmail;
+    }
+    
+    // Second: Try normalizing loginId/id if already formatted
+    const fromUser = normalizeWebsiteUserId(user?.loginId || user?.id || "");
+    if (fromUser) {
+      console.log("🐛 Website user ID from normalized loginId:", { loginId: user?.loginId, userId: fromUser });
+      return fromUser;
+    }
+    
+    console.warn("🐛 Unable to resolve website user ID for user:", user);
     return "";
   }, []);
 
@@ -102,9 +113,16 @@ export default function WebsiteWebsitechat() {
     });
     const joinRoom = () => {
       const latestUser = currentUserRef.current;
-      const latestLoginId = normalizeWebsiteUserId(latestUser?.loginId || latestUser?.id || "") || loginId;
+      // Use email-first resolution to match owner's resolution
+      const resolvedLoginId = resolveWebsiteUserId(latestUser) || loginId;
+      console.log("🐛 Website user joining room:", { 
+        email: latestUser?.email,
+        resolvedLoginId,
+        loginIdParam: loginId,
+        user: latestUser 
+      });
       socket.emit("join_room", {
-        login_id: latestLoginId,
+        login_id: resolvedLoginId,
         role: "website_user",
         name: latestUser?.firstName || latestUser?.name || name || "Website User",
         aliases: getWebsiteUserAliases(latestUser, activeChatRef.current)
