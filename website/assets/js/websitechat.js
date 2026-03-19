@@ -116,7 +116,10 @@ if (typeof lucide !== 'undefined') {
                 });
                 return;
             }
-            socket = io(API_URL, { transports: ['websocket', 'polling'] });
+            socket = io(API_URL, {
+                transports: ['websocket'],
+                upgrade: false
+            });
             socket.on('connect', () => {
                 socketReady = true;
                 socket.emit('join_room', {

@@ -100,7 +100,10 @@ let currentOwner = null;
 
         function connectOwnerSocket(ownerId, ownerName) {
             if (socket && socket.connected) return;
-            socket = io(CHAT_API_URL, { transports: ['websocket', 'polling'] });
+            socket = io(CHAT_API_URL, {
+                transports: ['websocket'],
+                upgrade: false
+            });
             socket.on('connect', () => {
                 socketReady = true;
                 socket.emit('join_room', {

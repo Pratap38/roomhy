@@ -23,7 +23,10 @@ const API_URL = (window.location.hostname === 'localhost' || window.location.hos
 
         // Initialize Socket.IO
         function initSocket() {
-            socket = io(API_URL);
+            socket = io(API_URL, {
+                transports: ['websocket'],
+                upgrade: false
+            });
 
             socket.on('connect', () => {
                 console.log('? Connected to chat');
