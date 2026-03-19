@@ -2,6 +2,7 @@ let currentOwner = null;
         let currentChat = null;
         let socket = null;
         let socketReady = false;
+        let ownerSocketIdentity = null;
         let acceptedBookings = [];
         const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
         const WEBSITE_USER_ID_REGEX = /^roomhyweb\d{6}$/i;
@@ -98,21 +99,47 @@ let currentOwner = null;
             return normalized;
         }
 
+        function joinOwnerRoom(ownerId, ownerName) {
+            if (!socket) return;
+            socket.emit('join_room', {
+                login_id: ownerId,
+                role: 'property_owner',
+                name: ownerName || 'Owner'
+            });
+        }
+
         function connectOwnerSocket(ownerId, ownerName) {
-            if (socket && socket.connected) return;
+            const identity = `${ownerId}::${ownerName || 'Owner'}`;
+            if (socket && socket.connected) {
+                if (ownerSocketIdentity !== identity) {
+                    ownerSocketIdentity = identity;
+                }
+                joinOwnerRoom(ownerId, ownerName);
+                return;
+            }
+
+            ownerSocketIdentity = identity;
+            if (socket) {
+                try { socket.removeAllListeners(); } catch (_) {}
+                try { socket.disconnect(); } catch (_) {}
+            }
+
             socket = io(CHAT_API_URL, {
                 transports: ['websocket'],
-                upgrade: false
+                upgrade: false,
+                reconnection: true,
+                reconnectionAttempts: Infinity,
+                reconnectionDelay: 1000
             });
             socket.on('connect', () => {
                 socketReady = true;
-                socket.emit('join_room', {
-                    login_id: ownerId,
-                    role: 'property_owner',
-                    name: ownerName || 'Owner'
-                });
+                joinOwnerRoom(ownerId, ownerName);
             });
             socket.on('disconnect', () => { socketReady = false; });
+            socket.on('reconnect', () => {
+                socketReady = true;
+                joinOwnerRoom(ownerId, ownerName);
+            });
             socket.on('receive_message', () => {
                 if (currentChat) loadMessages();
             });
@@ -359,6 +386,12 @@ let currentOwner = null;
 
         function openChat(booking) {
             currentChat = booking;
+            if (currentOwner?.loginId) {
+                connectOwnerSocket(
+                    String(currentOwner.loginId || currentOwner.ownerId || '').trim().toUpperCase(),
+                    currentOwner.name || currentOwner.ownerName || 'Owner'
+                );
+            }
             
             // UI Toggle
             document.getElementById('no-chat-selected').classList.add('hidden');
