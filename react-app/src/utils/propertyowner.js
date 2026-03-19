@@ -85,6 +85,14 @@ export const normalizeBooking = (item = {}) => ({
   userName: item.name || item.tenantName || item.fullName || "-",
   phone: item.phone || item.mobile || "-",
   email: item.email || "-",
+  minPrice: item.bid_min || item.minPrice || "-",
+  maxPrice: item.bid_max || item.maxPrice || "-",
+  budgetRange:
+    item.budgetRange ||
+    ((item.bid_min || item.bid_max)
+      ? `${item.bid_min || "-"} - ${item.bid_max || "-"}`
+      : "-"),
+  request_type: item.request_type || item.requestType || item.type || "",
   status: item.status || "pending"
 });
 
@@ -214,19 +222,19 @@ export const fetchBookingRequestsForOwner = async (ownerId) => {
   return Array.isArray(response) ? response : response?.requests || response?.data || [];
 };
 
-export const fetchBids = async () => {
+export const fetchBids = async (ownerId) => {
   try {
-    const response = await fetchJson("/api/bids");
-    return Array.isArray(response) ? response : response?.data || [];
+    const response = await fetchJson(`/api/bookings/requests?owner_id=${encodeURIComponent(ownerId)}&type=bid`);
+    return Array.isArray(response) ? response : response?.data || response?.requests || [];
   } catch (_) {
     return [];
   }
 };
 
-export const createOwnerChatRoom = async ({ bookingId, userName, userEmail, ownerId }) =>
+export const createOwnerChatRoom = async ({ bookingId, userName, userEmail, userLoginId, ownerId, ownerName, propertyName }) =>
   fetchJson("/api/chat/create", {
     method: "POST",
-    body: JSON.stringify({ bookingId, userName, userEmail, ownerId })
+    body: JSON.stringify({ bookingId, userName, userEmail, userLoginId, ownerId, ownerName, propertyName })
   });
 
 export const fetchConversation = async (ownerId, userId) =>

@@ -1,6 +1,7 @@
 const Tenant = require('../models/Tenant');
 const User = require('../models/user');
 const Property = require('../models/Property');
+const Owner = require('../models/Owner');
 const Rent = require('../models/Rent');
 const generateTenantId = require('../utils/generateTenantId');
 const crypto = require('crypto');
@@ -14,7 +15,7 @@ const mailer = require('../utils/mailer');
 exports.assignTenant = async (req, res) => {
     try {
         const { name, phone, email, propertyId, roomNo, bedNo, moveInDate, agreedRent, ownerLoginId, propertyTitle, locationCode } = req.body;
-        const assignedPropertyTitle = String(propertyTitle || '').trim();
+        let assignedPropertyTitle = String(propertyTitle || '').trim();
 
         // Validation
         if (!name || !phone || !email || !agreedRent) {
@@ -46,11 +47,24 @@ exports.assignTenant = async (req, res) => {
             }
         }
 
+        if (!assignedPropertyTitle && ownerLoginId) {
+            const ownerProfile = await Owner.findOne({ loginId: String(ownerLoginId).toUpperCase() })
+                .select('propertyTitle propertyName')
+                .lean();
+            assignedPropertyTitle = String(
+                assignedPropertyTitle ||
+                property?.title ||
+                ownerProfile?.propertyTitle ||
+                ownerProfile?.propertyName ||
+                ''
+            ).trim();
+        }
+
         if (!property) {
             // Last fallback: create a minimal property so tenant assignment can proceed.
             const normalizedOwnerId = String(ownerLoginId || '').toUpperCase();
             const derivedLocationCode = String(locationCode || normalizedOwnerId.slice(0, 3) || 'GEN').toUpperCase();
-            const derivedTitle = propertyTitle || `Property ${normalizedOwnerId || 'GEN'}`;
+            const derivedTitle = assignedPropertyTitle || `Property ${normalizedOwnerId || 'GEN'}`;
             property = await Property.create({
                 title: derivedTitle,
                 locationCode: derivedLocationCode,
@@ -62,6 +76,7 @@ exports.assignTenant = async (req, res) => {
 
         // Get location code from property
         const effectiveLocationCode = property.locationCode || String(locationCode || '').toUpperCase() || 'GEN';
+        assignedPropertyTitle = String(assignedPropertyTitle || property.title || '').trim();
 
         // Generate unique tenant login ID
         const loginId = await generateTenantId();

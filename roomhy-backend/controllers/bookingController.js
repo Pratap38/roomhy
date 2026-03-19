@@ -3,8 +3,72 @@ const RefundRequest = require('../models/RefundRequest');
 const Notification = require('../models/Notification');
 const User = require('../models/user');
 const Owner = require('../models/Owner');
+const ChatRoom = require('../models/ChatRoom');
+const ChatMessage = require('../models/ChatMessage');
 const mailer = require('../utils/mailer');
 const { notifySuperadmin } = require('../utils/superadminNotifier');
+
+async function ensureChatRoomsForBooking({ bookingId, ownerId, ownerName, userId, userName, userEmail, propertyName }) {
+    const normalizedOwnerId = String(ownerId || '').trim().toUpperCase();
+    const normalizedUserId = String(userId || '').trim().toLowerCase();
+    if (!normalizedOwnerId || !normalizedUserId) return null;
+
+    const participants = [
+        { loginId: normalizedOwnerId, role: 'property_owner' },
+        { loginId: normalizedUserId, role: 'website_user' }
+    ];
+
+    await Promise.all([
+        ChatRoom.findOneAndUpdate(
+            { room_id: normalizedOwnerId },
+            {
+                $set: { participants, updated_at: new Date() },
+                $setOnInsert: { room_id: normalizedOwnerId, created_at: new Date() }
+            },
+            { new: true, upsert: true, setDefaultsOnInsert: true }
+        ),
+        ChatRoom.findOneAndUpdate(
+            { room_id: normalizedUserId },
+            {
+                $set: { participants, updated_at: new Date() },
+                $setOnInsert: { room_id: normalizedUserId, created_at: new Date() }
+            },
+            { new: true, upsert: true, setDefaultsOnInsert: true }
+        )
+    ]);
+
+    const intro = `Chat opened for ${propertyName || 'property'} between ${ownerName || normalizedOwnerId} and ${userName || userEmail || normalizedUserId} (booking ${bookingId})`;
+    const existingIntro = await ChatMessage.findOne({
+        room_id: normalizedOwnerId,
+        sender_login_id: 'system',
+        message: intro
+    }).lean();
+
+    if (!existingIntro) {
+        await Promise.all([
+            ChatMessage.create({
+                room_id: normalizedOwnerId,
+                sender_login_id: 'system',
+                sender_name: 'System',
+                sender_role: 'superadmin',
+                message: intro,
+                created_at: new Date(),
+                updated_at: new Date()
+            }),
+            ChatMessage.create({
+                room_id: normalizedUserId,
+                sender_login_id: 'system',
+                sender_name: 'System',
+                sender_role: 'superadmin',
+                message: intro,
+                created_at: new Date(),
+                updated_at: new Date()
+            })
+        ]);
+    }
+
+    return { ownerRoomId: normalizedOwnerId, userRoomId: normalizedUserId };
+}
 
 // ==================== BOOKING REQUEST OPERATIONS ====================
 
@@ -517,6 +581,8 @@ exports.approveBooking = async (req, res) => {
             req.params.id,
             {
                 status: 'confirmed',
+                booking_status: 'confirmed',
+                bookingStatus: 'confirmed',
                 updated_at: Date.now()
             },
             { new: true }
@@ -529,20 +595,54 @@ exports.approveBooking = async (req, res) => {
             });
         }
 
+        let chat = null;
         // Send email notification to tenant
         try {
             const { sendBookingAcceptanceEmail } = require('../utils/emailNotifications');
             const tenantName = request.name || 'Valued Guest';
             const propertyName = request.property_name || 'Property';
-            const ownerName = req.body.owner_name || 'Property Owner';
+            const ownerDoc = await Owner.findOne({ loginId: String(request.owner_id || '').toUpperCase() }).lean();
+            const ownerName =
+                req.body.owner_name ||
+                request.owner_name ||
+                ownerDoc?.profile?.name ||
+                ownerDoc?.name ||
+                'Property Owner';
             
-            await sendBookingAcceptanceEmail(
-                request.email,
-                tenantName,
-                propertyName,
-                ownerName
-            );
-            
+            if (String(request.request_type || '').toLowerCase() === 'bid') {
+                const subject = `Bid Accepted - ${propertyName}`;
+                const html = `
+                    <div style="font-family: Arial, sans-serif; font-size: 14px;">
+                        <h2>Your Bid Has Been Accepted</h2>
+                        <p>Hi ${tenantName},</p>
+                        <p>Your bid for <strong>${propertyName}</strong> has been accepted by <strong>${ownerName}</strong>.</p>
+                        <p><strong>Minimum Amount:</strong> INR ${request.bid_min || '-'}</p>
+                        <p><strong>Maximum Amount:</strong> INR ${request.bid_max || '-'}</p>
+                        <p>You can now continue the conversation in Roomhy chat.</p>
+                    </div>
+                `;
+                const text = `Your bid for ${propertyName} has been accepted by ${ownerName}.`;
+                if (request.email) {
+                    await mailer.sendMail(request.email, subject, text, html);
+                }
+            } else {
+                await sendBookingAcceptanceEmail(
+                    request.email,
+                    tenantName,
+                    propertyName,
+                    ownerName
+                );
+            }
+            chat = await ensureChatRoomsForBooking({
+                bookingId: String(request._id || ''),
+                ownerId: request.owner_id,
+                ownerName,
+                userId: request.user_id,
+                userName: tenantName,
+                userEmail: request.email,
+                propertyName
+            });
+
             // Create in-app notification
             const notificationEndpoint = `${process.env.API_URL || 'https://api.roomhy.com'}/api/website-enquiry/notifications/create`;
             await fetch(notificationEndpoint, {
@@ -563,8 +663,11 @@ exports.approveBooking = async (req, res) => {
 
         res.status(200).json({ 
             success: true, 
-            message: 'Booking approved and notification sent',
-            data: request 
+            message: String(request.request_type || '').toLowerCase() === 'bid'
+                ? 'Bid approved, user notified, and chat room created'
+                : 'Booking approved and notification sent',
+            data: request,
+            chat
         });
     } catch (error) {
         console.error('Error approving booking:', error);

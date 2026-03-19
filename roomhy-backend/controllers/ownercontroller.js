@@ -84,6 +84,7 @@ exports.getAllOwners = async (req, res) => {
 
         // Attach property counts per owner for frontend display
         const ownerLoginIds = owners.map(o => o.loginId).filter(Boolean);
+        const primaryPropertyMap = {};
         if (ownerLoginIds.length > 0) {
             const counts = await Property.aggregate([
                 { $match: { ownerLoginId: { $in: ownerLoginIds } } },
@@ -92,6 +93,16 @@ exports.getAllOwners = async (req, res) => {
             const countMap = {};
             counts.forEach(c => { countMap[c._id] = c.count; });
             owners.forEach(o => { o.propertyCount = countMap[o.loginId] || 0; });
+
+            const firstProperties = await Property.find({ ownerLoginId: { $in: ownerLoginIds } })
+                .sort({ createdAt: 1 })
+                .select('ownerLoginId title locationCode')
+                .lean();
+            firstProperties.forEach((property) => {
+                if (property?.ownerLoginId && !primaryPropertyMap[property.ownerLoginId]) {
+                    primaryPropertyMap[property.ownerLoginId] = property;
+                }
+            });
         } else {
             owners.forEach(o => { o.propertyCount = 0; });
         }
@@ -105,6 +116,9 @@ exports.getAllOwners = async (req, res) => {
 
         const enrichedOwners = owners.map(o => ({
             ...o,
+            propertyTitle: primaryPropertyMap[o.loginId]?.title || '',
+            propertyName: primaryPropertyMap[o.loginId]?.title || '',
+            propertyLocationCode: primaryPropertyMap[o.loginId]?.locationCode || '',
             checkinDob: o.checkinDob || checkinMap[o.loginId]?.ownerProfile?.dob || '',
             checkinEmail: o.checkinEmail || checkinMap[o.loginId]?.ownerProfile?.email || o.email || '',
             checkinPhone: o.checkinPhone || checkinMap[o.loginId]?.ownerProfile?.phone || o.phone || '',
@@ -194,8 +208,15 @@ exports.getOwnerById = async (req, res) => {
         const owner = await Owner.findOne({ loginId: normalizedLoginId }).lean();
         if (!owner) return res.status(404).json({ message: 'Owner not found' });
         const checkin = await CheckinRecord.findOne({ role: 'owner', loginId: normalizedLoginId }).lean();
+        const primaryProperty = await Property.findOne({ ownerLoginId: normalizedLoginId })
+            .sort({ createdAt: 1 })
+            .select('title locationCode')
+            .lean();
         res.json({
             ...owner,
+            propertyTitle: primaryProperty?.title || '',
+            propertyName: primaryProperty?.title || '',
+            propertyLocationCode: primaryProperty?.locationCode || '',
             name: owner.profile?.name || owner.name || 'Unknown',
             email: owner.profile?.email || owner.email || owner.checkinEmail || (checkin?.ownerProfile?.email || ''),
             phone: owner.profile?.phone || owner.phone || owner.checkinPhone || (checkin?.ownerProfile?.phone || ''),

@@ -1,111 +1,118 @@
 const express = require('express');
 const router = express.Router();
 const chatController = require('../controllers/chatController');
+const ChatRoom = require('../models/ChatRoom');
+const ChatMessage = require('../models/ChatMessage');
 
-// In-memory chat rooms storage (for demo - should be MongoDB in production)
-const chatRoomsDB = new Map();
+async function ensureParticipantRoom(roomId, participants) {
+    if (!roomId) return null;
+    const normalizedParticipants = (participants || []).filter((participant) => participant && participant.loginId);
+    return ChatRoom.findOneAndUpdate(
+        { room_id: roomId },
+        {
+            $set: {
+                updated_at: new Date(),
+                participants: normalizedParticipants
+            },
+            $setOnInsert: {
+                room_id: roomId,
+                created_at: new Date()
+            }
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+}
 
-// Create a new chat room
-router.post('/create', (req, res) => {
+router.post('/create', async (req, res) => {
     try {
-        const { bookingId, userName, userEmail, ownerId } = req.body;
+        const {
+            bookingId,
+            userName,
+            userEmail,
+            userLoginId,
+            ownerId,
+            ownerName,
+            propertyName
+        } = req.body;
 
-        if (!bookingId || !userName || !userEmail) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Missing required fields: bookingId, userName, userEmail' 
+        const normalizedOwnerId = String(ownerId || '').trim().toUpperCase();
+        const normalizedUserId = String(userLoginId || '').trim().toLowerCase();
+
+        if (!bookingId || !normalizedOwnerId || !normalizedUserId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: bookingId, ownerId, userLoginId'
             });
         }
 
-        // Check if chat room already exists
-        if (chatRoomsDB.has(bookingId)) {
-            return res.status(200).json({ 
-                success: true, 
-                message: 'Chat room already exists',
-                data: chatRoomsDB.get(bookingId) 
-            });
+        const participants = [
+            { loginId: normalizedOwnerId, role: 'property_owner' },
+            { loginId: normalizedUserId, role: 'website_user' }
+        ];
+
+        const [ownerRoom, userRoom] = await Promise.all([
+            ensureParticipantRoom(normalizedOwnerId, participants),
+            ensureParticipantRoom(normalizedUserId, participants)
+        ]);
+
+        const existingWelcome = await ChatMessage.findOne({
+            room_id: normalizedOwnerId,
+            sender_login_id: 'system',
+            message: { $regex: String(bookingId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }
+        }).lean();
+
+        if (!existingWelcome) {
+            const intro = `Chat opened for ${propertyName || 'property'} between ${ownerName || normalizedOwnerId} and ${userName || userEmail || normalizedUserId} (booking ${bookingId})`;
+            await Promise.all([
+                ChatMessage.create({
+                    room_id: normalizedOwnerId,
+                    sender_login_id: 'system',
+                    sender_name: 'System',
+                    sender_role: 'superadmin',
+                    message: intro,
+                    created_at: new Date(),
+                    updated_at: new Date()
+                }),
+                ChatMessage.create({
+                    room_id: normalizedUserId,
+                    sender_login_id: 'system',
+                    sender_name: 'System',
+                    sender_role: 'superadmin',
+                    message: intro,
+                    created_at: new Date(),
+                    updated_at: new Date()
+                })
+            ]);
         }
 
-        // Create chat room object
-        const chatRoom = {
-            id: bookingId,
-            bookingId: bookingId,
-            ownerId: ownerId || 'unknown',
-            userName: userName,
-            userEmail: userEmail,
-            createdAt: new Date().toISOString(),
-            messages: []
-        };
-
-        // Store in memory
-        chatRoomsDB.set(bookingId, chatRoom);
-        
-        console.log('✅ Chat room created:', chatRoom);
-
-        res.status(201).json({ 
-            success: true, 
+        return res.status(201).json({
+            success: true,
             message: 'Chat room created successfully',
-            data: chatRoom 
-        });
-
-    } catch (error) {
-        console.error('Error creating chat room:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error creating chat room',
-            error: error.message 
-        });
-    }
-});
-
-// Get all chat rooms for a user (by email)
-router.get('/rooms', (req, res) => {
-    try {
-        const { user_email } = req.query;
-        
-        if (!user_email) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Missing user_email query parameter' 
-            });
-        }
-
-        // Find all chat rooms where user is participant
-        const userRooms = [];
-        chatRoomsDB.forEach((room, bookingId) => {
-            if (room.userEmail === user_email || room.ownerId === user_email) {
-                userRooms.push(room);
+            data: {
+                bookingId,
+                ownerRoomId: ownerRoom?.room_id || normalizedOwnerId,
+                userRoomId: userRoom?.room_id || normalizedUserId,
+                ownerId: normalizedOwnerId,
+                userLoginId: normalizedUserId,
+                userName,
+                ownerName,
+                propertyName
             }
         });
-
-        console.log(`📋 Found ${userRooms.length} chat rooms for user: ${user_email}`);
-
-        res.status(200).json({ 
-            success: true, 
-            data: userRooms 
-        });
-
     } catch (error) {
-        console.error('Error fetching chat rooms:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error fetching chat rooms',
-            error: error.message 
+        console.error('Error creating chat room:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error creating chat room',
+            error: error.message
         });
     }
 });
 
-// Get messages for a room
 router.get('/messages/:room_id', chatController.getMessages);
 router.get('/conversation', chatController.getConversation);
-
-// Mark messages as read
 router.post('/mark-read/:room_id', chatController.markAsRead);
-
-// Get unread count
 router.get('/unread/:room_id', chatController.getUnreadCount);
-
-// Delete a message
 router.delete('/message/:message_id', chatController.deleteMessage);
 
 module.exports = router;

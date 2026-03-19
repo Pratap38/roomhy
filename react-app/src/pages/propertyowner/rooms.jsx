@@ -108,6 +108,14 @@ const mergeRoomSources = (ownerLoginId, property, backendRooms) => {
   return merged;
 };
 
+const getOwnerPrimaryPropertyTitle = (owner) =>
+  firstValidValue(
+    owner?.propertyTitle,
+    owner?.propertyName,
+    owner?.profile?.propertyTitle,
+    owner?.profile?.propertyName
+  );
+
 const findCachedPropertyRecord = (ownerLoginId, currentProperty) => {
   const propertyId = currentProperty?._id || currentProperty?.id || currentProperty?.propertyId || "";
   const cachedProperties = readJson("roomhy_properties", []);
@@ -215,6 +223,7 @@ export default function Rooms() {
   );
   const currentPropertyTitle = useMemo(
     () => firstValidValue(
+      getOwnerPrimaryPropertyTitle(owner),
       currentProperty?.title,
       currentProperty?.name,
       currentProperty?.propertyName,
@@ -280,6 +289,7 @@ export default function Rooms() {
     const propertyTitle = firstValidValue(
       existingProperty?.title,
       existingProperty?.name,
+      getOwnerPrimaryPropertyTitle(owner),
       owner?.propertyName,
       "Owner Property"
     );
@@ -371,6 +381,7 @@ export default function Rooms() {
         ownerLoginId: session.loginId,
         propertyId,
         propertyTitle: firstValidValue(
+          getOwnerPrimaryPropertyTitle(owner),
           currentProperty?.title,
           currentProperty?.name,
           cachedProperty?.title,
@@ -453,7 +464,12 @@ export default function Rooms() {
           moveInDate,
           agreedRent,
           ownerLoginId: owner.loginId,
-          propertyTitle: firstValidValue(selectedRoom.propertyTitle, currentProperty?.title, currentProperty?.name),
+          propertyTitle: firstValidValue(
+            selectedRoom.propertyTitle,
+            getOwnerPrimaryPropertyTitle(owner),
+            currentProperty?.title,
+            currentProperty?.name
+          ),
           locationCode: firstValidValue(currentProperty?.locationCode, currentProperty?.area, owner?.locationCode, owner?.area)
         };
         assignedTenantName = existingTenant.name;
@@ -473,7 +489,12 @@ export default function Rooms() {
           moveInDate,
           agreedRent,
           ownerLoginId: owner.loginId,
-          propertyTitle: firstValidValue(selectedRoom.propertyTitle, currentProperty?.title, currentProperty?.name),
+          propertyTitle: firstValidValue(
+            selectedRoom.propertyTitle,
+            getOwnerPrimaryPropertyTitle(owner),
+            currentProperty?.title,
+            currentProperty?.name
+          ),
           locationCode: firstValidValue(currentProperty?.locationCode, currentProperty?.area, owner?.locationCode, owner?.area)
         };
         assignedTenantName = newTenantForm.name;

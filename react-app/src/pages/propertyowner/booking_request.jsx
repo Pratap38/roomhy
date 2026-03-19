@@ -6,11 +6,9 @@ import {
   buildBookingFormLink,
   clearOwnerRuntimeSession,
   createOwnerChatRoom,
-  fetchBids,
   fetchBookingRequestsForOwner,
   formatDate,
   getOwnerRuntimeSession,
-  normalizeBid,
   normalizeBooking,
   updateBookingDecision
 } from "../../utils/propertyowner";
@@ -53,12 +51,10 @@ export default function BookingRequest() {
     setLoading(true);
     setErrorMsg("");
     try {
-      const [requestList, bidList] = await Promise.all([
-        fetchBookingRequestsForOwner(session.loginId),
-        fetchBids()
-      ]);
-      setRequests(requestList.map(normalizeBooking));
-      setBids(bidList.map(normalizeBid));
+      const requestList = await fetchBookingRequestsForOwner(session.loginId);
+      const normalized = requestList.map(normalizeBooking);
+      setRequests(normalized.filter((item) => String(item.request_type || item.type || "").toLowerCase() !== "bid"));
+      setBids(normalized.filter((item) => String(item.request_type || item.type || "").toLowerCase() === "bid"));
     } catch (err) {
       setErrorMsg(err?.body || err?.message || "Failed to load booking requests.");
     } finally {
@@ -90,6 +86,28 @@ export default function BookingRequest() {
     [requests, search, statusFilter]
   );
 
+  const visibleBids = useMemo(
+    () =>
+      bids.filter((item) => {
+        const matchesStatus = statusFilter ? String(item.status || "").toLowerCase() === statusFilter : true;
+        const haystack = [
+          item.propertyName,
+          item.propertyId,
+          item.userId,
+          item.userName || item.fullName,
+          item.email,
+          item.minPrice,
+          item.maxPrice
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        const matchesSearch = search ? haystack.includes(search.toLowerCase()) : true;
+        return matchesStatus && matchesSearch;
+      }),
+    [bids, search, statusFilter]
+  );
+
   const handleDecision = async (booking, action) => {
     try {
       await updateBookingDecision(booking.key, action);
@@ -98,7 +116,10 @@ export default function BookingRequest() {
           bookingId: booking.key,
           userName: booking.userName,
           userEmail: booking.email,
-          ownerId: owner?.loginId
+          userLoginId: booking.userId,
+          ownerId: owner?.loginId,
+          ownerName: owner?.name,
+          propertyName: booking.propertyName
         });
       }
       if (owner) {
@@ -142,6 +163,7 @@ export default function BookingRequest() {
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
+              <option value="confirmed">Confirmed</option>
               <option value="rejected">Rejected</option>
               <option value="visited">Visited</option>
             </select>
@@ -256,7 +278,7 @@ export default function BookingRequest() {
                     <td colSpan={16} className="py-8">Loading bidding requests...</td>
                   </tr>
                 ) : null}
-                {!loading && bids.length === 0 ? (
+                {!loading && visibleBids.length === 0 ? (
                   <tr className="text-center py-8 text-gray-500">
                     <td colSpan={16} className="py-8">
                       <i data-lucide="inbox" className="w-12 h-12 mx-auto mb-3 opacity-50"></i>
@@ -264,13 +286,13 @@ export default function BookingRequest() {
                     </td>
                   </tr>
                 ) : null}
-                {!loading && bids.map((bid) => (
+                {!loading && visibleBids.map((bid) => (
                   <tr key={bid.key}>
                     <td className="px-4 py-3 whitespace-nowrap">{bid.bidId}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{bid.propertyId}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{bid.propertyName}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{bid.ownerName}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">{bid.fullName}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{bid.userName || bid.fullName}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{bid.email}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{bid.gender}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{bid.city}</td>
@@ -282,7 +304,11 @@ export default function BookingRequest() {
                     <td className="px-4 py-3 whitespace-nowrap capitalize">{bid.status}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{formatDate(bid.submittedAt)}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <button type="button" className="text-xs px-3 py-1 rounded bg-gray-100 text-gray-700">View</button>
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" onClick={() => handleDecision(bid, "approve")} className="text-xs px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700">Accept</button>
+                        <button type="button" onClick={() => handleDecision(bid, "reject")} className="text-xs px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700">Reject</button>
+                        <button type="button" onClick={() => navigate(`/propertyowner/ownerchat?booking=${bid.key}&user=${encodeURIComponent(bid.userId || "")}`)} className="text-xs px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Chat</button>
+                      </div>
                     </td>
                   </tr>
                 ))}

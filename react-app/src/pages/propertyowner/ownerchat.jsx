@@ -79,7 +79,7 @@ export default function Ownerchat() {
         const bookingList = await fetchBookingRequestsForOwner(owner.loginId);
         const accepted = bookingList
           .map(normalizeBooking)
-          .filter((item) => ["approved", "accepted", "visited", "booked"].includes(String(item.status).toLowerCase()));
+          .filter((item) => ["approved", "accepted", "visited", "booked", "confirmed"].includes(String(item.status).toLowerCase()));
         if (!cancelled) {
           setBookings(accepted);
           if (!currentChat && accepted[0]) {
@@ -108,7 +108,7 @@ export default function Ownerchat() {
     socketRef.current = socket;
     socket.emit("join_room", {
       login_id: owner.loginId,
-      role: "owner",
+      role: "property_owner",
       name: owner.name || "Owner"
     });
     socket.on("receive_message", (message) => {
@@ -156,11 +156,7 @@ export default function Ownerchat() {
   const sendMessage = () => {
     if (!draft.trim() || !currentChat || !socketRef.current || !owner?.loginId) return;
     const userId = currentChat.userId || currentChat.user_id;
-    socketRef.current.emit("send_message", {
-      room_id: userId,
-      receiver_login_id: userId,
-      message: draft.trim()
-    });
+    socketRef.current.emit("send_message", { to_login_id: userId, message: draft.trim() });
     setMessages((prev) => [
       ...prev,
       normalizeMessage({

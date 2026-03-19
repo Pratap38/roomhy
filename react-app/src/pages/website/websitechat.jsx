@@ -79,7 +79,7 @@ export default function WebsiteWebsitechat() {
       const allBookings = result.data || [];
       const accepted = allBookings.filter((b) => {
         const status = String(b.status || b.booking_status || b.request_status || "").toLowerCase();
-        return status === "accepted" || status === "approved";
+        return status === "accepted" || status === "approved" || status === "confirmed" || status === "booked";
       });
       const mapped = accepted.map((booking) => ({
         id: booking._id || booking.id,
