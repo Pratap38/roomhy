@@ -95,6 +95,7 @@ import WebsiteWebsitechat from "./pages/website/websitechat.jsx";
 import DigitalCheckinIndex from "./pages/digital-checkin/index.jsx";
 import DigitalCheckinOwnerkyc from "./pages/digital-checkin/ownerkyc.jsx";
 import DigitalCheckinOwnerprofile from "./pages/digital-checkin/ownerprofile.jsx";
+import DigitalCheckinOwnerSuccess from "./pages/digital-checkin/owner-success.jsx";
 import DigitalCheckinOwnerterms from "./pages/digital-checkin/ownerterms.jsx";
 import DigitalCheckinTenantConfirmation from "./pages/digital-checkin/tenant-confirmation.jsx";
 import DigitalCheckinTenantagreement from "./pages/digital-checkin/tenantagreement.jsx";
@@ -225,6 +226,7 @@ const routes = [
   { path: "/digital-checkin/index", element: <DigitalCheckinIndex /> },
   { path: "/digital-checkin/ownerkyc", element: <DigitalCheckinOwnerkyc /> },
   { path: "/digital-checkin/ownerprofile", element: <DigitalCheckinOwnerprofile /> },
+  { path: "/digital-checkin/owner-success", element: <DigitalCheckinOwnerSuccess /> },
   { path: "/digital-checkin/ownerterms", element: <DigitalCheckinOwnerterms /> },
   { path: "/digital-checkin/tenant-confirmation", element: <DigitalCheckinTenantConfirmation /> },
   { path: "/digital-checkin/tenantagreement", element: <DigitalCheckinTenantagreement /> },

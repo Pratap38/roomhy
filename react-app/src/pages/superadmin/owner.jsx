@@ -36,6 +36,12 @@ export default function Owner() {
 },
   {
   "src": "https://unpkg.com/lucide@latest"
+},
+  {
+  "src": "https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"
+},
+  {
+  "src": "/superadmin/assets/js/owner.js"
 }
 ],
     inlineScripts: []

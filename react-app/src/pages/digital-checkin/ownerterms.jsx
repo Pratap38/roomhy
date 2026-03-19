@@ -21,8 +21,7 @@ export default function DigitalCheckinOwnerterms() {
     status,
     acceptTerms,
     setAcceptTerms,
-    handleSubmit,
-    finalConfirmation
+    handleSubmit
   } = useOwnerTerms();
 
   return (
@@ -57,16 +56,6 @@ export default function DigitalCheckinOwnerterms() {
           </label>
         </div>
         <button type="button" onClick={handleSubmit}>Accept & Submit</button>
-
-        {finalConfirmation?.dashboardUrl && (
-          <div className="status">
-            <strong>Welcome to RoomHy.</strong><br />
-            Your owner digital check-in has been submitted successfully.<br />
-            Please login through this page:
-            {" "}
-            <a href={finalConfirmation.dashboardUrl}>Property Owner Login</a>
-          </div>
-        )}
       </div>
     </div>
   );

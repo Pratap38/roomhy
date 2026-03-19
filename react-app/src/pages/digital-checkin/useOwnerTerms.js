@@ -40,11 +40,8 @@ export const useOwnerTerms = () => {
         apiBases
       );
       if (!submitResp.success) return alert(submitResp.message || "Submit failed");
-      setFinalConfirmation({
-        dashboardUrl: submitResp.dashboardUrl || "",
-        message: submitResp.message || "Owner digital check-in submitted successfully."
-      });
-      setStatus("");
+      const nextUrl = encodeURIComponent(submitResp.dashboardUrl || "/propertyowner/index");
+      window.location.href = `/digital-checkin/owner-success?loginId=${encodeURIComponent(loginId)}&next=${nextUrl}`;
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
