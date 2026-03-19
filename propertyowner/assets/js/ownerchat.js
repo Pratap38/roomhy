@@ -711,7 +711,7 @@ let currentOwner = null;
                         ownerId: ownerId,
                         tenantName: tenantName,
                         message: message.text,
-                        chatId: `${currentChat.user_id}_${ownerId}`
+                        chatId: `${resolveWebsiteUserId(currentChat)}_${ownerId}`
                     })
                 });
 
@@ -780,7 +780,7 @@ let currentOwner = null;
                 console.log('🎯 Owner liked - generating booking form link');
                 
                 const bookingId = currentChat._id || currentChat.id;
-                const userId = currentChat.signup_user_id || currentChat.user_id;
+                const userId = resolveWebsiteUserId(currentChat);
                 const propertyName = currentChat.property_name || 'Roomhy Property';
                 const ownerId = currentOwner.loginId || currentOwner.ownerId;
                 const ownerName = currentOwner.name || currentOwner.ownerName || 'Owner';

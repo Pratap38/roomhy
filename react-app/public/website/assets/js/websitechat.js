@@ -106,13 +106,38 @@ if (typeof lucide !== 'undefined') {
         const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
         const WEBSITE_USER_ID_REGEX = /^roomhyweb\d{6}$/i;
 
+        function getWebsiteUserAliases(loginId) {
+            const aliases = new Set();
+            const normalizedLoginId = normalizeWebsiteUserId(loginId) || String(loginId || '').trim();
+            if (normalizedLoginId) aliases.add(normalizedLoginId);
+
+            [
+                currentUser?.id,
+                currentUser?.user_id,
+                currentUser?.signup_user_id,
+                currentUser?.loginId,
+                currentUser?._id,
+                currentChat?.user_id,
+                currentChat?.signup_user_id,
+                currentChat?.website_user_id,
+                currentChat?.userLoginId
+            ].forEach((value) => {
+                const alias = String(value || '').trim();
+                if (alias) aliases.add(alias);
+            });
+
+            return Array.from(aliases).filter((alias) => alias !== normalizedLoginId);
+        }
+
         function connectChatSocket(loginId, name) {
             const normalizedLoginId = normalizeWebsiteUserId(loginId) || loginId;
+            const aliases = getWebsiteUserAliases(normalizedLoginId);
             if (socket && socket.connected) {
                 socket.emit('join_room', {
                     login_id: normalizedLoginId,
                     role: 'website_user',
-                    name: name || 'Website User'
+                    name: name || 'Website User',
+                    aliases
                 });
                 return;
             }
@@ -125,7 +150,8 @@ if (typeof lucide !== 'undefined') {
                 socket.emit('join_room', {
                     login_id: normalizedLoginId,
                     role: 'website_user',
-                    name: name || 'Website User'
+                    name: name || 'Website User',
+                    aliases
                 });
             });
             socket.on('disconnect', () => { socketReady = false; });

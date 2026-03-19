@@ -14,6 +14,19 @@ const ChatMessage = require('../models/ChatMessage');
 
 module.exports = (io) => {
   const userSockets = new Map(); // loginId -> socketId
+  const normalizeAliases = (aliases, primaryLoginId) => {
+    if (!Array.isArray(aliases)) return [];
+
+    const seen = new Set([String(primaryLoginId || '').trim()]);
+
+    return aliases
+      .map((alias) => String(alias || '').trim())
+      .filter((alias) => {
+        if (!alias || seen.has(alias)) return false;
+        seen.add(alias);
+        return true;
+      });
+  };
 
   io.on('connection', (socket) => {
     console.log(`✓ Socket connected: ${socket.id}`);
@@ -23,7 +36,7 @@ module.exports = (io) => {
      * User joins their own room to receive messages
      */
     socket.on('join_room', (data) => {
-      const { login_id, role, name } = data;
+      const { login_id, role, name, aliases } = data;
 
       if (!login_id) {
         socket.emit('error', { message: 'login_id required' });
@@ -32,14 +45,20 @@ module.exports = (io) => {
 
       // Join room with loginId
       socket.join(login_id);
+      const aliasRooms = normalizeAliases(aliases, login_id);
+      aliasRooms.forEach((alias) => socket.join(alias));
       socket.userLogin = login_id;
       socket.userRole = role;
       socket.userName = name;
+      socket.userAliases = aliasRooms;
 
       // Track user connection
       userSockets.set(login_id, socket.id);
 
-      console.log(`✓ User joined: ${name} (${role}) - Room: ${login_id}`);
+      console.log(
+        `✓ User joined: ${name} (${role}) - Room: ${login_id}` +
+        (aliasRooms.length ? ` | Aliases: ${aliasRooms.join(', ')}` : '')
+      );
       socket.emit('joined', { message: 'Successfully joined chat' });
     });
 
