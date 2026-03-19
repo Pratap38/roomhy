@@ -32,6 +32,24 @@ const findVacantBeds = (room) =>
     return { index, occupied: Boolean(bed?.tenantName || bed?.loginId || bed?.tenantId), tenant: bed };
   });
 
+const normalizeTextValue = (value) => {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const lower = text.toLowerCase();
+  if (lower === "new" || lower === "undefined" || lower === "null" || lower === "na" || lower === "n/a") {
+    return "";
+  }
+  return text;
+};
+
+const firstValidValue = (...values) => {
+  for (const value of values) {
+    const cleaned = normalizeTextValue(value);
+    if (cleaned) return cleaned;
+  }
+  return "";
+};
+
 export default function Rooms() {
   useHtmlPage({
     title: "RoomHy - Room Management",
@@ -72,6 +90,30 @@ export default function Rooms() {
   }, [rooms, properties, tenants, roomModalOpen, assignModalOpen]);
 
   const currentProperty = useMemo(() => properties[0] || null, [properties]);
+  const currentPropertyTitle = useMemo(
+    () => firstValidValue(
+      currentProperty?.title,
+      currentProperty?.name,
+      currentProperty?.propertyName,
+      currentProperty?.displayName,
+      currentProperty?.propName
+    ) || "Loading Property...",
+    [currentProperty]
+  );
+  const currentPropertyLocation = useMemo(
+    () => firstValidValue(
+      currentProperty?.location,
+      currentProperty?.locationCode,
+      currentProperty?.area,
+      currentProperty?.city,
+      currentProperty?.address
+    ),
+    [currentProperty]
+  );
+  const currentPropertyDisplay = useMemo(
+    () => (currentPropertyLocation ? `${currentPropertyTitle} (${currentPropertyLocation})` : currentPropertyTitle),
+    [currentPropertyLocation, currentPropertyTitle]
+  );
   const unassignedTenants = useMemo(
     () => tenants.filter((tenant) => !tenant.room && !tenant.roomNo && !tenant.roomNumber),
     [tenants]
@@ -188,7 +230,7 @@ export default function Rooms() {
         <div>
           <div className="flex items-center mt-1 text-slate-500 text-sm bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-200 w-fit">
             <i data-lucide="map-pin" className="w-4 h-4 mr-2 text-purple-500"></i>
-            <a id="propertyNameDisplay" className="font-medium text-purple-700 hover:underline" href="#">{currentProperty?.title || "Loading Property..."}</a>
+            <a id="propertyNameDisplay" className="font-medium text-purple-700 hover:underline" href="#">{currentPropertyDisplay}</a>
           </div>
           <div id="dataStatus" className="mt-2 text-xs text-gray-500 flex items-center gap-3">
             <span id="backendStatus">{`Backend: ${loading ? "loading" : "connected"}`}</span>
@@ -267,7 +309,7 @@ export default function Rooms() {
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Property</label>
                 <div className="flex items-center text-sm font-medium text-gray-800">
                   <i data-lucide="building-2" className="w-4 h-4 mr-2 text-purple-500"></i>
-                  <span id="modalPropertyNameText">{currentProperty?.title || "Loading..."}</span>
+                  <span id="modalPropertyNameText">{currentPropertyDisplay}</span>
                 </div>
                 <input type="hidden" id="modalPropertyId" value={currentProperty?._id || ""} readOnly />
               </div>
@@ -339,7 +381,7 @@ export default function Rooms() {
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div>
                   <p className="text-gray-500 uppercase font-semibold">Property</p>
-                  <p className="text-gray-800 font-semibold truncate">{currentProperty?.title || "-"}</p>
+                  <p className="text-gray-800 font-semibold truncate">{currentPropertyTitle === "Loading Property..." ? "-" : currentPropertyDisplay}</p>
                 </div>
                 <div>
                   <p className="text-gray-500 uppercase font-semibold">Room</p>
