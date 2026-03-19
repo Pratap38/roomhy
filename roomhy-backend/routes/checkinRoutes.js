@@ -13,6 +13,11 @@ const {
     getDigilockerDocument
 } = require('../services/cashfreeDigilockerService');
 
+const WEBSITE_URL = process.env.WEBSITE_URL || 'https://roomhy.com';
+const ADMIN_URL = process.env.ADMIN_URL || process.env.FRONTEND_URL || 'https://admin.roomhy.com';
+const APP_URL = process.env.APP_URL || process.env.APP_BASE_URL || process.env.WEB_APP_URL || 'https://app.roomhy.com';
+const DIGITAL_CHECKIN_URL = process.env.DIGITAL_CHECKIN_URL || ADMIN_URL;
+
 const otpStore = new Map();
 
 function keyFor(role, loginId, aadhaarNumber) {
@@ -213,7 +218,7 @@ router.post('/owner/kyc/verify-otp', otpLimiter, async (req, res) => {
 
         // Send login credentials email
         if (owner && owner.email) {
-            const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'http://localhost:5173';
+            const baseUrl = APP_URL;
             const ownerPassword = owner.checkinPassword || owner.credentials?.password || 'default';
             const fullLoginUrl = `${baseUrl}/propertyowner/index`;
             
@@ -317,7 +322,7 @@ router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
         }
 
         const ref = createDigilockerRef(loginId);
-        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/ownerkyc`;
+        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${DIGITAL_CHECKIN_URL}/digital-checkin/ownerkyc`;
 
         const accountCheck = await verifyDigilockerAccount({
             verificationId: ref,
@@ -505,7 +510,7 @@ router.post('/owner/final-submit', async (req, res) => {
         // Send owner dashboard link email after final submit
         const owner = ownerDoc || await Owner.findOne({ loginId: normalizedLoginId }).lean();
         const targetEmail = (owner && owner.email) || (record.ownerProfile && record.ownerProfile.email) || '';
-        const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
+        const baseUrl = APP_URL;
         const dashboardUrl = `${baseUrl}/propertyowner/index`;
         let loginEmailSent = false;
 
@@ -689,7 +694,7 @@ router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
         }
         const normalizedLoginId = String(loginId).toUpperCase();
         const ref = createDigilockerRef(normalizedLoginId);
-        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://admin.roomhy.com'}/digital-checkin/tenantkyc`;
+        const redirectUrl = clientRedirectUrl || process.env.DIGILOCKER_REDIRECT_URL || `${DIGITAL_CHECKIN_URL}/digital-checkin/tenantkyc`;
 
         const accountCheck = await verifyDigilockerAccount({
             verificationId: ref,
@@ -922,7 +927,7 @@ router.post('/tenant/final-submit', async (req, res) => {
         await tenant.save();
 
         const targetEmail = tenant.email || record?.tenantProfile?.email || '';
-        const baseUrl = process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'https://admin.roomhy.com';
+        const baseUrl = APP_URL;
         const tenantLoginUrl = `${baseUrl}/tenant/tenantlogin`;
         const dashboardUrl = `${baseUrl}/tenant/tenantdashboard`;
         let loginEmailSent = false;
