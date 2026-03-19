@@ -10,6 +10,7 @@ export const useTenantKyc = () => {
   const [aadhaarLinkedPhone, setAadhaarLinkedPhone] = useState("");
   const [digilockerRef, setDigilockerRef] = useState("");
   const [lastRefId, setLastRefId] = useState("");
+  const [lastVerificationId, setLastVerificationId] = useState("");
   const [otpMsg, setOtpMsg] = useState("");
   const [nextVisible, setNextVisible] = useState(false);
 
@@ -26,12 +27,13 @@ export const useTenantKyc = () => {
           aadhaarNumber: aadhaarNumber.trim().replace(/\D/g, ""),
           aadhaarLinkedPhone: aadhaarLinkedPhone.trim(),
           referenceId: digilockerRef.trim() || lastRefId || "",
+          verificationId: lastVerificationId || "",
           ...extra
         };
         sessionStorage.setItem(TENANT_KYC_STATE_KEY, JSON.stringify(state));
       } catch (_) {}
     },
-    [aadhaarLinkedPhone, aadhaarNumber, digilockerRef, lastRefId, loginId]
+    [aadhaarLinkedPhone, aadhaarNumber, digilockerRef, lastRefId, lastVerificationId, loginId]
   );
 
   useEffect(() => {
@@ -41,26 +43,39 @@ export const useTenantKyc = () => {
       if (!loginId && state.loginId) setLoginId(state.loginId);
       if (state.aadhaarNumber) setAadhaarNumber(state.aadhaarNumber);
       if (state.aadhaarLinkedPhone) setAadhaarLinkedPhone(state.aadhaarLinkedPhone);
-      if (state.referenceId) setLastRefId(state.referenceId);
+      if (state.referenceId) {
+        setLastRefId(state.referenceId);
+        setDigilockerRef(state.referenceId);
+      }
+      if (state.verificationId) setLastVerificationId(state.verificationId);
     } catch (_) {}
   }, [loginId]);
 
   useEffect(() => {
     const referenceFromCallback = getParamValue(["reference_id", "ref_id", "referenceId"]);
-    if (referenceFromCallback) {
-      setLastRefId(referenceFromCallback);
-      setDigilockerRef(referenceFromCallback);
-      saveKycState({ referenceId: referenceFromCallback });
+    const verificationFromCallback = getParamValue(["verification_id", "verificationId"]);
+    if (referenceFromCallback || verificationFromCallback) {
+      if (referenceFromCallback) {
+        setLastRefId(referenceFromCallback);
+        setDigilockerRef(referenceFromCallback);
+      }
+      if (verificationFromCallback) setLastVerificationId(verificationFromCallback);
+      saveKycState({
+        referenceId: referenceFromCallback || lastRefId || "",
+        verificationId: verificationFromCallback || lastVerificationId || ""
+      });
       setOtpMsg("DigiLocker callback received. Click Complete Verification.");
     }
-  }, [saveKycState]);
+  }, [lastRefId, lastVerificationId, saveKycState]);
 
   useEffect(() => {
     const callbackParams = new URLSearchParams(window.location.search);
     if (
       !callbackParams.get("reference_id") &&
       !callbackParams.get("ref_id") &&
-      !callbackParams.get("referenceId")
+      !callbackParams.get("referenceId") &&
+      !callbackParams.get("verification_id") &&
+      !callbackParams.get("verificationId")
     ) {
       setDigilockerRef("");
     }
@@ -86,7 +101,8 @@ export const useTenantKyc = () => {
 
       const referenceId = data.referenceId || "";
       setLastRefId(referenceId);
-      setDigilockerRef("");
+      setLastVerificationId(data.verificationId || "");
+      setDigilockerRef(referenceId);
       saveKycState({ referenceId, verificationId: data.verificationId || "" });
       setOtpMsg("DigiLocker verification initiated. Complete it and click Complete Verification.");
       if (data.verifyUrl) window.location.href = data.verifyUrl;
@@ -100,14 +116,16 @@ export const useTenantKyc = () => {
       const aadhaarRaw = aadhaarNumber.trim().replace(/\D/g, "");
       if (!/^\d{12}$/.test(aadhaarRaw)) return alert("Aadhaar must be 12 digits");
       const referenceId = digilockerRef.trim() || lastRefId;
-      if (!referenceId) return alert("DigiLocker reference ID is required");
+      const verificationId = lastVerificationId;
+      if (!referenceId && !verificationId) return alert("DigiLocker verification details are missing");
 
       const payload = {
         loginId: loginId.trim(),
         aadhaarNumber: aadhaarRaw,
-        referenceId
+        referenceId,
+        verificationId
       };
-      saveKycState({ referenceId });
+      saveKycState({ referenceId, verificationId });
       await postExpectSuccess("/api/checkin/tenant/kyc/digilocker/complete", payload, apiBases);
 
       try {
@@ -136,7 +154,7 @@ export const useTenantKyc = () => {
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
-  }, [aadhaarNumber, apiBases, digilockerRef, lastRefId, loginId, saveKycState]);
+  }, [aadhaarNumber, apiBases, digilockerRef, lastRefId, lastVerificationId, loginId, saveKycState]);
 
   const handleNext = useCallback(() => {
     window.location.href = `/digital-checkin/tenantagreement?loginId=${encodeURIComponent(loginId.trim())}`;

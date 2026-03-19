@@ -9,7 +9,8 @@ function isBypassEnabled() {
 }
 
 function buildMockVerifyUrl(redirectUrl, verificationId) {
-    const url = new URL(String(redirectUrl || 'http://localhost:5173/digital-checkin/ownerprofile'));
+    const fallbackBase = process.env.DIGITAL_CHECKIN_URL || process.env.FRONTEND_URL || process.env.APP_URL || 'https://admin.roomhy.com';
+    const url = new URL(String(redirectUrl || `${fallbackBase}/digital-checkin/ownerprofile`));
     url.searchParams.set('verification_id', verificationId);
     url.searchParams.set('reference_id', verificationId);
     url.searchParams.set('mock_digilocker', '1');

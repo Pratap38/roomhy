@@ -37,6 +37,7 @@ export const useOwnerProfile = () => {
   const [loadingStart, setLoadingStart] = useState(false);
   const [loadingComplete, setLoadingComplete] = useState(false);
   const [lastRefId, setLastRefId] = useState("");
+  const [lastVerificationId, setLastVerificationId] = useState("");
 
   const updateForm = useCallback((patch) => {
     setForm((prev) => ({ ...prev, ...patch }));
@@ -90,12 +91,13 @@ export const useOwnerProfile = () => {
             aadhaarLinkedPhone: aadhaarLinkedPhone.trim(),
             aadhaarNumber: aadhaarNumber.trim().replace(/\D/g, ""),
             referenceId: digilockerRef.trim() || lastRefId || "",
+            verificationId: lastVerificationId || "",
             ...extra
           })
         );
       } catch (_) {}
     },
-    [aadhaarLinkedPhone, aadhaarNumber, autoInfo.email, digilockerRef, form.email, form.loginId, lastRefId]
+    [aadhaarLinkedPhone, aadhaarNumber, autoInfo.email, digilockerRef, form.email, form.loginId, lastRefId, lastVerificationId]
   );
 
   useEffect(() => {
@@ -119,6 +121,7 @@ export const useOwnerProfile = () => {
         setDigilockerRef(state.referenceId);
         setLastRefId(state.referenceId);
       }
+      if (state.verificationId) setLastVerificationId(state.verificationId);
     } catch (_) {}
   }, []);
 
@@ -128,6 +131,7 @@ export const useOwnerProfile = () => {
     if (!referenceFromCallback) return;
     setDigilockerRef(referenceFromCallback);
     setLastRefId(referenceFromCallback);
+    if (verificationFromCallback) setLastVerificationId(verificationFromCallback);
     saveKycState({ referenceId: referenceFromCallback, verificationId: verificationFromCallback || "" });
     setKycStatus({ type: "success", text: "DigiLocker callback received. Complete verification below." });
   }, [saveKycState]);
@@ -216,6 +220,7 @@ export const useOwnerProfile = () => {
 
       const referenceId = data.referenceId || "";
       setLastRefId(referenceId);
+      setLastVerificationId(data.verificationId || "");
       setDigilockerRef(referenceId);
       saveKycState({ referenceId, verificationId: data.verificationId || "" });
       setKycStatus({ type: "success", text: "DigiLocker verification started. Finish auth and return here." });
@@ -230,18 +235,19 @@ export const useOwnerProfile = () => {
     const trimmedLogin = form.loginId.trim();
     const aadhaarRaw = aadhaarNumber.trim().replace(/\s/g, "");
     const referenceId = digilockerRef.trim() || lastRefId;
+    const verificationId = lastVerificationId;
 
     if (!trimmedLogin) return alert("Login ID is required");
     if (!/^\d{12}$/.test(aadhaarRaw)) return alert("Aadhaar must be 12 digits");
-    if (!referenceId) return alert("DigiLocker reference ID is required");
+    if (!referenceId && !verificationId) return alert("DigiLocker verification details are missing");
 
     try {
       setLoadingComplete(true);
       const payload = await saveProfile(form, autoInfo);
-      saveKycState({ referenceId });
+      saveKycState({ referenceId, verificationId });
       await postExpectSuccess(
         "/api/checkin/owner/kyc/digilocker/complete",
-        { loginId: trimmedLogin, aadhaarNumber: aadhaarRaw, referenceId },
+        { loginId: trimmedLogin, aadhaarNumber: aadhaarRaw, referenceId, verificationId },
         apiBases
       );
       window.location.href = `/digital-checkin/ownerterms?loginId=${encodeURIComponent(payload.loginId)}&email=${encodeURIComponent(
@@ -251,7 +257,7 @@ export const useOwnerProfile = () => {
       setKycStatus({ type: "error", text: `Error: ${err.message}` });
       setLoadingComplete(false);
     }
-  }, [aadhaarNumber, apiBases, autoInfo, digilockerRef, form, lastRefId, saveKycState, saveProfile]);
+  }, [aadhaarNumber, apiBases, autoInfo, digilockerRef, form, lastRefId, lastVerificationId, saveKycState, saveProfile]);
 
   const handleSubmit = useCallback(
     async (event) => {

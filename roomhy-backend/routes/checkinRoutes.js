@@ -389,7 +389,7 @@ router.post('/owner/kyc/digilocker/start', otpLimiter, async (req, res) => {
 router.post('/owner/kyc/digilocker/complete', otpLimiter, async (req, res) => {
     try {
         const { loginId, aadhaarNumber, referenceId, verificationId } = req.body || {};
-        if (!loginId || !aadhaarNumber || !referenceId) {
+        if (!loginId || !aadhaarNumber || (!referenceId && !verificationId)) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
         const normalizedLoginId = String(loginId).toUpperCase();
@@ -778,7 +778,7 @@ router.post('/tenant/kyc/digilocker/start', otpLimiter, async (req, res) => {
 router.post('/tenant/kyc/digilocker/complete', otpLimiter, async (req, res) => {
     try {
         const { loginId, aadhaarNumber, referenceId, verificationId } = req.body || {};
-        if (!loginId || !aadhaarNumber || !referenceId) {
+        if (!loginId || !aadhaarNumber || (!referenceId && !verificationId)) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
         }
         const normalizedLoginId = String(loginId).toUpperCase();

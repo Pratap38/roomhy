@@ -62,7 +62,7 @@ export default function DigitalCheckinTenantprofile() {
               <input value={form.email} onChange={(e) => updateForm({ email: e.target.value })} type="email" />
             </div>
           </div>
-          <button type="submit">Save & Continue to Rental Agreement</button>
+          <button type="submit">Save & Continue to KYC Verification</button>
         </form>
       </div>
     </div>

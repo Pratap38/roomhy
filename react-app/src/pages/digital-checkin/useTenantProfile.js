@@ -142,7 +142,7 @@ export const useTenantProfile = () => {
         }
       } catch (_) {}
 
-      window.location.href = `/digital-checkin/tenantagreement?loginId=${encodeURIComponent(payload.loginId)}`;
+      window.location.href = `/digital-checkin/tenantkyc?loginId=${encodeURIComponent(payload.loginId)}`;
     },
     [apiBase, form]
   );
