@@ -1,3 +1,4 @@
+import React from "react";
 import { useHeadAssets } from "../../utils/useHeadAssets.js";
 import { useTailwindProcessor } from "../../utils/useTailwindProcessor.js";
 
@@ -195,7 +196,7 @@ const bodyHtml = `<div class="card-light w-full max-w-md p-8" id="login-containe
     </div>`;
 
 export default function SuperadminIndexPage() {
-  useHeadAssets({ title, metas, links, scripts, htmlAttrs, bodyAttrs });
+  useHeadAssets({ title, metas, links, scripts, htmlAttrs, bodyAttrs, disableMobileSidebar: true });
   return (
     <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
   );

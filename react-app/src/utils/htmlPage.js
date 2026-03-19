@@ -43,6 +43,32 @@ const hashString = (value) => {
   return Math.abs(hash);
 };
 
+const suppressTailwindCdnWarnings = () => {
+  if (typeof window === "undefined" || window.__tailwindCdnWarningSuppressed) return;
+  window.__tailwindCdnWarningSuppressed = true;
+
+  const originalWarn = console.warn.bind(console);
+  const originalError = console.error.bind(console);
+  const shouldSuppress = (args) =>
+    args.some((arg) => {
+      const text = String(arg || "");
+      return (
+        text.includes("cdn.tailwindcss.com should not be used in production") ||
+        text.includes("To use Tailwind CSS in production")
+      );
+    });
+
+  console.warn = (...args) => {
+    if (shouldSuppress(args)) return;
+    originalWarn(...args);
+  };
+
+  console.error = (...args) => {
+    if (shouldSuppress(args)) return;
+    originalError(...args);
+  };
+};
+
 const markInlineExecuted = (key) => {
   if (!window[inlineExecutedKey]) {
     window[inlineExecutedKey] = {};
@@ -560,6 +586,11 @@ export const useHtmlPage = ({
         }
         return script;
       });
+    const disableAutoMobileMenuButton =
+      disableMobileSidebar ||
+      pathName === "/superadmin/index" ||
+      pathName === "/employee/index";
+
     if (!disableMobileSidebar && (isSuperadminRoute || isEmployeeRoute) && !normalizedScripts.some((s) => String(s?.src || "").includes("mobile-sidebar.js"))) {
       normalizedScripts.push({ src: "/superadmin/mobile-sidebar.js" });
     }
@@ -589,6 +620,9 @@ export const useHtmlPage = ({
 
       for (const script of normalizedScripts) {
         try {
+          if (String(script?.src || "").includes("cdn.tailwindcss.com")) {
+            suppressTailwindCdnWarnings();
+          }
           // Sequential load to ensure dependent globals (e.g., tailwind) exist.
           // Keep scripts in head; don't remove on cleanup to avoid re-exec.
           // eslint-disable-next-line no-await-in-loop
@@ -603,7 +637,7 @@ export const useHtmlPage = ({
       );
       await waitForTailwindStyles(hasTailwindScript);
 
-      if (isSuperadminRoute || isEmployeeRoute) {
+      if ((isSuperadminRoute || isEmployeeRoute) && !disableAutoMobileMenuButton) {
         const ensureMobileMenuButton = () => {
           let btn = document.getElementById("mobile-menu-open") || document.getElementById("sa-mobile-toggle");
           if (!btn) {

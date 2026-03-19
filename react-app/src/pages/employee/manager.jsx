@@ -49,6 +49,21 @@ const buildInitials = (name) =>
 
 const avatarColors = ["bg-purple-500", "bg-blue-500", "bg-green-500", "bg-pink-500", "bg-indigo-500", "bg-orange-500"];
 
+const removeEmployeeFromLocalCaches = (loginId) => {
+  const normalized = String(loginId || "").toUpperCase();
+  const keys = ["roomhy_employees_cache", "roomhy_employees"];
+  keys.forEach((key) => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(key) || "[]");
+      if (!Array.isArray(raw)) return;
+      const filtered = raw.filter((entry) => String(entry?.loginId || "").toUpperCase() !== normalized);
+      localStorage.setItem(key, JSON.stringify(filtered));
+    } catch (_) {
+      // ignore malformed cache entries
+    }
+  });
+};
+
 export default function Manager() {
   useHtmlPage({
     title: "Roomhy - Team Management",
@@ -542,10 +557,20 @@ export default function Manager() {
 
   const deleteEmployee = async (emp) => {
     if (!confirm("Delete?")) return;
+    let backendDeleted = false;
     try {
-      await fetch(`${apiUrl}/api/employees/${encodeURIComponent(emp.loginId)}`, { method: "DELETE" });
+      const res = await fetch(`${apiUrl}/api/employees/${encodeURIComponent(emp.loginId)}`, { method: "DELETE" });
+      backendDeleted = res.ok || res.status === 404;
+      if (!backendDeleted) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Delete failed with ${res.status}`);
+      }
     } catch (err) {
       console.warn("Failed to delete employee on backend:", err.message);
+    }
+    if (backendDeleted || emp._synced === false) {
+      removeEmployeeFromLocalCaches(emp.loginId);
+      setEmployees((current) => current.filter((entry) => String(entry.loginId || "").toUpperCase() !== String(emp.loginId || "").toUpperCase()));
     }
     await syncEmployeesFromBackend();
   };

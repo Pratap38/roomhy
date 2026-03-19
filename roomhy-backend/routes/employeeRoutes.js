@@ -244,6 +244,30 @@ router.patch('/:loginId', async (req, res) => {
 });
 
 /**
+ * POST /api/employees/:loginId/deactivate
+ * Deactivate an employee without removing the cached credential shell on the client
+ */
+router.post('/:loginId/deactivate', async (req, res) => {
+    try {
+        const { loginId } = req.params;
+        const employee = await Employee.findOneAndUpdate(
+            { loginId },
+            { $set: { isActive: false, updatedAt: new Date() } },
+            { new: true }
+        );
+
+        if (!employee) {
+            return res.status(404).json({ error: 'Employee not found' });
+        }
+
+        return res.status(200).json({ success: true, data: employee });
+    } catch (err) {
+        console.error('Deactivate employee error:', err);
+        return res.status(500).json({ error: 'Failed to deactivate employee', details: err.message });
+    }
+});
+
+/**
  * DELETE /api/employees/:loginId
  * Delete an employee (soft delete by setting isActive = false)
  */
