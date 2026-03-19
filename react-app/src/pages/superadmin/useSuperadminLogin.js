@@ -5,6 +5,16 @@ const getApiUrl = () =>
     ? "http://localhost:5001"
     : "https://api.roomhy.com";
 
+const WINDOW_NAME_SESSION_PREFIX = "__ROOMHY_STAFF_SESSION__:";
+
+const persistWindowSession = (user) => {
+  try {
+    window.name = `${WINDOW_NAME_SESSION_PREFIX}${encodeURIComponent(JSON.stringify(user || {}))}`;
+  } catch (e) {
+    console.warn("Failed to persist window.name session:", e);
+  }
+};
+
 const loadScript = (src) =>
   new Promise((resolve, reject) => {
     const existing = document.querySelector(`script[src="${src}"]`);
@@ -207,6 +217,7 @@ export const useSuperadminLogin = () => {
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("staff_user", JSON.stringify(user));
       localStorage.setItem("staff_token", "manager_token");
+      persistWindowSession(user);
       sessionStorage.removeItem("owner_session");
       localStorage.removeItem("owner_user");
       window.location.href = resolvePanelPath("employee", "areaadmin");
@@ -240,6 +251,7 @@ export const useSuperadminLogin = () => {
       localStorage.setItem("user", JSON.stringify(user));
       localStorage.setItem("staff_user", JSON.stringify(user));
       localStorage.setItem("staff_token", "employee_token");
+      persistWindowSession(user);
       sessionStorage.removeItem("owner_session");
       localStorage.removeItem("owner_user");
       window.location.href = resolvePanelPath("employee", "areaadmin");

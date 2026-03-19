@@ -1,7 +1,17 @@
 lucide.createIcons();
 
+        const WINDOW_NAME_SESSION_PREFIX = '__ROOMHY_STAFF_SESSION__:';
+
         function resolvePanelPath(folder, fileName) {
             return `/${folder}/${fileName}`;
+        }
+
+        function persistWindowSession(user) {
+            try {
+                window.name = `${WINDOW_NAME_SESSION_PREFIX}${encodeURIComponent(JSON.stringify(user || {}))}`;
+            } catch (e) {
+                console.warn('[Login] Failed to persist window.name session:', e);
+            }
         }
         
         // Unified Login Handler - Auto-detects user role by ID (optimized for speed)
@@ -129,6 +139,7 @@ lucide.createIcons();
                 localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('staff_user', JSON.stringify(user));
                 localStorage.setItem('staff_token', 'superadmin_token');
+                persistWindowSession(user);
                 localStorage.setItem('token', 'superadmin_token');
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
@@ -176,6 +187,7 @@ lucide.createIcons();
                         // Store user and token from backend
                         localStorage.setItem('staff_user', JSON.stringify(data.user));
                         localStorage.setItem('staff_token', data.token);
+                        persistWindowSession(data.user);
                         sessionStorage.setItem('user', JSON.stringify(data.user));
                         localStorage.setItem('user', JSON.stringify(data.user));
                         localStorage.setItem('token', data.token);
@@ -267,6 +279,7 @@ lucide.createIcons();
                 localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('staff_user', JSON.stringify(user));
                 localStorage.setItem('staff_token', 'manager_token');
+                persistWindowSession(user);
                 // Clear owner sessions to prevent crosstalk
                 sessionStorage.removeItem('owner_session');
                 localStorage.removeItem('owner_user');
@@ -324,6 +337,7 @@ lucide.createIcons();
              localStorage.setItem('user', JSON.stringify(user));
              localStorage.setItem('staff_user', JSON.stringify(user));
              localStorage.setItem('staff_token', 'employee_token');
+             persistWindowSession(user);
              // Clear owner sessions to prevent crosstalk
              sessionStorage.removeItem('owner_session');
              localStorage.removeItem('owner_user');

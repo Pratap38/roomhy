@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useHtmlPage } from "../../utils/htmlPage";
 import { fetchJson } from "../../utils/api";
 
+const WINDOW_NAME_SESSION_PREFIX = "__ROOMHY_STAFF_SESSION__:";
+
 const resolvePanelPath = (folder, fileName) => {
   return `/${folder}/${fileName}`;
 };
@@ -56,6 +58,9 @@ export default function Index() {
     localStorage.setItem("user", JSON.stringify(user));
     localStorage.setItem("staff_user", JSON.stringify(user));
     localStorage.setItem("staff_token", tokenValue);
+    try {
+      window.name = `${WINDOW_NAME_SESSION_PREFIX}${encodeURIComponent(JSON.stringify(user || {}))}`;
+    } catch (_) {}
     localStorage.setItem("token", tokenValue);
     sessionStorage.removeItem("owner_session");
     localStorage.removeItem("owner_user");

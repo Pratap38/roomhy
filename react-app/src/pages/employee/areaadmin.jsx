@@ -6,6 +6,8 @@ const getApiUrl = () =>
     ? "http://localhost:5001"
     : "https://api.roomhy.com";
 
+const WINDOW_NAME_SESSION_PREFIX = "__ROOMHY_STAFF_SESSION__:";
+
 const getStaffUser = () => {
   try {
     const raw =
@@ -15,10 +17,22 @@ const getStaffUser = () => {
       localStorage.getItem("manager_user") ||
       localStorage.getItem("user") ||
       "null";
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (parsed) return parsed;
   } catch (e) {
-    return null;
+    // ignore
   }
+
+  try {
+    if (typeof window.name === "string" && window.name.startsWith(WINDOW_NAME_SESSION_PREFIX)) {
+      const payload = window.name.slice(WINDOW_NAME_SESSION_PREFIX.length);
+      return JSON.parse(decodeURIComponent(payload));
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  return null;
 };
 
 const normalizePermissions = (value) => {
@@ -427,6 +441,9 @@ export default function SuperadminAreaadmin() {
     event?.preventDefault?.();
     localStorage.removeItem("user");
     localStorage.removeItem("manager_user");
+    if (typeof window.name === "string" && window.name.startsWith(WINDOW_NAME_SESSION_PREFIX)) {
+      window.name = "";
+    }
     window.location.href = "/superadmin/index";
   };
 
