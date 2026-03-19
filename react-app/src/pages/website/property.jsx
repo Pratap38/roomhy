@@ -97,6 +97,27 @@ export default function WebsiteProperty() {
     return urls;
   };
 
+  const parseRatingValueSafe = (value) => {
+    if (value === null || value === undefined) return null;
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return Math.max(0, Math.min(5, numeric));
+    const match = String(value).match(/(\d+(\.\d+)?)/);
+    if (!match) return null;
+    const parsed = Number(match[1]);
+    if (!Number.isFinite(parsed)) return null;
+    return Math.max(0, Math.min(5, parsed));
+  };
+
+  const buildStarsSafe = (value) => {
+    const rating = parseRatingValueSafe(value);
+    const stars = [];
+    const full = rating === null ? 0 : Math.floor(rating);
+    for (let i = 0; i < 5; i += 1) {
+      stars.push(i < full ? "â˜…" : "â˜†");
+    }
+    return { rating, stars };
+  };
+
   const matchesProperty = (record, propertyId) => {
     if (!propertyId) return true;
     const rid = String(propertyId);
@@ -331,8 +352,8 @@ export default function WebsiteProperty() {
     );
   }, [propertyData]);
 
-  const studentRating = useMemo(() => buildStars(studentRatingValue), [studentRatingValue]);
-  const employeeRating = useMemo(() => buildStars(employeeRatingValue), [employeeRatingValue]);
+  const studentRating = useMemo(() => buildStarsSafe(studentRatingValue), [studentRatingValue]);
+  const employeeRating = useMemo(() => buildStarsSafe(employeeRatingValue), [employeeRatingValue]);
 
   const studentRatingComment =
     propertyData?.studentReviews ||
