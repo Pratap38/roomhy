@@ -52,8 +52,8 @@ lucide.createIcons();
             try {
                 if (user.role === 'superadmin') {
                     window.location.href = '/superadmin/superadmin';
-                } else if (user.role === 'areamanager') {
-                    window.location.href = '/superadmin/areaadmin';
+                } else if (user.role === 'areamanager' || user.role === 'manager' || user.role === 'employee') {
+                    window.location.href = '/employee/areaadmin';
                 } else if (user.role === 'owner') {
                     window.location.href = '/propertyowner/index';
                 } else {

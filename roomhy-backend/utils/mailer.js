@@ -1,21 +1,35 @@
 const https = require('https');
 const nodemailer = require('nodemailer');
 
+function parseBooleanEnv(value, fallback = false) {
+    if (typeof value === 'undefined' || value === null || value === '') return fallback;
+    return ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase());
+}
+
 function getMailerConfig() {
-    // Use Gmail SMTP only (Nodemailer)
     return {
         fromEmail: process.env.FROM_EMAIL || 'no-reply@roomhy.com',
         fromName: process.env.FROM_NAME || 'RoomHy',
         smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
         smtpPort: Number(process.env.SMTP_PORT || 587),
-        smtpSecure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
+        smtpSecure: parseBooleanEnv(process.env.SMTP_SECURE, false),
         smtpUser: (process.env.SMTP_USER || '').trim(),
         smtpPass: (process.env.SMTP_PASS || '').replace(/\s+/g, ''),
-        smtpDebug: true,
-        smtpTlsRejectUnauthorized: false,
-        smtpConnectionTimeout: 30000,
-        smtpGreetingTimeout: 30000,
-        smtpSocketTimeout: 30000,
+        smtpDebug: parseBooleanEnv(process.env.SMTP_DEBUG, false),
+        smtpLogger: parseBooleanEnv(process.env.SMTP_LOGGER, false),
+        smtpRequireTls: parseBooleanEnv(process.env.SMTP_REQUIRE_TLS, false),
+        smtpIgnoreTls: parseBooleanEnv(process.env.SMTP_IGNORE_TLS, false),
+        smtpTlsRejectUnauthorized: parseBooleanEnv(process.env.SMTP_TLS_REJECT_UNAUTHORIZED, true),
+        smtpConnectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 30000),
+        smtpGreetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 30000),
+        smtpSocketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 30000),
+        smtpName: (process.env.SMTP_NAME || '').trim(),
+        smtpService: (process.env.SMTP_SERVICE || '').trim(),
+        mailjetHost: (process.env.MAILJET_SMTP_HOST || 'in-v3.mailjet.com').trim(),
+        mailjetPort: Number(process.env.MAILJET_SMTP_PORT || 587),
+        mailjetSecure: parseBooleanEnv(process.env.MAILJET_SMTP_SECURE, false),
+        mailjetUser: (process.env.MAILJET_API_KEY || '').trim(),
+        mailjetPass: (process.env.MAILJET_SECRET_KEY || '').trim(),
         whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
         whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
         whatsappApiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
@@ -29,6 +43,10 @@ function isSmtpConfigured(cfg) {
 
 function isWhatsAppConfigured(cfg) {
     return Boolean(cfg.whatsappAccessToken && cfg.whatsappPhoneNumberId);
+}
+
+function isMailjetConfigured(cfg) {
+    return Boolean(cfg.mailjetHost && cfg.mailjetUser && cfg.mailjetPass);
 }
 
 function normalizeRecipients(to) {
@@ -216,6 +234,45 @@ async function sendWhatsAppByEmailRecipients(recipients, subject, text, html, cf
     return deliveredPhones.size;
 }
 
+function buildTransportOptions({ host, port, secure, user, pass, cfg, service = '', name = '' }) {
+    const options = {
+        host,
+        port,
+        secure,
+        connectionTimeout: cfg.smtpConnectionTimeout,
+        greetingTimeout: cfg.smtpGreetingTimeout,
+        socketTimeout: cfg.smtpSocketTimeout,
+        requireTLS: cfg.smtpRequireTls,
+        ignoreTLS: cfg.smtpIgnoreTls,
+        tls: {
+            rejectUnauthorized: cfg.smtpTlsRejectUnauthorized
+        },
+        auth: {
+            user,
+            pass
+        },
+        debug: cfg.smtpDebug,
+        logger: cfg.smtpLogger
+    };
+
+    if (service) options.service = service;
+    if (name) options.name = name;
+    if (host) options.tls.servername = host;
+
+    return options;
+}
+
+async function sendViaSmtp({ cfg, host, port, secure, user, pass, label, service = '', name = '' }, mailOptions) {
+    const transporter = nodemailer.createTransport(
+        buildTransportOptions({ host, port, secure, user, pass, cfg, service, name })
+    );
+
+    await transporter.verify();
+    await transporter.sendMail(mailOptions);
+    console.log(`Email sent via ${label} to`, mailOptions.to, 'subject:', mailOptions.subject);
+    return true;
+}
+
 async function sendMail(to, subject, text, html) {
     const cfg = getMailerConfig();
     const recipients = normalizeRecipients(to);
@@ -224,39 +281,47 @@ async function sendMail(to, subject, text, html) {
         return false;
     }
     let emailSent = false;
+    const mailOptions = {
+        from: `"${cfg.fromName}" <${cfg.fromEmail}>`,
+        to: recipients.map((x) => x.Email).join(', '),
+        subject: subject || 'RoomHy Notification',
+        text: text || '',
+        html: html || ''
+    };
 
-    // SMTP (Nodemailer) only.
     if (!emailSent && isSmtpConfigured(cfg)) {
         try {
-            const transporter = nodemailer.createTransport({
+            await sendViaSmtp({
+                cfg,
                 host: cfg.smtpHost,
                 port: cfg.smtpPort,
                 secure: cfg.smtpSecure,
-                connectionTimeout: cfg.smtpConnectionTimeout,
-                greetingTimeout: cfg.smtpGreetingTimeout,
-                socketTimeout: cfg.smtpSocketTimeout,
-                tls: {
-                    rejectUnauthorized: cfg.smtpTlsRejectUnauthorized
-                },
-                auth: {
-                    user: cfg.smtpUser,
-                    pass: cfg.smtpPass
-                },
-                debug: cfg.smtpDebug
-            });
-
-            await transporter.sendMail({
-                from: `"${cfg.fromName}" <${cfg.fromEmail}>`,
-                to: recipients.map((x) => x.Email).join(', '),
-                subject: subject || 'RoomHy Notification',
-                text: text || '',
-                html: html || ''
-            });
-
-            console.log('Email sent via SMTP to', recipients.map((x) => x.Email).join(', '), 'subject:', subject);
+                user: cfg.smtpUser,
+                pass: cfg.smtpPass,
+                label: 'primary SMTP',
+                service: cfg.smtpService,
+                name: cfg.smtpName
+            }, mailOptions);
             emailSent = true;
         } catch (err) {
             console.error('Failed sending email via SMTP:', err && err.message);
+        }
+    }
+
+    if (!emailSent && isMailjetConfigured(cfg)) {
+        try {
+            await sendViaSmtp({
+                cfg,
+                host: cfg.mailjetHost,
+                port: cfg.mailjetPort,
+                secure: cfg.mailjetSecure,
+                user: cfg.mailjetUser,
+                pass: cfg.mailjetPass,
+                label: 'Mailjet SMTP'
+            }, mailOptions);
+            emailSent = true;
+        } catch (err) {
+            console.error('Failed sending email via Mailjet SMTP:', err && err.message);
         }
     }
 
@@ -269,8 +334,8 @@ async function sendMail(to, subject, text, html) {
         console.warn('WhatsApp notification copy failed:', err && err.message);
     }
 
-    if (!emailSent && !isSmtpConfigured(cfg)) {
-        console.warn('sendMail skipped: no SMTP mail provider configured (set SMTP env values)');
+    if (!emailSent && !isSmtpConfigured(cfg) && !isMailjetConfigured(cfg)) {
+        console.warn('sendMail skipped: no SMTP provider configured (set SMTP env values or Mailjet SMTP credentials)');
     }
 
     return emailSent || whatsappSent;
