@@ -13,6 +13,92 @@ import {
   normalizeBooking
 } from "../../utils/propertyowner";
 
+const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
+const WEBSITE_USER_ID_REGEX = /^roomhyweb\d{6}$/i;
+
+const normalizeWebsiteUserId = (raw) => {
+  const value = String(raw || "").trim().toLowerCase();
+  if (WEBSITE_USER_ID_REGEX.test(value)) return value;
+  const digits = value.replace(/\D/g, "").slice(-6);
+  if (digits.length === 6) return `roomhyweb${digits}`;
+  return "";
+};
+
+const generateWebsiteUserIdFromEmail = (email) => {
+  const safeEmail = String(email || "").trim().toLowerCase();
+  if (!safeEmail) return "";
+  let hash = 0;
+  for (let i = 0; i < safeEmail.length; i += 1) {
+    hash = (hash * 31 + safeEmail.charCodeAt(i)) % 1000000;
+  }
+  return `roomhyweb${String(hash).padStart(6, "0")}`;
+};
+
+const generateWebsiteUserIdFromBooking = (booking) => {
+  const base = String(booking?._id || booking?.id || booking?.bookingId || "").trim();
+  if (!base) return "";
+  const digits = base.replace(/\D/g, "").slice(-6);
+  if (digits.length === 6) return `roomhyweb${digits}`;
+  let hash = 0;
+  for (let i = 0; i < base.length; i += 1) {
+    hash = (hash * 33 + base.charCodeAt(i)) % 1000000;
+  }
+  return `roomhyweb${String(hash).padStart(6, "0")}`;
+};
+
+const resolveWebsiteUserId = (booking) => {
+  const raw = String(
+    booking?.signup_user_id ||
+    booking?.user_id ||
+    booking?.user_login_id ||
+    booking?.website_user_id ||
+    booking?.booking_details?.signup_user_id ||
+    booking?.booking_details?.user_id ||
+    booking?.booking_details?.user_login_id ||
+    booking?.userId ||
+    ""
+  ).trim().toLowerCase();
+
+  const normalized = normalizeWebsiteUserId(raw);
+  if (normalized) return normalized;
+
+  const emailBased = generateWebsiteUserIdFromEmail(
+    booking?.email ||
+    booking?.userEmail ||
+    booking?.gmail ||
+    booking?.contactEmail ||
+    booking?.booking_details?.email
+  );
+  if (emailBased) return emailBased;
+
+  return generateWebsiteUserIdFromBooking(booking) || raw;
+};
+
+const getBookingDisplayName = (booking) => {
+  const value = (
+    booking?.name ||
+    booking?.fullName ||
+    booking?.contactName ||
+    booking?.user_name ||
+    booking?.tenant_name ||
+    booking?.booking_details?.name ||
+    booking?.booking_details?.fullName ||
+    booking?.booking_details?.contactName ||
+    booking?.booking_details?.user_name ||
+    booking?.booking_details?.tenant_name ||
+    booking?.user?.name ||
+    booking?.user?.firstName ||
+    booking?.firstName ||
+    booking?.email ||
+    "User"
+  );
+  const normalized = String(value || "").trim();
+  if (!normalized || ["n/a", "na", "null", "undefined"].includes(normalized.toLowerCase())) {
+    return "User";
+  }
+  return normalized;
+};
+
 const normalizeMessage = (message) => ({
   ...message,
   key: message._id || message.id || `${message.sender_login_id}-${message.created_at || message.createdAt || Math.random()}`,
@@ -41,6 +127,8 @@ export default function Ownerchat() {
   });
 
   const socketRef = useRef(null);
+  const ownerRef = useRef(null);
+  const currentChatRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [owner, setOwner] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -61,6 +149,14 @@ export default function Ownerchat() {
   }, [messages]);
 
   useEffect(() => {
+    ownerRef.current = owner;
+  }, [owner]);
+
+  useEffect(() => {
+    currentChatRef.current = currentChat;
+  }, [currentChat]);
+
+  useEffect(() => {
     const session = getOwnerRuntimeSession();
     if (!session?.loginId) {
       window.location.href = "/propertyowner/ownerlogin";
@@ -79,6 +175,16 @@ export default function Ownerchat() {
         const bookingList = await fetchBookingRequestsForOwner(owner.loginId);
         const accepted = bookingList
           .map(normalizeBooking)
+          .map((item) => {
+            const userId = resolveWebsiteUserId(item);
+            return {
+              ...item,
+              userId,
+              user_id: userId,
+              signup_user_id: userId,
+              userName: getBookingDisplayName(item)
+            };
+          })
           .filter((item) => ["approved", "accepted", "visited", "booked", "confirmed"].includes(String(item.status).toLowerCase()));
         if (!cancelled) {
           setBookings(accepted);
@@ -104,25 +210,41 @@ export default function Ownerchat() {
 
   useEffect(() => {
     if (!owner?.loginId) return;
-    const socket = io(getSocketUrl(), { transports: ["polling", "websocket"] });
-    socketRef.current = socket;
-    socket.emit("join_room", {
-      login_id: owner.loginId,
-      role: "property_owner",
-      name: owner.name || "Owner"
+    const socket = io(getSocketUrl(), {
+      transports: ["websocket"],
+      upgrade: false,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000
     });
+    socketRef.current = socket;
+    const joinRoom = () => {
+      const latestOwner = ownerRef.current;
+      if (!latestOwner?.loginId) return;
+      socket.emit("join_room", {
+        login_id: String(latestOwner.loginId).trim().toUpperCase(),
+        role: "property_owner",
+        name: latestOwner.name || "Owner"
+      });
+    };
+    socket.on("connect", joinRoom);
+    socket.on("reconnect", joinRoom);
     socket.on("receive_message", (message) => {
       const incoming = normalizeMessage(message);
-      if (!currentChat) return;
-      const userId = currentChat.userId || currentChat.user_id;
-      if (String(incoming.sender_login_id || "").toUpperCase() === String(userId || "").toUpperCase() || String(incoming.room_id || "").toUpperCase() === String(owner.loginId || "").toUpperCase()) {
+      const activeChat = currentChatRef.current;
+      const latestOwner = ownerRef.current;
+      if (!activeChat || !latestOwner?.loginId) return;
+      const userId = resolveWebsiteUserId(activeChat);
+      const senderId = String(incoming.sender_login_id || "").trim().toLowerCase();
+      const ownerId = String(latestOwner.loginId || "").trim().toUpperCase();
+      if (senderId === String(userId || "").trim().toLowerCase() || String(incoming.room_id || "").trim().toUpperCase() === ownerId) {
         setMessages((prev) => [...prev, incoming]);
       }
     });
     return () => {
       socket.disconnect();
     };
-  }, [owner?.loginId, owner?.name, currentChat]);
+  }, [owner?.loginId, owner?.name]);
 
   useEffect(() => {
     if (!owner?.loginId || !currentChat?.userId) return;
@@ -155,7 +277,10 @@ export default function Ownerchat() {
 
   const sendMessage = () => {
     if (!draft.trim() || !currentChat || !socketRef.current || !owner?.loginId) return;
-    const userId = currentChat.userId || currentChat.user_id;
+    const userId = resolveWebsiteUserId(currentChat);
+    if (!OWNER_LOGIN_ID_REGEX.test(String(owner.loginId || "").trim().toUpperCase()) || !WEBSITE_USER_ID_REGEX.test(String(userId || "").trim().toLowerCase())) {
+      return;
+    }
     socketRef.current.emit("send_message", { to_login_id: userId, message: draft.trim() });
     setMessages((prev) => [
       ...prev,

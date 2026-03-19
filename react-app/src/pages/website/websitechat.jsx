@@ -24,6 +24,29 @@ const generateWebsiteUserIdFromEmail = (email) => {
   return `roomhyweb${String(hash).padStart(6, "0")}`;
 };
 
+const getWebsiteUserAliases = (currentUser, activeChat) => {
+  const aliases = new Set();
+  const normalizedLoginId = normalizeWebsiteUserId(currentUser?.loginId || currentUser?.id || "");
+  if (normalizedLoginId) aliases.add(normalizedLoginId);
+
+  [
+    currentUser?.id,
+    currentUser?.user_id,
+    currentUser?.signup_user_id,
+    currentUser?.loginId,
+    currentUser?._id,
+    activeChat?.booking?.user_id,
+    activeChat?.booking?.signup_user_id,
+    activeChat?.booking?.website_user_id,
+    activeChat?.booking?.userLoginId
+  ].forEach((value) => {
+    const alias = String(value || "").trim();
+    if (alias) aliases.add(alias);
+  });
+
+  return Array.from(aliases).filter((alias) => alias !== normalizedLoginId);
+};
+
 export default function WebsiteWebsitechat() {
   useWebsiteCommon();
   useWebsiteMenu();
@@ -40,6 +63,8 @@ export default function WebsiteWebsitechat() {
   const [showLikePopup, setShowLikePopup] = useState(false);
   const [showDislikePopup, setShowDislikePopup] = useState(false);
   const socketRef = useRef(null);
+  const currentUserRef = useRef(null);
+  const activeChatRef = useRef(null);
 
   useLucideIcons([chats, activeChat, messages, showLikePopup, showDislikePopup]);
 
@@ -54,14 +79,42 @@ export default function WebsiteWebsitechat() {
   const connectSocket = useCallback((loginId, name) => {
     if (!loginId) return;
     if (!window.io) return;
-    if (socketRef.current) return;
-    const socket = window.io(apiUrl, { transports: ["websocket", "polling"] });
-    socket.on("connect", () => {
-      socket.emit("join_room", { login_id: loginId, role: "website_user", name: name || "Website User" });
+    const aliases = getWebsiteUserAliases(currentUserRef.current, activeChatRef.current);
+    if (socketRef.current?.connected) {
+      socketRef.current.emit("join_room", {
+        login_id: loginId,
+        role: "website_user",
+        name: name || "Website User",
+        aliases
+      });
+      return;
+    }
+    if (socketRef.current) {
+      try { socketRef.current.removeAllListeners(); } catch (_) {}
+      try { socketRef.current.disconnect(); } catch (_) {}
+    }
+    const socket = window.io(apiUrl, {
+      transports: ["websocket"],
+      upgrade: false,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000
     });
+    const joinRoom = () => {
+      const latestUser = currentUserRef.current;
+      const latestLoginId = normalizeWebsiteUserId(latestUser?.loginId || latestUser?.id || "") || loginId;
+      socket.emit("join_room", {
+        login_id: latestLoginId,
+        role: "website_user",
+        name: latestUser?.firstName || latestUser?.name || name || "Website User",
+        aliases: getWebsiteUserAliases(latestUser, activeChatRef.current)
+      });
+    };
+    socket.on("connect", joinRoom);
+    socket.on("reconnect", joinRoom);
     socket.on("receive_message", () => {
-      if (activeChat) {
-        loadMessages(activeChat);
+      if (activeChatRef.current) {
+        loadMessages(activeChatRef.current);
       }
     });
     socketRef.current = socket;
@@ -128,6 +181,18 @@ export default function WebsiteWebsitechat() {
     connectSocket(normalizedId, user.firstName || user.name || "Website User");
     loadChats(normalizedUser);
   }, [connectSocket, loadChats, resolveWebsiteUserId]);
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+    const loginId = normalizeWebsiteUserId(currentUserRef.current?.loginId || currentUserRef.current?.id || "");
+    if (loginId) {
+      connectSocket(loginId, currentUserRef.current?.firstName || currentUserRef.current?.name || "Website User");
+    }
+  }, [activeChat, connectSocket]);
 
   useEffect(() => {
     if (activeChat) {
