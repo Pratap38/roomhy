@@ -78,6 +78,14 @@ const markInlineExecuted = (key) => {
 
 const wasInlineExecuted = (key) => Boolean(window[inlineExecutedKey]?.[key]);
 
+const getLegacyApiUrl = () => {
+  if (typeof window === "undefined") return "https://api.roomhy.com";
+  const host = window.location?.hostname;
+  return host === "localhost" || host === "127.0.0.1"
+    ? "http://localhost:5001"
+    : "https://api.roomhy.com";
+};
+
 const loadScriptSequentially = async (script) => {
   if (!script?.src) return;
   const key = `script:${script.src}`;
@@ -612,6 +620,11 @@ export const useHtmlPage = ({
 
       // Safety reveal: avoid long blank screens on slow/blocked assets.
       revealTimer = setTimeout(showPageWhenReady, 400);
+
+      // Legacy static scripts expect a shared API_URL global before they execute.
+      if (typeof window !== "undefined" && !window.API_URL) {
+        window.API_URL = getLegacyApiUrl();
+      }
 
       await waitForStylesheets(stylesheetLinks);
 
