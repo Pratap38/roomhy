@@ -4,6 +4,7 @@ const VisitData = require('../models/VisitData');
 const User = require('../models/user');
 const Owner = require('../models/Owner');
 const CheckinRecord = require('../models/CheckinRecord');
+const Property = require('../models/Property');
 const mailer = require('../utils/mailer');
 const { notifySuperadmin } = require('../utils/superadminNotifier');
 
@@ -54,6 +55,10 @@ async function generateUniqueOwnerLoginId(maxAttempts = 100) {
         if (!taken) return candidate;
     }
     throw new Error('Unable to generate unique owner login ID');
+}
+
+function escapeRegex(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // ============================================================
@@ -286,6 +291,101 @@ router.post('/approve', async (req, res) => {
 
         console.log('? [visits/approve] Visit found and updated:', visit._id);
 
+        const ownerName =
+            visit.ownerName ||
+            (visit.propertyInfo && visit.propertyInfo.ownerName) ||
+            'Owner';
+        const ownerEmailFromVisit =
+            visit.ownerEmail ||
+            (visit.propertyInfo && (visit.propertyInfo.ownerEmail || visit.propertyInfo.ownerGmail)) ||
+            '';
+        const ownerPhone =
+            visit.ownerPhone ||
+            visit.contactPhone ||
+            (visit.propertyInfo && visit.propertyInfo.contactPhone) ||
+            '';
+        const ownerAddress =
+            visit.address ||
+            (visit.propertyInfo && visit.propertyInfo.address) ||
+            '';
+        const ownerArea =
+            visit.area ||
+            (visit.propertyInfo && visit.propertyInfo.area) ||
+            '';
+        const propertyTitle =
+            visit.propertyName ||
+            (visit.propertyInfo && visit.propertyInfo.name) ||
+            'Property';
+        const propertyAddress =
+            visit.address ||
+            (visit.propertyInfo && visit.propertyInfo.address) ||
+            '';
+        const propertyLocationCode = String(
+            visit.locationCode ||
+            (visit.propertyInfo && visit.propertyInfo.locationCode) ||
+            ownerArea ||
+            visit.city ||
+            finalLoginId
+        ).trim().toUpperCase();
+
+        await Owner.findOneAndUpdate(
+            { loginId: finalLoginId },
+            {
+                $set: {
+                    loginId: finalLoginId,
+                    name: ownerName,
+                    email: ownerEmailFromVisit,
+                    phone: ownerPhone,
+                    address: ownerAddress,
+                    locationCode: propertyLocationCode,
+                    area: ownerArea,
+                    profile: {
+                        name: ownerName,
+                        email: ownerEmailFromVisit,
+                        phone: ownerPhone,
+                        address: ownerAddress,
+                        locationCode: propertyLocationCode,
+                        updatedAt: new Date()
+                    },
+                    credentials: {
+                        password: finalPassword,
+                        firstTime: true
+                    },
+                    checkinPassword: finalPassword,
+                    isActive: true
+                },
+                $setOnInsert: {
+                    createdAt: new Date()
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        let ownerProperty = await Property.findOne({
+            ownerLoginId: finalLoginId,
+            title: { $regex: `^${escapeRegex(propertyTitle)}$`, $options: 'i' }
+        });
+
+        if (!ownerProperty) {
+            ownerProperty = await Property.create({
+                title: propertyTitle,
+                description: visit.description || '',
+                address: propertyAddress,
+                locationCode: propertyLocationCode || 'GEN',
+                ownerLoginId: finalLoginId,
+                status: 'active',
+                isPublished: true
+            });
+        } else {
+            ownerProperty.description = visit.description || ownerProperty.description || '';
+            ownerProperty.address = propertyAddress || ownerProperty.address || '';
+            ownerProperty.locationCode = propertyLocationCode || ownerProperty.locationCode || 'GEN';
+            ownerProperty.ownerLoginId = finalLoginId;
+            ownerProperty.status = 'active';
+            ownerProperty.isPublished = true;
+            await ownerProperty.save();
+        }
+
         // Always save/update approved visit to ApprovedProperty collection
         try {
             const ApprovedProperty = require('../models/ApprovedProperty');
@@ -296,10 +396,12 @@ router.post('/approve', async (req, res) => {
                     address: visit.address || (visit.propertyInfo && visit.propertyInfo.address) || '',
                     city: visit.city || (visit.propertyInfo && visit.propertyInfo.city) || '',
                     area: visit.area || (visit.propertyInfo && visit.propertyInfo.area) || '',
+                    locationCode: propertyLocationCode,
                     photos: visit.photos || (visit.propertyInfo && visit.propertyInfo.photos) || [],
                     ownerName: visit.ownerName || (visit.propertyInfo && visit.propertyInfo.ownerName) || '',
                     ownerPhone: visit.ownerPhone || visit.contactPhone || (visit.propertyInfo && visit.propertyInfo.contactPhone) || '',
                     ownerEmail: visit.ownerEmail || (visit.propertyInfo && visit.propertyInfo.ownerEmail) || '',
+                    ownerLoginId: finalLoginId,
                     rent: visit.monthlyRent || 0,
                     deposit: visit.deposit || '',
                     description: visit.description || '',
@@ -312,6 +414,7 @@ router.post('/approve', async (req, res) => {
                     loginId: finalLoginId,
                     tempPassword: finalPassword
                 },
+                propertyRef: ownerProperty._id,
                 isLiveOnWebsite: isLiveOnWebsite || false,
                 status: isLiveOnWebsite ? 'live' : 'approved',
                 approvedAt: new Date(),
@@ -332,7 +435,7 @@ router.post('/approve', async (req, res) => {
 
         console.log('? [visits/approve] Visit approved successfully:', visitId);
 
-        // Send owner credentials email with Digital Check-In links (not index.html) 
+        // Send owner credentials email only. Do not send digital check-in links from visit approval.
         let emailAttempted = false;
         let emailSent = false;
         try {
@@ -343,37 +446,25 @@ router.post('/approve', async (req, res) => {
                 .select('ownerProfile.email')
                 .lean();
             const ownerEmail =
-                visit.ownerEmail ||
-                (visit.propertyInfo && (visit.propertyInfo.ownerEmail || visit.propertyInfo.ownerGmail)) ||
+                ownerEmailFromVisit ||
                 (ownerFromDb && (ownerFromDb.email || (ownerFromDb.profile && ownerFromDb.profile.email))) ||
                 (checkinRecord && checkinRecord.ownerProfile && checkinRecord.ownerProfile.email) ||
-                '';
-            const ownerName =
-                visit.ownerName ||
-                (visit.propertyInfo && visit.propertyInfo.ownerName) ||
-                'Owner';
-            const ownerArea =
-                visit.area ||
-                (visit.propertyInfo && visit.propertyInfo.area) ||
                 '';
 
             if (ownerEmail) {
                 emailAttempted = true;
-                const mainCheckinLink = `${DIGITAL_CHECKIN_URL}/digital-checkin/index`;
-                const directCheckinLink = `${DIGITAL_CHECKIN_URL}/digital-checkin/ownerprofile?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea)}&password=${encodeURIComponent(finalPassword)}`;
                 const loginPageLink = `${APP_URL}/propertyowner/ownerlogin`;
-                const subject = 'RoomHy Property Approved - Complete Digital Check-In';
-                const text = `Property approved\nLogin ID: ${finalLoginId}\nTemporary Password: ${finalPassword}\nDigital Check-In: ${mainCheckinLink}\nDirect Link: ${directCheckinLink}\nLogin Page: ${loginPageLink}`;
+                const subject = 'RoomHy Property Approved - Owner Login Credentials';
+                const text = `Property approved\nProperty: ${propertyTitle}\nLogin ID: ${finalLoginId}\nTemporary Password: ${finalPassword}\nOwner Login Page: ${loginPageLink}`;
                 const html = `
                     <div style="font-family: Arial, sans-serif; font-size: 14px; color: #111;">
                         <h2>Property Approved</h2>
                         <p>Hi ${ownerName},</p>
-                        <p>Your property has been approved on RoomHy. Please complete your digital check-in.</p>
+                        <p>Your property has been approved on RoomHy and added under your owner account.</p>
+                        <p><strong>Property:</strong> ${propertyTitle}</p>
                         <p><strong>Login ID:</strong> ${finalLoginId}</p>
                         <p><strong>Temporary Password:</strong> ${finalPassword}</p>
                         <p><strong>Area:</strong> ${ownerArea || 'N/A'}</p>
-                        <p><strong>Digital Check-In (Main):</strong><br><a href="${mainCheckinLink}">${mainCheckinLink}</a></p>
-                        <p><strong>Owner Check-In (Direct):</strong><br><a href="${directCheckinLink}">${directCheckinLink}</a></p>
                         <p><strong>Owner Login Page:</strong><br><a href="${loginPageLink}">${loginPageLink}</a></p>
                     </div>
                 `;
@@ -391,6 +482,7 @@ router.post('/approve', async (req, res) => {
                 loginId: finalLoginId,
                 tempPassword: finalPassword
             },
+            ownerProperty,
             email: {
                 attempted: emailAttempted,
                 sent: emailSent

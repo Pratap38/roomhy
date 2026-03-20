@@ -145,6 +145,7 @@ export default function Owner() {
                                     <tr>
                                         <th>Owner ID / Login ID</th>
                                         <th>Name & Contact</th>
+                                        <th>Property Under Owner</th>
                                         <th>DOB</th>
                                         <th>Gmail</th>
                                         <th>Aadhaar Linked Phone</th>
@@ -164,7 +165,7 @@ export default function Owner() {
                                     </tr>
                                 </thead>
                                 <tbody id="ownersTableBody">
-                                    <tr><td colspan="19" class="text-center py-8 text-gray-500">Loading owners...</td></tr>
+                                    <tr><td colspan="20" class="text-center py-8 text-gray-500">Loading owners...</td></tr>
                                 </tbody>
                             </table>
                         </div>

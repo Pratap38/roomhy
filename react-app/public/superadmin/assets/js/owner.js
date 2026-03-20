@@ -311,7 +311,7 @@ lucide.createIcons();
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="19" class="text-center py-8 text-gray-500">No owners found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="20" class="text-center py-8 text-gray-500">No owners found.</td></tr>`;
                 return;
             }
 
@@ -332,6 +332,7 @@ lucide.createIcons();
                 return {
                     "Owner ID": id,
                     "Name": o.name || 'Unknown',
+                    "Property Under Owner": o.propertyTitle || o.propertyName || '-',
                     "DOB": o.checkinDob || '-',
                     "Email": o.email || '-',
                     "Phone": o.checkinPhone || o.phone || '-',
@@ -356,6 +357,7 @@ lucide.createIcons();
             filtered.forEach(o => {
                 const id = o.loginId || o._id || '';
                 const profileName = o.name || 'Unknown';
+                const propertyUnderOwner = o.propertyTitle || o.propertyName || '-';
                 const email = o.email || '-';
                 const phone = o.checkinPhone || o.phone || '-';
                 const dob = o.checkinDob || '-';
@@ -393,6 +395,7 @@ lucide.createIcons();
                             <p class="text-xs text-gray-500">${phone}</p>
                             <p class="text-xs text-gray-400">${email}</p>
                         </td>
+                        <td class="text-xs text-gray-700 font-semibold">${propertyUnderOwner}</td>
                         <td class="text-xs text-gray-700">${dob}</td>
                         <td class="text-xs text-gray-700">${email}</td>
                         <td class="text-xs text-gray-700">${aadhaarLinkedPhone}</td>

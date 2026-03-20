@@ -37,6 +37,7 @@ const emptyBooking = {
 };
 
 const createWebsiteUserId = () => `roomhyweb${String(Math.floor(Math.random() * 900000) + 100000)}`;
+const formatInr = (value) => `Rs ${Number(value || 0)}`;
 
 const postWithFallback = async (primary, secondary, payload) => {
   const attempts = [primary, secondary].filter(Boolean);
@@ -687,70 +688,111 @@ export default function PropertyownerBookingForm() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <p className="text-sm text-gray-600 mb-4">Need a refund or alternative property?</p>
-            <button
-              type="button"
-              className="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-all text-sm"
-              onClick={() => setShowRefund(true)}
-            >
-              Request Refund / Alternative
-            </button>
-          </div>
+          <>
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <p className="text-sm text-gray-600 mb-4">Need a refund or alternative property?</p>
+              <button
+                type="button"
+                className="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-all text-sm"
+                onClick={() => setShowRefund(true)}
+              >
+                Request Refund / Alternative
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 mt-8">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="flex gap-3">
+                  <i data-lucide="info" className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5"></i>
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-1">Secure &amp; Safe</h4>
+                    <p className="text-sm text-blue-800">Your information is encrypted and secure. We follow all data protection guidelines.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div className="flex gap-3">
+                  <i data-lucide="shield" className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5"></i>
+                  <div>
+                    <h4 className="font-semibold text-green-900 mb-1">Hassle-Free Process</h4>
+                    <p className="text-sm text-green-800">Complete your booking in minutes. Instant confirmation sent to your email.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </main>
 
       {showRefund && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">Refund Request</h3>
+          <div className="bg-white rounded-lg max-w-2xl w-full p-8 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Request Refund / Alternative Property</h3>
               <button type="button" onClick={() => setShowRefund(false)}>✕</button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Reason *</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Reason for Refund/Change *</label>
+                <select
                   className="form-input"
                   value={refundReason}
                   onChange={(e) => setRefundReason(e.target.value)}
-                />
+                >
+                  <option value="">Select a reason</option>
+                  <option value="did_not_like_property">Didn&apos;t like the property</option>
+                  <option value="found_better">Found a better property elsewhere</option>
+                  <option value="personal_emergency">Personal emergency</option>
+                  <option value="change_plans">Changed my plans</option>
+                  <option value="financial_issues">Financial issues</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">Details *</label>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Additional Details *</label>
                 <textarea
                   className="form-input"
-                  rows={4}
+                  rows={5}
+                  placeholder="Please provide more details about your request..."
                   value={refundDetails}
                   onChange={(e) => setRefundDetails(e.target.value)}
                 />
               </div>
-              <div className="flex gap-4 text-sm">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="refundOption"
-                    value="refund"
-                    checked={refundOption === "refund"}
-                    onChange={() => setRefundOption("refund")}
-                  />
-                  Refund
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="refundOption"
-                    value="alternative"
-                    checked={refundOption === "alternative"}
-                    onChange={() => setRefundOption("alternative")}
-                  />
-                  Show Alternative Property
-                </label>
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Would you like to see alternative properties?</label>
+                <div className="flex gap-6 mt-3 text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="refundOption"
+                      value="alternative"
+                      checked={refundOption === "alternative"}
+                      onChange={() => setRefundOption("alternative")}
+                      className="accent-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">Yes, show me alternatives</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="refundOption"
+                      value="refund"
+                      checked={refundOption === "refund"}
+                      onChange={() => setRefundOption("refund")}
+                      className="accent-blue-600"
+                    />
+                    <span className="text-sm text-gray-700">No, just process refund</span>
+                  </label>
+                </div>
               </div>
-              <button type="button" className="btn-primary w-full py-3 rounded-lg" onClick={submitRefund}>
-                Submit Request
-              </button>
+              <div className="flex gap-3 pt-6 border-t border-gray-200">
+                <button type="button" className="flex-1 btn-secondary py-3 rounded-lg" onClick={() => setShowRefund(false)}>
+                  Cancel
+                </button>
+                <button type="button" className="flex-1 btn-primary py-3 rounded-lg" onClick={submitRefund}>
+                  Submit Request
+                </button>
+              </div>
             </div>
           </div>
         </div>

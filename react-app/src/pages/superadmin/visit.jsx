@@ -682,6 +682,7 @@ export default function Visit() {
                         <th>Owner Name</th>
                         <th>Owner Contact</th>
                         <th>Owner Gmail</th>
+                        <th>Owner Login ID</th>
                         <th>Gender</th>
                         <th>Student Reviews</th>
                         <th>Employee Rating</th>
@@ -699,17 +700,17 @@ export default function Visit() {
                     <tbody>
                       {loading && (
                         <tr>
-                          <td colSpan={25} className="text-center py-8 text-gray-500">Loading...</td>
+                          <td colSpan={26} className="text-center py-8 text-gray-500">Loading...</td>
                         </tr>
                       )}
                       {!loading && errorMsg && (
                         <tr>
-                          <td colSpan={25} className="text-center py-8 text-red-500">{errorMsg}</td>
+                          <td colSpan={26} className="text-center py-8 text-red-500">{errorMsg}</td>
                         </tr>
                       )}
                       {!loading && !errorMsg && rows.length === 0 && (
                         <tr>
-                          <td colSpan={25} className="text-center py-8 text-gray-500">No visits found. Add one to start.</td>
+                          <td colSpan={26} className="text-center py-8 text-gray-500">No visits found. Add one to start.</td>
                         </tr>
                       )}
                       {rows.map((visit) => {
@@ -733,6 +734,7 @@ export default function Visit() {
                             <td className="text-sm text-gray-600">{prop.ownerName || visit.ownerName || "-"}</td>
                             <td className="text-sm text-gray-600">{prop.contactPhone || visit.contactPhone || "-"}</td>
                             <td className="text-sm text-gray-600">{prop.ownerEmail || visit.ownerEmail || "-"}</td>
+                            <td className="text-xs font-mono text-blue-700">{visit.generatedCredentials?.loginId || prop.ownerLoginId || "-"}</td>
                             <td className="text-sm text-gray-600">{visit.gender || "-"}</td>
                             <td className="text-center">
                               <span className="text-lg font-bold text-amber-600">
