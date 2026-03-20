@@ -1,6 +1,9 @@
 import { fetchJson, getApiBase } from "./api";
 import { getOwnerSession } from "./ownerSession";
 
+const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
+const WEBSITE_USER_ID_REGEX = /^roomhyweb\d{6}$/i;
+
 const readJson = (key, fallback) => {
   if (typeof window === "undefined") return fallback;
   try {
@@ -18,6 +21,55 @@ const writeJson = (key, value) => {
   } catch (_) {
     // ignore
   }
+};
+
+export const normalizeOwnerLoginId = (raw) => {
+  const value = String(raw || "").trim().toUpperCase();
+  return OWNER_LOGIN_ID_REGEX.test(value) ? value : "";
+};
+
+export const normalizeWebsiteChatUserId = (raw) => {
+  const value = String(raw || "").trim().toLowerCase();
+  if (WEBSITE_USER_ID_REGEX.test(value)) return value;
+  const digits = value.replace(/\D/g, "").slice(-6);
+  if (digits.length === 6) return `roomhyweb${digits}`;
+  return "";
+};
+
+export const generateWebsiteChatUserIdFromEmail = (email) => {
+  const safeEmail = String(email || "").trim().toLowerCase();
+  if (!safeEmail) return "";
+  let hash = 0;
+  for (let i = 0; i < safeEmail.length; i += 1) {
+    hash = (hash * 31 + safeEmail.charCodeAt(i)) % 1000000;
+  }
+  return `roomhyweb${String(hash).padStart(6, "0")}`;
+};
+
+export const generateWebsiteChatUserIdFromBooking = (booking = {}) => {
+  const base = String(booking?._id || booking?.id || booking?.bookingId || "").trim();
+  if (!base) return "";
+  const digits = base.replace(/\D/g, "").slice(-6);
+  if (digits.length === 6) return `roomhyweb${digits}`;
+  let hash = 0;
+  for (let i = 0; i < base.length; i += 1) {
+    hash = (hash * 33 + base.charCodeAt(i)) % 1000000;
+  }
+  return `roomhyweb${String(hash).padStart(6, "0")}`;
+};
+
+export const resolveWebsiteChatUserId = (booking = {}) => {
+  const fromEmail = generateWebsiteChatUserIdFromEmail(
+    booking?.email || booking?.userEmail || booking?.gmail || booking?.contactEmail || booking?.user_email || ""
+  );
+  if (fromEmail) return fromEmail;
+
+  const fromExplicitId = normalizeWebsiteChatUserId(
+    booking?.website_user_id || booking?.websiteUserId || booking?.user_login_id || booking?.userLoginId || booking?.signup_user_id || booking?.user_id || ""
+  );
+  if (fromExplicitId) return fromExplicitId;
+
+  return generateWebsiteChatUserIdFromBooking(booking);
 };
 
 export const getOwnerRuntimeSession = () => {
@@ -74,6 +126,7 @@ export const normalizeTenant = (tenant = {}, propertyMap = new Map()) => {
 
 export const normalizeBooking = (item = {}) => ({
   ...item,
+  ownerLoginId: normalizeOwnerLoginId(item.owner_id || item.ownerId || item.owner_login_id || item.ownerLoginId || item.owner || ""),
   key: item._id || item.id || item.bookingId || item.user_id || Math.random().toString(36).slice(2),
   propertyId: item.property_id || item.propertyId || item.property?._id || "-",
   propertyName: item.property_name || item.propertyName || item.property?.title || "-",
@@ -81,7 +134,7 @@ export const normalizeBooking = (item = {}) => ({
   area: item.area || item.property?.area || item.locationCode || "-",
   type: item.request_type || item.type || item.propertyType || "-",
   rent: item.rent || item.rentAmount || item.price || "-",
-  userId: item.user_id || item.userId || item.signup_user_id || "-",
+  userId: resolveWebsiteChatUserId(item) || item.user_id || item.userId || item.signup_user_id || "-",
   userName: item.name || item.tenantName || item.fullName || "-",
   phone: item.phone || item.mobile || "-",
   email: item.email || "-",
@@ -214,17 +267,17 @@ export const deleteTenantRecord = async (id) => fetchJson(`/api/tenants/${encode
 
 export const updateBookingDecision = async (bookingId, action) => {
   const endpoint = action === "approve" ? "approve" : "reject";
-  return fetchJson(`/api/bookings/requests/${encodeURIComponent(bookingId)}/${endpoint}`, { method: "PUT" });
+  return fetchJson(`/api/booking/requests/${encodeURIComponent(bookingId)}/${endpoint}`, { method: "PUT" });
 };
 
 export const fetchBookingRequestsForOwner = async (ownerId) => {
-  const response = await fetchJson(`/api/bookings/requests?owner_id=${encodeURIComponent(ownerId)}`);
+  const response = await fetchJson(`/api/booking/requests?owner_id=${encodeURIComponent(ownerId)}`);
   return Array.isArray(response) ? response : response?.requests || response?.data || [];
 };
 
 export const fetchBids = async (ownerId) => {
   try {
-    const response = await fetchJson(`/api/bookings/requests?owner_id=${encodeURIComponent(ownerId)}&type=bid`);
+    const response = await fetchJson(`/api/booking/requests?owner_id=${encodeURIComponent(ownerId)}&type=bid`);
     return Array.isArray(response) ? response : response?.data || response?.requests || [];
   } catch (_) {
     return [];
@@ -234,7 +287,15 @@ export const fetchBids = async (ownerId) => {
 export const createOwnerChatRoom = async ({ bookingId, userName, userEmail, userLoginId, ownerId, ownerName, propertyName }) =>
   fetchJson("/api/chat/create", {
     method: "POST",
-    body: JSON.stringify({ bookingId, userName, userEmail, userLoginId, ownerId, ownerName, propertyName })
+    body: JSON.stringify({
+      bookingId,
+      userName,
+      userEmail,
+      userLoginId: resolveWebsiteChatUserId({ bookingId, id: bookingId, email: userEmail, user_id: userLoginId, signup_user_id: userLoginId }),
+      ownerId: normalizeOwnerLoginId(ownerId) || ownerId,
+      ownerName,
+      propertyName
+    })
   });
 
 export const fetchConversation = async (ownerId, userId) =>
@@ -244,8 +305,8 @@ export const buildBookingFormLink = (booking) => {
   const base = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
   const params = new URLSearchParams({
     bookingId: booking._id || booking.id || "",
-    userId: booking.user_id || booking.userId || booking.signup_user_id || "",
-    ownerId: booking.ownerId || booking.ownerLoginId || "",
+    userId: resolveWebsiteChatUserId(booking),
+    ownerId: normalizeOwnerLoginId(booking.ownerId || booking.ownerLoginId || booking.owner_id || booking.ownerLoginId || ""),
     propertyId: booking.property_id || booking.propertyId || "",
     propertyName: booking.property_name || booking.propertyName || ""
   });

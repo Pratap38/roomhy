@@ -125,12 +125,91 @@ const ChatRoom = require('./roomhy-backend/models/ChatRoom');
 const ChatMessage = require('./roomhy-backend/models/ChatMessage');
 const BookingRequest = require('./roomhy-backend/models/BookingRequest');
 
+const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
+const WEBSITE_USER_ID_REGEX = /^roomhyweb\d{6}$/i;
+
+function normalizeOwnerLoginId(raw) {
+    const value = String(raw || '').trim().toUpperCase();
+    return OWNER_LOGIN_ID_REGEX.test(value) ? value : '';
+}
+
+function normalizeWebsiteUserId(raw) {
+    const value = String(raw || '').trim().toLowerCase();
+    if (WEBSITE_USER_ID_REGEX.test(value)) return value;
+    const digits = value.replace(/\D/g, '').slice(-6);
+    if (digits.length === 6) return `roomhyweb${digits}`;
+    return '';
+}
+
+function generateWebsiteUserIdFromEmail(email) {
+    const safeEmail = String(email || '').trim().toLowerCase();
+    if (!safeEmail) return '';
+    let hash = 0;
+    for (let i = 0; i < safeEmail.length; i += 1) {
+        hash = (hash * 31 + safeEmail.charCodeAt(i)) % 1000000;
+    }
+    return `roomhyweb${String(hash).padStart(6, '0')}`;
+}
+
+function normalizeChatLoginId(raw, role, fallbackEmail = '') {
+    if (String(role || '').toLowerCase() === 'property_owner') {
+        return normalizeOwnerLoginId(raw) || String(raw || '').trim().toUpperCase();
+    }
+    return normalizeWebsiteUserId(raw) || generateWebsiteUserIdFromEmail(fallbackEmail) || String(raw || '').trim().toLowerCase();
+}
+
+async function ensureParticipantRoom(roomId, participants) {
+    if (!roomId) return null;
+    const normalizedParticipants = (participants || []).filter((participant) => participant && participant.loginId);
+    return ChatRoom.findOneAndUpdate(
+        { room_id: roomId },
+        {
+            $set: {
+                participants: normalizedParticipants,
+                updated_at: new Date()
+            },
+            $setOnInsert: {
+                room_id: roomId,
+                created_at: new Date()
+            }
+        },
+        { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+}
+
 // Socket.IO Logic
 io.on('connection', (socket) => {
     console.log('🔌 User Connected:', socket.id);
 
     // Join Room
     socket.on('join_room', async (data) => {
+        const role = String(data?.role || data?.user_role || '').trim().toLowerCase();
+        const loginId = normalizeChatLoginId(
+            data?.login_id || data?.user_id || data?.room_id,
+            role,
+            data?.email || ''
+        );
+        const aliases = Array.isArray(data?.aliases) ? data.aliases : [];
+        const name = String(data?.name || loginId || 'User').trim();
+        const bookingId = data?.booking_id || null;
+
+        if (loginId && role) {
+            socket.data.chatIdentity = { loginId, role, name, bookingId };
+            socket.join(loginId);
+            aliases
+                .map((alias) => normalizeChatLoginId(alias, role, data?.email || ''))
+                .filter(Boolean)
+                .forEach((alias) => socket.join(alias));
+
+            console.log(`Chat join: ${loginId} (${role})`);
+
+            try {
+                await ensureParticipantRoom(loginId, [{ loginId, role, joined_at: new Date() }]);
+            } catch (error) {
+                console.error('Error updating room participants:', error);
+            }
+            return;
+        }
         const { room_id, user_id, user_role, booking_id } = data;
         socket.join(room_id);
         console.log(`👤 ${user_id} (${user_role}) joined room: ${room_id}`);
@@ -154,6 +233,66 @@ io.on('connection', (socket) => {
 
     // Send Message
     socket.on('send_message', async (data) => {
+        const identity = socket.data.chatIdentity || {};
+        const senderRole = String(data?.sender_role || identity.role || '').trim().toLowerCase();
+        const senderLoginId = normalizeChatLoginId(
+            data?.sender_login_id || data?.sender_id || identity.loginId,
+            senderRole,
+            data?.sender_email || ''
+        );
+        const recipientRole = senderRole === 'property_owner' ? 'website_user' : 'property_owner';
+        const toLoginId = normalizeChatLoginId(
+            data?.to_login_id || data?.room_id,
+            recipientRole,
+            data?.recipient_email || ''
+        );
+        const messageText = String(data?.message || '').trim();
+        const resolvedBookingId = data?.booking_id || identity.bookingId || null;
+
+        if (senderLoginId && toLoginId && messageText) {
+            try {
+                const newMessage = await ChatMessage.create({
+                    room_id: toLoginId,
+                    sender_id: senderLoginId,
+                    sender_login_id: senderLoginId,
+                    sender_name: String(data?.sender_name || identity.name || senderLoginId || 'User').trim(),
+                    sender_role: senderRole,
+                    message: messageText,
+                    booking_id: resolvedBookingId,
+                    message_type: 'text',
+                    is_read: false,
+                    created_at: new Date(),
+                    updated_at: new Date()
+                });
+
+                const participants = [
+                    { loginId: senderLoginId, role: senderRole },
+                    { loginId: toLoginId, role: recipientRole }
+                ];
+
+                await Promise.all([
+                    ensureParticipantRoom(senderLoginId, participants),
+                    ensureParticipantRoom(toLoginId, participants),
+                    ChatRoom.findOneAndUpdate(
+                        { room_id: toLoginId },
+                        {
+                            $set: {
+                                last_message_at: new Date(),
+                                updated_at: new Date()
+                            }
+                        },
+                        { upsert: true, new: true }
+                    )
+                ]);
+
+                io.to(toLoginId).emit('receive_message', newMessage);
+                console.log(`Chat message ${senderLoginId} -> ${toLoginId}`);
+            } catch (error) {
+                console.error('Send Message Error:', error);
+                socket.emit('message_error', { error: error.message });
+            }
+            return;
+        }
         const { room_id, sender_id, sender_login_id, sender_role, sender_name, message, booking_id } = data;
 
         try {

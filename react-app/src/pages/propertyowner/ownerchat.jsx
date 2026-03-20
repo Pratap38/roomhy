@@ -10,7 +10,8 @@ import {
   formatDate,
   getOwnerRuntimeSession,
   getSocketUrl,
-  normalizeBooking
+  normalizeBooking,
+  resolveWebsiteChatUserId
 } from "../../utils/propertyowner";
 
 const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
@@ -194,7 +195,7 @@ export default function Ownerchat() {
         const accepted = bookingList
           .map(normalizeBooking)
           .map((item) => {
-            const userId = resolveWebsiteUserId(item);
+            const userId = resolveWebsiteChatUserId(item);
             return {
               ...item,
               userId,
@@ -252,7 +253,7 @@ export default function Ownerchat() {
       const activeChat = currentChatRef.current;
       const latestOwner = ownerRef.current;
       if (!activeChat || !latestOwner?.loginId) return;
-      const userId = resolveWebsiteUserId(activeChat);
+      const userId = resolveWebsiteChatUserId(activeChat);
       const senderId = String(incoming.sender_login_id || "").trim().toLowerCase();
       const ownerId = String(latestOwner.loginId || "").trim().toUpperCase();
       if (senderId === String(userId || "").trim().toLowerCase() || String(incoming.room_id || "").trim().toUpperCase() === ownerId) {
@@ -296,7 +297,7 @@ export default function Ownerchat() {
   const sendMessage = () => {
     if (!draft.trim() || !currentChat || !socketRef.current || !owner?.loginId) return;
     // Use the pre-resolved userId from currentChat, not recalculated one
-    const userId = currentChat.userId || resolveWebsiteUserId(currentChat);
+    const userId = currentChat.userId || resolveWebsiteChatUserId(currentChat);
     
     // Debug logging
     console.log('🐛 SendMessage Debug:', {

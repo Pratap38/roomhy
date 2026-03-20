@@ -10,6 +10,7 @@ import {
   formatDate,
   getOwnerRuntimeSession,
   normalizeBooking,
+  resolveWebsiteChatUserId,
   updateBookingDecision
 } from "../../utils/propertyowner";
 
@@ -112,11 +113,12 @@ export default function BookingRequest() {
     try {
       await updateBookingDecision(booking.key, action);
       if (action === "approve") {
+        const websiteUserId = resolveWebsiteChatUserId(booking);
         await createOwnerChatRoom({
           bookingId: booking.key,
           userName: booking.userName,
           userEmail: booking.email,
-          userLoginId: booking.userId,
+          userLoginId: websiteUserId,
           ownerId: owner?.loginId,
           ownerName: owner?.name,
           propertyName: booking.propertyName
