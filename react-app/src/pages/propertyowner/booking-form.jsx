@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHtmlPage } from "../../utils/htmlPage";
 import { fetchJson } from "../../utils/api";
 
@@ -125,10 +125,17 @@ export default function PropertyownerBookingForm() {
   const [refundOption, setRefundOption] = useState("refund");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [successData, setSuccessData] = useState(null);
+  const messageRef = useRef(null);
 
   useEffect(() => {
     if (window.lucide?.createIcons) window.lucide.createIcons();
   }, [paymentReady, paymentCompleted, showRefund, successData, booking.addressProof]);
+
+  useEffect(() => {
+    if (message && messageRef.current) {
+      messageRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [message]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -163,6 +170,52 @@ export default function PropertyownerBookingForm() {
       phone: data?.tenantPhone || data?.tenant_phone || data?.userPhone || params.get("prefillPhone") || prev.phone
     }));
   }, []);
+
+  useEffect(() => {
+    const loadBookingContext = async () => {
+      if (booking.propertyName && booking.ownerName && booking.area) return;
+      if (!booking.bookingId && !booking.propertyId) return;
+
+      const idsToTry = [booking.bookingId, booking.propertyId].filter(Boolean);
+      for (const id of idsToTry) {
+        try {
+          const res = await fetchJson(`/api/booking/${id}`);
+          const data = res?.data || res || {};
+          setBooking((prev) => ({
+            ...prev,
+            propertyName: prev.propertyName || data.property_name || data.propertyName || data.property_id || prev.propertyId,
+            ownerName: prev.ownerName || data.owner_name || data.ownerName || data.owner_id || prev.ownerId,
+            ownerId: prev.ownerId || data.owner_id || data.ownerId || prev.ownerId,
+            area: prev.area || data.area || "N/A",
+            propertyType: prev.propertyType || data.property_type || data.propertyType || "N/A",
+            rentAmount: prev.rentAmount || data.rent_amount || data.rentAmount || prev.totalAmount
+          }));
+          return;
+        } catch {
+          // try next id/path
+        }
+
+        try {
+          const res = await fetchJson(`/api/bookings/${id}`);
+          const data = res?.data || res || {};
+          setBooking((prev) => ({
+            ...prev,
+            propertyName: prev.propertyName || data.property_name || data.propertyName || data.property_id || prev.propertyId,
+            ownerName: prev.ownerName || data.owner_name || data.ownerName || data.owner_id || prev.ownerId,
+            ownerId: prev.ownerId || data.owner_id || data.ownerId || prev.ownerId,
+            area: prev.area || data.area || "N/A",
+            propertyType: prev.propertyType || data.property_type || data.propertyType || "N/A",
+            rentAmount: prev.rentAmount || data.rent_amount || data.rentAmount || prev.totalAmount
+          }));
+          return;
+        } catch {
+          // continue
+        }
+      }
+    };
+
+    loadBookingContext();
+  }, [booking.area, booking.bookingId, booking.ownerId, booking.ownerName, booking.propertyId, booking.propertyName, booking.propertyType, booking.rentAmount, booking.totalAmount]);
 
   useEffect(() => {
     const loadKey = async () => {
@@ -304,12 +357,14 @@ export default function PropertyownerBookingForm() {
     setConfirming(true);
     setMessage("");
     try {
+      const propertyName = booking.propertyName || booking.propertyId || "Property";
+      const ownerName = booking.ownerName || booking.ownerId || "Unknown Owner";
       const payload = {
         user_id: booking.userId,
         property_id: booking.propertyId,
-        property_name: booking.propertyName,
+        property_name: propertyName,
         owner_id: booking.ownerId || "owner_unknown",
-        owner_name: booking.ownerName || "Unknown Owner",
+        owner_name: ownerName,
         name: booking.fullName,
         phone: booking.phone,
         email: booking.email,
@@ -324,8 +379,14 @@ export default function PropertyownerBookingForm() {
         address_postal_code: booking.postalCode,
         address_country: booking.country,
         payment_id: booking.razorpayPaymentId,
+        payment_amount: booking.totalAmount,
         payment_status: "completed",
         payment_method: "razorpay",
+        total_amount: booking.totalAmount,
+        totalAmount: booking.totalAmount,
+        request_type: "request",
+        booking_status: "confirmed",
+        bookingStatus: "confirmed",
         status: "confirmed"
       };
 
@@ -342,9 +403,9 @@ export default function PropertyownerBookingForm() {
         booking_id: bookingId,
         user_id: booking.userId,
         property_id: booking.propertyId,
-        property_name: booking.propertyName,
+        property_name: propertyName,
         owner_id: booking.ownerId,
-        owner_name: booking.ownerName,
+        owner_name: ownerName,
         property_location: booking.area,
         property_type: booking.propertyType,
         total_amount: booking.totalAmount,
@@ -381,7 +442,8 @@ export default function PropertyownerBookingForm() {
       });
       setMessage("Booking confirmed! Check your email for credentials.");
     } catch (err) {
-      setMessage(err?.message || "Booking confirmation failed.");
+      const text = err?.message || err?.body || "Booking confirmation failed.";
+      setMessage(text);
     } finally {
       setConfirming(false);
     }
@@ -450,7 +512,7 @@ export default function PropertyownerBookingForm() {
         </div>
 
         {message && (
-          <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <div ref={messageRef} className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
             {message}
           </div>
         )}

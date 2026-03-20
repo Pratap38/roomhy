@@ -1074,7 +1074,7 @@ exports.confirmBooking = async (req, res) => {
         const normalizedPaymentId = paymentId || payment_id;
         const normalizedName = name || fullName;
         const normalizedPropertyId = property_id || propertyId;
-        const normalizedPropertyName = property_name || propertyName;
+        const normalizedPropertyName = property_name || propertyName || normalizedPropertyId || 'Property';
         const normalizedOwnerId = owner_id || ownerId;
         const normalizedOwnerName = owner_name || ownerName;
         const normalizedArea = area;
