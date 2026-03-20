@@ -257,14 +257,66 @@ export default function Ownerchat() {
   };
 
   const sendBookingForm = () => {
-    if (!currentChat) return;
-    const link = buildBookingFormLink(currentChat);
-    setDraft(`Here's your booking form: ${link}`);
+    if (!currentChat || !socketRef.current || !owner?.loginId) return;
+    const ownerId = String(owner.loginId || "").trim().toUpperCase();
+    const userId = currentChat.userId || resolveWebsiteChatUserId(currentChat);
+
+    if (!OWNER_LOGIN_ID_REGEX.test(ownerId) || !WEBSITE_USER_ID_REGEX.test(String(userId || "").trim().toLowerCase())) {
+      setErrorMsg("Invalid chat participants.");
+      return;
+    }
+
+    const bookingData = {
+      bookingId: currentChat._id || currentChat.id || "",
+      booking_id: currentChat._id || currentChat.id || "",
+      userId,
+      user_id: userId,
+      signup_user_id: userId,
+      propertyId: currentChat.propertyId || currentChat.property_id || currentChat._id || currentChat.id || "",
+      property_id: currentChat.propertyId || currentChat.property_id || currentChat._id || currentChat.id || "",
+      propertyName: currentChat.propertyName || currentChat.property_name || "Roomhy Property",
+      property_name: currentChat.propertyName || currentChat.property_name || "Roomhy Property",
+      ownerId,
+      owner_id: ownerId,
+      ownerName: owner.name || currentChat.ownerName || currentChat.owner_name || "Owner",
+      owner_name: owner.name || currentChat.ownerName || currentChat.owner_name || "Owner",
+      tenantName: currentChat.userName || currentChat.name || "Tenant",
+      tenant_name: currentChat.userName || currentChat.name || "Tenant",
+      userName: currentChat.userName || currentChat.name || "Tenant",
+      tenantEmail: currentChat.email || "",
+      tenant_email: currentChat.email || "",
+      userEmail: currentChat.email || ""
+    };
+
+    sessionStorage.setItem("bookingRequestData", JSON.stringify(bookingData));
+
+    const link = buildBookingFormLink({
+      ...currentChat,
+      ...bookingData
+    });
+    const messageText = `Here's your booking form: ${link}`;
+
+    socketRef.current.emit("send_message", { to_login_id: userId, message: messageText });
+    setMessages((prev) => [
+      ...prev,
+      normalizeMessage({
+        sender_login_id: ownerId,
+        sender_name: owner.name || "Owner",
+        message: messageText,
+        created_at: new Date().toISOString(),
+        room_id: userId
+      })
+    ]);
+    setDraft("");
+    setErrorMsg("");
   };
 
   const sendReaction = (type) => {
+    if (type === "BOOK") {
+      sendBookingForm();
+      return;
+    }
     const messageMap = {
-      BOOK: "Proceeding to booking.",
       LIKE: "Owner liked your enquiry. Please continue with booking.",
       DISLIKE: "Owner is unable to proceed with this enquiry."
     };

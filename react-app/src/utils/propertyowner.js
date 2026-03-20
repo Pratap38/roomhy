@@ -303,12 +303,18 @@ export const fetchConversation = async (ownerId, userId) =>
 
 export const buildBookingFormLink = (booking) => {
   const base = typeof window !== "undefined" ? window.location.origin : "http://localhost:5173";
+  const ownerName = booking.owner_name || booking.ownerName || booking.owner || "";
+  const tenantName = booking.name || booking.userName || booking.tenantName || "";
+  const tenantEmail = booking.email || booking.userEmail || booking.tenantEmail || "";
   const params = new URLSearchParams({
     bookingId: booking._id || booking.id || "",
     userId: resolveWebsiteChatUserId(booking),
     ownerId: normalizeOwnerLoginId(booking.ownerId || booking.ownerLoginId || booking.owner_id || booking.ownerLoginId || ""),
     propertyId: booking.property_id || booking.propertyId || "",
-    propertyName: booking.property_name || booking.propertyName || ""
+    propertyName: booking.property_name || booking.propertyName || "",
+    ownerName,
+    tenantName,
+    tenantEmail
   });
   return `${base}/propertyowner/booking-form?${params.toString()}`;
 };

@@ -501,14 +501,66 @@ export const useHtmlPage = ({
     if (isSuperadminRoute || isEmployeeRoute) {
       forcedStyles.push(`
         @media (max-width: 768px) {
+          html, body {
+            max-width: 100%;
+            overflow-x: hidden;
+          }
+          .html-page {
+            max-width: 100%;
+            overflow-x: hidden;
+          }
           .html-page .sidebar.hidden.md\\:flex,
           .html-page .sidebar:not(#mobile-sidebar) { display: none !important; }
           .html-page #mobile-menu-open { display: inline-flex !important; }
           .html-page .flex.h-screen { height: auto; min-height: 100vh; }
+          .html-page .h-screen { height: auto !important; min-height: 100vh; }
+          .html-page .min-h-screen { min-height: 100vh; }
+          .html-page .max-w-7xl,
+          .html-page .max-w-6xl,
+          .html-page .max-w-5xl,
+          .html-page .max-w-4xl,
+          .html-page .max-w-3xl { max-width: 100% !important; }
           .html-page header { padding-left: 1rem; padding-right: 1rem; }
           .html-page main { padding: 1rem !important; }
+          .html-page [class*="grid-cols-2"],
+          .html-page [class*="grid-cols-3"],
+          .html-page [class*="grid-cols-4"],
+          .html-page [class*="grid-cols-5"],
+          .html-page [class*="grid-cols-6"] {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+          .html-page .flex-row { flex-direction: column; }
+          .html-page .items-center.justify-between { gap: 0.75rem; }
+          .html-page .gap-6,
+          .html-page .gap-5,
+          .html-page .gap-4 { gap: 0.75rem !important; }
+          .html-page .p-8,
+          .html-page .px-8,
+          .html-page .py-8 { padding: 1rem !important; }
+          .html-page .p-6,
+          .html-page .px-6,
+          .html-page .py-6 { padding: 0.875rem !important; }
+          .html-page .w-72 { width: 18rem; max-width: calc(100vw - 2rem); }
+          .html-page [class*="overflow-x-auto"] {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
           .html-page table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
           .html-page thead, .html-page tbody, .html-page tr { display: table; width: 100%; table-layout: auto; }
+          .html-page input,
+          .html-page select,
+          .html-page textarea,
+          .html-page button {
+            max-width: 100%;
+          }
+          .html-page .fixed.inset-0 > div,
+          .html-page .fixed.inset-0 > aside,
+          .html-page .fixed.inset-0 .max-w-2xl,
+          .html-page .fixed.inset-0 .max-w-3xl,
+          .html-page .fixed.inset-0 .max-w-4xl {
+            width: min(100%, calc(100vw - 1rem)) !important;
+            max-width: calc(100vw - 1rem) !important;
+          }
         }
       `);
     }
@@ -652,10 +704,17 @@ export const useHtmlPage = ({
 
       if ((isSuperadminRoute || isEmployeeRoute) && !disableAutoMobileMenuButton) {
         const ensureMobileMenuButton = () => {
+          const existingPageTrigger =
+            document.getElementById("mobile-menu-open") ||
+            document.getElementById("sa-mobile-toggle") ||
+            document.querySelector("[data-mobile-menu-trigger='1']") ||
+            document.querySelector("header button.md\\:hidden") ||
+            document.querySelector("header button[class*='md:hidden']");
           let btn = document.getElementById("mobile-menu-open") || document.getElementById("sa-mobile-toggle");
-          if (!btn) {
+          if (!btn && !existingPageTrigger) {
             btn = document.createElement("button");
             btn.id = "mobile-menu-open";
+            btn.dataset.hpFallback = "1";
             btn.className = "md:hidden";
             btn.setAttribute("aria-label", "Open menu");
             btn.innerHTML = '<span style="font-size:24px;line-height:1;">&#9776;</span>';
@@ -670,9 +729,10 @@ export const useHtmlPage = ({
             btn.style.background = "#ffffff";
             btn.style.boxShadow = "0 2px 6px rgba(0,0,0,0.08)";
             document.body.appendChild(btn);
-          } else if (window.innerWidth < 768) {
+          } else if (btn && btn.dataset.hpFallback === "1" && window.innerWidth < 768) {
             btn.style.display = "inline-flex";
           }
+          if (!btn) return;
           btn.style.display = window.innerWidth < 768 ? "inline-flex" : "none";
         };
         ensureMobileMenuButton();

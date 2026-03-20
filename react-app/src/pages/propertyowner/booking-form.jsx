@@ -36,6 +36,8 @@ const emptyBooking = {
   addressProof: null
 };
 
+const createWebsiteUserId = () => `roomhyweb${String(Math.floor(Math.random() * 900000) + 100000)}`;
+
 const postWithFallback = async (primary, secondary, payload) => {
   const attempts = [primary, secondary].filter(Boolean);
   let lastError = null;
@@ -95,37 +97,45 @@ export default function PropertyownerBookingForm() {
   const [refundReason, setRefundReason] = useState("");
   const [refundDetails, setRefundDetails] = useState("");
   const [refundOption, setRefundOption] = useState("refund");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [successData, setSuccessData] = useState(null);
 
   useEffect(() => {
     if (window.lucide?.createIcons) window.lucide.createIcons();
-  }, [paymentReady, paymentCompleted, showRefund]);
+  }, [paymentReady, paymentCompleted, showRefund, successData, booking.addressProof]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
     const stored = sessionStorage.getItem("bookingRequestData");
-    if (!stored) return;
+    let data = null;
     try {
-      const data = JSON.parse(stored);
-      setBooking((prev) => ({
-        ...prev,
-        bookingId: data.bookingId || data.booking_id || prev.bookingId,
-        userId: data.userId || data.user_id || data.signup_user_id || prev.userId,
-        propertyId: data.propertyId || data.property_id || prev.propertyId,
-        propertyName: data.propertyName || data.property_name || prev.propertyName,
-        ownerId: data.ownerId || data.owner_id || prev.ownerId,
-        ownerName: data.ownerName || data.owner_name || prev.ownerName,
-        tenantName: data.tenantName || data.userName || prev.tenantName,
-        tenantEmail: data.tenantEmail || data.userEmail || prev.tenantEmail,
-        area: data.area || prev.area,
-        propertyType: data.propertyType || data.property_type || prev.propertyType,
-        rentAmount: Number(data.rentAmount || data.rent_amount || prev.rentAmount || 0),
-        totalAmount: Number(data.totalAmount || data.total_amount || prev.totalAmount || 500),
-        fullName: data.tenantName || data.userName || prev.fullName,
-        email: data.tenantEmail || data.userEmail || prev.email,
-        phone: data.tenantPhone || data.userPhone || prev.phone
-      }));
+      data = stored ? JSON.parse(stored) : null;
     } catch (err) {
       console.warn("Failed to parse bookingRequestData:", err);
     }
+
+    const tenantName = data?.tenantName || data?.tenant_name || data?.userName || params.get("tenantName") || "";
+    const tenantEmail = data?.tenantEmail || data?.tenant_email || data?.userEmail || params.get("tenantEmail") || "";
+    const userId = data?.userId || data?.user_id || data?.signup_user_id || params.get("userId") || createWebsiteUserId();
+
+    setBooking((prev) => ({
+      ...prev,
+      bookingId: data?.bookingId || data?.booking_id || params.get("bookingId") || prev.bookingId,
+      userId,
+      propertyId: data?.propertyId || data?.property_id || params.get("propertyId") || prev.propertyId,
+      propertyName: data?.propertyName || data?.property_name || params.get("propertyName") || prev.propertyName,
+      ownerId: data?.ownerId || data?.owner_id || params.get("ownerId") || prev.ownerId,
+      ownerName: data?.ownerName || data?.owner_name || params.get("ownerName") || prev.ownerName,
+      tenantName,
+      tenantEmail,
+      area: data?.area || params.get("area") || prev.area,
+      propertyType: data?.propertyType || data?.property_type || params.get("propertyType") || prev.propertyType,
+      rentAmount: 500,
+      totalAmount: 500,
+      fullName: tenantName || prev.fullName,
+      email: tenantEmail || prev.email,
+      phone: data?.tenantPhone || data?.tenant_phone || data?.userPhone || params.get("prefillPhone") || prev.phone
+    }));
   }, []);
 
   useEffect(() => {
@@ -174,8 +184,27 @@ export default function PropertyownerBookingForm() {
       setMessage("Please upload address proof.");
       return false;
     }
+    if (!termsAccepted) {
+      setMessage("Please agree to the terms and conditions.");
+      return false;
+    }
     return true;
-  }, [booking]);
+  }, [booking, termsAccepted]);
+
+  const handleAddressProof = useCallback((file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage("File size must be less than 5MB.");
+      return;
+    }
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
+    if (!allowedTypes.includes(file.type)) {
+      setMessage("Only PDF, JPG, and PNG files are allowed.");
+      return;
+    }
+    setMessage("");
+    updateField("addressProof", file);
+  }, [updateField]);
 
   const handlePayment = useCallback(async () => {
     setMessage("");
@@ -304,8 +333,20 @@ export default function PropertyownerBookingForm() {
 
       sessionStorage.setItem("bookingConfirmation", JSON.stringify(normalized));
       localStorage.setItem("lastBooking", JSON.stringify(normalized));
+      if (normalized.user_id) {
+        localStorage.setItem("userId", normalized.user_id);
+        sessionStorage.setItem("userId", normalized.user_id);
+      }
+      if (booking.email) {
+        localStorage.setItem("userEmail", booking.email);
+        sessionStorage.setItem("userEmail", booking.email);
+      }
 
       setBooking((prev) => ({ ...prev, bookingId }));
+      setSuccessData({
+        userId: result?.userId || booking.userId || "-",
+        password: result?.password || "N/A"
+      });
       setMessage("Booking confirmed! Check your email for credentials.");
     } catch (err) {
       setMessage(err?.message || "Booking confirmation failed.");
@@ -377,6 +418,7 @@ export default function PropertyownerBookingForm() {
           </div>
         )}
 
+        {!successData ? (
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div>
@@ -390,6 +432,16 @@ export default function PropertyownerBookingForm() {
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">Owner Name</label>
               <input type="text" className="form-input border-gray-300" value={booking.ownerName} readOnly />
+            </div>
+          </div>
+
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex gap-3">
+              <i data-lucide="shield-check" className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"></i>
+              <div className="text-sm">
+                <strong className="text-blue-900">Risk-Free Booking!</strong>
+                <p className="text-blue-800 mt-0.5">If you don&apos;t like the property after booking, we&apos;ll show you alternatives or process a full refund.</p>
+              </div>
             </div>
           </div>
 
@@ -507,12 +559,19 @@ export default function PropertyownerBookingForm() {
 
           <div className="border-t border-gray-200 pt-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Document Verification</h3>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Upload Address Proof (Aadhar/Utility Bill) *</label>
             <input
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => updateField("addressProof", e.target.files?.[0] || null)}
+              onChange={(e) => handleAddressProof(e.target.files?.[0] || null)}
               className="block w-full text-sm text-gray-600"
             />
+            {booking.addressProof ? (
+              <div className="text-sm text-green-600 mt-3 flex items-center gap-2">
+                <i data-lucide="check-circle" className="w-4 h-4"></i>
+                <span>{booking.addressProof.name}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="border-t border-gray-200 pt-6 mb-6 bg-gray-50 rounded-lg p-6">
@@ -529,11 +588,34 @@ export default function PropertyownerBookingForm() {
             </div>
           </div>
 
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" className="mt-1" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} />
+              <span className="text-sm text-gray-700">I agree to the terms and conditions and confirm that I have read the refund policy.</span>
+            </label>
+          </div>
+
           <div className="border-t border-gray-200 pt-6 flex gap-3">
             <button
               type="button"
               className="flex-1 btn-secondary py-3 rounded-lg"
-              onClick={() => setBooking((prev) => ({ ...prev, ...emptyBooking, propertyId: prev.propertyId }))}
+              onClick={() =>
+                setBooking((prev) => ({
+                  ...emptyBooking,
+                  razorpayKey: prev.razorpayKey,
+                  propertyId: prev.propertyId,
+                  propertyName: prev.propertyName,
+                  ownerId: prev.ownerId,
+                  ownerName: prev.ownerName,
+                  userId: prev.userId,
+                  tenantName: prev.tenantName,
+                  tenantEmail: prev.tenantEmail,
+                  fullName: prev.tenantName,
+                  email: prev.tenantEmail,
+                  totalAmount: 500,
+                  rentAmount: 500
+                }))
+              }
             >
               Clear Form
             </button>
@@ -541,7 +623,8 @@ export default function PropertyownerBookingForm() {
               type="button"
               className="flex-1 btn-primary py-3 rounded-lg flex items-center justify-center gap-2"
               onClick={handlePayment}
-              disabled={paymentReady || loadingKey}
+              disabled={paymentReady || loadingKey || !termsAccepted || paymentCompleted}
+              style={{ display: paymentCompleted ? "none" : "flex" }}
             >
               <i data-lucide="credit-card" className="w-5 h-5"></i>
               Proceed to Payment
@@ -551,23 +634,70 @@ export default function PropertyownerBookingForm() {
               className="flex-1 btn-primary py-3 rounded-lg flex items-center justify-center gap-2"
               onClick={handleConfirm}
               disabled={!paymentCompleted || confirming}
+              style={{ display: paymentCompleted ? "flex" : "none" }}
             >
-              <i data-lucide="check-circle" className="w-5 h-5"></i>
+              <i data-lucide={confirming ? "loader" : "check-circle"} className={`w-5 h-5 ${confirming ? "animate-spin" : ""}`}></i>
               Complete Booking
             </button>
           </div>
         </div>
+        ) : null}
 
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <p className="text-sm text-gray-600 mb-4">Need a refund or alternative property?</p>
-          <button
-            type="button"
-            className="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-all text-sm"
-            onClick={() => setShowRefund(true)}
-          >
-            Request Refund / Alternative
-          </button>
-        </div>
+        {successData ? (
+          <div className="bg-white rounded-lg shadow-md p-8 text-center mb-8">
+            <div className="w-[72px] h-[72px] rounded-full bg-green-100 flex items-center justify-center mx-auto mb-5">
+              <i data-lucide="check" className="w-8 h-8 text-green-600"></i>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
+            <p className="text-gray-600 mb-6">Your login credentials have been sent to your email</p>
+            <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left border border-gray-200">
+              <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <i data-lucide="key" className="w-5 h-5 text-blue-600"></i>
+                Your Login Credentials
+              </h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">User ID:</span>
+                  <span className="font-mono font-semibold text-gray-900 bg-white px-3 py-2 rounded border border-gray-200">{successData.userId}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Password:</span>
+                  <span className="font-mono font-semibold text-gray-900 bg-white px-3 py-2 rounded border border-gray-200">{successData.password}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Login URL:</span>
+                  <a href="/website/login" className="text-blue-600 hover:underline font-medium">Login Page →</a>
+                </div>
+              </div>
+            </div>
+            <button type="button" onClick={() => { window.location.href = "/website/index"; }} className="w-full btn-primary py-3 rounded-lg flex items-center justify-center gap-2 mb-3">
+              <i data-lucide="home" className="w-5 h-5"></i>
+              Go to Home
+            </button>
+            <div className="mt-5 pt-5 border-t border-gray-200">
+              <p className="text-gray-600 mb-3 text-sm">Having second thoughts?</p>
+              <button
+                type="button"
+                className="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-all text-sm"
+                onClick={() => setShowRefund(true)}
+              >
+                <i data-lucide="rotate-ccw" className="w-4 h-4 inline mr-2"></i>
+                Request Refund / Alternative Property
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <p className="text-sm text-gray-600 mb-4">Need a refund or alternative property?</p>
+            <button
+              type="button"
+              className="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-all text-sm"
+              onClick={() => setShowRefund(true)}
+            >
+              Request Refund / Alternative
+            </button>
+          </div>
+        )}
       </main>
 
       {showRefund && (
