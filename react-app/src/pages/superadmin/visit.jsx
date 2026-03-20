@@ -382,6 +382,50 @@ export default function Visit() {
     }
   };
 
+  const addPropertyUnderOwner = async (visit) => {
+    const ownerLoginId = String(
+      visit?.generatedCredentials?.loginId ||
+      visit?.propertyInfo?.ownerLoginId ||
+      ""
+    ).trim().toUpperCase();
+
+    if (!ownerLoginId) {
+      window.alert("Owner login ID is missing for this visit. Approve the visit first.");
+      return;
+    }
+
+    const title = String(
+      visit?.propertyInfo?.name ||
+      visit?.propertyName ||
+      ""
+    ).trim();
+
+    if (!title) {
+      window.alert("Property name is missing for this visit.");
+      return;
+    }
+
+    try {
+      const payload = {
+        title,
+        address: visit?.address || visit?.propertyInfo?.address || "",
+        locationCode: visit?.locationCode || visit?.propertyInfo?.locationCode || visit?.area || visit?.propertyInfo?.area || "",
+        city: visit?.city || visit?.propertyInfo?.city || "",
+        area: visit?.area || visit?.propertyInfo?.area || "",
+        description: visit?.description || ""
+      };
+
+      await fetchJson(`/api/owners/${encodeURIComponent(ownerLoginId)}/properties`, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      window.alert(`Property added under owner ${ownerLoginId}.`);
+    } catch (err) {
+      window.alert(err?.body || err?.message || "Failed to add property under owner.");
+    }
+  };
+
   const setToggleValue = (field, value) => {
     if (field === "visitorsAllowed") setVisitorsAllowed(value);
     if (field === "cookingAllowed") setCookingAllowed(value);
@@ -772,7 +816,13 @@ export default function Visit() {
                             </td>
                             <td className="text-sm text-gray-600">{statusText}</td>
                             <td className="text-center">
-                              <div className="inline-flex items-center gap-2">
+                              <div className="inline-flex items-center gap-2 flex-wrap justify-center">
+                                <button
+                                  onClick={() => addPropertyUnderOwner(visit)}
+                                  className="text-emerald-700 hover:bg-emerald-50 px-2 py-1 rounded text-xs font-medium border border-emerald-200"
+                                >
+                                  Add Property Under Owner
+                                </button>
                                 <button onClick={() => openEditModal(visit)} className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs font-medium">
                                   Edit
                                 </button>

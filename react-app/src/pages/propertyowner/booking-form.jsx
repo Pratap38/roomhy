@@ -169,11 +169,11 @@ export default function PropertyownerBookingForm() {
       setLoadingKey(true);
       try {
         const res = await fetchJson("/api/booking/config/razorpay-key");
-        setBooking((prev) => ({ ...prev, razorpayKey: res?.key || res?.keyId || "" }));
+        setBooking((prev) => ({ ...prev, razorpayKey: res?.razorpayKey || res?.key || res?.keyId || "" }));
       } catch {
         try {
           const res = await fetchJson("/api/bookings/config/razorpay-key");
-          setBooking((prev) => ({ ...prev, razorpayKey: res?.key || res?.keyId || "" }));
+          setBooking((prev) => ({ ...prev, razorpayKey: res?.razorpayKey || res?.key || res?.keyId || "" }));
         } catch (err) {
           console.error("Failed to load Razorpay key:", err);
         }
@@ -658,13 +658,18 @@ export default function PropertyownerBookingForm() {
             </button>
             <button
               type="button"
-              className="flex-1 btn-primary py-3 rounded-lg flex items-center justify-center gap-2"
+              className={`flex-1 py-3 rounded-lg flex items-center justify-center gap-2 transition ${
+                paymentReady || loadingKey || !termsAccepted || paymentCompleted || !booking.razorpayKey
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "btn-primary"
+              }`}
               onClick={handlePayment}
-              disabled={paymentReady || loadingKey || !termsAccepted || paymentCompleted}
+              disabled={paymentReady || loadingKey || !termsAccepted || paymentCompleted || !booking.razorpayKey}
               style={{ display: paymentCompleted ? "none" : "flex" }}
+              title={!booking.razorpayKey ? "Razorpay key not loaded yet" : ""}
             >
               <i data-lucide="credit-card" className="w-5 h-5"></i>
-              Proceed to Payment
+              {loadingKey ? "Loading Payment..." : "Proceed to Payment"}
             </button>
             <button
               type="button"

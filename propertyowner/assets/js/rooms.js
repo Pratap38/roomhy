@@ -957,18 +957,30 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
 
         async function confirmAssignment(e) {
             e.preventDefault();
-            const mode = document.getElementById('assignMode').value;
-            const roomId = document.getElementById('assignRoomId').value;
-            const bedIdx = parseInt(document.getElementById('assignBedIndex').value);
+            const submitBtn = document.getElementById('assignSubmitBtn');
+            const submitText = document.getElementById('assignSubmitText');
+            const originalText = submitText ? submitText.innerText : 'Assign & Generate Login';
             
-            let tenantId, tenantName;
-            
-            const allRooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
-            const roomIdx = allRooms.findIndex(r => r.id === roomId);
-            if (roomIdx === -1) {
-                console.error('❌ Room not found:', roomId);
-                return alert("Error: Room not found. Please reload and try again.");
+            // Disable button and show loading state
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
             }
+            if (submitText) submitText.innerText = 'Processing...';
+            
+            try {
+                const mode = document.getElementById('assignMode').value;
+                const roomId = document.getElementById('assignRoomId').value;
+                const bedIdx = parseInt(document.getElementById('assignBedIndex').value);
+                
+                let tenantId, tenantName;
+                
+                const allRooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
+                const roomIdx = allRooms.findIndex(r => r.id === roomId);
+                if (roomIdx === -1) {
+                    console.error('❌ Room not found:', roomId);
+                    return alert("Error: Room not found. Please reload and try again.");
+                }
             const assignedPropertyName = firstValidValue(
                 document.getElementById('assignPropertyName') ? document.getElementById('assignPropertyName').innerText : '',
                 allRooms[roomIdx].propertyTitle,
@@ -988,8 +1000,12 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                     return alert("Error: Tenant not found. Please reload and try again.");
                 }
                 tenantName = t.name;
-                if (!t.email) return alert("Tenant email is required. Please update tenant email before assigning room.");
-                if (!t.phone) return alert("Tenant phone number is required. Please update tenant phone before assigning room.");
+                if (!t.email) {
+                    throw new Error("Tenant email is required. Please update tenant email before assigning room.");
+                }
+                if (!t.phone) {
+                    throw new Error("Tenant phone number is required. Please update tenant phone before assigning room.");
+                }
                 
                 if (!t.loginId) {
                     const creds = generateCredentials(areaCode);
@@ -1063,11 +1079,11 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 // Clean phone number - remove spaces, dashes, parentheses
                 const phone = phoneRaw.replace(/[\s\-()]/g, '');
                 
-                if (!name) return alert("Name is required");
-                if (!phoneRaw) return alert("Phone number is required");
-                if (!/^[0-9]{10}$/.test(phone)) return alert("Phone must be 10 digits (e.g., 9876543210)");
-                if (!email) return alert("Email is required");
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter a valid email (e.g., user@gmail.com)");
+                if (!name) throw new Error("Name is required");
+                if (!phoneRaw) throw new Error("Phone number is required");
+                if (!/^[0-9]{10}$/.test(phone)) throw new Error("Phone must be 10 digits (e.g., 9876543210)");
+                if (!email) throw new Error("Email is required");
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email (e.g., user@gmail.com)");
 
                 const newTenant = {
                     id: 'TNT-' + Date.now(),
@@ -1171,8 +1187,23 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
             localStorage.setItem('roomhy_rooms', JSON.stringify(allRooms));
             localStorage.setItem('roomhy_tenants', JSON.stringify(tenants));
 
-            closeAssignModal();
-            loadRooms();
+                closeAssignModal();
+                if (submitText) submitText.innerText = '✓ Assigned!';
+                setTimeout(() => loadRooms(), 300); // Small delay to ensure UI updates
+            } catch (err) {
+                console.error('❌ confirmAssignment error:', err);
+                const errorMsg = err?.message || 'Failed to assign tenant';
+                alert(`Error: ${errorMsg}`);
+            } finally {
+                // Re-enable button
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                }
+                if (submitText) setTimeout(() => {
+                    submitText.innerText = originalText;
+                }, 1500);
+            }
         }
 
         function generateCredentials(code) {

@@ -92,7 +92,7 @@ const mergeRoomSources = (ownerLoginId, property, backendRooms) => {
   const merged = [];
   const seen = new Set();
 
-  [...backendRooms, ...localRooms].forEach((item) => {
+  [...localRooms, ...backendRooms].forEach((item) => {
     const room = normalizeRoomRecord(item, ownerLoginId);
     if (room.ownerLoginId && String(room.ownerLoginId).toUpperCase() !== String(ownerLoginId).toUpperCase()) {
       if (propertyId && String(room.propertyId) !== String(propertyId) && room.propertyTitle !== propertyTitle) return;
