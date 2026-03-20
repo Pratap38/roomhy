@@ -965,7 +965,10 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
             
             const allRooms = JSON.parse(localStorage.getItem('roomhy_rooms') || '[]');
             const roomIdx = allRooms.findIndex(r => r.id === roomId);
-            if (roomIdx === -1) return;
+            if (roomIdx === -1) {
+                console.error('❌ Room not found:', roomId);
+                return alert("Error: Room not found. Please reload and try again.");
+            }
             const assignedPropertyName = firstValidValue(
                 document.getElementById('assignPropertyName') ? document.getElementById('assignPropertyName').innerText : '',
                 allRooms[roomIdx].propertyTitle,
@@ -980,7 +983,10 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 tenantId = document.getElementById('tenantSelect').value;
                 if (!tenantId) return alert("Select a tenant");
                 const t = tenants.find(x => x.id === tenantId || x.loginId === tenantId);
-                if(!t) return;
+                if(!t) {
+                    console.error('❌ Tenant not found:', tenantId);
+                    return alert("Error: Tenant not found. Please reload and try again.");
+                }
                 tenantName = t.name;
                 if (!t.email) return alert("Tenant email is required. Please update tenant email before assigning room.");
                 if (!t.phone) return alert("Tenant phone number is required. Please update tenant phone before assigning room.");
@@ -1051,12 +1057,17 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 }
             } else {
                 const name = document.getElementById('newTenantName').value.trim();
-                const phone = document.getElementById('newTenantPhone').value.trim();
+                const phoneRaw = document.getElementById('newTenantPhone').value.trim();
                 const email = document.getElementById('newTenantEmail').value.trim();
                 
-                if (!name || !phone || !email) return alert("Name, Phone and Tenant Gmail are required");
-                if (!/^[0-9]{10}$/.test(phone)) return alert("Tenant phone must be 10 digits");
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter valid tenant Gmail ID");
+                // Clean phone number - remove spaces, dashes, parentheses
+                const phone = phoneRaw.replace(/[\s\-()]/g, '');
+                
+                if (!name) return alert("Name is required");
+                if (!phoneRaw) return alert("Phone number is required");
+                if (!/^[0-9]{10}$/.test(phone)) return alert("Phone must be 10 digits (e.g., 9876543210)");
+                if (!email) return alert("Email is required");
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return alert("Enter a valid email (e.g., user@gmail.com)");
 
                 const newTenant = {
                     id: 'TNT-' + Date.now(),
@@ -1139,9 +1150,9 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                         modalPassword = newTenant.tempPassword;
                     }
                 } catch (err) {
-                    console.warn('Tenant assign to backend failed:', err);
+                    console.error('❌ Tenant assign error:', err);
                     const reason = (err && err.message) ? `\nReason: ${err.message}` : '';
-                    return alert(`Backend assign failed. Please try again.${reason}`);
+                    return alert(`Failed to assign tenant.${reason}\n\nPlease check console for more details.`);
                 }
 
                 tenantId = newTenant.loginId || newTenant.id;

@@ -98,6 +98,13 @@ export default function WebsiteMystays() {
       console.warn("Failed to parse local booking:", err);
     }
 
+    try {
+      const confirmedBookings = JSON.parse(localStorage.getItem("confirmedBookings") || "[]");
+      if (Array.isArray(confirmedBookings)) confirmedBookings.forEach(addBooking);
+    } catch (err) {
+      console.warn("Failed to parse confirmed bookings:", err);
+    }
+
     const userId = getWebsiteUserId() || localStorage.getItem("userId") || sessionStorage.getItem("userId");
     const userEmail = getWebsiteUserEmail() || localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail");
     if (userId || userEmail) {
@@ -122,6 +129,12 @@ export default function WebsiteMystays() {
         }
       }
     }
+
+    collected.sort((a, b) => {
+      const aTime = new Date(a.created_at || a.createdAt || a.submittedAt || a.updatedAt || 0).getTime();
+      const bTime = new Date(b.created_at || b.createdAt || b.submittedAt || b.updatedAt || 0).getTime();
+      return bTime - aTime;
+    });
 
     setBookings(collected);
     setLoading(false);
@@ -489,6 +502,7 @@ export default function WebsiteMystays() {
                     const propertyId = booking.propertyId || booking.property_id || booking._id || "N/A";
                     const displayPropertyId =
                       String(propertyId).length > 20 ? `${String(propertyId).slice(0, 12)}...` : String(propertyId);
+                    const bookingStatus = String(booking.booking_status || booking.status || "confirmed").replace(/_/g, " ");
 
                     return (
                       <div key={`${propertyId}-${index}`} className="light-card rounded-xl overflow-hidden h-full flex flex-col">
@@ -508,6 +522,12 @@ export default function WebsiteMystays() {
                           <div className="mb-3 text-xs text-gray-600 bg-blue-50 p-2 rounded border border-blue-200">
                             <span className="text-blue-700 font-semibold block mb-1">Property ID</span>
                             <span title={propertyId} className="block font-mono text-xs break-all">{displayPropertyId}</span>
+                          </div>
+
+                          <div className="mb-3">
+                            <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-green-700 border border-green-200">
+                              Booking {bookingStatus}
+                            </span>
                           </div>
 
                           <div className="grid grid-cols-2 gap-3 py-3 border-t border-b border-gray-200 mb-4">

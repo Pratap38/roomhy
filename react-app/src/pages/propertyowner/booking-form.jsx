@@ -61,6 +61,31 @@ const postWithFallback = async (primary, secondary, payload) => {
   throw lastError || new Error("Request failed");
 };
 
+const ensureRazorpayLoaded = () =>
+  new Promise((resolve, reject) => {
+    if (typeof window === "undefined") {
+      reject(new Error("Window is not available."));
+      return;
+    }
+    if (typeof window.Razorpay !== "undefined") {
+      resolve(true);
+      return;
+    }
+    const existing = document.querySelector('script[data-roomhy-razorpay="1"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(true), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Failed to load Razorpay.")), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.dataset.roomhyRazorpay = "1";
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error("Failed to load Razorpay."));
+    document.body.appendChild(script);
+  });
+
 export default function PropertyownerBookingForm() {
   useHtmlPage({
     title: "Complete Your Booking - Roomhy",
@@ -237,9 +262,7 @@ export default function PropertyownerBookingForm() {
         throw new Error("Unable to start payment.");
       }
 
-      if (typeof window.Razorpay === "undefined") {
-        throw new Error("Razorpay is not available.");
-      }
+      await ensureRazorpayLoaded();
 
       const razorpay = new window.Razorpay({
         key: booking.razorpayKey,
@@ -334,6 +357,14 @@ export default function PropertyownerBookingForm() {
 
       sessionStorage.setItem("bookingConfirmation", JSON.stringify(normalized));
       localStorage.setItem("lastBooking", JSON.stringify(normalized));
+      const confirmedBookings = JSON.parse(localStorage.getItem("confirmedBookings") || "[]");
+      const bookingKey = normalized.booking_id || normalized.bookingId || normalized.payment_id;
+      const deduped = confirmedBookings.filter((item) => {
+        const itemKey = item?.booking_id || item?.bookingId || item?.payment_id;
+        return String(itemKey || "") !== String(bookingKey || "");
+      });
+      deduped.unshift({ ...normalized, created_at: new Date().toISOString() });
+      localStorage.setItem("confirmedBookings", JSON.stringify(deduped));
       if (normalized.user_id) {
         localStorage.setItem("userId", normalized.user_id);
         sessionStorage.setItem("userId", normalized.user_id);
@@ -389,6 +420,11 @@ export default function PropertyownerBookingForm() {
     }
   }, [apiUrl, booking, refundDetails, refundOption, refundReason]);
 
+  const inputClass = "w-full px-4 py-3 border-2 border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition";
+  const readOnlyInputClass = `${inputClass} bg-gray-50 text-gray-600`;
+  const textAreaClass = `${inputClass} min-h-[120px]`;
+  const fileInputClass = "block w-full rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 py-3 text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:border-blue-300";
+
   return (
     <div className="html-page">
       <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
@@ -424,15 +460,15 @@ export default function PropertyownerBookingForm() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">Property Name</label>
-              <input type="text" className="form-input border-gray-300" value={booking.propertyName} readOnly />
+              <input type="text" className={readOnlyInputClass} value={booking.propertyName} readOnly />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">Property ID</label>
-              <input type="text" className="form-input border-gray-300" value={booking.propertyId} readOnly />
+              <input type="text" className={readOnlyInputClass} value={booking.propertyId} readOnly />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">Owner Name</label>
-              <input type="text" className="form-input border-gray-300" value={booking.ownerName} readOnly />
+              <input type="text" className={readOnlyInputClass} value={booking.ownerName} readOnly />
             </div>
           </div>
 
@@ -453,7 +489,7 @@ export default function PropertyownerBookingForm() {
                 <label className="block text-sm font-semibold text-gray-800 mb-2">Full Name *</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className={inputClass}
                   value={booking.fullName}
                   onChange={(e) => updateField("fullName", e.target.value)}
                 />
@@ -462,7 +498,7 @@ export default function PropertyownerBookingForm() {
                 <label className="block text-sm font-semibold text-gray-800 mb-2">Email Address *</label>
                 <input
                   type="email"
-                  className="form-input"
+                  className={inputClass}
                   value={booking.email}
                   onChange={(e) => updateField("email", e.target.value)}
                 />
@@ -471,14 +507,14 @@ export default function PropertyownerBookingForm() {
                 <label className="block text-sm font-semibold text-gray-800 mb-2">Phone Number *</label>
                 <input
                   type="tel"
-                  className="form-input"
+                  className={inputClass}
                   value={booking.phone}
                   onChange={(e) => updateField("phone", e.target.value)}
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">User ID *</label>
-                <input type="text" className="form-input" value={booking.userId} readOnly />
+                <input type="text" className={readOnlyInputClass} value={booking.userId} readOnly />
               </div>
             </div>
           </div>
@@ -490,7 +526,7 @@ export default function PropertyownerBookingForm() {
                 <label className="block text-sm font-semibold text-gray-800 mb-2">Guardian Name *</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className={inputClass}
                   value={booking.guardianName}
                   onChange={(e) => updateField("guardianName", e.target.value)}
                 />
@@ -499,7 +535,7 @@ export default function PropertyownerBookingForm() {
                 <label className="block text-sm font-semibold text-gray-800 mb-2">Guardian Phone *</label>
                 <input
                   type="tel"
-                  className="form-input"
+                  className={inputClass}
                   value={booking.guardianPhone}
                   onChange={(e) => updateField("guardianPhone", e.target.value)}
                 />
@@ -513,7 +549,7 @@ export default function PropertyownerBookingForm() {
               <label className="block text-sm font-semibold text-gray-800 mb-2">Street Address *</label>
               <input
                 type="text"
-                className="form-input"
+                className={inputClass}
                 value={booking.streetAddress}
                 onChange={(e) => updateField("streetAddress", e.target.value)}
               />
@@ -523,7 +559,7 @@ export default function PropertyownerBookingForm() {
                 <label className="block text-sm font-semibold text-gray-800 mb-2">City *</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className={inputClass}
                   value={booking.city}
                   onChange={(e) => updateField("city", e.target.value)}
                 />
@@ -532,7 +568,7 @@ export default function PropertyownerBookingForm() {
                 <label className="block text-sm font-semibold text-gray-800 mb-2">State *</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className={inputClass}
                   value={booking.state}
                   onChange={(e) => updateField("state", e.target.value)}
                 />
@@ -541,7 +577,7 @@ export default function PropertyownerBookingForm() {
                 <label className="block text-sm font-semibold text-gray-800 mb-2">Postal Code *</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className={inputClass}
                   value={booking.postalCode}
                   onChange={(e) => updateField("postalCode", e.target.value)}
                 />
@@ -551,7 +587,7 @@ export default function PropertyownerBookingForm() {
               <label className="block text-sm font-semibold text-gray-800 mb-2">Country *</label>
               <input
                 type="text"
-                className="form-input"
+                className={inputClass}
                 value={booking.country}
                 onChange={(e) => updateField("country", e.target.value)}
               />
@@ -565,7 +601,7 @@ export default function PropertyownerBookingForm() {
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
               onChange={(e) => handleAddressProof(e.target.files?.[0] || null)}
-              className="block w-full text-sm text-gray-600"
+              className={fileInputClass}
             />
             {booking.addressProof ? (
               <div className="text-sm text-green-600 mt-3 flex items-center gap-2">
@@ -671,35 +707,17 @@ export default function PropertyownerBookingForm() {
                 </div>
               </div>
             </div>
-            <button type="button" onClick={() => { window.location.href = "/website/index"; }} className="w-full btn-primary py-3 rounded-lg flex items-center justify-center gap-2 mb-3">
+            <button type="button" onClick={() => { window.location.href = "/website/mystays"; }} className="w-full btn-primary py-3 rounded-lg flex items-center justify-center gap-2 mb-3">
+              <i data-lucide="building" className="w-5 h-5"></i>
+              Go to My Stays
+            </button>
+            <button type="button" onClick={() => { window.location.href = "/website/index"; }} className="w-full btn-secondary py-3 rounded-lg flex items-center justify-center gap-2 mb-3">
               <i data-lucide="home" className="w-5 h-5"></i>
               Go to Home
             </button>
-            <div className="mt-5 pt-5 border-t border-gray-200">
-              <p className="text-gray-600 mb-3 text-sm">Having second thoughts?</p>
-              <button
-                type="button"
-                className="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-all text-sm"
-                onClick={() => setShowRefund(true)}
-              >
-                <i data-lucide="rotate-ccw" className="w-4 h-4 inline mr-2"></i>
-                Request Refund / Alternative Property
-              </button>
-            </div>
           </div>
         ) : (
           <>
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <p className="text-sm text-gray-600 mb-4">Need a refund or alternative property?</p>
-              <button
-                type="button"
-                className="w-full px-4 py-3 border-2 border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition-all text-sm"
-                onClick={() => setShowRefund(true)}
-              >
-                Request Refund / Alternative
-              </button>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 mt-8">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                 <div className="flex gap-3">
@@ -735,7 +753,7 @@ export default function PropertyownerBookingForm() {
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">Reason for Refund/Change *</label>
                 <select
-                  className="form-input"
+                  className={inputClass}
                   value={refundReason}
                   onChange={(e) => setRefundReason(e.target.value)}
                 >
@@ -751,7 +769,7 @@ export default function PropertyownerBookingForm() {
               <div>
                 <label className="block text-sm font-semibold text-gray-800 mb-2">Additional Details *</label>
                 <textarea
-                  className="form-input"
+                  className={textAreaClass}
                   rows={5}
                   placeholder="Please provide more details about your request..."
                   value={refundDetails}
