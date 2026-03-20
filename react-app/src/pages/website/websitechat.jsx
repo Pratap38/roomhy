@@ -297,25 +297,41 @@ export default function WebsiteWebsitechat() {
     ],
     styles: [
       "body { font-family: 'Inter', sans-serif; }",
-      ".custom-scrollbar::-webkit-scrollbar { width: 5px; }",
-      ".custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }",
-      ".message-bubble { max-width: 90%; position: relative; transition: all 0.2s; word-wrap: break-word; overflow-wrap: break-word; }",
-      "@media (min-width: 640px) { .message-bubble { max-width: 80%; } }",
-      ".message-bubble.sent { background: #4f46e5; color: white; border-radius: 18px 18px 4px 18px; padding: 10px 12px; font-size: 13px; line-height: 1.4; }",
-      ".message-bubble.received { background: #f1f5f9; color: #1e293b; border-radius: 18px 18px 18px 4px; padding: 10px 12px; font-size: 13px; line-height: 1.4; }",
-      ".message-bubble a { color: #2563eb !important; text-decoration: underline; }",
-      ".popup-modal { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }",
+      "* { -webkit-tap-highlight-color: transparent; }",
+      ".custom-scrollbar::-webkit-scrollbar { width: 4px; }",
+      ".custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }",
+      ".custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }",
+      ".custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }",
+      ".message-bubble { max-width: 85%; position: relative; transition: all 0.2s; word-wrap: break-word; overflow-wrap: break-word; }",
+      "@media (min-width: 380px) { .message-bubble { max-width: 80%; } }",
+      "@media (min-width: 640px) { .message-bubble { max-width: 75%; } }",
+      "@media (min-width: 1024px) { .message-bubble { max-width: 60%; } }",
+      ".message-bubble.sent { background: #4f46e5; color: white; border-radius: 16px 16px 2px 16px; padding: 8px 12px; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }",
+      "@media (min-width: 640px) { .message-bubble.sent { padding: 10px 14px; font-size: 13px; border-radius: 18px 18px 4px 18px; } }",
+      ".message-bubble.received { background: #f1f5f9; color: #1e293b; border-radius: 16px 16px 16px 2px; padding: 8px 12px; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }",
+      "@media (min-width: 640px) { .message-bubble.received { padding: 10px 14px; font-size: 13px; border-radius: 18px 18px 18px 4px; } }",
+      ".message-bubble a { color: #2563eb !important; text-decoration: underline; word-break: break-word; }",
+      ".popup-modal { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }",
       ".popup-modal.active { display: flex; }",
-      ".popup-content { background: white; border-radius: 20px; padding: 2rem; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }",
-      ".popup-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 32px; }",
+      ".popup-content { background: white; border-radius: 16px; padding: 1.5rem; max-width: 400px; width: 100%; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); max-height: 90vh; overflow-y: auto; }",
+      "@media (min-width: 640px) { .popup-content { padding: 2rem; border-radius: 20px; } }",
+      ".popup-icon { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 28px; }",
+      "@media (min-width: 640px) { .popup-icon { width: 60px; height: 60px; font-size: 32px; } }",
       ".popup-icon.success { background: #ecfdf5; }",
       ".popup-icon.danger { background: #fef2f2; }",
-      ".popup-title { font-size: 1.25rem; font-weight: bold; text-align: center; margin-bottom: 0.5rem; color: #1f2937; }",
-      ".popup-message { text-align: center; color: #6b7280; margin-bottom: 1.5rem; font-size: 0.95rem; }",
-      ".popup-buttons { display: flex; gap: 1rem; justify-content: center; }",
-      ".popup-btn { padding: 0.75rem 1.5rem; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }",
+      ".popup-title { font-size: 1.125rem; font-weight: bold; text-align: center; margin-bottom: 0.5rem; color: #1f2937; }",
+      "@media (min-width: 640px) { .popup-title { font-size: 1.25rem; } }",
+      ".popup-message { text-align: center; color: #6b7280; margin-bottom: 1.5rem; font-size: 0.875rem; line-height: 1.5; }",
+      "@media (min-width: 640px) { .popup-message { font-size: 0.95rem; } }",
+      ".popup-buttons { display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; }",
+      "@media (min-width: 380px) { .popup-buttons { flex-direction: row; gap: 1rem; } }",
+      ".popup-btn { padding: 0.625rem 1.25rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 0.875rem; touch-action: manipulation; }",
+      "@media (min-width: 640px) { .popup-btn { padding: 0.75rem 1.5rem; border-radius: 10px; font-size: 0.95rem; } }",
       ".popup-btn-primary { background: #4f46e5; color: white; }",
-      ".popup-btn-secondary { background: #f3f4f6; color: #6b7280; }"
+      ".popup-btn-primary:active { background: #4338ca; }",
+      ".popup-btn-secondary { background: #f3f4f6; color: #6b7280; }",
+      ".popup-btn-secondary:active { background: #e5e7eb; }",
+      "@media (max-height: 600px) { .popup-content { padding: 1rem; } }"
     ],
     scripts: [
       { src: "https://cdn.tailwindcss.com" },
@@ -326,24 +342,24 @@ export default function WebsiteWebsitechat() {
 
   return (
     <div className="html-page">
-      <main className="max-w-7xl mx-auto px-0 sm:px-4 py-3 sm:py-8 mb-20 flex-1 w-full">
-        <div className="bg-white rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex h-[calc(100vh-7rem)] sm:h-[600px] md:h-[700px] border-y sm:border border-slate-100">
+      <main className="max-w-7xl mx-auto px-0 sm:px-4 py-2 sm:py-8 mb-16 sm:mb-20 flex-1 w-full">
+        <div className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-2xl overflow-hidden flex h-screen sm:h-[600px] md:h-[700px] border-y sm:border border-slate-100">
           <div className={`${activeChat ? "hidden md:flex" : "flex"} w-full md:w-80 bg-slate-50 border-r border-slate-200 flex-col min-w-0`} id="contacts-panel">
-            <div className="p-6 border-b border-slate-200 bg-white">
-              <h3 className="font-bold text-slate-800 text-lg">My Chats</h3>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-white">
+              <h3 className="font-bold text-slate-800 text-base sm:text-lg">My Chats</h3>
             </div>
             <div id="chat-list" className="flex-1 overflow-y-auto custom-scrollbar p-2 sm:p-3 space-y-1 sm:space-y-2">
               {loadingChats && <div className="p-4 text-center text-xs text-slate-400">Loading chats...</div>}
               {!loadingChats && chats.length === 0 && <div className="p-4 text-center text-xs text-slate-400">No accepted bookings yet.</div>}
               {!loadingChats && chats.map((chat) => (
-                <button key={chat.id} type="button" className="w-full text-left p-3 rounded-xl bg-white border border-slate-100 hover:border-indigo-200" onClick={() => setActiveChat(chat)}>
+                <button key={chat.id} type="button" className="w-full text-left p-3 sm:p-3 rounded-lg sm:rounded-xl bg-white border border-slate-100 hover:border-indigo-200 active:bg-indigo-50 transition-colors touch-manipulation" onClick={() => setActiveChat(chat)}>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                    <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm sm:text-base flex-shrink-0">
                       {(chat.owner_name || "O").charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-slate-800 truncate">{chat.owner_name || "Owner"}</div>
-                      <div className="text-[10px] text-slate-400 truncate">{chat.property_name}</div>
+                      <div className="text-xs sm:text-sm font-semibold text-slate-800 truncate">{chat.owner_name || "Owner"}</div>
+                      <div className="text-[8px] sm:text-[10px] text-slate-400 truncate">{chat.property_name}</div>
                     </div>
                   </div>
                 </button>
@@ -353,31 +369,31 @@ export default function WebsiteWebsitechat() {
 
           <div className={`${activeChat ? "flex" : "hidden md:flex"} flex-1 flex-col bg-white relative min-w-0`} id="chat-canvas">
             {!activeChat ? (
-              <div id="no-chat-selected" className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-indigo-50/20">
-                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-xl shadow-indigo-100">
-                  <i data-lucide="message-circle" className="w-12 h-12 text-indigo-400"></i>
+              <div id="no-chat-selected" className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 text-center bg-indigo-50/20">
+                <div className="w-16 sm:w-24 h-16 sm:h-24 bg-white rounded-full flex items-center justify-center mb-4 sm:mb-6 shadow-lg sm:shadow-xl shadow-indigo-100 flex-shrink-0">
+                  <i data-lucide="message-circle" className="w-8 sm:w-12 h-8 sm:h-12 text-indigo-400"></i>
                 </div>
-                <h2 className="text-2xl font-bold text-slate-800">Your Conversations</h2>
-                <p className="text-slate-500 max-w-xs mt-2">Select an owner from the sidebar to start chatting about your booking.</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Your Conversations</h2>
+                <p className="text-slate-500 max-w-xs mt-2 text-sm sm:text-base">Select an owner from the sidebar to start chatting about your booking.</p>
               </div>
             ) : (
               <div id="chat-active" className="flex-1 flex flex-col h-full">
-                <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-                  <div className="flex items-center gap-2 sm:gap-4">
-                    <button id="back-btn" className="md:hidden text-slate-400" onClick={() => setActiveChat(null)}>
-                      <i data-lucide="arrow-left" className="w-6 h-6"></i>
+                <div className="px-3 sm:px-6 py-2 sm:py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0 bg-white">
+                  <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                    <button id="back-btn" className="md:hidden text-slate-400 hover:text-slate-600 p-1.5 -ml-1.5 touch-manipulation active:bg-slate-100 rounded" onClick={() => setActiveChat(null)}>
+                      <i data-lucide="arrow-left" className="w-5 h-5 sm:w-6 sm:h-6"></i>
                     </button>
-                    <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-sm sm:text-base" id="active-chat-avatar">
+                    <div className="w-9 sm:w-12 h-9 sm:h-12 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-xs sm:text-base flex-shrink-0" id="active-chat-avatar">
                       {(activeChat.owner_name || "O").charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-bold text-slate-800 text-sm sm:text-base leading-tight truncate" id="active-chat-name">{activeChat.owner_name || "Owner"}</h3>
-                      <p className="text-[9px] sm:text-[10px] text-indigo-600 font-mono truncate" id="active-chat-id">{activeChat.property_name}</p>
+                      <h3 className="font-bold text-slate-800 text-xs sm:text-base leading-tight truncate" id="active-chat-name">{activeChat.owner_name || "Owner"}</h3>
+                      <p className="text-[8px] sm:text-[10px] text-indigo-600 font-mono truncate" id="active-chat-id">{activeChat.property_name}</p>
                     </div>
                   </div>
                 </div>
 
-                <div id="messages" className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-6 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed opacity-95">
+                <div id="messages" className="flex-1 overflow-y-auto p-2 sm:p-6 space-y-2 sm:space-y-4 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-fixed opacity-95">
                   {loadingMessages && <div className="p-4 text-center text-xs text-slate-400">Loading messages...</div>}
                   {!loadingMessages && messages.length === 0 && <div className="p-4 text-center text-xs text-slate-400">No messages yet. Start the conversation!</div>}
                   {!loadingMessages && messages.map((msg) => {
@@ -398,17 +414,17 @@ export default function WebsiteWebsitechat() {
                   })}
                 </div>
 
-                <div className="p-3 sm:p-6 border-t border-slate-100">
+                <div className="p-2 sm:p-6 border-t border-slate-100 bg-white flex-shrink-0">
                   <div className="flex flex-col gap-2 max-w-4xl mx-auto">
                     <div className="hidden sm:flex items-center gap-1.5">
-                      <button onClick={() => setShowLikePopup(true)} className="flex items-center gap-0.5 px-2 sm:px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[9px] sm:text-[11px] font-bold border border-indigo-100 hover:bg-indigo-100 transition-all">
+                      <button onClick={() => setShowLikePopup(true)} className="flex items-center gap-0.5 px-2 sm:px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-[9px] sm:text-[11px] font-bold border border-indigo-100 hover:bg-indigo-100 active:bg-indigo-200 transition-colors touch-manipulation">
                         <i data-lucide="thumbs-up" className="w-3 h-3"></i> LIKE
                       </button>
-                      <button onClick={() => setShowDislikePopup(true)} className="flex items-center gap-0.5 px-2 sm:px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-[9px] sm:text-[11px] font-bold border border-rose-100 hover:bg-rose-100 transition-all">
+                      <button onClick={() => setShowDislikePopup(true)} className="flex items-center gap-0.5 px-2 sm:px-3 py-1 rounded-full bg-rose-50 text-rose-600 text-[9px] sm:text-[11px] font-bold border border-rose-100 hover:bg-rose-100 active:bg-rose-200 transition-colors touch-manipulation">
                         <i data-lucide="thumbs-down" className="w-3 h-3"></i> DISLIKE
                       </button>
                     </div>
-                    <div className="relative flex items-center">
+                    <div className="relative flex items-end gap-1 sm:gap-2">
                       <textarea
                         id="message-text"
                         rows="1"
@@ -421,9 +437,9 @@ export default function WebsiteWebsitechat() {
                           }
                         }}
                         placeholder="Type a message..."
-                        className="w-full pl-4 sm:pl-5 pr-12 sm:pr-14 py-2 sm:py-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition-all custom-scrollbar"
+                        className="w-full pl-3 sm:pl-5 pr-11 sm:pr-14 py-2.5 sm:py-4 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none transition-all custom-scrollbar touch-manipulation"
                       ></textarea>
-                      <button id="send-btn" onClick={sendMessage} className="absolute right-2 w-9 sm:w-11 h-9 sm:h-11 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 active:scale-95 transition-all">
+                      <button id="send-btn" onClick={sendMessage} className="absolute right-1.5 sm:right-2 flex-shrink-0 w-8 sm:w-11 h-8 sm:h-11 bg-indigo-600 text-white rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all touch-manipulation">
                         <i data-lucide="send" className="w-4 sm:w-5 h-4 sm:h-5"></i>
                       </button>
                     </div>
