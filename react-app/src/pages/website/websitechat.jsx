@@ -47,6 +47,36 @@ const getWebsiteUserAliases = (currentUser, activeChat) => {
   return Array.from(aliases).filter((alias) => alias !== normalizedLoginId);
 };
 
+const BOOKING_LINK_REGEX = /(https?:\/\/[^\s]+)/i;
+
+const renderMessageBody = (text) => {
+  const value = String(text || "");
+  const match = value.match(BOOKING_LINK_REGEX);
+  if (!match) {
+    return <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{value}</p>;
+  }
+
+  const url = match[1];
+  const before = value.slice(0, match.index || 0).trim();
+  const after = value.slice((match.index || 0) + url.length).trim();
+
+  return (
+    <div className="space-y-2">
+      {before ? <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{before}</p> : null}
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex max-w-full items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-xs sm:text-sm font-semibold text-blue-700 underline ring-1 ring-blue-100 hover:bg-blue-100 break-all"
+      >
+        <i data-lucide="link" className="w-4 h-4 flex-shrink-0"></i>
+        <span className="break-all">Open booking form</span>
+      </a>
+      {after ? <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">{after}</p> : null}
+    </div>
+  );
+};
+
 export default function WebsiteWebsitechat() {
   useWebsiteCommon();
   useWebsiteMenu();
@@ -273,6 +303,7 @@ export default function WebsiteWebsitechat() {
       "@media (min-width: 640px) { .message-bubble { max-width: 80%; } }",
       ".message-bubble.sent { background: #4f46e5; color: white; border-radius: 18px 18px 4px 18px; padding: 10px 12px; font-size: 13px; line-height: 1.4; }",
       ".message-bubble.received { background: #f1f5f9; color: #1e293b; border-radius: 18px 18px 18px 4px; padding: 10px 12px; font-size: 13px; line-height: 1.4; }",
+      ".message-bubble a { color: #2563eb !important; text-decoration: underline; }",
       ".popup-modal { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }",
       ".popup-modal.active { display: flex; }",
       ".popup-content { background: white; border-radius: 20px; padding: 2rem; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }",
@@ -295,9 +326,9 @@ export default function WebsiteWebsitechat() {
 
   return (
     <div className="html-page">
-      <main className="max-w-7xl mx-auto px-2 sm:px-4 py-8 mb-20 flex-1 w-full">
-        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex h-[500px] sm:h-[600px] md:h-[700px] border border-slate-100">
-          <div className="flex w-full md:w-80 bg-slate-50 border-r border-slate-200 flex-col" id="contacts-panel">
+      <main className="max-w-7xl mx-auto px-0 sm:px-4 py-3 sm:py-8 mb-20 flex-1 w-full">
+        <div className="bg-white rounded-none sm:rounded-3xl shadow-2xl overflow-hidden flex h-[calc(100vh-7rem)] sm:h-[600px] md:h-[700px] border-y sm:border border-slate-100">
+          <div className={`${activeChat ? "hidden md:flex" : "flex"} w-full md:w-80 bg-slate-50 border-r border-slate-200 flex-col min-w-0`} id="contacts-panel">
             <div className="p-6 border-b border-slate-200 bg-white">
               <h3 className="font-bold text-slate-800 text-lg">My Chats</h3>
             </div>
@@ -320,7 +351,7 @@ export default function WebsiteWebsitechat() {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col bg-white relative" id="chat-canvas">
+          <div className={`${activeChat ? "flex" : "hidden md:flex"} flex-1 flex-col bg-white relative min-w-0`} id="chat-canvas">
             {!activeChat ? (
               <div id="no-chat-selected" className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-indigo-50/20">
                 <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-xl shadow-indigo-100">
@@ -357,7 +388,7 @@ export default function WebsiteWebsitechat() {
                     return (
                       <div key={msg._id || `${msg.sender_login_id}-${time}`} className={`message-container flex w-full ${isMine ? "justify-end" : "justify-start"}`}>
                         <div className={`message-bubble shadow-sm ${isMine ? "sent" : "received"}`}>
-                          <p className="text-xs sm:text-sm leading-relaxed">{msg.message}</p>
+                          {renderMessageBody(msg.message)}
                           <div className="flex items-center justify-end gap-1 sm:gap-2 mt-1 sm:mt-2">
                             <span className="text-[7px] sm:text-[9px] opacity-60">{time}</span>
                           </div>

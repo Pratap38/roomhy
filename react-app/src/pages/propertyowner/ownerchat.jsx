@@ -398,9 +398,9 @@ export default function Ownerchat() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button id="booking-form-btn" type="button" onClick={sendBookingForm} className="px-3 py-1.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium hover:text-gray-900 flex items-center gap-1">
-                    <i data-lucide="file-text" className="w-4 h-4"></i>
-                    <span className="hidden sm:inline">Booking Form</span>
+                  <button id="booking-form-btn" type="button" onClick={sendBookingForm} className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors text-sm font-semibold border border-blue-100 flex items-center gap-1">
+                    <i data-lucide="bookmark" className="w-4 h-4"></i>
+                    <span>BOOK</span>
                   </button>
                   <button type="button" className="p-2 text-gray-400 hover:bg-gray-50 rounded-lg"><i data-lucide="phone" className="w-5 h-5"></i></button>
                   <button type="button" className="p-2 text-gray-400 hover:bg-gray-50 rounded-lg"><i data-lucide="more-vertical" className="w-5 h-5"></i></button>
