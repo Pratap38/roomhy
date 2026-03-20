@@ -1,0 +1,1008 @@
+ <!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roomhy - Find Your Student Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Add Font Awesome for Footer Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <script>
+        // API Configuration - Support both local and production
+        // For local development, use: http://localhost:3000 or http://localhost:10
+        // For production, use: https://api.roomhy.com
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://api.roomhy.com';
+        
+        console.log('Using API_URL:', API_URL);
+
+        tailwind.config = {
+            theme: {
+            extend: {
+                keyframes: {
+                    kenburns: {
+                        '0%': { transform: 'scale(1) translate(0, 0)' },
+                        '100%': { transform: 'scale(1.1) translate(-2%, 2%)' },
+                    },
+                    // Keyframes for sliding content
+                    'slide-left': {
+                        '0%': { transform: 'translateX(0%)' },
+                        '100%': { transform: 'translateX(-50%)' },
+                    },
+                    'slide-right': {
+                        '0%': { transform: 'translateX(-50%)' },
+                        '100%': { transform: 'translateX(0%)' },
+                    },
+                    // Keyframes for connecting line animation (reversed for flowing effect)
+                    'dash-flow-dotted': {
+                        '0%': { 'stroke-dashoffset': '0' },
+                        '100%': { 'stroke-dashoffset': '20' }, 
+                    },
+                     'light-dot-move': {
+                        '0%': { offsetDistance: '0%' },
+                        '100%': { offsetDistance: '100%' },
+                    },
+                    // NEW: Keyframes for pulsing step badge
+                    'pulse-pop': {
+                        '0%': { transform: 'scale(0.9)', boxShadow: '0 0 0 0 rgba(59, 130, 246, 0.4)' },
+                        '70%': { transform: 'scale(1.1)', boxShadow: '0 0 0 10px rgba(59, 130, 246, 0)' },
+                        '100%': { transform: 'scale(0.9)' },
+                    },
+                    // NEW: Keyframes for subtle float animation
+                    'float-subtle': {
+                        '0%': { transform: 'translateY(0px)' },
+                        '50%': { transform: 'translateY(-5px)' },
+                        '100%': { transform: 'translateY(0px)' },
+                    }
+                },
+                    animation: {
+                        kenburns: 'kenburns 30s ease-in-out infinite alternate',
+                        // Animations for testimonial sliding
+                        'slide-left-infinite': 'slide-left 40s linear infinite',
+                        'slide-right-infinite': 'slide-right 40s linear infinite',
+                        // Animation for connecting line
+                        'dash-flow-dotted': 'dash-flow-dotted 1s linear infinite',
+                        'light-dot-move': 'light-dot-move 10s linear infinite',
+                        // NEW: Animation for pulsing step badge
+                        'pulse-pop': 'pulse-pop 2.5s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                        // NEW: Subtle float for step cards
+                        'float-subtle': 'float-subtle 4s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="assets/css/before.css">
+</head>
+<body class="text-gray-800">
+
+    <header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-sm shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6">
+            <div class="flex h-20 items-center justify-between">
+                
+                <div class="flex items-center">
+                    <a href="#" class="flex-shrink-0">
+                        <!-- Assuming https://res.cloudinary.com/dpwgvcibj/raw/upload/v1768990275/roomhy/website/logo is available -->
+                        <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25">
+                    </a>
+                </div>
+                
+                <div class="flex items-center gap-3 sm:gap-6">
+                    <nav class="hidden lg:flex items-center space-x-6">
+                        <a href="about.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">About Us</a>
+                        <a href="#faq" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">FAQ</a>
+                        <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
+                    </nav>
+
+                    <a href="list.html" class="flex-shrink-0 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors w-10 h-10 sm:w-auto sm:h-auto sm:px-4">
+                        <span class="text-lg font-bold">+</span>
+                    </a>
+                    
+                    <button id="menu-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i data-lucide="menu" class="w-7 h-7 text-gray-800"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <section class="relative py-20 md:py-28 text-white">
+        <div id="hero-image-wrapper" class="absolute inset-0 w-full h-full overflow-hidden">
+            
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1980&auto:format&fit=crop" 
+                 alt="Hero background 1" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-100">
+            
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto:format&fit=crop" 
+                 alt="Hero background 2" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+            
+            <img src="https://images.unsplash.com/photo-1494203484021-3c454daf695d?q=80&w=2070&auto:format&fit=crop" 
+                 alt="Hero background 3" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+
+            <div class="absolute inset-0 w-full h-full bg-black/60"></div> 
+        </div>
+
+        <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
+            <h1 class=" text-1l md:text-4xl font-bold text-shadow mb-6 " style="color: #fffcf2;">
+                SEARCH.CONNECT.SUCCEED
+            </h1>
+            <div class="relative w-full max-w-2xl mx-auto">
+                <input type="text" id="hero-search-input" placeholder="Search for 'PG near me' or 'Hostel in Kota'" class="w-full p-4 pl-5 pr-14 rounded-lg bg-white text-gray-900 border-transparent focus:ring-4 focus:ring-cyan-300/50 focus:outline-none placeholder-gray-500 shadow-lg">
+                <button type="submit" id="hero-search-btn" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    <i data-lucide="search" class="w-5 h-5 text-white"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <div id="menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
+    
+    <div id="mobile-menu" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="flex justify-end p-4 flex-shrink-0">
+            <button id="menu-close" class="p-2">
+                <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+            </button>
+        </div>
+
+        <div class="flex justify-between items-center px-6 py-2">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                    <i data-lucide="users" class="w-6 h-6 text-gray-600"></i>
+                </div>
+                <span class="text-lg font-semibold text-gray-800">Hi,welcome 👋</span>
+            </div>
+            <a href="profile.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
+        </div>
+
+        <div class="px-6 py-4">
+            <div class="border border-blue-200 rounded-lg p-4 relative overflow-hidden">
+                <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990266/roomhy/website/post.png" alt="Illustartion of people with house" class="absolute right-0 bottom-0 opacity-80 w-32 h-auto" style="pointer-events: none;">
+                <p class="font-semibold text-gray-800 mb-3 relative z-10">Looking to Sell/Rent your Property?</p>
+                <a href="list.html" class="block text-center w-full text-gray-800 font-medium py-2 px-4 rounded-lg text-sm hover:text-blue-600 transition-colors relative z-10 border border-gray-300" style="width: 150px;">
+                    +
+                </a>
+            </div>
+        </div>
+
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <a href="ourproperty.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
+                </div>
+                <span>Our Properties</span>
+            </a>
+            <a href="fav.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="heart" class="w-5 h-5 text-red-600"></i>
+                </div>
+                <span>Favorites</span>
+            </a>
+            <a href="mystays.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="building" class="w-5 h-5 text-purple-600"></i>
+                </div>
+                <span>My Stays</span>
+            </a>
+            <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                </div>
+                <span>About Us</span>
+            </a>
+            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                </div>
+                <span>Contact Us</span>
+            </a>
+            <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
+                </div>
+                <span>Chat</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t flex-shrink-0">
+            <a href="#" class="flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
+                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
+                </div>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- START: UPDATED TOP CITIES SECTION (Reverted to scrollable list with hover slide effect) -->
+    <section id="top-cities-categories" class="container mx-auto px-4 sm:px-6 -mt-8 relative z-10">
+        <div class="bg-white py-4 shadow-lg rounded-2xl city-filter-container overflow-hidden"> 
+            <h2 class="sr-only">Top Cities</h2>
+            
+             <!-- Cities list now uses manual horizontal scroll (horizontal-slider) -->
+            <div id="cities-category-slider" class="flex gap-4 md:gap-8 pb-2 scroll-smooth px-4 horizontal-slider overflow-x-auto">
+                <!-- Dynamic city cards will be inserted here by JavaScript (rebuildCityList) -->
+            </div>
+            
+        </div>
+    </section>
+    <!-- END: UPDATED TOP CITIES SECTION -->
+    <main class="container mx-auto px-4 sm:px-6 py-8 md:py-12 space-y-16">
+      <section id="offerings" class="light-card rounded-2xl p-6">
+
+    <h2 class="text-2xl font-bold mb-6 text-gray-900">Our offering</h2>
+
+    <div class="relative -m-2">
+
+        <button id="offer-prev" class="absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 text-gray-700 sm:block"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+
+        
+
+        <div id="offerings-slider" class="flex gap-5 overflow-x-auto pb-2 pt-2 -mx-4 px-4 snap-x snap-mandatory scroll-smooth horizontal-slider" style="padding-left:100px;">
+
+            
+
+            <a href="ourproperty.html?type=hostel" class="group block flex-shrink-0 snap-start w-102 md:w-164 lg:w-172 offering-card-item">
+
+                <div class="relative rounded-xl shadow-md hover:shadow-lg overflow-hidden h-40 sm:h-44 cursor-pointer offering-card transition-shadow duration-300">
+
+                    <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990227/roomhy/website/angels-hostel-taipei-taiwan-9.jpg" class="w-550px h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="Hostel">
+
+                    
+                    <!-- Updated hover effect to be more interactive and revealing -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 group-hover:opacity-0">
+
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+
+                            <h3 class="text-white text-center text-sm sm:text-base font-bold leading-tight">Hostel</h3>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
+
+                        <div class="absolute inset-0 flex flex-col items-center justify-center p-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+
+                            <h3 class="text-white text-center text-sm sm:text-base font-bold leading-tight mb-2">Hostel</h3>
+
+                            <p class="text-white/90 text-center text-xs sm:text-sm leading-relaxed">Affordable shared spaces with all essentials covered.</p>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <div class="hidden sm:block absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform -translate-y-2 group-hover:translate-y-0">
+
+                         <div class="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+
+                            <i data-lucide="chevron-right" class="w-3 h-3 text-white"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </a>
+
+               <a href="ourproperty.html?type=pg" class="group block flex-shrink-0 snap-start w-102 md:w-164 lg:w-172 offering-card-item">
+
+                <div class="relative rounded-xl shadow-md hover:shadow-lg overflow-hidden h-40 sm:h-44 cursor-pointer offering-card transition-shadow duration-300">
+
+                    <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990226/roomhy/website/401230348.jpg" class="w-550px h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="Hostel">
+
+                       
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 group-hover:opacity-0">
+
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+
+                             <h3 class="text-white text-center text-sm sm:text-base font-bold leading-tight">PG</h3>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
+
+                        <div class="absolute inset-0 flex flex-col items-center justify-center p-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+
+                            <h3 class="text-white text-center text-sm sm:text-base font-bold leading-tight mb-2">PG</h3>
+
+                            <p class="text-white/90 text-center text-xs sm:text-sm leading-relaxed">Comfortable living with meals and best locations.</p>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <div class="hidden sm:block absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform -translate-y-2 group-hover:translate-y-0">
+
+                         <div class="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+
+                            <i data-lucide="chevron-right" class="w-3 h-3 text-white"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </a>
+
+            
+            <a href="ourproperty.html?type=apartment" class="group block flex-shrink-0 snap-start w-102 md:w-164 lg:w-172 offering-card-item">
+
+                <div class="relative rounded-xl shadow-md hover:shadow-lg overflow-hidden h-40 sm:h-44 cursor-pointer offering-card transition-shadow duration-300">
+
+                    <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990226/roomhy/website/401230348.jpg" class="w-550px h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="Hostel">
+
+                       
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 group-hover:opacity-0">
+
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+
+                             <h3 class="text-white text-center text-sm sm:text-base font-bold leading-tight">Apartment</h3>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
+
+                        <div class="absolute inset-0 flex flex-col items-center justify-center p-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+
+                            <h3 class="text-white text-center text-sm sm:text-base font-bold leading-tight mb-2">Apartment</h3>
+
+                            <p class="text-white/90 text-center text-xs sm:text-sm leading-relaxed">Private living spaces with complete independence.</p>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <div class="hidden sm:block absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform -translate-y-2 group-hover:translate-y-0">
+
+                         <div class="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+
+                            <i data-lucide="chevron-right" class="w-3 h-3 text-white"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </a>
+
+            
+            <a href="list.html" class="group block flex-shrink-0 snap-start w-full md:w-64 lg:w-72 offering-card-item">
+
+                <div class="relative rounded-xl shadow-md hover:shadow-lg overflow-hidden h-40 sm:h-44 cursor-pointer offering-card transition-shadow duration-300">
+
+                    <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990266/roomhy/website/post.png" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="List Your Property">
+
+                    
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 group-hover:opacity-0">
+
+                        <div class="absolute bottom-0 left-0 right-0 p-4">
+
+                            <h3 class="text-white text-center text-sm sm:text-base font-bold leading-tight">List Your Property</h3>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <div class="absolute inset-0 bg-gradient-to-t from-blue-700/90 via-blue-700/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
+
+                        <div class="absolute inset-0 flex flex-col items-center justify-center p-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+
+                            <h3 class="text-white text-center text-sm sm:text-base font-bold leading-tight mb-2">List Your Property</h3>
+
+                            <p class="text-white/90 text-center text-xs sm:text-sm leading-relaxed">Reach thousands of verified tenants instantly.</p>
+
+                        </div>
+
+                    </div>
+
+                    
+
+                    <div class="hidden sm:block absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-500 transform -translate-y-2 group-hover:translate-y-0">
+
+                         <div class="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+
+                            <i data-lucide="chevron-right" class="w-3 h-3 text-white"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </a>
+
+            
+
+        </div>
+
+        <button id="offer-next" class="absolute -right-2 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 text-gray-700 sm:block"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+
+    </div>
+
+</section>    
+<section id="why-roomhy" class="scroll-mt-20 light-card rounded-2xl p-6 md:p-8">
+   <div class="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+                 <div class="text-left lg:order-2">
+                     <div class="animate-slide-in text-center lg:text-left">
+                         <h2 class="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-600">Why Roomhy?</h2>
+                     </div>
+                      <div class="hidden lg:block animate-slide-in text-left mt-8">
+                         <p class="text-gray-600 mb-6 text-lg">Roomhy was built by students, for students. We experienced the chaos of finding a reliable place to live and knew there had to be a better way.</p>
+                         <p class="text-gray-600">We're more than a platform; we're your first friend in a new city, dedicated to helping you find a space where you can thrive.</p>
+                     </div>
+                </div>
+                <div class="w-full max-w-3xl mx-auto grid grid-cols-2 grid-rows-2 gap-4 mt-8 lg:mt-0 animate-slide-in lg:order-1" style="animation-delay: 0.2s;">
+                    <div class="row-span-2 col-span-1">
+                        <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990242/roomhy/website/hostel1.png.jpg" class="h-full w-full object-cover rounded-2xl shadow-lg" alt="Modern student accommodation building">
+                    </div>
+                    <div class="col-span-1">
+                        <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990244/roomhy/website/hostel2.jpg" class="h-full w-full object-cover rounded-2xl shadow-lg" alt="Student common room with yellow chairs">
+                    </div>
+                    <div class="col-span-1">
+                         <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990245/roomhy/website/hostel3.jpg" class="h-full w-full object-cover rounded-2xl shadow-lg" alt="Bright and modern student room hallway">
+                    </div>
+                </div>
+                <div class="lg:hidden animate-slide-in text-left mt-8">
+                    <p class="text-gray-600 mb-6 text-lg">Roomhy was built by students, for students. We experienced the chaos of finding a reliable place to live and knew there had to be a better way.</p>
+                    <p class="text-gray-600">We're more than a platform; we're your first friend in a new city, dedicated to helping you find a space where you can thrive.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="top-spaces" class="light-card rounded-2xl p-6">
+            <h2 id="top-spaces-title" class="text-2xl md:text-3xl font-bold mb-6 text-gray-900">Top Spaces in Indore</h2>
+            <div class="relative -m-2"> <button id="spaces-prev" class="hidden -left-2 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 text-gray-700 sm:block lg:hidden"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                
+                <div id="spaces-slider" class="flex gap-6 overflow-x-auto pb-2 pt-2 -mx-4 px-4 snap-x snap-mandatory scroll-smooth horizontal-slider lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:p-0 lg:m-0">
+                    <!-- Dynamic content generated by JavaScript: updateTopSpaces('Indore') -->
+                    </div>
+                
+                <button id="spaces-next" class="hidden absolute -right-2 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 text-gray-700 sm:block lg:hidden"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+            </div>
+        </section>
+        
+        <!-- START: OVERHAULED HOW IT WORKS SECTION (3D Cards and Enhanced Animation) -->
+        <section id="how-it-works" class="relative overflow-hidden py-16 md:py-24 bg-gray-50">
+            <div class="container mx-auto px-4 sm:px-6">
+                <div class="text-center">
+                    <h2 class="text-3xl md:text-5xl font-extrabold mb-4 text-gray-900 leading-tight">
+                        <span class="bg-clip-text text-transparent animate-gradient-flow" style="background-image: linear-gradient(to right, #06b6d4, #3b82f6, #06b6d4);">Find Your Home, Simply.</span>
+                    </h2>
+                    <p class="text-xl text-gray-500 max-w-2xl mx-auto mb-20 lg:mb-32">Roomhy's 3-step process ensures you get the best space, price, and experience.</p>
+                </div>
+    
+                <!-- Connecting lines for desktop (VIBRANT BLUE, animated) -->
+                <!-- SVG viewBox adjusted slightly to connect card centers -->
+                <div class="hidden lg:block absolute top-0 left-0 w-full h-full -z-10">
+                    <svg width="100%" height="100%" viewBox="0 0 1200 850" preserveAspectRatio="none">
+                        
+                        <!-- Line 1: Connects Step 1 (Center-Right) to Step 2 (Center-Left) -->
+                        <path id="path1" d="M 450 250 C 600 250, 600 500, 750 500" 
+                              stroke="#3b82f6" stroke-width="4" fill="none" 
+                              class="animated-path flow-infinite"/>
+                        
+                        <!-- Line 2: Connects Step 2 (Center-Right) to Step 3 (Center-Left) -->
+                        <path id="path2" d="M 750 500 C 600 500, 600 750, 450 750" 
+                              stroke="#3b82f6" stroke-width="4" fill="none" 
+                              class="animated-path flow-infinite"/>
+
+                        <!-- Dots/Circles (Fixed points) - Increased size and changed class -->
+                        <circle cx="450" cy="250" r="10" class="step-dot"/>
+                        <circle cx="750" cy="500" r="10" class="step-dot"/>
+                        <circle cx="450" cy="750" r="10" class="step-dot"/>
+                    </svg>
+                </div>
+                
+                <div class="space-y-24 lg:space-y-36 relative">
+                    
+                    <!-- Step 1: Search & Discover (Desktop text is on the right, image is on the left) -->
+                    <div id="step-1" class="step-card-3d grid lg:grid-cols-2 gap-8 items-center relative" data-step-id="1">
+                        
+                        <!-- Mobile divider and Step Badge -->
+                        <div class="lg:hidden absolute top-full left-1/2 w-px h-24 -translate-x-1/2 mobile-divider"></div>
+                        <div class="lg:hidden absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 step-badge animate-pulse-pop">1</div>
+                        
+                         <div class="w-full max-w-lg mx-auto lg:mx-0">
+                             <!-- Image Block 1 -->
+                             <div class="grid grid-cols-2 grid-rows-2 gap-4">
+                                <div class="row-span-2 col-span-1">
+                                    <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990247/roomhy/website/hostel4.jpg" class="h-full w-full object-cover rounded-xl shadow-md" alt="Students searching on laptop">
+                                </div>
+                                <div class="col-span-1">
+                                    <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990248/roomhy/website/hostel5.jpg" class="h-full w-full object-cover rounded-xl shadow-md" alt="Modern interior">
+                                </div>
+                                <div class="col-span-1">
+                                     <img src="https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=2070&auto:format&fit=crop" class="h-full w-full object-cover rounded-xl shadow-md" alt="Bright living room">
+                                </div>
+                            </div>
+                        </div>
+                         <div class="text-center lg:text-left relative">
+                            <!-- Desktop Step Badge -->
+                            <div class="hidden lg:flex absolute -left-16 top-1/2 -translate-y-1/2 step-badge animate-pulse-pop">1</div>
+                            <span class="hidden lg:inline text-sm font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">Your Journey Starts Here</span>
+                            <h3 class="text-3xl font-bold my-4 text-gray-900 leading-snug">Search, Filter & Shortlist</h3> 
+                            <p class="text-gray-600 text-lg leading-relaxed">Use our smart, student-focused filters to find verified PGs, hostels, or apartments near your college campus. **Compare transparent prices, 360° virtual tours, and essential amenities.**</p>
+                        </div>
+                    </div>
+    
+                    <!-- Step 2: Book Instantly (Desktop text is on the left, image is on the right) -->
+                    <div id="step-2" class="step-card-3d grid lg:grid-cols-2 gap-8 items-center relative" data-step-id="2">
+                         
+                        <!-- Mobile divider and Step Badge -->
+                        <div class="lg:hidden absolute top-full left-1/2 w-px h-24 -translate-x-1/2 mobile-divider"></div>
+                        <div class="lg:hidden absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 step-badge animate-pulse-pop">2</div>
+                        
+                        <div class="w-full max-w-lg mx-auto lg:mx-0 lg:order-2">
+                            <!-- Image Block 2 -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990227/roomhy/website/angels-hostel-taipei-taiwan-9.jpg" alt="Online booking confirmation" class="rounded-xl shadow-md w-full h-full object-cover col-span-2">
+                                <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990226/roomhy/website/401230348.jpg" alt="Student smiling" class="rounded-xl shadow-md w-full h-full object-cover">
+                                <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990250/roomhy/website/hostel7.jpg" alt="Close up of online payment" class="rounded-xl shadow-md w-full h-full object-cover">
+                            </div>
+                        </div>
+                         <div class="lg:order-1 text-center lg:text-left relative">
+                            <!-- Desktop Step Badge -->
+                            <div class="hidden lg:flex absolute -right-16 top-1/2 -translate-y-1/2 step-badge animate-pulse-pop">2</div>
+                            <span class="hidden lg:inline text-sm font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">Secure Your Deal</span>
+                            <h3 class="text-3xl font-bold my-4 text-gray-900 leading-snug">Place a Bid & Book</h3> 
+                            <p class="text-gray-600 text-lg leading-relaxed">Found the ideal place? **Use our unique bidding system to propose your rental price, or book instantly!** Pay a small, secure token amount to lock in your room online, hassle-free.</p>
+                        </div>
+                    </div>
+    
+                    <!-- Step 3: Move In (Desktop text is on the right, image is on the left) -->
+                    <div id="step-3" class="step-card-3d grid lg:grid-cols-2 gap-8 items-center relative" data-step-id="3">
+                         
+                         <!-- Mobile Step Badge -->
+                         <div class="lg:hidden absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 step-badge animate-pulse-pop">3</div>
+                         
+                         <div class="w-full max-w-lg mx-auto lg:mx-0">
+                            <!-- Image Block 3 -->
+                            <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990252/roomhy/website/hostel8.jpg" alt="Student moving into a new room" class="rounded-xl shadow-md w-full h-auto object-cover">
+                        </div>
+                         <div class="text-center lg:text-left relative lg:order-1">
+                            <!-- Desktop Step Badge -->
+                            <div class="hidden lg:flex absolute -left-16 top-1/2 -translate-y-1/2 step-badge animate-pulse-pop">3</div>
+                            <span class="hidden lg:inline text-sm font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">Welcome Home!</span>
+                            <h3 class="text-3xl font-bold my-4 text-gray-900 leading-snug">Finalize & Move In</h3>
+                            <p class="text-gray-600 text-lg leading-relaxed">Complete the necessary paperwork directly with the verified owner. Pack your bags, and you're all set! **Welcome to your new, perfectly matched student home.**</p> 
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- END: OVERHAULED HOW IT WORKS SECTION -->
+
+
+
+        <section id="top-spaces-kota" class="light-card rounded-2xl p-6">
+            <h2 id="top-spaces-title-kota" class="text-2xl md:text-3xl font-bold mb-6 text-gray-900">Top Spaces in Kota</h2>
+            <div class="relative -m-2"> <button id="spaces-prev-kota" class="hidden absolute -left-2 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 text-gray-700 sm:block lg:hidden"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                
+                <div id="spaces-slider-kota" class=" flex gap-6 overflow-x-auto pb-2 pt-2 -mx-4 px-4 snap-x snap-mandatory scroll-smooth horizontal-slider lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:p-0 lg:m-0">
+                    <!-- Dynamic content generated by JavaScript: updateTopSpacesKota('Kota') -->
+                    </div>
+                
+                <button id="spaces-next-kota" class="hidden absolute -right-2 top-1/2 -translate-y-1/2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 text-gray-700 sm:block lg:hidden"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+            </div>
+        </section>
+        <section id="why-choose-us">
+            <div class="text-center"><h2 class="text-3xl md:text-4xl font-bold mb-12 text-gray-900">Why Students Choose Us</h2></div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="light-card p-6 rounded-xl flex items-start space-x-4"><div class="bg-gradient-to-br from-green-500 to-emerald-600 text-white w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/30"><i data-lucide="wallet" class="w-6 h-6"></i></div><div><h3 class="text-lg font-semibold text-gray-900">Zero Brokerage</h3><p class="text-gray-500 mt-1">Save your money for what matters. We connect you directly with property owners, with no hidden fees.</p></div></div>
+                <div class="light-card p-6 rounded-xl flex items-start space-x-4"><div class="bg-gradient-to-br from-orange-500 to-amber-600 text-white w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-500/30"><i data-lucide="sofa" class="w-6 h-6"></i></div><div><h3 class="text-lg font-semibold text-gray-900">Fully Furnished</h3><p class="text-gray-500 mt-1">Move in with just your suitcase. Our properties come with all the essential furniture and amenities.</p></div></div>
+                <div class="light-card p-6 rounded-xl flex items-start space-x-4"><div class="bg-gradient-to-br from-blue-500 to-cyan-600 text-white w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/30"><i data-lucide="heart-handshake" class="w-6 h-6"></i></div><div><h3 class="text-lg font-semibold text-gray-900">24/7 Support</h3><p class="text-gray-500 mt-1">From booking to move-out, our dedicated support team is always here to help you.</p></div></div>
+            </div>
+        </section>
+        <section id="guarantee">
+            <div class="light-card rounded-2xl p-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div><h3 class="text-3xl md:text-4xl font-bold text-cyan-600">50K+</h3><p class="text-gray-500 mt-2">Happy Students</p></div>
+                <div><h3 class="text-3xl md:text-4xl font-bold text-blue-600">10K+</h3><p class="text-gray-500 mt-2">Verified Properties</p></div>
+                <div><h3 class="text-3xl md:text-4xl font-bold text-sky-600">200+</h3><p class="text-gray-500 mt-2">Cities Served</p></div>
+                <div><h3 class="text-3xl md:text-4xl font-bold text-teal-600">100%</h3><p class="text-gray-500 mt-2">Brokerage Free</p></div>
+            </div>
+        </section>
+        
+        <section id="rent-smarter" class="light-card rounded-2xl p-6 md:p-8 overflow-hidden">
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                
+                <div class="animate-slide-in">
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Rent Smarter. Live Better. <br class="hidden lg:block"> <span class="text-blue-600">With Roomhy</span></h2>
+                    
+                    <div class="space-y-8 mt-10">
+                        
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 bg-blue-100 text-blue-600 p-3 rounded-lg shadow-sm">
+                                <i data-lucide="badge-percent" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900 mb-1">Zero Brokerage Always</h3>
+                                <p class="text-gray-500 leading-relaxed">Tired of paying brokers just to see a room? With Roomhy, you connect directly with verified property owners. No middlemen, no extra charges "� just a clean, commission-free experience.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 bg-green-100 text-green-600 p-3 rounded-lg shadow-sm">
+                                <i data-lucide="gavel" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900 mb-1">Only Pay What You Bid</h3>
+                                <p class="text-gray-500 leading-relaxed">No fixed pricing. No pressure. Set your own budget and place a live bid "� the owner picks the best offer. It's fast, fair, and puts you in control from the start.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 bg-purple-100 text-purple-600 p-3 rounded-lg shadow-sm">
+                                <i data-lucide="user-check" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900 mb-1">Rooms That Match Your Vibe & Budget</h3>
+                                <p class="text-gray-500 leading-relaxed">Whether you want a solo PG, a shared space with friends, or a budget hostel near college "� Roomhy has it all. Search by location, amenities, and real-time availability to find your perfect stay.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="animate-slide-in" style="animation-delay: 0.2s;">
+                    <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=2070&auto:format&fit=crop" 
+                         alt="Happy students" 
+                         class="w-full h-full object-cover rounded-2xl shadow-lg"
+                         style="max-height: 500px;">
+                </div>
+                
+            </div>
+        </section>
+        <section id="register-property" class="cta-section rounded-2xl text-white p-12 text-center flex flex-col items-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">Have a Property to Rent Out?</h2>
+            <p class="text-lg text-gray-200 max-w-2xl mx-auto mb-8">Join our network of trusted property owners and reach thousands of students looking for a home. Listing is free and easy!</p>
+            <a href="signuprole.html" class="glow-button text-white px-8 py-3 rounded-lg font-semibold text-lg" style="background: linear-gradient(90deg, #06b6d4, #3b82f6); box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);">Register Now</a>
+        </section>
+
+        <!-- START: UPDATED TESTIMONIALS SECTION -->
+        <section id="testimonials" class="overflow-hidden py-12">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Trusted by 10,000+ Students</h2>
+            </div>
+            
+            <div class="testimonial-carousel testimonial-row-1 mb-8">
+                <div class="testimonial-track">
+                    <div class="testimonial-track-inner" id="testimonial-track-1">
+                        <!-- Content generated by JavaScript: buildTestimonialRow -->
+                        </div>
+                </div>
+            </div>
+
+            <div class="testimonial-carousel testimonial-row-2">
+                <div class="testimonial-track">
+                    <div class="testimonial-track-inner" id="testimonial-track-2">
+                         <!-- Content generated by JavaScript: buildTestimonialRow -->
+                        </div>
+                </div>
+            </div>
+        </section>
+        <!-- END: UPDATED TESTIMONIALS SECTION -->
+        
+        <!-- START: FAQ SECTION (New Section) -->
+        <section id="faq" class="scroll-mt-20 py-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-12 gap-10">
+                    <div class="lg:col-span-4">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-4 lg:sticky lg:top-24">
+                            Frequently Asked Questions?
+                        </h2>
+                        <p class="text-lg text-gray-500 hidden lg:block">Everything you need to know about finding your perfect home with Roomhy.</p>
+                    </div>
+                    
+                    <div class="lg:col-span-8 space-y-2">
+                        <!-- FAQ 1 -->
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>What is Roomhy and how does it work?</span>
+                                <i data-lucide="chevron-down" class="chevron w-6 h-6"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Roomhy is a student accommodation platform that connects students directly with verified property owners. You search, shortlist, and book properties like PG, hostels, and apartments without paying any brokerage fees. Our bidding feature also allows you to secure the best possible rental price.</p>
+                            </div>
+                        </div>
+                         <!-- FAQ 2 -->
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Is Roomhy completely broker-free?</span>
+                                <i data-lucide="chevron-down" class="chevron w-6 h-6"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Yes, absolutely. Our core promise is zero brokerage. We eliminate the middleman, ensuring you only pay the rent and a small, refundable security deposit directly to the property owner. This saves students thousands in commission fees.</p>
+                            </div>
+                        </div>
+                         <!-- FAQ 3 -->
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>How do I place a bid on a property?</span>
+                                <i data-lucide="chevron-down" class="chevron w-6 h-6"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>When viewing a property, you can see the owner's expected price. You can then submit a 'bid' or offer that you are willing to pay. The owner can accept, reject, or counter your offer. This live bidding process helps you secure a better deal than fixed-price listings.</p>
+                            </div>
+                        </div>
+                         <!-- FAQ 4 -->
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>What types of properties are listed on Roomhy?</span>
+                                <i data-lucide="chevron-down" class="chevron w-6 h-6"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>We offer a wide range of properties tailored for students, including: fully furnished Hostels (shared rooms, budget-friendly), PGs (Paying Guest accommodation with meals and services), and Apartments (private flats for independent living or sharing with friends).</p>
+                            </div>
+                        </div>
+                         <!-- FAQ 5 -->
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Can I view room availability in real-time?</span>
+                                <i data-lucide="chevron-down" class="chevron w-6 h-6"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Yes, property owners are encouraged to keep their listings updated in real-time. You can filter properties based on immediate availability and expected move-in dates to ensure you only view options that suit your schedule.</p>
+                            </div>
+                        </div>
+                         <!-- FAQ 6 -->
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Do I have to pay to use Roomhy as a student?</span>
+                                <i data-lucide="chevron-down" class="chevron w-6 h-6"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Searching, browsing, and contacting property owners through Roomhy is entirely free for students. Our revenue comes from value-added services offered to property owners, keeping the platform free and zero-brokerage for tenants.</p>
+                            </div>
+                        </div>
+                         <!-- FAQ 7 -->
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>How is Roomhy different from regular rental websites?</span>
+                                <i data-lucide="chevron-down" class="chevron w-6 h-6"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>We are focused purely on student needs, ensuring all properties are near major educational hubs. We offer a unique bidding system, guarantee zero brokerage, and verify every listing to save you time and money compared to traditional, generalized rental sites.</p>
+                            </div>
+                        </div>
+                         <!-- FAQ 8 -->
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <span>Is it safe to book a property on Roomhy?</span>
+                                <i data-lucide="chevron-down" class="chevron w-6 h-6"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>We prioritize your safety. Every property owner and listing is thoroughly verified by our team. The booking process is secure, and you only finalize the full payment after confirming the property details with the owner.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- END: FAQ SECTION -->
+
+        <!-- START: CONNECT WITH ROOMHY SECTION (Replacing old contact section) -->
+        <section id="contact-us" class="scroll-mt-20 py-12">
+            <div class="container mx-auto px-4 sm:px-6">
+                <div class="connect-section max-w-5xl mx-auto rounded-3xl shadow-2xl relative grid lg:grid-cols-2">
+                    
+                    <!-- Left Side: Text and Wave Background -->
+                    <div class="relative p-10 md:p-16 flex flex-col justify-center">
+                        <div class="wave-bg">
+                            <!-- SVG Wave for background effect (very light and subtle) -->
+                            <svg class="wave-svg" viewBox="0 0 500 500" preserveAspectRatio="none">
+                                <path d="M0,200 C150,350 350,50 500,200 L500,0 L0,0 Z" style="fill: #f5f5f5;"></path>
+                                <path d="M0,250 C120,400 380,100 500,250 L500,0 L0,0 Z" style="fill: #eeeeee; opacity: 0.5;"></path>
+                            </svg>
+                        </div>
+                        <div class="contact-content text-center lg:text-left">
+                            <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 leading-tight">
+                                Connect with Roomhy
+                            </h2>
+                            <p class="text-lg text-gray-600 max-w-sm mx-auto lg:mx-0">
+                                Drop your concern, query or feedback and we will get back to you in no time.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right Side: Form -->
+                    <div class="p-8 md:p-16 bg-white contact-content rounded-r-3xl">
+                        <form class="space-y-6">
+                            
+                            <!-- Name -->
+                            <div>
+                                <label for="contact-name" class="block text-sm font-semibold text-gray-700 mb-2">Name</label>
+                                <input type="text" id="contact-name" name="name" class="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500" placeholder="Name">
+                            </div>
+                            
+                            <!-- Contact Number -->
+                            <div>
+                                <label for="contact-phone" class="block text-sm font-semibold text-gray-700 mb-2">Contact Number</label>
+                                <input type="tel" id="contact-phone" name="phone" class="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500" placeholder="Phone Number">
+                            </div>
+                            
+                            <!-- Query/Concern -->
+                            <div>
+                                <label for="contact-query" class="block text-sm font-semibold text-gray-700 mb-2">Query</label>
+                                <textarea id="contact-query" name="query" rows="4" class="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 resize-none" placeholder="Query/Concern"></textarea>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div class="pt-4">
+                                <button type="submit" class="w-full text-white font-bold py-3 rounded-lg text-lg transition-all duration-300 send-button-gradient hover:opacity-90 shadow-lg hover:shadow-xl">
+                                    Send message
+                                </button>
+                            </div>
+
+                            <p class="text-center text-xs text-gray-500 pt-2">
+                                ** You'd hear from us in the next 24 hours, but if you don't, reach out at 
+                                <a href="mailto:hello@roomhy.com" class="text-purple-600 font-medium hover:underline">hello@roomhy.com</a>
+                            </p>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+        <!-- END: CONNECT WITH ROOMHY SECTION -->
+
+    </main>
+
+    <!-- Website Chat Floating Button and Modal -->
+    <button id="websiteChatBtn" class="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110" aria-label="Open chat">
+        <i data-lucide="message-circle" class="w-8 h-8"></i>
+    </button>
+    <div id="websiteChatModal" class="fixed bottom-24 right-6 z-50 w-80 bg-white rounded-lg shadow-xl border border-gray-200 hidden flex-col">
+        <div class="flex items-center justify-between px-4 py-2 border-b">
+            <span class="font-bold text-gray-700">Chat with Owner</span>
+            <button id="closeWebsiteChat" class="text-gray-400 hover:text-gray-700" title="Close chat"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div id="websiteChatMessages" class="flex-1 p-3 overflow-y-auto max-h-64 text-sm"></div>
+        <div class="flex items-center border-t p-2">
+            <input id="websiteChatInput" type="text" class="flex-1 border rounded px-2 py-1 mr-2" placeholder="Type a message...">
+            <button id="websiteChatSend" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">Send</button>
+        </div>
+    </div>
+    
+    <!-- Signup Prompt Modal (triggered when unauthenticated user clicks a city) -->
+    <div id="signupPromptModal" class="fixed inset-0 z-50 bg-black bg-opacity-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-6">
+            <!-- Close Button -->
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-gray-900">Sign Up to Continue</h2>
+                <button onclick="closeSignupModal()" class="text-gray-400 hover:text-gray-700">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <!-- Message -->
+            <p class="text-gray-600 mb-6">
+                Sign up with Roomhy to explore <strong id="selectedCityName"></strong> and find your perfect accommodation.
+            </p>
+            
+            <!-- Benefits List -->
+            <div class="space-y-3 mb-6">
+                <div class="flex items-start space-x-3">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"></i>
+                    <span class="text-sm text-gray-700">Browse properties in your preferred city</span>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"></i>
+                    <span class="text-sm text-gray-700">Send booking requests to property owners</span>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"></i>
+                    <span class="text-sm text-gray-700">Chat directly with owners</span>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5"></i>
+                    <span class="text-sm text-gray-700">Zero brokerage on all bookings</span>
+                </div>
+            </div>
+            
+            <!-- Signup Button -->
+            <button id="signupRedirectBtn" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition-shadow mb-3">
+                Create Account Now
+            </button>
+            
+            <!-- Already have account link -->
+            <p class="text-center text-gray-600 text-sm">
+                Already have an account? <a href="login.html" class="text-purple-600 hover:text-purple-700 font-semibold">Sign In</a>
+            </p>
+        </div>
+    </div>
+    
+    <!-- START: UPDATED FOOTER -->
+    <footer class="footer container mx-auto px-4 sm:px-6 mt-16">
+        <div class="footer-main">
+            <!-- Logo & Description -->
+            <div class="footer-logo">
+                <!-- Changed logo placeholder to white text for dark background -->
+                <img src="https://placehold.co/180x40/0f172a/ffffff?text=Roomhy+Logo" alt="Roomhy Logo">
+                <p class="mt-4">Discover Your Next Home, Together. Zero Brokerage, Student-First Approach.</p>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="about.html">About Us</a></li>
+                    <li><a href="#featured">Featured Stays</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                    <li><a href="contact.html">Contact Us</a></li>
+                </ul>
+            </div>
+
+            <!-- Locations (Updated to Kota, Sikkar, Indore) -->
+            <div class="footer-links">
+                <h4>Top Cities</h4>
+                <ul>
+                    <li><a href="ourproperty.html?city=kota">Kota</a></li>
+                    <li><a href="ourproperty.html?city=sikar">Sikar</a></li>
+                    <li><a href="ourproperty.html?city=indore">Indore</a></li>
+                </ul>
+            </div>
+
+            <!-- Legal & Contact -->
+            <div class="footer-contact">
+                <h4>Support & Legal</h4>
+                <div class="space-y-2">
+                    <p><i class="fas fa-phone"></i> +91 99830 05030</p>
+                    <p><i class="fas fa-envelope"></i> hello@roomhy.com</p>
+                </div>
+                <ul class="mt-4 space-y-1 text-sm">
+                    <li><a href="terms.html">Terms & Conditions</a></li>
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                </ul>
+            </div>
+            
+            <!-- Social -->
+            <div class="footer-social lg:col-span-1">
+                <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" title="X"><i class="fab fa-x-twitter"></i></a>
+                <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>� 2025 <strong>Roomhy</strong>. All Rights Reserved. Made for students, with love.</p>
+        </div>
+    </footer>
+    <!-- END: UPDATED FOOTER -->
+
+</body>
+    <script src="assets/js/before.js"></script>
+</html>

@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>Roomhy - Stays, PGs & Hostels</title>
+    <script src="./js/api-config.js"></script>
+    <script src="./js/favorites-system.js"></script>
+    <script src="./js/auth-utils.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    keyframes: {
+                        kenburns: {
+                            '0%': { transform: 'scale(1) translate(0, 0)' },
+                            '100%': { transform: 'scale(1.1) translate(-2%, 2%)' },
+                        }
+                    },
+                    animation: {
+                        kenburns: 'kenburns 30s ease-in-out infinite alternate',
+                    },
+                    colors: {
+                        // Custom colors from FilterSection.tsx context (approximated)
+                        'primary': '#3b82f6', // blue-500
+                        'secondary': '#e5e7eb', // gray-200
+                        'background': '#ffffff',
+                        'backgroundColor': '#3b82f6', // blue-600
+                        'backgroundColorHover': '#2563eb', // blue-700
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="assets/css/ourproperty.css">
+</head>
+<body class="text-gray-800">
+
+    <header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-sm shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6">
+            <div class="flex h-20 items-center justify-between">
+                
+                <div class="flex items-center">
+                    <a href="#" class="flex-shrink-0">
+                        <!-- Assuming https://res.cloudinary.com/dpwgvcibj/raw/upload/v1768990275/roomhy/website/logo is available -->
+                        <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25">
+                    </a>
+                </div>
+                
+                <div class="flex items-center gap-3 sm:gap-6">
+                    <nav class="hidden lg:flex items-center space-x-6">
+                        <a href="index.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Home</a>
+                        <a href="about.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">About Us</a>
+                        <a href="#faq" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">FAQ</a>
+                        <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
+                    </nav>
+
+                    <a href="list.html" class="flex-shrink-0 flex items-center justify-center px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors w-10 h-10 sm:w-auto sm:h-auto sm:px-4">
+                        <span class="text-3xl font-bold">+</span>
+                    </a>
+                    
+                    <button id="menu-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i data-lucide="menu" class="w-7 h-7 text-gray-800"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <section class="relative py-20 md:py-28 text-white">
+        <div id="hero-image-wrapper" class="absolute inset-0 w-full h-full overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1980&auto:format&fit=crop" alt="Hero background 1" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-100">
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto:format&fit=crop" alt="Hero background 2" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+            <img src="https://images.unsplash.com/photo-1494203484021-3c454daf695d?q=80&w=2070&auto:format&fit=crop" alt="Hero background 3" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+            <div class="absolute inset-0 w-full h-full bg-black/60"></div> 
+        </div>
+        <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-shadow mb-6">Find your perfect stay</h1>
+            <div class="relative w-full max-w-2xl mx-auto">
+                <input type="text" id="property-search-input" placeholder="Search location e.g., 'Koramangala, Bangalore'" class="w-full p-4 pl-5 pr-14 rounded-lg bg-white text-gray-900 border-transparent focus:ring-4 focus:ring-cyan-300/50 focus:outline-none placeholder-gray-500 shadow-lg">
+                <button type="submit" id="property-search-btn" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    <i data-lucide="search" class="w-5 h-5 text-white"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <div id="menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
+    
+    <div id="mobile-menu" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="flex justify-end p-4 flex-shrink-0">
+            <button id="menu-close" class="p-2">
+                <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+            </button>
+        </div>
+
+        <!-- LOGIN STATE: Shows when user IS logged in -->
+        <div id="menu-logged-in" class="hidden flex flex-col h-full">
+            <div class="flex justify-between items-center px-6 py-2">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
+                        <i data-lucide="user" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <span class="text-lg font-semibold text-gray-800" id="welcomeUserName">Hi,welcome</span>
+                        <p class="text-xs text-gray-500" id="userIdDisplay"></p>
+                    </div>
+                </div>
+                <a href="profile.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
+            </div>
+
+            <div class="px-6 py-4">
+                <div class="border border-blue-200 rounded-lg p-4 relative overflow-hidden">
+                    <p class="font-semibold text-gray-800 mb-3 relative z-10">Looking to Sell/Rent your Property?</p>
+                    <a href="list.html" class="block text-center w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors relative z-10">
+                        Post Property for Free
+                    </a>
+                </div>
+            </div>
+
+            <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+                <a href="ourproperty.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
+                    </div>
+                    <span>Our Properties</span>
+                </a>
+                <a href="fav.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="heart" class="w-5 h-5 text-red-600"></i>
+                    </div>
+                    <span>Favorites</span>
+                </a>
+                <a href="mystays.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="building" class="w-5 h-5 text-purple-600"></i>
+                    </div>
+                    <span>My Stays</span>
+                </a>
+                <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                    </div>
+                    <span>About Us</span>
+                </a>
+                <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                    </div>
+                    <span>Contact Us</span>
+                </a>
+                <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
+                    </div>
+                    <span>Chat</span>
+                </a>
+            </nav>
+            
+            <div class="p-4 border-t flex-shrink-0">
+                <button onclick="globalLogout()" class="w-full flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
+                    <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
+                    </div>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- LOGOUT STATE: Shows when user is NOT logged in -->
+        <div id="menu-logged-out" class="flex flex-col h-full">
+            <div class="flex-grow p-4 space-y-1 overflow-y-auto">
+                <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                    </div>
+                    <span>About Us</span>
+                </a>
+                <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                    <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                    </div>
+                    <span>Contact Us</span>
+                </a>
+            </div>
+            
+            <div class="p-4 space-y-3 border-t flex-shrink-0">
+                <a href="login.html" class="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i data-lucide="log-in" class="w-4 h-4 inline mr-2"></i>
+                    Login
+                </a>
+                <a href="signup.html" class="block w-full text-center border-2 border-blue-600 text-blue-600 font-medium py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors">
+                    <i data-lucide="user-plus" class="w-4 h-4 inline mr-2"></i>
+                    Sign Up
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <main class="container mx-auto px-4 sm:px-6 py-8 md:py-12 mt-8">
+        
+         <div class="mb-6 lg:hidden results-toolbar">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="mobile-property-count" class="text-xl font-bold text-gray-900">Loading...</h2>
+                <span class="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-md">Page 1 of 1</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button id="filter-toggle" class="flex-shrink-0 flex items-center justify-center space-x-2 bg-white text-gray-700 font-medium px-4 py-3 rounded-lg shadow border border-gray-300">
+                    <i data-lucide="filter" class="w-5 h-5"></i>
+                    <span>Filters</span>
+                </button>
+                <div class="flex-grow">
+                     <label for="sort-mobile" class="sr-only">Sort by</label>
+                    <select id="sort-mobile" name="sort-mobile" class="form-select w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 py-3 h-full">
+                        <option>Sort by</option>
+                        <option>Bidding: Ending Soonest</option>
+                        <option>Price: Low to High</option>
+                        <option>Price: High to Low</option>
+                        <option>Newest Listings</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="filter-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+
+        <!-- Mobile Filter Drawer (Enhanced FilterSection.tsx) -->
+        <div id="mobile-filter-drawer" class="fixed top-0 right-0 w-full max-w-full h-full bg-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out lg:hidden overflow-hidden filter-shell">
+            <!-- Header with glass effect -->
+            <div class="p-4 border-b border-slate-200 flex justify-between items-center shadow-sm bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl shadow-lg shadow-blue-200">
+                        <i data-lucide="filter" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">Find Your Stay</h3>
+                        <p class="text-xs text-gray-500">Filter & Bid on Properties</p>
+                    </div>
+                </div>
+                <button id="close-filter-mobile" class="p-2.5 bg-slate-100 hover:bg-slate-200 text-gray-600 hover:text-gray-800 rounded-xl transition-all">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 h-full overflow-y-auto pb-28 space-y-5">
+                
+                <!-- Location Section -->
+                <div class="filter-block p-4">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="map-pin" class="w-5 h-5 text-blue-600"></i>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Location</h4>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Select City</label>
+                            <select id="mobile-select-city" class="form-select w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">Select a city</option>
+                                <option value="kota">Kota, Rajasthan</option>
+                                <option value="indore">Indore, Madhya Pradesh</option>
+                                <option value="sikar">Sikar, Rajasthan</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Select Area</label>
+                            <select id="mobile-select-area" class="form-select w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">First select a city</option>
+                                <option value="north-campus" disabled>North Campus (Requires City)</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Simulated: Select a city first to see areas.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget Section -->
+                <div class="filter-block p-4">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="wallet" class="w-5 h-5 text-emerald-600"></i>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Budget Range</h4>
+                    </div>
+                    
+                    <div class='flex gap-3'>
+                        <select id="mobile-min-price" class='form-select w-1/2 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 py-3 px-4 bg-slate-50 transition-all'>
+                            <option value="">Min Price</option>
+                            <option value="1500">₹1500</option>
+                            <option value="4000">₹4000</option>
+                            <option value="8000">₹8000</option>
+                        </select>
+                        <select id="mobile-max-price" class='form-select w-1/2 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 py-3 px-4 bg-slate-50 transition-all'>
+                            <option value="50000_plus">Max Price</option>
+                            <option value="15000">₹15000</option>
+                            <option value="25000">₹25000</option>
+                            <option value="50000_plus">₹50000+</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Property Details Section -->
+                <div class="filter-block p-4">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="home" class="w-5 h-5 text-purple-600"></i>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Property Details</h4>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Gender</label>
+                            <select id="mobile-gender" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Property Type</label>
+                            <select id="mobile-property-type" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">Select Property Type</option>
+                                <option value="pg">PG / Co-Living</option>
+                                <option value="hostel">Hostel</option>
+                                <option value="flat">Flat / Studio</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class='block text-sm font-semibold text-gray-700 mb-2'>Room Sharing</label>
+                            <select id="mobile-occupancy" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all">
+                                <option value="">Select Occupancy</option>
+                                <option value="single">Single Room</option>
+                                <option value="double">Double Sharing</option>
+                                <option value="triple">Triple Sharing</option>
+                                <option value="multi">Multi Sharing</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bidding Section -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-100">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Bidding Details</h4>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class='block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide'>Bid Amount Range</label>
+                            <div class='flex gap-3'>
+                                <input type="number" id="mobile-bid-min" placeholder="Min" class="form-input w-1/2 rounded-xl border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 py-3 px-4 bg-white transition-all" min="1000" max="100000">
+                                <input type="number" id="mobile-bid-max" placeholder="Max" class="form-input w-1/2 rounded-xl border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 py-3 px-4 bg-white transition-all" min="1000" max="100000">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Set your bidding range</p>
+                        </div>
+
+                        <div>
+                            <label class='block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide'>Additional Notes</label>
+                            <textarea id="mobile-bid-message" placeholder="Share your requirements..." class="form-input w-full rounded-xl border-slate-200 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 py-3 px-4 h-20 resize-none bg-white transition-all" maxlength="500"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Apply & Clear Filters -->
+                <div class='flex flex-col gap-3 pt-2'>
+                    <button id="mobile-bid-on-all" class='w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-green-200 flex items-center justify-center gap-2' onclick="openBidOnAllModal()">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        Bid on All Matches
+                    </button>
+                    <button id="mobile-apply-filters" class='w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2'>
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        Apply Filters
+                    </button>
+                    <button class='w-full bg-white border-2 border-slate-200 text-gray-700 hover:border-slate-300 hover:bg-slate-50 font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2'>
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+            
+            <!-- Desktop Filter Sidebar (Enhanced FilterSection.tsx) -->
+            <aside id="filter-sidebar" class="lg:col-span-3 lg:sticky h-fit mb-8 lg:mb-0 hidden lg:block p-5 transition-all duration-300 top-[150px] filter-shell">
+                <!-- Header -->
+                <div class='mb-6 pb-4 border-b border-slate-200'>
+                    <div class='flex items-center gap-3 mb-2'>
+                        <div class='p-2.5 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-xl shadow-lg shadow-blue-200'>
+                            <i data-lucide="filter" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class='text-xl font-bold text-gray-900'>Filter & Search</h3>
+                            <p class='text-xs text-gray-500 mt-0.5'>Refine your property search</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class='space-y-5'>
+                    
+                    <!-- Location Card -->
+                    <div class="filter-block p-4">
+                        <label class='block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2'>
+                            <i data-lucide="map-pin" class="w-4 h-4 text-blue-600"></i>
+                            Location
+                        </label>
+                        <select id="desktop-select-city" class="form-select w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 py-3 px-4 bg-slate-50 transition-all text-sm">
+                            <option value="">Select a city</option>
+                            <option value="kota">Kota, Rajasthan</option>
+                            <option value="indore">Indore, Madhya Pradesh</option>
+                            <option value="sikar">Sikar, Rajasthan</option>
+                        </select>
+                        <select id="desktop-select-area" class="form-select w-full rounded-xl border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 py-3 px-4 bg-slate-50 transition-all text-sm mt-3">
+                            <option value="">First select a city</option>
+                            <option value="north-campus" disabled>North Campus (Requires City)</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-2">Simulated: Select a city first to see areas.</p>
+                    </div>
+
+                    <!-- Budget Card -->
+                    <div class="filter-block p-4">
+                        <label class='block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2'>
+                            <i data-lucide="wallet" class="w-4 h-4 text-emerald-600"></i>
+                            Budget Range
+                        </label>
+                        <div class='flex gap-3'>
+                            <select id="desktop-min-price" class='form-select w-1/2 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 py-3 px-4 bg-slate-50 transition-all text-sm'>
+                                <option value="">Min Price</option>
+                                <option value="1500">₹1500</option>
+                                <option value="4000">₹4000</option>
+                                <option value="8000">₹8000</option>
+                            </select>
+                            <select id="desktop-max-price" class='form-select w-1/2 rounded-xl border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 py-3 px-4 bg-slate-50 transition-all text-sm'>
+                                <option value="50000_plus">Max Price</option>
+                                <option value="15000">₹15000</option>
+                                <option value="25000">₹25000</option>
+                                <option value="50000_plus">₹50000+</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Property Details Card -->
+                    <div class="filter-block p-4">
+                        <label class='block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2'>
+                            <i data-lucide="home" class="w-4 h-4 text-purple-600"></i>
+                            Property Details
+                        </label>
+                        <select id="desktop-gender" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all text-sm mb-3">
+                            <option value="">Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <select id="desktop-property-type" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all text-sm mb-3">
+                            <option value="">Select Property Type</option>
+                            <option value="pg">PG / Co-Living</option>
+                            <option value="hostel">Hostel</option>
+                            <option value="flat">Flat / Studio</option>
+                        </select>
+                        <select id="desktop-occupancy" class="form-select w-full rounded-xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 py-3 px-4 bg-slate-50 transition-all text-sm">
+                            <option value="">Select Occupancy</option>
+                            <option value="single">Single Room</option>
+                            <option value="double">Double Sharing</option>
+                            <option value="triple">Triple Sharing</option>
+                            <option value="multi">Multi Sharing</option>
+                        </select>
+                    </div>
+
+                    <!-- Bidding Fields -->
+                    <div class='space-y-4 pt-6 border-t border-blue-200 mt-6'>
+                        <h4 class='text-sm font-semibold text-gray-900 flex items-center gap-2'>
+                            <i data-lucide="trending-up" class="w-4 h-4 text-green-600"></i>
+                            Bidding Details
+                        </h4>
+
+                        <div>
+                            <label class='block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide'>Bid Amount Range</label>
+                            <div class='flex gap-3'>
+                                <input type="number" id="desktop-bid-min" placeholder="Min" class="form-input w-1/2 rounded-lg border border-gray-300 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/50 py-3 px-4 text-sm font-medium transition-all" min="1000" max="100000">
+                                <input type="number" id="desktop-bid-max" placeholder="Max" class="form-input w-1/2 rounded-lg border border-gray-300 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/50 py-3 px-4 text-sm font-medium transition-all" min="1000" max="100000">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Set your bidding range</p>
+                        </div>
+
+                        <div>
+                            <label class='block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide'>Additional Notes</label>
+                            <textarea id="desktop-bid-message" placeholder="Share your requirements..." class="form-input w-full rounded-lg border border-gray-300 bg-white focus:border-green-500 focus:ring-2 focus:ring-green-500/50 py-3 px-4 h-20 resize-none text-sm font-medium transition-all" maxlength="500"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Apply & Clear Filters (Original Buttons Reinstated) -->
+                    <div class='flex flex-col gap-3 pt-6 mt-6 border-t border-blue-200'>
+                        <button id="desktop-bid-on-all" class='w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2' onclick="openBidOnAllModal()">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                            Bid on All Matches
+                        </button>
+                        <button id="desktop-apply-filters" class='w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2'>
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                            Apply Filters
+                        </button>
+                        <button class='w-full border-2 border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 bg-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2'>
+                            <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <div id="main-content-area" class="lg:col-span-9"> 
+                 
+                 <div class="hidden lg:flex items-center justify-between mb-6 results-toolbar">
+                    <div class="flex items-center gap-4">
+                        <h2 id="desktop-property-count" class="text-3xl font-bold text-gray-900">Loading...</h2>
+                        <span class="text-sm font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-md">Page 1 of 1</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <button id="filter-toggle-desktop" class="flex-shrink-0 flex items-center justify-center space-x-2 bg-blue-50 text-blue-600 font-medium px-4 py-3 rounded-lg shadow-sm border border-gray-300 hover:bg-gray-50 transition-colors">
+                            <i data-lucide="filter" class="w-5 h-5"></i>
+                            <span>Filters</span>
+                        </button>
+                         <div>
+                             <label for="sort-desktop" class="sr-only">Sort by</label>
+                            <select id="sort-desktop" name="sort-desktop" class="form-select w-full sm:w-auto rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3">
+                                <option>Sort by</option>
+                                <option>Bidding: Ending Soonest</option>
+                                <option>Price: Low to High</option>
+                                <option>Price: High to Low</option>
+                                <option>Newest Listings</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="stays-list-view">
+                    <section>
+                        <div id="propertiesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                            <!-- Live properties will be rendered here based on approved & online visits -->
+                        </div>
+                        <nav class="flex items-center justify-between border-t border-gray-200 px-4 sm:px-0 mt-12 pt-8">
+                            <div class="flex-1 flex justify-between sm:hidden"> <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"> Previous </a> <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"> Next </a></div>
+                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                <div><p class="text-sm text-gray-700">Showing <span id="showingFrom" class="font-medium">1</span> to <span id="showingTo" class="font-medium">12</span> of <span id="showingTotal" class="font-medium">0</span> results</p></div>
+                                <div><nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination"><a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"><span class="sr-only">Previous</span><i data-lucide="chevron-left" class="h-5 w-5"></i></a><a href="#" aria-current="page" class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium"> 1 </a><a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium"> 2 </a><a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 hidden md:inline-flex relative items-center px-4 py-2 border text-sm font-medium"> 3 </a><span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700"> ... </span><a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 hidden md:inline-flex relative items-center px-4 py-2 border text-sm font-medium"> 8 </a><a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"><span class="sr-only">Next</span><i data-lucide="chevron-right" class="h-5 w-5"></i></a></nav></div>
+                            </div>
+                        </nav>
+                    </section>
+                </div>
+                        
+                    </section>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <a href="contact.html" class="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110">
+        <i data-lucide="message-circle" class="w-8 h-8"></i>
+    </a>
+    
+    <footer class="bg-gray-800 text-gray-300">
+        <div class="container mx-auto px-6 py-16">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8">
+                <div class="md:col-span-1"><a href="index.html" class="mb-4 inline-block"><img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25"></a><p class="text-gray-400 text-sm">Your trusted partner in finding the perfect student accommodation. Live, learn, and grow with us.</p><div class="flex space-x-5 mt-6"><a href="#" class="text-gray-400 hover:text-white transition-colors"><i data-lucide="facebook" class="w-5 h-5"></i></a><a href="#" class="text-gray-400 hover:text-white transition-colors"><i data-lucide="instagram" class="w-5 h-5"></i></a><a href="#" class="text-gray-400 hover:text-white transition-colors"><i data-lucide="twitter" class="w-5 h-5"></i></a></div></div>
+                <div><h4 class="font-semibold text-lg mb-5 text-white">Explore</h4><ul class="space-y-3"><li><a href="#" class="text-gray-300 hover:text-white transition-colors">Apartments</a></li><li><a href="#" class="text-gray-300 hover:text-white transition-colors">Hostels</a></li><li><a href="#" class="text-gray-300 hover:text-white transition-colors">Co-Living</a></li><li><a href="#" class="text-gray-300 hover:text-white transition-colors">PGs</a></li></ul></div>
+                <div><h4 class="font-semibold text-lg mb-5 text-white">Company</h4><ul class="space-y-3"><li><a href="about.html" class="text-gray-300 hover:text-white transition-colors">About Us</a></li><li><a href="list.html" class="text-gray-300 hover:text-white transition-colors">List Your Property</a></li><li><a href="privacy.html" class="text-gray-300 hover:text-white transition-colors">Privacy Policy</a></li><li><a href="terms.html" class="text-gray-300 hover:text-white transition-colors">Terms of Service</a></li></ul></div>
+                
+                <div>
+                    <h4 class="font-semibold text-lg mb-5 text-white">Get in Touch</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-start space-x-2">
+                            <i data-lucide="mail" class="w-4 h-4 text-gray-400 mt-1 flex-shrink-0"></i>
+                            <a href="mailto:support@roomhy.com" class="text-gray-300 hover:text-white transition-colors">support@roomhy.com</a>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <i data-lucide="phone" class="w-4 h-4 text-gray-400 mt-1 flex-shrink-0"></i>
+                            <a href="tel:+911234567890" class="text-gray-300 hover:text-white transition-colors">+91 12345 67890</a>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-gray-400 mt-1 flex-shrink-0"></i>
+                            <span class="text-gray-300">Bengaluru, India</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 border-t border-gray-700 pt-8 text-center text-gray-400 text-sm"><p>&copy; 2025 Roomhy. All Rights Reserved. Built with ❤️ for students.</p></div>
+        </div>
+    </footer>
+
+    <!-- Bid on All Modal -->
+    <div id="bid-on-all-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full my-8" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-5 rounded-t-2xl">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                            Bid on All Matching Properties
+                        </h2>
+                        <p class="text-green-100 text-sm mt-1">Send your bid to all properties matching your criteria</p>
+                    </div>
+                    <button id="close-request-all-modal" onclick="closeBidOnAllModal()" class="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 space-y-5">
+                <!-- User Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Full Name *</label>
+                        <input type="text" id="bid-full-name" placeholder="Enter your full name" class="form-input w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-500/50" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-800 mb-2">Email Address *</label>
+                        <input type="email" id="bid-email" placeholder="your.email@gmail.com" class="form-input w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-500/50" required>
+                    </div>
+                </div>
+
+                <!-- Selected Filters Info -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                        <i data-lucide="filter" class="w-4 h-4"></i>
+                        Your Search Criteria
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        <div>
+                            <span class="text-green-700">City:</span>
+                            <span id="bid-city-display" class="text-green-900 font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="text-green-700">Area:</span>
+                            <span id="bid-area-display" class="text-green-900 font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="text-green-700">Budget:</span>
+                            <span id="bid-budget-display" class="text-green-900 font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="text-green-700">Gender:</span>
+                            <span id="bid-gender-display" class="text-green-900 font-medium">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Properties List -->
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        Matching Properties
+                    </h4>
+                    <div id="bid-properties-loading" class="flex items-center justify-center py-8">
+                        <div class="animate-spin">
+                            <i data-lucide="loader" class="w-6 h-6 text-green-600"></i>
+                        </div>
+                        <span class="ml-2 text-gray-600">Finding matching properties...</span>
+                    </div>
+                    <div id="bid-properties-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+                    <div id="bid-no-properties" class="text-center py-8 text-gray-500 hidden">
+                        <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-gray-300"></i>
+                        <p>No properties match your criteria</p>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button id="submit-all-bids-btn" onclick="submitAllBids()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                    <span>Send Bids to All (<span id="bid-count">0</span> Properties)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bid Success Modal -->
+    <div id="bid-success-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[60] p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center" onclick="event.stopPropagation()">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="check-circle" class="w-8 h-8 text-green-600"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Bids Sent Successfully!</h2>
+            <p class="text-gray-600 text-sm mb-4">Your bid has been sent to all matching property owners.</p>
+            <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                <p class="text-sm text-gray-600"><strong>Bids sent to:</strong> <span id="bid-success-count">0</span> properties</p>
+                <p class="text-xs text-gray-500 mt-2">Property owners will review your bid and respond within 24 hours.</p>
+            </div>
+            <button onclick="closeBidSuccessModal()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-3 rounded-lg">
+                Done
+            </button>
+        </div>
+    </div>
+
+
+    <script src="assets/js/ourproperty.js"></script>
+
+    <!-- BID DETAILS MODAL (Enhanced) -->
+    <div id="request-all-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 md:p-8 animate-fade-in my-8">
+            <div class="flex justify-between items-center mb-6 border-b-2 border-blue-200 pb-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                        <i data-lucide="send" class="w-7 h-7 text-blue-600"></i>
+                        Submit Your Bidding Request
+                    </h2>
+                    <p class="text-sm text-gray-600 mt-1">Send your requirements to <span id="property-count" class="font-bold text-blue-600">0</span> matching properties</p>
+                </div>
+                <button id="close-request-all-modal" class="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <form id="request-all-form" class="space-y-6">
+                <!-- Section 1: Your Details -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border-l-4 border-blue-500">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="user-check" class="w-5 h-5 text-blue-600"></i>
+                        Your Information
+                    </h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="request-all-name" class="block text-sm font-semibold text-gray-700 mb-2">Full Name *</label>
+                            <input type="text" id="request-all-name" placeholder="Enter your full name" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-medium" required>
+                        </div>
+                        <div>
+                            <label for="request-all-email" class="block text-sm font-semibold text-gray-700 mb-2">Email Address *</label>
+                            <input type="email" id="request-all-email" placeholder="your.email@example.com" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 font-medium" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Budget & Bid Details -->
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border-l-4 border-purple-500">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="dollar-sign" class="w-5 h-5 text-purple-600"></i>
+                        Your Bid Range (₹)
+                    </h3>
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <label for="request-all-bid-min" class="block text-sm font-semibold text-gray-700 mb-2">Minimum *</label>
+                            <input type="number" id="request-all-bid-min" placeholder="Min amount" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" min="1000" required>
+                        </div>
+                        <div class="flex-1">
+                            <label for="request-all-bid-max" class="block text-sm font-semibold text-gray-700 mb-2">Maximum *</label>
+                            <input type="number" id="request-all-bid-max" placeholder="Max amount" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" min="1000" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Message -->
+                <div class="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-xl border-l-4 border-orange-500">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="message-square" class="w-5 h-5 text-orange-600"></i>
+                        Your Message
+                    </h3>
+                    <textarea id="request-all-message" placeholder="Tell property owners about your requirements, preferences, move-in date, lease duration, special requests, etc." class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 h-24 resize-none font-medium"></textarea>
+                    <p class="text-xs text-gray-500 mt-2">💡 Include details like: move-in date, lease duration, special requirements, preferred amenities</p>
+                </div>
+
+                <!-- Info Box -->
+                <div class="bg-blue-50 border-2 border-blue-200 p-4 rounded-lg">
+                    <p class="text-sm text-gray-700 flex items-start gap-3">
+                        <i data-lucide="info" class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"></i>
+                        <span><strong>How it works:</strong> Your request will be sent to all matching property owners. They will review your requirements and contact you directly with suitable options. You can expect responses within 24-48 hours.</span>
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 mt-8 pt-4 border-t-2 border-gray-200">
+                    <button type="button" id="close-request-all-modal-btn" class="flex-1 px-6 py-4 border-2 border-gray-300 rounded-lg text-gray-700 font-bold hover:bg-gray-50 transition-colors text-lg">
+                        Cancel
+                    </button>
+                    <button type="button" id="submit-request-all" class="flex-1 px-6 py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 hover:from-green-600 hover:via-emerald-600 hover:to-green-700 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl text-lg flex items-center justify-center gap-2">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        Send Requests
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        @keyframes fade-in {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+        }
+    </style>
+</body>
+
+</html>

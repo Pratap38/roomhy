@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Available Properties - Roomhy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/index-db.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Available Properties</h1>
+            <p class="text-gray-600">Find your perfect rental</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white shadow-md mt-6">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex flex-wrap gap-3 items-center">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Filter by City</label>
+                    <select id="cityFilter" onchange="filterByCity()" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Cities</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Property Type</label>
+                    <select id="typeFilter" onchange="filterByType()" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Types</option>
+                        <option value="apartment">Apartment</option>
+                        <option value="house">House</option>
+                        <option value="room">Single Room</option>
+                        <option value="commercial">Commercial</option>
+                    </select>
+                </div>
+                <button onclick="loadProperties()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mt-6">
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties Grid -->
+    <div class="container mx-auto px-4 py-8">
+        <div id="propertiesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full text-center py-8 text-gray-500">Loading properties...</div>
+        </div>
+    </div>
+
+    <!-- Modal for property details -->
+    <div id="detailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h2 class="text-2xl font-bold text-gray-800" id="modalTitle">Property Details</h2>
+                <button onclick="closeModal()" class="text-2xl font-bold text-gray-600 hover:text-gray-900">&times;</button>
+            </div>
+            <div id="modalContent" class="p-6 space-y-4"></div>
+        </div>
+    </div>
+
+    <script src="assets/js/index-db.js"></script>
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roomhy - List Your Property</title>
+    <script src="./js/api-config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+            extend: {
+                keyframes: {
+                    kenburns: {
+                        '0%': { transform: 'scale(1) translate(0, 0)' },
+                        '100%': { transform: 'scale(1.1) translate(-2%, 2%)' },
+                    },
+                    // Keyframes for testimonial sliding (retained for consistency)
+                    'slide-left': {
+                        '0%': { transform: 'translateX(0%)' },
+                        '100%': { transform: 'translateX(-50%)' },
+                    },
+                    'slide-right': {
+                        '0%': { transform: 'translateX(-50%)' },
+                        '100%': { transform: 'translateX(0%)' },
+                    },
+                    // Keyframes for floating animation (retained for consistency)
+                    float: {
+                        '0%': { transform: 'translateY(0px)' },
+                        '50%': { transform: 'translateY(-10px)' },
+                        '100%': { transform: 'translateY(0px)' },
+                    }
+                },
+                    animation: {
+                        kenburns: 'kenburns 30s ease-in-out infinite alternate',
+                        'slide-left-infinite': 'slide-left 40s linear infinite',
+                        'slide-right-infinite': 'slide-right 40s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="assets/css/list.css">
+</head>
+<body class="text-gray-800 flex flex-col min-h-screen">
+
+    <header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-sm shadow-sm flex-shrink-0">
+        <div class="container mx-auto px-4 sm:px-6">
+            <div class="flex h-20 items-center justify-between">
+                
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="flex items-center space-x-1 p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Go back">
+                        <i data-lucide="chevron-left" class="w-6 h-6 text-gray-800"></i>
+                    </a>
+                    <a href="index.html" class="flex-shrink-0">
+                        <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25">
+                    </a>
+                </div>
+                
+                <div class="flex items-center gap-3 sm:gap-6">
+                    <nav class="hidden lg:flex items-center space-x-6">
+                        <a href="about.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">About Us</a>
+                        <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
+                    </nav>
+
+                    <a href="#" class="flex-shrink-0 flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                        <i data-lucide="building" class="w-4 h-4"></i>
+                        <span>My <span class="hidden sm:inline">Listings</span></span>
+                    </a>
+                    
+                    <button id="menu-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i data-lucide="menu" class="w-7 h-7 text-gray-800"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <section class="relative py-16 md:py-20 text-white flex-shrink-0">
+        <div id="hero-image-wrapper" class="absolute inset-0 w-full h-full overflow-hidden">
+            
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1980&auto:format&fit=crop" 
+                 alt="Hero background 1" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-100">
+            
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto:format&fit=crop" 
+                 alt="Hero background 2" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+            
+            <img src="https://images.unsplash.com/photo-1494203484021-3c454daf695d?q=80&w=2070&auto:format&fit-crop" 
+                 alt="Hero background 3" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+
+            <div class="absolute inset-0 w-full h-full bg-black/60"></div> 
+        </div>
+
+        <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
+            <h1 class="text-3xl md:text-5xl font-extrabold text-shadow mb-4" style="color: #fffcf2;">
+                List Your Property For Free
+            </h1>
+            <p class="text-xl text-gray-200 text-shadow">Reach thousands of verified students with a simple form.</p>
+        </div>
+    </section>
+
+    <div id="menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
+    
+    <div id="mobile-menu" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="flex justify-end p-4 flex-shrink-0">
+            <button id="menu-close" class="p-2">
+                <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+            </button>
+        </div>
+
+        <div class="flex justify-between items-center px-6 py-2">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                    <i data-lucide="users" class="w-6 h-6 text-gray-600"></i>
+                </div>
+                <span class="text-lg font-semibold text-gray-800">Hi,welcome ??</span>
+            </div>
+            <a href="profile.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
+        </div>
+
+        <div class="px-6 py-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 relative overflow-hidden">
+                <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990266/roomhy/website/post.png" alt="Illustartion of people with house" class="absolute right-0 bottom-0 opacity-80 w-32 h-auto" style="pointer-events: none;">
+                <p class="font-semibold text-gray-800 mb-3 relative z-10">Looking to Sell/Rent your Property?</p>
+                <a href="#register-property" class="block text-center w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors relative z-10" style="width: 150px;">
+                    +
+                </a>
+            </div>
+        </div>
+
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <a href="ourproperty.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
+                </div>
+                <span>Our Properties</span>
+            </a>
+            <a href="fav.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="heart" class="w-5 h-5 text-red-600"></i>
+                </div>
+                <span>Favorites</span>
+            </a>
+            <a href="mystays.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="building" class="w-5 h-5 text-purple-600"></i>
+                </div>
+                <span>My Stays</span>
+            </a>
+            <hr class="my-2 border-gray-100">
+            <a href="#why-roomhy" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-gray-600"></i>
+                </div>
+                <span>About Us</span>
+            </a>
+            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="mail" class="w-5 h-5 text-gray-600"></i>
+                </div>
+                <span>Contact Us</span>
+            </a>
+            <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
+                </div>
+                <span>Chat</span>
+            </a>
+        </nav>
+        <div class="p-4 border-t flex-shrink-0">
+            <a href="#" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600">
+                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="log-out" class="w-5 h-5 text-red-600"></i>
+                </div>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+
+    <main class="container mx-auto px-4 sm:px-6 py-8 md:py-12 flex-grow">
+
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">Property Listing Form</h1>
+            <p class="text-center text-gray-600 mb-10 -mt-4">Fill the details below and submit for review.</p>
+
+            <div id="submit-message" class="mb-4 p-4 rounded-lg hidden"></div>
+
+            <form id="property-form" action="#" method="POST" class="space-y-8">
+                <input type="hidden" name="property_type" value="pg">
+                <input type="hidden" name="owner_phone" value="NA">
+
+                <div class="light-card rounded-lg p-6 md:p-8">
+                    <div class="flex items-center mb-6 border-b pb-4">
+                        <i data-lucide="clipboard-list" class="w-6 h-6 mr-3 text-blue-600"></i>
+                        <h2 class="text-xl font-semibold text-gray-800">Required Details</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="name" name="name" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter your name">
+                        </div>
+                        <div>
+                            <label for="property_name" class="block text-sm font-medium text-gray-700 mb-1">Property Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="property_name" name="property_name" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter property name">
+                        </div>
+                        <div>
+                            <label for="tenants_managed" class="block text-sm font-medium text-gray-700 mb-1">Number of Tenant Managed <span class="text-red-500">*</span></label>
+                            <input type="number" id="tenants_managed" name="tenants_managed" min="0" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter number of tenants">
+                        </div>
+                        <div>
+                            <label for="city" class="block text-sm font-medium text-gray-700 mb-1">City <span class="text-red-500">*</span></label>
+                            <select id="city" name="city" required class="form-select w-full border-gray-300 rounded-md shadow-sm">
+                                <option value="">Select City</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="country" class="block text-sm font-medium text-gray-700 mb-1">Country <span class="text-red-500">*</span></label>
+                            <input type="text" id="country" name="country" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter country">
+                        </div>
+                        <div>
+                            <label for="contact_name" class="block text-sm font-medium text-gray-700 mb-1">Contact Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="contact_name" name="contact_name" required class="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter contact person name">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="additional_message" class="block text-sm font-medium text-gray-700 mb-1">Additional Message (if any)</label>
+                            <textarea id="additional_message" name="additional_message" rows="4" class="form-textarea w-full border-gray-300 rounded-md shadow-sm" placeholder="Type additional message..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center pt-4">
+                    <button type="submit" class="w-full md:w-auto bg-blue-600 text-white font-semibold py-3 px-10 rounded-lg text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/50">
+                        <i data-lucide="send" class="w-5 h-5 inline mr-2"></i>
+                        <span>Submit</span>
+                    </button>
+                    <p class="text-xs text-gray-500 mt-3">Your listing will be reviewed before going live.</p>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <a href="contact.html" class="fixed bottom-6 right-6 z-50 p-4 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 transition-transform hover:scale-110">
+        <i data-lucide="message-circle" class="w-8 h-8"></i>
+    </a>
+
+    <footer class="footer flex-shrink-0 mt-auto">
+        <div class="footer-top">
+            <h2>Our Presence</h2>
+            <div class="footer-presence">
+                <div>
+                    <h4>Kota</h4>
+                    <ul>
+                        <li><a href="#">Hostels in Kota</a></li>
+                        <li><a href="#">Apartments in Kota</a></li>
+                        <li><a href="#">PG in Kota</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Indore</h4>
+                    <ul>
+                        <li><a href="#">Hostels in Indore</a></li>
+                        <li><a href="#">Apartments in Indore</a></li>
+                        <li><a href="#">PG in Indore</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Ahmedabad</h4>
+                    <ul>
+                        <li><a href="#">Hostels in Ahmedabad</a></li>
+                        <li><a href="#">Apartments in Ahmedabad</a></li>
+                        <li><a href="#">PG in Ahmedabad</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-main">
+            <div class="footer-logo">
+                <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25">
+                <p>Discover Your Next Home, Together.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="contact.html">Contact Us</a></li>
+                    <li><a href="about.html">About Us</a></li>
+                    <li><a href="ourproperty.html">Our Properties</a></li>
+                </ul>
+            </div>
+            <div class="footer-legal">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Terms & Conditions</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Cancellation Policy</a></li>
+                    <li><a href="#">Refund Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-contact">
+                <h4>Get in Touch</h4>
+                <p><i data-lucide="mail" class="w-4 h-4 inline-block"></i> contact@roomhy.com</p>
+                <p><i data-lucide="phone" class="w-4 h-4 inline-block"></i> +91 98765 43210</p>
+                <p><i data-lucide="map-pin" class="w-4 h-4 inline-block"></i> 123, Tech Park, Bangalore, India</p>
+                <div class="footer-social">
+                    <a href="#" aria-label="Facebook"><i data-lucide="facebook" class="w-5 h-5"></i></a>
+                    <a href="#" aria-label="Instagram"><i data-lucide="instagram" class="w-5 h-5"></i></a>
+                    <a href="#" aria-label="Twitter"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i data-lucide="linkedin" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2024 Roomhy. All rights reserved.
+        </div>
+    </footer>
+
+    <script src="assets/js/list.js"></script>
+</body>
+</html>
+

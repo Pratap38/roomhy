@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>My Stays - Roomhy</title>
+    <script>
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://api.roomhy.com';
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="./js/auth-utils.js"></script>
+
+    <link rel="stylesheet" href="assets/css/mystays.css">
+</head>
+<body>
+
+<!-- Header Navigation -->
+<header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-sm shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6">
+        <div class="flex h-20 items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center">
+                <a href="index.html" class="flex-shrink-0">
+                    <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25">
+                </a>
+            </div>
+            
+            <!-- Navigation Links -->
+            <nav class="hidden lg:flex items-center space-x-6">
+                <a href="index.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Home</a>
+                <a href="ourproperty.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Properties</a>
+                <a href="mystays.html" class="text-blue-600 font-medium transition-colors border-b-2 border-blue-600">My Stays</a>
+                <a href="about.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">About</a>
+                <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
+            </nav>
+
+            <!-- User Menu -->
+            <div class="flex items-center gap-3 sm:gap-6">
+                <button id="logoutBtn" onclick="logout()" class="flex-shrink-0 flex items-center justify-center px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-red-600 text-white hover:bg-red-700">
+                    Logout
+                </button>
+                
+                <button id="menu-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i data-lucide="menu" class="w-7 h-7 text-gray-800"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div id="menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
+<div id="mobile-menu" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex justify-end p-4 flex-shrink-0">
+        <button id="menu-close" class="p-2">
+            <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+        </button>
+    </div>
+    
+    <!-- LOGIN STATE: Shows when user IS logged in -->
+    <div id="menu-logged-in" class="hidden flex flex-col h-full">
+        <div class="flex justify-between items-center px-6 py-2">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center">
+                    <i data-lucide="user" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <span class="text-lg font-semibold text-gray-800" id="welcomeUserName">Hi,welcome</span>
+                    <p class="text-xs text-gray-500" id="userIdDisplay"></p>
+                </div>
+            </div>
+            <a href="profile.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
+        </div>
+
+        <div class="px-6 py-4">
+            <div class="border border-blue-200 rounded-lg p-4 relative overflow-hidden">
+                <p class="font-semibold text-gray-800 mb-3 relative z-10">Looking to Sell/Rent your Property?</p>
+                <a href="list.html" class="block text-center w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors relative z-10">
+                    Post Property for Free
+                </a>
+            </div>
+        </div>
+
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <a href="ourproperty.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
+                </div>
+                <span>Our Properties</span>
+            </a>
+            <a href="fav.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="heart" class="w-5 h-5 text-red-600"></i>
+                </div>
+                <span>Favorites</span>
+            </a>
+            <a href="mystays.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="building" class="w-5 h-5 text-purple-600"></i>
+                </div>
+                <span>My Stays</span>
+            </a>
+            <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                </div>
+                <span>About Us</span>
+            </a>
+            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                </div>
+                <span>Contact Us</span>
+            </a>
+            <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
+                </div>
+                <span>Chat</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t flex-shrink-0">
+            <button onclick="globalLogout()" class="w-full flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
+                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
+                </div>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- LOGOUT STATE: Shows when user is NOT logged in -->
+    <div id="menu-logged-out" class="flex flex-col h-full">
+        <div class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                </div>
+                <span>About Us</span>
+            </a>
+            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                </div>
+                <span>Contact Us</span>
+            </a>
+        </div>
+        
+        <div class="p-4 space-y-3 border-t flex-shrink-0">
+            <a href="login.html" class="block w-full text-center bg-blue-600 text-white font-medium py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                <i data-lucide="log-in" class="w-4 h-4 inline mr-2"></i>
+                Login
+            </a>
+            <a href="signup.html" class="block w-full text-center border-2 border-blue-600 text-blue-600 font-medium py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors">
+                <i data-lucide="user-plus" class="w-4 h-4 inline mr-2"></i>
+                Sign Up
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Hero Section -->
+<section class="relative py-20 md:py-28 text-white">
+    <div class="absolute inset-0 w-full h-full overflow-hidden">
+        <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-600 to-blue-700"></div>
+    </div>
+    <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
+        <h1 class="text-3xl md:text-5xl font-bold text-shadow mb-4">My Stays & Bookings</h1>
+        <p class="text-xl text-blue-100">Manage your property bookings with ease</p>
+    </div>
+</section>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 py-16">
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-16">
+            <div class="inline-block">
+                <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <p class="text-gray-600 mt-4 text-lg">Loading your bookings...</p>
+        </div>
+
+        <!-- Bookings Grid with Professional Photos -->
+        <div id="bookingsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+            <!-- Cards will be inserted here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-20 hidden">
+            <div class="mb-4">
+                <i data-lucide="inbox" class="w-16 h-16 text-gray-300 mx-auto"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">No bookings yet</h3>
+            <p class="text-gray-600 mb-6 text-lg">You haven't made any bookings. Start exploring properties today!</p>
+            <a href="ourproperty.html" class="inline-block px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                Browse Properties
+            </a>
+        </div>
+    </main>
+
+<!-- Refund Modal -->
+<div id="refundModal" class="modal fixed inset-0 z-50 hidden bg-black bg-opacity-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-white">Refund Request</h2>
+                <button onclick="closeRefundModal()" class="text-white hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-8 space-y-6">
+                <!-- Property Info -->
+                <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <h3 class="font-bold text-purple-900 mb-2" id="modalPropertyName">Property Name</h3>
+                    <p class="text-purple-800 text-sm" id="modalPropertyDetails">Property details</p>
+                </div>
+
+                <!-- Request Type Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">What would you like to do?</label>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <input type="radio" id="refundOption" name="requestType" value="refund" checked class="h-4 w-4 text-purple-600">
+                            <label for="refundOption" class="ml-3 flex flex-col">
+                                <span class="text-sm font-semibold text-gray-900">Request Refund</span>
+                                <span class="text-xs text-gray-600">Get ₹500 refund to your UPI/Bank account</span>
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="alternativeOption" name="requestType" value="alternative_property" class="h-4 w-4 text-purple-600">
+                            <label for="alternativeOption" class="ml-3 flex flex-col">
+                                <span class="text-sm font-semibold text-gray-900">Alternative Property</span>
+                                <span class="text-xs text-gray-600">Browse other properties instead</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Refund Form -->
+                <div id="refundForm" class="space-y-4">
+                    <!-- Name -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                        <input type="text" id="refundName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Enter your name">
+                    </div>
+
+                    <!-- Phone -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                        <input type="tel" id="refundPhone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="+91 98765 43210">
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                        <input type="email" id="refundEmail" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="your.email@gmail.com">
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">Payment Method</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <!-- UPI -->
+                            <div class="flex items-center">
+                                <input type="radio" id="upiMethod" name="paymentMethod" value="upi" checked class="h-4 w-4 text-purple-600">
+                                <label for="upiMethod" class="ml-3 flex flex-col cursor-pointer flex-1">
+                                    <span class="text-sm font-semibold text-gray-900">UPI</span>
+                                    <span class="text-xs text-gray-600">Fast & Instant</span>
+                                </label>
+                            </div>
+                            <!-- Bank -->
+                            <div class="flex items-center">
+                                <input type="radio" id="bankMethod" name="paymentMethod" value="bank" class="h-4 w-4 text-purple-600">
+                                <label for="bankMethod" class="ml-3 flex flex-col cursor-pointer flex-1">
+                                    <span class="text-sm font-semibold text-gray-900">Bank</span>
+                                    <span class="text-xs text-gray-600">Transfer</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- UPI ID Field -->
+                    <div id="upiField" class="block">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">UPI ID</label>
+                        <input type="text" id="upiId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="yourname@upi">
+                    </div>
+
+                    <!-- Bank Details Fields -->
+                    <div id="bankFields" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Account Holder Name</label>
+                            <input type="text" id="bankName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Name on bank account">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Account Number</label>
+                            <input type="text" id="bankAccount" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="12345678901234">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">IFSC Code</label>
+                                <input type="text" id="ifscCode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="SBIN0001234">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Bank Name</label>
+                                <input type="text" id="bankNameField" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="State Bank of India">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alternative Property Form -->
+                <div id="alternativeForm" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Area/Location</label>
+                        <input type="text" id="preferredArea" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="e.g., Whitefield, Marathahalli">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Property Requirements</label>
+                        <textarea id="propertyRequirements" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" rows="3" placeholder="Any specific requirements..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Refund Amount Display -->
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <p class="text-sm text-green-800">
+                        <span class="font-semibold">Refund Amount:</span> <span class="text-2xl font-bold text-green-600">₹500</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 px-8 py-4 flex justify-between gap-3">
+                <button onclick="closeRefundModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-100">
+                    Cancel
+                </button>
+                <button onclick="submitRefundRequest()" class="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700">
+                    Submit Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="assets/js/mystays.js"></script>
+
+<!-- Footer -->
+<footer class="bg-gray-900 text-gray-400 py-16 mt-20">
+    <div class="container mx-auto px-4 sm:px-6">
+        <!-- Footer Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <!-- About Column -->
+            <div>
+                <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-8 w-auto mb-4">
+                <p class="text-sm text-gray-400 leading-relaxed">RoomHy is your trusted partner in finding quality accommodations. We connect property owners with quality tenants through a secure and transparent platform.</p>
+                <div class="flex space-x-4 mt-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition"><i data-lucide="facebook" class="w-5 h-5"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white transition"><i data-lucide="instagram" class="w-5 h-5"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white transition"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-white transition"><i data-lucide="linkedin" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+            
+            <!-- Quick Links -->
+            <div>
+                <h4 class="text-white font-bold mb-6">Quick Links</h4>
+                <ul class="space-y-3">
+                    <li><a href="index.html" class="text-gray-400 hover:text-white transition">Home</a></li>
+                    <li><a href="ourproperty.html" class="text-gray-400 hover:text-white transition">Properties</a></li>
+                    <li><a href="mystays.html" class="text-gray-400 hover:text-white transition">My Stays</a></li>
+                    <li><a href="about.html" class="text-gray-400 hover:text-white transition">About Us</a></li>
+                </ul>
+            </div>
+            
+            <!-- Support -->
+            <div>
+                <h4 class="text-white font-bold mb-6">Support</h4>
+                <ul class="space-y-3">
+                    <li><a href="#" class="text-gray-400 hover:text-white transition">Help Center</a></li>
+                    <li><a href="#" class="text-gray-400 hover:text-white transition">FAQ</a></li>
+                    <li><a href="#" class="text-gray-400 hover:text-white transition">Contact Us</a></li>
+                    <li><a href="#" class="text-gray-400 hover:text-white transition">Report Issue</a></li>
+                </ul>
+            </div>
+            
+            <!-- Contact Info -->
+            <div>
+                <h4 class="text-white font-bold mb-6">Contact Info</h4>
+                <ul class="space-y-3 text-sm">
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="mail" class="w-5 h-5"></i>
+                        <a href="mailto:support@roomhy.com" class="text-gray-400 hover:text-white transition">support@roomhy.com</a>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="phone" class="w-5 h-5"></i>
+                        <a href="tel:+919876543210" class="text-gray-400 hover:text-white transition">+91 98765 43210</a>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <i data-lucide="map-pin" class="w-5 h-5"></i>
+                        <span>Bangalore, India</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Footer Bottom -->
+        <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p class="text-sm text-gray-400">&copy; 2024 RoomHy. All rights reserved.</p>
+            <div class="flex gap-6 text-sm mt-6 md:mt-0">
+                <a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a>
+                <a href="#" class="text-gray-400 hover:text-white transition">Terms of Service</a>
+                <a href="#" class="text-gray-400 hover:text-white transition">Cookie Policy</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

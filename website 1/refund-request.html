@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>Refund/Alternative Request - Roomhy</title>
+    <script>
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://api.roomhy.com';
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="assets/css/refund-request.css">
+</head>
+<body>
+
+<!-- Header Navigation -->
+<header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-sm shadow-sm">
+    <div class="container mx-auto px-4 sm:px-6">
+        <div class="flex h-20 items-center justify-between">
+            <div class="flex items-center">
+                <a href="index.html" class="flex-shrink-0">
+                    <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25">
+                </a>
+            </div>
+            <button id="logoutBtn" onclick="logout()" class="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition">
+                Logout
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Hero Section -->
+<section class="relative py-16 md:py-20 text-white">
+    <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-600 to-blue-700"></div>
+    <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-shadow mb-4">Refund/Alternative Request</h1>
+        <p class="text-lg text-blue-100">Submit your refund or alternative property request</p>
+    </div>
+</section>
+
+<!-- Main Content -->
+<main class="container mx-auto px-4 sm:px-6 py-16">
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-12">
+        <div class="inline-block">
+            <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+        </div>
+        <p class="text-gray-600 mt-4 text-lg">Loading booking details...</p>
+    </div>
+
+    <!-- Booking Details & Request Form -->
+    <div id="contentSection" class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Booking Details Card -->
+            <div class="lg:col-span-1">
+                <div class="light-card rounded-xl p-6 sticky top-24">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Booking Details</h2>
+                    
+                    <!-- Property Image -->
+                    <div class="mb-6 rounded-lg overflow-hidden bg-gray-200" style="height: 200px;">
+                        <img id="propertyImage" src="" alt="Property" class="w-full h-full object-cover"
+                             onerror="this.src='https://images.unsplash.com/photo-1567016432779-1fee749a1532?q=80&w=400'">
+                    </div>
+
+                    <!-- Property Name -->
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600 font-semibold mb-1">PROPERTY NAME</p>
+                        <p id="propertyName" class="text-lg font-bold text-gray-900">Loading...</p>
+                    </div>
+
+                    <!-- Property ID -->
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600 font-semibold mb-1">PROPERTY ID</p>
+                        <p id="propertyIdDisplay" class="text-sm font-mono text-blue-600 font-bold">Loading...</p>
+                    </div>
+
+                    <!-- Booking ID -->
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-600 font-semibold mb-1">BOOKING ID</p>
+                        <p id="bookingIdDisplay" class="text-sm font-mono text-gray-700 font-bold">Loading...</p>
+                    </div>
+
+                    <!-- Booking Amount -->
+                    <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p class="text-sm text-blue-600 font-semibold mb-1">BOOKING AMOUNT</p>
+                        <p id="bookingAmount" class="text-2xl font-bold text-blue-600">₹0</p>
+                    </div>
+
+                    <!-- Booking Status -->
+                    <div class="mb-6">
+                        <p class="text-sm text-gray-600 font-semibold mb-2">STATUS</p>
+                        <div id="statusBadge" class="status-badge status-pending">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            <span>Pending</span>
+                        </div>
+                    </div>
+
+                    <!-- Back Button -->
+                    <button onclick="goBackToMyStays()" class="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">
+                        ← Back to My Stays
+                    </button>
+                </div>
+            </div>
+
+            <!-- Request Form -->
+            <div class="lg:col-span-2">
+                <div class="light-card rounded-xl p-8">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Request Type</h2>
+
+                    <!-- Request Type Selection -->
+                    <div class="space-y-4 mb-8">
+                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 transition" id="refundLabel">
+                            <input type="radio" name="requestType" value="refund" checked class="w-5 h-5 text-blue-600">
+                            <div class="ml-4">
+                                <p class="font-bold text-gray-900">Request Refund</p>
+                                <p class="text-sm text-gray-600">Get your refund to UPI or Bank Account</p>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 transition" id="alternativeLabel">
+                            <input type="radio" name="requestType" value="alternative_property" class="w-5 h-5 text-blue-600">
+                            <div class="ml-4">
+                                <p class="font-bold text-gray-900">Request Alternative Property</p>
+                                <p class="text-sm text-gray-600">Browse and choose a different property</p>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Refund Details Section -->
+                    <div id="refundSection" class="space-y-6 mb-8 pb-8 border-b border-gray-200">
+                        <h3 class="text-xl font-bold text-gray-900">Refund Details</h3>
+
+                        <!-- User Name -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name *</label>
+                            <input type="text" id="refundName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Your full name">
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
+                            <input type="tel" id="refundPhone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="+91 98765 43210">
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Email Address *</label>
+                            <input type="email" id="refundEmail" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="your@email.com">
+                        </div>
+
+                        <!-- Payment Method -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Payment Method *</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 transition">
+                                    <input type="radio" name="paymentMethod" value="upi" checked class="w-4 h-4 text-blue-600">
+                                    <span class="ml-2 font-semibold text-gray-900">UPI</span>
+                                </label>
+                                <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 transition">
+                                    <input type="radio" name="paymentMethod" value="bank" class="w-4 h-4 text-blue-600">
+                                    <span class="ml-2 font-semibold text-gray-900">Bank</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- UPI ID Field -->
+                        <div id="upiField" class="block">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">UPI ID *</label>
+                            <input type="text" id="upiId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="yourname@upi">
+                        </div>
+
+                        <!-- Bank Details -->
+                        <div id="bankFields" class="hidden space-y-3">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Account Holder Name *</label>
+                                <input type="text" id="bankName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Name on account">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Account Number *</label>
+                                <input type="text" id="bankAccount" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="12345678901234">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">IFSC Code *</label>
+                                    <input type="text" id="ifscCode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="SBIN0001234">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Bank Name *</label>
+                                    <input type="text" id="bankNameField" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Bank Name">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Refund Reason -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Reason for Refund</label>
+                            <textarea id="refundReason" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Tell us why you want a refund..."></textarea>
+                        </div>
+
+                        <!-- Refund Amount Display -->
+                        <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+                            <p class="text-sm text-green-800">
+                                <span class="font-semibold">Refund Amount:</span> <span class="text-2xl font-bold text-green-600" id="refundAmount">₹500</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Alternative Property Section -->
+                    <div id="alternativeSection" class="hidden space-y-6 pb-8">
+                        <h3 class="text-xl font-bold text-gray-900">Alternative Property Preferences</h3>
+
+                        <!-- Preferred Area -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Area/Location *</label>
+                            <input type="text" id="preferredArea" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Whitefield, Marathahalli">
+                        </div>
+
+                        <!-- Property Type Preference -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Property Type</label>
+                            <select id="propertyType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Select type...</option>
+                                <option value="pg">PG / Co-Living</option>
+                                <option value="hostel">Hostel</option>
+                                <option value="flat">Flat / Studio</option>
+                            </select>
+                        </div>
+
+                        <!-- Price Range -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Min Price (₹)</label>
+                                <input type="number" id="minPrice" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="5000">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Max Price (₹)</label>
+                                <input type="number" id="maxPrice" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="20000">
+                            </div>
+                        </div>
+
+                        <!-- Requirements -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Your Requirements</label>
+                            <textarea id="propertyRequirements" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="4" placeholder="Describe your requirements..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-4 pt-8">
+                        <button onclick="goBackToMyStays()" class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition">
+                            Cancel
+                        </button>
+                        <button onclick="submitRequest()" class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                            <span>Submit Request</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden">
+        <div class="light-card rounded-xl p-12 text-center">
+            <div class="mb-6">
+                <i data-lucide="alert-circle" class="w-16 h-16 text-red-500 mx-auto"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Unable to Load Booking Details</h2>
+            <p class="text-gray-600 mb-8">We couldn't find your booking information. Please go back to My Stays and try again.</p>
+            <a href="mystays.html" class="inline-block px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                ← Back to My Stays
+            </a>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-gray-900 text-gray-400 py-12 mt-20">
+    <div class="container mx-auto px-4 sm:px-6 text-center">
+        <p class="text-sm">&copy; 2024 RoomHy. All rights reserved.</p>
+    </div>
+</footer>
+
+<script src="assets/js/refund-request.js"></script>
+
+</body>
+</html>

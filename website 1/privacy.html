@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Roomhy</title>
+    <script>
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="./js/auth-utils.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+            extend: {
+                keyframes: {
+                    kenburns: {
+                        '0%': { transform: 'scale(1) translate(0, 0)' },
+                        '100%': { transform: 'scale(1.1) translate(-2%, 2%)' },
+                    },
+                    // Keyframes for testimonial sliding
+                    'slide-left': {
+                        '0%': { transform: 'translateX(0%)' },
+                        '100%': { transform: 'translateX(-50%)' },
+                    },
+                    'slide-right': {
+                        '0%': { transform: 'translateX(-50%)' },
+                        '100%': { transform: 'translateX(0%)' },
+                    }
+                },
+                    animation: {
+                        kenburns: 'kenburns 30s ease-in-out infinite alternate',
+                        // Animations for testimonial sliding
+                        'slide-left-infinite': 'slide-left 40s linear infinite',
+                        'slide-right-infinite': 'slide-right 40s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="assets/css/privacy.css">
+</head>
+<body class="text-gray-800">
+
+    <header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-sm shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6">
+            <div class="flex h-20 items-center justify-between">
+                
+                <div class="flex items-center">
+                    <a href="index.html" class="flex-shrink-0">
+                        <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25">
+                    </a>
+                </div>
+                
+                <div class="flex items-center gap-3 sm:gap-6">
+                    <nav class="hidden lg:flex items-center space-x-6">
+                        <a href="about.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">About Us</a>
+                        <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
+                    </nav>
+
+                    <a href="list.html" class="flex-shrink-0 flex items-center space-x-1 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Post <span class="hidden sm:inline">Your</span> Property</span>
+                    </a>
+                    
+                    <button id="menu-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i data-lucide="menu" class="w-7 h-7 text-gray-800"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </header>
+    <section class="relative py-20 md:py-28 text-white">
+        <div id="hero-image-wrapper" class="absolute inset-0 w-full h-full overflow-hidden">
+            
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1980&auto:format&fit=crop" 
+                 alt="Hero background 1" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-100">
+            
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto:format&fit=crop" 
+                 alt="Hero background 2" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+            
+            <img src="https://images.unsplash.com/photo-1494203484021-3c454daf695d?q=80&w=2070&auto:format&fit=crop" 
+                 alt="Hero background 3" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+
+            <div class="absolute inset-0 w-full h-full bg-black/60"></div> 
+        </div>
+
+        <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
+            <h1 class="text-4xl md:text-5xl font-bold text-shadow mb-4" style="color: #fffcf2;">
+                Privacy Policy
+            </h1>
+            <p class="text-lg text-gray-200 max-w-2xl mx-auto mb-6">
+                Effective Date: 1st Aug 2025. We value your trust.
+            </p>
+
+            <div class="relative w-full max-w-2xl mx-auto">
+                <input type="text" placeholder="Search for 'PG near me' or 'Hostel in Kota'" class="w-full p-4 pl-5 pr-14 rounded-lg bg-white text-gray-900 border-transparent focus:ring-4 focus:ring-cyan-300/50 focus:outline-none placeholder-gray-500 shadow-lg">
+                <button type="submit" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    <i data-lucide="search" class="w-5 h-5 text-white"></i>
+                </button>
+            </div>
+            </div>
+    </section>
+    <!-- Mobile Menu Overlay -->
+    <div id="menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
+    
+    <!-- Mobile Menu - Logged In -->
+    <div id="menu-logged-in" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col hidden">
+        <div class="flex justify-end p-4 flex-shrink-0">
+            <button id="menu-close" class="p-2">
+                <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+            </button>
+        </div>
+
+        <div class="flex justify-between items-center px-6 py-2">
+            <div class="flex items-center space-x-3">
+                <div id="userAvatar" class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                    <i data-lucide="user" class="w-6 h-6 text-gray-600"></i>
+                </div>
+                <div>
+                    <span id="welcomeUserName" class="text-lg font-semibold text-gray-800 block">Hi, User</span>
+                    <span id="userIdDisplay" class="text-xs text-gray-600"></span>
+                </div>
+            </div>
+            <a href="profile-settings.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
+        </div>
+
+        <div class="px-6 py-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 relative overflow-hidden">
+                <p class="font-semibold text-gray-800 mb-3 relative z-10">Looking to Sell/Rent your Property?</p>
+                <a href="list.html" class="block text-center w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors relative z-10 text-lg font-bold">
+                    +
+                </a>
+            </div>
+        </div>
+
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <a href="index.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
+                </div>
+                <span>Our Properties</span>
+            </a>
+            <a href="fav.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="heart" class="w-5 h-5 text-red-600"></i>
+                </div>
+                <span>Favorites</span>
+            </a>
+            <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                 <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
+                </div>
+                <span>Chat</span>
+            </a>
+            <a href="my-stays.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="building" class="w-5 h-5 text-purple-600"></i>
+                </div>
+                <span>My Stays</span>
+            </a>
+            <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                </div>
+                <span>About Us</span>
+            </a>
+            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                </div>
+                <span>Contact Us</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t flex-shrink-0">
+            <button onclick="globalLogout()" class="w-full flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
+                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
+                </div>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Menu - Logged Out -->
+    <div id="menu-logged-out" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="flex justify-end p-4 flex-shrink-0">
+            <button id="menu-close-logout" class="p-2">
+                <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+            </button>
+        </div>
+
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                </div>
+                <span>About Us</span>
+            </a>
+            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                </div>
+                <span>Contact Us</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t flex-shrink-0 space-y-3">
+            <a href="login.html" class="block w-full text-center bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium py-2 px-4 rounded-lg transition-colors">
+                Login
+            </a>
+            <a href="signup.html" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                Sign Up
+            </a>
+        </div>
+    </div>
+    <main class="container mx-auto px-4 sm:px-6 py-8 md:py-12">
+        
+        <div class="light-card rounded-2xl p-6 md:p-10 lg:p-12 max-w-4xl mx-auto">
+            <article class="prose max-w-none">
+                <h1>Privacy Policy "? Roomhy</h1>
+                <p><strong>Effective Date: 1st Aug 2025</strong></p>
+                <p>At Roomhy, we value your trust. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use our platform to search, bid, list, or book properties.</p>
+
+                <h2>Definitions</h2>
+                <ul>
+                    <li><strong>"Roomhy", "We", "Us", or "Our"</strong> refers to Roomhy Technologies and its associated services.</li>
+                    <li><strong>"User", "You", or "Your"</strong> refers to any individual or entity using the platform, including students, tenants, and property owners.</li>
+                    <li><strong>"Platform"</strong> refers to Roomhy's website, mobile application, and related services.</li>
+                </ul>
+
+                <h2>Information We Collect</h2>
+                <p>We may collect the following types of information:</p>
+                <p><strong>a) Personal Information (provided by you)</strong></p>
+                <ul>
+                    <li>Name, phone number, email address</li>
+                    <li>Identification documents (for verification)</li>
+                    <li>Payment details (processed via secure gateways)</li>
+                </ul>
+                <p><strong>b) Usage Information (collected automatically)</strong></p>
+                <ul>
+                    <li>Device details, IP address, browser type</li>
+                    <li>Pages visited, time spent, and actions taken on the platform</li>
+                </ul>
+                <p><strong>c) Property Information</strong></p>
+                <ul>
+                    <li>Property descriptions, images, and location details provided by owners</li>
+                </ul>
+
+                <h2>How We Use Your Information</h2>
+                <p>We use your information to:</p>
+                <ul>
+                    <li>Facilitate property searches, bidding, and bookings</li>
+                    <li>Verify users and listings for safety and trust</li>
+                    <li>Communicate updates, confirmations, and offers</li>
+                    <li>Improve platform performance and user experience</li>
+                    <li>Prevent fraud, unauthorised activity, or policy violations</li>
+                </ul>
+
+                <h2>Sharing Your Information</h2>
+                <p>We do not sell your personal data. We may share it only:</p>
+                <ul>
+                    <li>With property owners or students for completing a transaction</li>
+                    <li>With service providers (e.g., payment gateways, verification partners)</li>
+                    <li>When required by law or government authorities</li>
+                </ul>
+
+                <h2>Data Storage & Security</h2>
+                <ul>
+                    <li>We use industry-standard encryption and security practices to protect your data.</li>
+                    <li>Access to your personal information is restricted to authorised personnel only.</li>
+                    <li>While we take every precaution, no online platform can guarantee 100% security.</li>
+                </ul>
+
+                <h2>Cookies & Tracking</h2>
+                <p>Roomhy uses cookies and similar technologies to:</p>
+                <ul>
+                    <li>Save your preferences</li>
+                    <li>Analyse site traffic and usage patterns</li>
+                    <li>Personalise property recommendations</li>
+                </ul>
+                <p>You can disable cookies in your browser, but some features may not work as intended.</p>
+
+                <h2>Your Rights</h2>
+                <p>You have the right to:</p>
+                <ul>
+                    <li>Access and review your personal data</li>
+                    <li>Request corrections or updates</li>
+                    <li>Request deletion of your account and data (subject to legal obligations)</li>
+                </ul>
+
+                <h2>Third-Party Links</h2>
+                <p>Our platform may contain links to external sites. We are not responsible for the privacy practices or content of those websites.</p>
+
+                <h2>Policy Updates</h2>
+                <p>We may update this Privacy Policy from time to time. Changes will be posted here with the updated effective date.</p>
+
+                <h2>Contact Us</h2>
+                <p>If you have any privacy-related questions, please contact:</p>
+                <p>
+                    ?? <a href="mailto:hello@roomhy.com">hello@roomhy.com</a><br>
+                    ?? +91-9983005030
+                </p>
+            </article>
+        </div>
+
+    </main>
+    <a href="#" class="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110">
+        <i data-lucide="message-circle" class="w-8 h-8"></i>
+    </a>
+    <footer class="footer">
+      <div class="footer-top">
+        <h2>Our Presence</h2>
+        <div class="footer-presence">
+          <div>
+            <h4>Kota</h4>
+            <ul>
+              <li><a href="#">Hostels in Kota</a></li>
+              <li><a href="#">Apartments in Kota</a></li>
+              <li><a href="#">PG in Kota</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Indore</h4>
+            <ul>
+              <li><a href="#">Hostels in Indore</a></li>
+              <li><a href="#">Apartments in Indore</a></li>
+              <li><a href="#">PG in Indore</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Ahmedabad</h4>
+            <ul>
+              <li><a href="#">Hostels in Ahmedabad</a></li>
+              <li><a href="#">Apartments in Ahmedabad</a></li>
+              <li><a href="#">PG in Ahmedabad</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    
+      <div class="footer-main">
+        <div class="footer-logo">
+          <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" class="h-10 w-25">
+          <p>Discover Your Next Home, Together.</p>
+        </div>
+    
+        <div class="footer-links">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="index.html">Find a Room</a></li>
+            <li><a href="about.html">Our Story</a></li>
+            <li><a href="contact.html">Contact Support</a></li>
+            <li><a href="terms.html">Terms and Conditions</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="cancellation.html">Cancellation Policy</a></li>
+          </ul>
+        </div>
+    
+        <div class="footer-legal">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="terms.html">Terms & Conditions</a></li>
+            <li><a href="privacy.html" class="text-blue-400 font-semibold">Privacy Policy</a></li>
+            <li><a href="cancellation.html">Cancellation Policy</a></li>
+            <li><a href="#">Refund Policy</a></li>
+          </ul>
+        </div>
+    
+        <div class="footer-contact">
+          <h4>Contact</h4>
+          <p><i class="fas fa-phone"></i> +91 99830 05030</p>
+          <p><i class="fas fa-envelope"></i> hello@roomhy.com</p>
+          <div class="footer-social">
+            <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" title="X"><i class="fab fa-x-twitter"></i></a>
+            <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
+          </div>
+        </div>
+      </div>
+    
+      <div class="footer-bottom">
+        <p>? 2025 <strong>Roomhy</strong>. All Rights Reserved.</p>
+      </div>
+    </footer>
+    <script src="assets/js/privacy.js"></script>
+    </body>
+</html>
+

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enquiry Management - Roomhy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/enquiry.css">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto max-w-7xl py-8 px-4">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Enquiry Management System</h1>
+            <p class="text-gray-600">Manage property enquiries with approval workflow</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex gap-4 mb-6 flex-wrap">
+            <button id="pendingTabBtn" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700" onclick="showTab('pending')">
+                Pending Enquiries
+            </button>
+            <button id="reviewTabBtn" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400" onclick="showTab('review')">
+                For Approval
+            </button>
+            <button id="approvedTabBtn" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400" onclick="showTab('approved')">
+                Approved
+            </button>
+            <button id="allTabBtn" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400" onclick="showTab('all')">
+                All Enquiries
+            </button>
+        </div>
+
+        <!-- Pending Enquiries Tab -->
+        <div id="pendingTab" class="bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Pending Enquiries</h2>
+            <div id="pendingLoadingSpinner" class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="mt-2 text-gray-600">Loading enquiries...</p>
+            </div>
+            <div id="pendingContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="noPending" class="hidden text-center py-8 text-gray-500">
+                No pending enquiries
+            </div>
+        </div>
+
+        <!-- For Approval Tab -->
+        <div id="reviewTab" class="hidden bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Enquiries Pending Approval</h2>
+            <div id="reviewContainer" class="space-y-4"></div>
+            <div id="noReview" class="hidden text-center py-8 text-gray-500">
+                No enquiries pending approval
+            </div>
+        </div>
+
+        <!-- Approved Tab -->
+        <div id="approvedTab" class="hidden bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Approved Enquiries</h2>
+            <div id="approvedContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="noApproved" class="hidden text-center py-8 text-gray-500">
+                No approved enquiries
+            </div>
+        </div>
+
+        <!-- All Enquiries Tab -->
+        <div id="allTab" class="hidden bg-white rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">All Enquiries</h2>
+            <div class="mb-4 flex gap-2">
+                <input type="text" id="searchInput" placeholder="Search by property name, city, or owner..." 
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    onkeyup="filterEnquiries()">
+            </div>
+            <div id="allContainer" class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100 border-b">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Property</th>
+                            <th class="px-4 py-3 text-left">City</th>
+                            <th class="px-4 py-3 text-left">Owner</th>
+                            <th class="px-4 py-3 text-left">Status</th>
+                            <th class="px-4 py-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allTableBody"></tbody>
+                </table>
+            </div>
+            <div id="noAll" class="hidden text-center py-8 text-gray-500">
+                No enquiries found
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Modal -->
+    <div id="approvalModal" class="modal">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Approve Enquiry</h2>
+            <div id="approvalModalContent"></div>
+            <div class="mt-6 flex gap-4">
+                <button onclick="submitApproval()" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700">
+                    Approve
+                </button>
+                <button onclick="closeApprovalModal()" class="flex-1 bg-gray-400 text-white py-3 rounded-lg font-semibold hover:bg-gray-500">
+                    Cancel
+                </button>
+                <button onclick="rejectEnquiry()" class="flex-1 bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700">
+                    Reject
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="detailsModal" class="modal">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <button onclick="closeDetailsModal()" class="float-right text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            <div id="detailsModalContent"></div>
+        </div>
+    </div>
+
+    <script src="assets/js/enquiry.js"></script>
+</body>
+</html>

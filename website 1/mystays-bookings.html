@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Stays & Bookings - Roomhy</title>
+    <script>
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5001'
+            : 'https://api.roomhy.com';
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="assets/css/mystays-bookings.css">
+</head>
+<body>
+
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">My Stays & Bookings</h1>
+                    <p class="text-gray-600 mt-1">View and manage your property bookings</p>
+                </div>
+                <button onclick="window.history.back()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">← Back</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="inline-block">
+                <div class="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+            </div>
+            <p class="text-gray-600 mt-4">Loading your bookings...</p>
+        </div>
+
+        <!-- Bookings Grid -->
+        <div id="bookingsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 hidden">
+            <!-- Cards will be inserted here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-16 hidden">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+            </svg>
+            <h3 class="mt-2 text-lg font-medium text-gray-900">No bookings yet</h3>
+            <p class="mt-1 text-gray-600">You haven't made any bookings. Start exploring properties today!</p>
+            <button onclick="window.location.href='/'" class="mt-6 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                Browse Properties
+            </button>
+        </div>
+    </main>
+</div>
+
+<!-- Refund Modal (Same as booking-form.html) -->
+<div id="refundModal" class="modal fixed inset-0 z-50 hidden bg-black bg-opacity-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-white">Refund Request</h2>
+                <button onclick="closeRefundModal()" class="text-white hover:text-gray-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-8 space-y-6">
+                <!-- Property Info -->
+                <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <h3 class="font-bold text-purple-900 mb-2" id="modalPropertyName">Property Name</h3>
+                    <p class="text-purple-800 text-sm" id="modalPropertyDetails">Property details</p>
+                </div>
+
+                <!-- Request Type Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">What would you like to do?</label>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <input type="radio" id="refundOption" name="requestType" value="refund" checked class="h-4 w-4 text-purple-600">
+                            <label for="refundOption" class="ml-3 flex flex-col">
+                                <span class="text-sm font-semibold text-gray-900">Request Refund</span>
+                                <span class="text-xs text-gray-600">Get ₹500 refund to your UPI/Bank account</span>
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="radio" id="alternativeOption" name="requestType" value="alternative_property" class="h-4 w-4 text-purple-600">
+                            <label for="alternativeOption" class="ml-3 flex flex-col">
+                                <span class="text-sm font-semibold text-gray-900">Alternative Property</span>
+                                <span class="text-xs text-gray-600">Browse other properties instead</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Refund Form -->
+                <div id="refundForm" class="space-y-4">
+                    <!-- Name -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                        <input type="text" id="refundName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Enter your name">
+                    </div>
+
+                    <!-- Phone -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                        <input type="tel" id="refundPhone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="+91 98765 43210">
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">Payment Method</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <!-- UPI -->
+                            <div class="flex items-center">
+                                <input type="radio" id="upiMethod" name="paymentMethod" value="upi" checked class="h-4 w-4 text-purple-600">
+                                <label for="upiMethod" class="ml-3 flex flex-col cursor-pointer flex-1">
+                                    <span class="text-sm font-semibold text-gray-900">UPI</span>
+                                    <span class="text-xs text-gray-600">Fast & Instant</span>
+                                </label>
+                            </div>
+                            <!-- Bank -->
+                            <div class="flex items-center">
+                                <input type="radio" id="bankMethod" name="paymentMethod" value="bank" class="h-4 w-4 text-purple-600">
+                                <label for="bankMethod" class="ml-3 flex flex-col cursor-pointer flex-1">
+                                    <span class="text-sm font-semibold text-gray-900">Bank</span>
+                                    <span class="text-xs text-gray-600">Transfer</span>
+                                </label>
+                            </div>
+                            <!-- Other -->
+                            <div class="flex items-center">
+                                <input type="radio" id="otherMethod" name="paymentMethod" value="other" class="h-4 w-4 text-purple-600">
+                                <label for="otherMethod" class="ml-3 flex flex-col cursor-pointer flex-1">
+                                    <span class="text-sm font-semibold text-gray-900">Other</span>
+                                    <span class="text-xs text-gray-600">Custom</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- UPI ID Field -->
+                    <div id="upiField" class="block">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">UPI ID</label>
+                        <input type="text" id="upiId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="yourname@upi">
+                    </div>
+
+                    <!-- Bank Details Fields -->
+                    <div id="bankFields" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Account Holder Name</label>
+                            <input type="text" id="bankName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Name on bank account">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Account Number</label>
+                            <input type="text" id="bankAccount" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="12345678901234">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">IFSC Code</label>
+                                <input type="text" id="ifscCode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="SBIN0001234">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Bank Name</label>
+                                <input type="text" id="bankNameField" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="State Bank of India">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alternative Property Form -->
+                <div id="alternativeForm" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Area/Location</label>
+                        <input type="text" id="preferredArea" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="e.g., Whitefield, Marathahalli">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Property Requirements</label>
+                        <textarea id="propertyRequirements" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" rows="3" placeholder="Any specific requirements..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Refund Amount Display -->
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <p class="text-sm text-green-800">
+                        <span class="font-semibold">Refund Amount:</span> <span class="text-2xl font-bold text-green-600">₹500</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 px-8 py-4 flex justify-between gap-3">
+                <button onclick="closeRefundModal()" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-100">
+                    Cancel
+                </button>
+                <button onclick="submitRefundRequest()" class="px-6 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700">
+                    Submit Request
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="assets/js/mystays-bookings.js"></script>
+
+</body>
+</html>

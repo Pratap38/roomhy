@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roomhy - Portal Select</title>
+    <script>
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5001' : 'https://api.roomhy.com';
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="./js/auth-utils.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+            extend: {
+                keyframes: {
+                    kenburns: {
+                        '0%': { transform: 'scale(1) translate(0, 0)' },
+                        '100%': { transform: 'scale(1.1) translate(-2%, 2%)' },
+                    },
+                    // Keyframes for testimonial sliding (retained for consistency)
+                    'slide-left': {
+                        '0%': { transform: 'translateX(0%)' },
+                        '100%': { transform: 'translateX(-50%)' },
+                    },
+                    'slide-right': {
+                        '0%': { transform: 'translateX(-50%)' },
+                        '100%': { transform: 'translateX(0%)' },
+                    },
+                    // Keyframes for floating animation (retained for consistency)
+                    float: {
+                        '0%': { transform: 'translateY(0px)' },
+                        '50%': { transform: 'translateY(-10px)' },
+                        '100%': { transform: 'translateY(0px)' },
+                    }
+                },
+                    animation: {
+                        kenburns: 'kenburns 30s ease-in-out infinite alternate',
+                        'slide-left-infinite': 'slide-left 40s linear infinite',
+                        'slide-right-infinite': 'slide-right 40s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="assets/css/slider.css">
+</head>
+<body class="text-gray-800 flex flex-col min-h-screen">
+
+    <header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-sm shadow-sm flex-shrink-0">
+        <div class="container mx-auto px-4 sm:px-6">
+            <div class="flex h-20 items-center justify-between">
+                
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="flex items-center space-x-1 p-2 rounded-lg hover:bg-gray-100 transition-colors" title="Go back to Home">
+                        <i data-lucide="chevron-left" class="w-6 h-6 text-gray-800"></i>
+                    </a>
+                    <a href="index.html" class="flex-shrink-0">
+                        <span class="text-2xl font-extrabold text-blue-600">Roomhy</span>
+                    </a>
+                </div>
+                
+                <div class="flex items-center gap-3 sm:gap-6">
+                    <nav class="hidden lg:flex items-center space-x-6">
+                        <a href="about.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">About Us</a>
+                        <a href="contact.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Contact</a>
+                    </nav>
+
+                    <!-- NEW HEADER CTA: "Home" link -->
+                    <a href="index.html" class="flex-shrink-0 flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        <span>Home</span>
+                    </a>
+                    
+                    <button id="menu-toggle" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i data-lucide="menu" class="w-7 h-7 text-gray-800"></i>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <section class="relative py-16 md:py-20 text-white flex-shrink-0">
+        <div id="hero-image-wrapper" class="absolute inset-0 w-full h-full overflow-hidden">
+            
+            <img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1980&auto:format&fit=crop" 
+                 alt="Hero background 1" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-100">
+            
+            <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2070&auto:format&fit=crop" 
+                 alt="Hero background 2" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+            
+            <img src="https://images.unsplash.com/photo-1494203484021-3c454daf695d?q=80&w=2070&auto:format&fit-crop" 
+                 alt="Hero background 3" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out animate-kenburns opacity-0">
+
+            <div class="absolute inset-0 w-full h-full bg-black/60"></div> 
+        </div>
+
+        <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
+            <h1 class="text-3xl md:text-5xl font-extrabold text-shadow mb-4" style="color: #fffcf2;">
+                Welcome to the Roomhy Portal
+            </h1>
+            <p class="text-xl text-gray-200 text-shadow">Select your destination: Manage listings or post a new property.</p>
+        </div>
+    </section>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
+    
+    <!-- Mobile Menu - Logged In -->
+    <div id="menu-logged-in" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col hidden">
+        <div class="flex justify-end p-4 flex-shrink-0">
+            <button id="menu-close" class="p-2">
+                <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+            </button>
+        </div>
+
+        <div class="flex justify-between items-center px-6 py-2">
+            <div class="flex items-center space-x-3">
+                <div id="userAvatar" class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                    <i data-lucide="user" class="w-6 h-6 text-gray-600"></i>
+                </div>
+                <div>
+                    <span id="welcomeUserName" class="text-lg font-semibold text-gray-800 block">Hi, User</span>
+                    <span id="userIdDisplay" class="text-xs text-gray-600"></span>
+                </div>
+            </div>
+            <a href="profile-settings.html" class="text-sm font-medium text-blue-600 hover:underline">Profile</a>
+        </div>
+
+        <div class="px-6 py-4">
+            <div class="border border-blue-200 rounded-lg p-4 relative overflow-hidden">
+                <p class="font-semibold text-gray-800 mb-3 relative z-10">Looking to Sell/Rent your Property?</p>
+                <a href="list.html" class="block text-center w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg text-sm transition-colors relative z-10 text-lg font-bold">
+                    +
+                </a>
+            </div>
+        </div>
+
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <a href="index.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="home" class="w-5 h-5 text-blue-600"></i>
+                </div>
+                <span>Our Properties</span>
+            </a>
+            <a href="fav.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="heart" class="w-5 h-5 text-red-600"></i>
+                </div>
+                <span>Favorites</span>
+            </a>
+            <a href="websitechat.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                 <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="message-circle" class="w-5 h-5 text-green-600"></i>
+                </div>
+                <span>Chat</span>
+            </a>
+            <a href="my-stays.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="building" class="w-5 h-5 text-purple-600"></i>
+                </div>
+                <span>My Stays</span>
+            </a>
+            <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                </div>
+                <span>About Us</span>
+            </a>
+            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                </div>
+                <span>Contact Us</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t flex-shrink-0">
+            <button onclick="globalLogout()" class="w-full flex items-center space-x-4 p-3 rounded-lg text-red-600 hover:bg-red-50">
+                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="log-out" class="w-5 h-5 text-gray-600"></i>
+                </div>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Menu - Logged Out -->
+    <div id="menu-logged-out" class="fixed top-0 right-0 w-80 h-full bg-white z-50 shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+        <div class="flex justify-end p-4 flex-shrink-0">
+            <button id="menu-close-logout" class="p-2">
+                <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+            </button>
+        </div>
+
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <a href="about.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-yellow-600"></i>
+                </div>
+                <span>About Us</span>
+            </a>
+            <a href="contact.html" class="flex items-center space-x-4 p-3 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600">
+                <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="phone" class="w-5 h-5 text-cyan-600"></i>
+                </div>
+                <span>Contact Us</span>
+            </a>
+        </nav>
+        
+        <div class="p-4 border-t flex-shrink-0 space-y-3">
+            <a href="login.html" class="block w-full text-center bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 font-medium py-2 px-4 rounded-lg transition-colors">
+                Login
+            </a>
+            <a href="signup.html" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+                Sign Up
+            </a>
+        </div>
+    </div>
+
+
+    <main class="container mx-auto px-4 sm:px-6 py-12 md:py-16 flex-grow">
+
+        <div class="max-w-4xl mx-auto">
+            
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-8 text-center">What would you like to do?</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Card 1: Post Property (Changed from Search Property) -->
+                <a href="list.html" class="light-card flex flex-col items-center text-center p-8 rounded-xl cursor-pointer hover:shadow-xl transition-all duration-300 group">
+                    <div class="p-4 bg-green-500 text-white rounded-full mb-6 group-hover:bg-green-600 transition-colors">
+                        <i data-lucide="plus-square" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Post Property</h3>
+                    <p class="text-gray-600 mb-6">List your room, PG, or apartment for free and connect with thousands of verified student tenants.</p>
+                    <span class="inline-flex items-center text-green-600 font-semibold group-hover:text-green-700 transition-colors">
+                        Start Listing
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1"></i>
+                    </span>
+                </a>
+                
+                <!-- Card 2: View Listings (Changed from Post Property, links to mylisting.html) -->
+                <a href="login.html" class="light-card flex flex-col items-center text-center p-8 rounded-xl cursor-pointer hover:shadow-xl transition-all duration-300 group">
+                    <div class="p-4 bg-blue-500 text-white rounded-full mb-6 group-hover:bg-blue-600 transition-colors">
+                        <i data-lucide="building-2" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">View Listings</h3>
+                    <p class="text-gray-600 mb-6">Manage your submitted properties, check lead enquiries, and update availability details.</p>
+                    <span class="inline-flex items-center text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
+                        Go to Dashboard
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1"></i>
+                    </span>
+                </a>
+
+            </div>
+        </div>
+    </main>
+
+    <a href="contact.html" class="fixed bottom-6 right-6 z-50 p-4 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 transition-transform hover:scale-110">
+        <i data-lucide="message-circle" class="w-8 h-8"></i>
+    </a>
+
+    <footer class="footer flex-shrink-0 mt-auto">
+        <div class="footer-bottom">
+            &copy; 2024 Roomhy. All rights reserved.
+        </div>
+    </footer>
+
+    <script src="assets/js/slider.js"></script>
+</body>
+</html>
+
