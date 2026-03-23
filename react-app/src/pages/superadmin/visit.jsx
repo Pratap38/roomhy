@@ -182,6 +182,7 @@ export default function Visit() {
   });
   const [showProfModal, setShowProfModal] = useState(false);
   const [profPreview, setProfPreview] = useState([]);
+  const [submitSuccessMsg, setSubmitSuccessMsg] = useState("");
   const [resolvedAreaName, setResolvedAreaName] = useState("");
   const [resolvedCityName, setResolvedCityName] = useState("");
   const [editingVisit, setEditingVisit] = useState(null);
@@ -597,6 +598,7 @@ export default function Visit() {
       setShowModal(false);
       setEditingVisit(null);
       await loadVisits();
+      setSubmitSuccessMsg(editingVisit ? "Visit report updated successfully." : "Visit report submitted successfully.");
     } catch (err) {
       window.alert(err?.body || err?.message || `Failed to ${editingVisit ? "update" : "submit"} visit`);
     }
@@ -1118,6 +1120,25 @@ export default function Visit() {
                 <button type="button" onClick={closeProfModal} className="px-3 py-2 bg-gray-100 rounded">Cancel</button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {submitSuccessMsg && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[90] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+              <i data-lucide="check-circle-2" className="w-8 h-8 text-green-600"></i>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Report Submitted</h3>
+            <p className="text-sm text-gray-600 mb-5">{submitSuccessMsg}</p>
+            <button
+              type="button"
+              onClick={() => setSubmitSuccessMsg("")}
+              className="w-full py-2.5 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}

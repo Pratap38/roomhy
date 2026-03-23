@@ -27,6 +27,7 @@ const SuperadminNavItem = ({ to, label, icon }) => (
 
 export default function SharedShell({ children }) {
   const location = useLocation();
+  const pathName = location.pathname || "";
   const isEmbed = useMemo(() => {
     try {
       return new URLSearchParams(location.search || "").get("embed") === "1";
@@ -97,6 +98,12 @@ export default function SharedShell({ children }) {
   }, [section]);
 
   if (isEmbed) {
+    return <>{children}</>;
+  }
+
+  // Tenant pages render a full standalone layout. If an older bundle or
+  // wrapper path still mounts SharedShell, bypass it completely.
+  if (pathName.startsWith("/tenant/")) {
     return <>{children}</>;
   }
 
