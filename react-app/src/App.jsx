@@ -52,26 +52,31 @@ const RouteChromeCleanup = () => {
     if (!path.startsWith("/tenant/")) return;
 
     const cleanup = () => {
-      const shell = document.querySelector(".shared-shell");
-      if (!shell) return;
+      document.querySelectorAll(".shared-shell").forEach((shell) => {
+        shell.querySelectorAll(".shared-sidebar, .shared-header").forEach((node) => node.remove());
 
-      shell.querySelectorAll(".shared-sidebar, .shared-header").forEach((node) => node.remove());
+        const content = shell.querySelector(".shared-content");
+        if (content) {
+          content.style.padding = "0";
+          content.style.minHeight = "100vh";
+        }
 
-      const content = shell.querySelector(".shared-content");
-      if (content) {
-        content.style.padding = "0";
-        content.style.minHeight = "100vh";
-      }
-
-      shell.setAttribute("data-tenant-cleanup", "1");
-      shell.style.display = "block";
-      shell.style.background = "transparent";
-      shell.style.minHeight = "auto";
+        shell.setAttribute("data-tenant-cleanup", "1");
+        shell.style.display = "block";
+        shell.style.background = "transparent";
+        shell.style.minHeight = "auto";
+      });
     };
 
     cleanup();
     const timer = window.setTimeout(cleanup, 50);
-    return () => window.clearTimeout(timer);
+    const observer = new MutationObserver(() => cleanup());
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      window.clearTimeout(timer);
+      observer.disconnect();
+    };
   }, [location.pathname]);
 
   return null;
