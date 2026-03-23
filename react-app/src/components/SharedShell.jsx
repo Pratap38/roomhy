@@ -103,10 +103,6 @@ export default function SharedShell({ children }) {
 
   // Tenant pages render a full standalone layout. If an older bundle or
   // wrapper path still mounts SharedShell, bypass it completely.
-  if (pathName.startsWith("/tenant/")) {
-    return <>{children}</>;
-  }
-
   if (!config) {
     return <div className="shared-shell">{children}</div>;
   }

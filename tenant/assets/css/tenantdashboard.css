@@ -116,3 +116,25 @@ body {
             background-color: rgba(0, 0, 0, 0.5); 
             backdrop-filter: blur(2px); 
         }
+
+        /* Hard-stop any accidental shared shell wrapper on tenant pages */
+        .shared-shell[data-section="tenant"] .shared-sidebar,
+        .shared-shell[data-section="tenant"] .shared-header,
+        .shared-shell .shared-sidebar,
+        .shared-shell .shared-header {
+            display: none !important;
+        }
+
+        .shared-shell[data-section="tenant"],
+        .shared-shell {
+            display: block !important;
+            min-height: auto !important;
+            background: transparent !important;
+        }
+
+        .shared-shell[data-section="tenant"] .shared-content,
+        .shared-shell .shared-content {
+            padding: 0 !important;
+            min-height: auto !important;
+            background: transparent !important;
+        }
