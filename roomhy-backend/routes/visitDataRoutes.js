@@ -435,7 +435,7 @@ router.post('/approve', async (req, res) => {
 
         console.log('? [visits/approve] Visit approved successfully:', visitId);
 
-        // Send owner credentials email only. Do not send digital check-in links from visit approval.
+        // Send owner credentials email with owner login page and digital KYC links.
         let emailAttempted = false;
         let emailSent = false;
         try {
@@ -454,8 +454,10 @@ router.post('/approve', async (req, res) => {
             if (ownerEmail) {
                 emailAttempted = true;
                 const loginPageLink = `${APP_URL}/propertyowner/ownerlogin`;
-                const subject = 'RoomHy Property Approved - Owner Login Credentials';
-                const text = `Property approved\nProperty: ${propertyTitle}\nLogin ID: ${finalLoginId}\nTemporary Password: ${finalPassword}\nOwner Login Page: ${loginPageLink}`;
+                const mainCheckinLink = `${DIGITAL_CHECKIN_URL}/digital-checkin/index`;
+                const directCheckinLink = `${DIGITAL_CHECKIN_URL}/digital-checkin/ownerprofile?loginId=${encodeURIComponent(finalLoginId)}&email=${encodeURIComponent(ownerEmail)}&area=${encodeURIComponent(ownerArea || '')}&password=${encodeURIComponent(finalPassword)}`;
+                const subject = 'RoomHy Property Approved - Owner Login and Digital KYC';
+                const text = `Property approved\nProperty: ${propertyTitle}\nLogin ID: ${finalLoginId}\nTemporary Password: ${finalPassword}\nArea: ${ownerArea || 'N/A'}\nDigital KYC: ${mainCheckinLink}\nDirect Digital KYC: ${directCheckinLink}\nOwner Login Page: ${loginPageLink}`;
                 const html = `
                     <div style="font-family: Arial, sans-serif; font-size: 14px; color: #111;">
                         <h2>Property Approved</h2>
@@ -465,6 +467,8 @@ router.post('/approve', async (req, res) => {
                         <p><strong>Login ID:</strong> ${finalLoginId}</p>
                         <p><strong>Temporary Password:</strong> ${finalPassword}</p>
                         <p><strong>Area:</strong> ${ownerArea || 'N/A'}</p>
+                        <p><strong>Digital KYC (Main):</strong><br><a href="${mainCheckinLink}">${mainCheckinLink}</a></p>
+                        <p><strong>Owner Digital KYC (Direct):</strong><br><a href="${directCheckinLink}">${directCheckinLink}</a></p>
                         <p><strong>Owner Login Page:</strong><br><a href="${loginPageLink}">${loginPageLink}</a></p>
                     </div>
                 `;
