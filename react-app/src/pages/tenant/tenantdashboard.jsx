@@ -390,45 +390,6 @@ export default function Tenantdashboard() {
   return (
     <div className="html-page">
       <div className="flex flex-col h-screen overflow-hidden">
-        <nav className="top-navbar">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-8">
-                <div className="flex items-center">
-                  <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-16 w-auto" />
-                </div>
-                <div className="hidden md:flex items-center gap-1">
-                  <button onClick={() => setPayOpen(true)} className="nav-item"><i data-lucide="credit-card" className="w-4 h-4 mr-2"></i>Pay Rent</button>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                  <i data-lucide="bell" className="w-5 h-5"></i>
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
-                </button>
-                <div className="relative" onMouseEnter={() => setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm cursor-pointer hover:shadow-lg transition-shadow">
-                    {(tenantUser?.name || tenant?.name || "T").charAt(0).toUpperCase()}
-                  </div>
-                  <div className={`dropdown-menu ${userMenuOpen ? "show" : ""}`}>
-                    <div className="px-4 py-3 border-b border-slate-100">
-                      <p className="text-sm font-semibold text-slate-900">{tenantUser?.name || tenant?.name || "Tenant"}</p>
-                      <p className="text-xs text-slate-500 mt-1">{tenantUser?.email || tenant?.email || "tenant@roomhy.com"}</p>
-                    </div>
-                    <button onClick={() => document.getElementById("activity")?.scrollIntoView({ behavior: "smooth" })} className="dropdown-item"><i data-lucide="history" className="w-4 h-4 mr-3"></i> Activity</button>
-                    <button onClick={() => document.getElementById("documents")?.scrollIntoView({ behavior: "smooth" })} className="dropdown-item"><i data-lucide="file-text" className="w-4 h-4 mr-3"></i> Documents</button>
-                    <button onClick={() => openGenericModal("Manage Rent Reminders", <div className="space-y-4"><p className="text-sm text-slate-600">You receive automatic reminders 3 days before the due date.</p><div className="p-3 bg-blue-50 rounded-lg flex justify-between items-center border border-blue-100"><p className="font-medium text-sm text-blue-800">Status</p><span className="font-bold text-green-600 text-sm bg-white px-2 rounded">ACTIVE</span></div></div>)} className="dropdown-item"><i data-lucide="bell" className="w-4 h-4 mr-3"></i> Reminders</button>
-                    <div className="dropdown-divider"></div>
-                    <button onClick={() => openGenericModal("Emergency Contacts", <div className="space-y-3"><div className="p-3 bg-red-50 rounded-lg border border-red-100"><p className="font-bold text-red-700 text-sm">Property Manager</p><p className="text-lg font-bold text-red-900 mt-1">+91 98765 43210</p></div><div className="p-3 bg-slate-50 rounded-lg border border-slate-200"><p className="font-medium text-slate-700 text-sm">Local Police</p><p className="text-lg font-bold text-slate-900 mt-1">100</p></div><div className="p-3 bg-slate-50 rounded-lg border border-slate-200"><p className="font-medium text-slate-700 text-sm">Ambulance</p><p className="text-lg font-bold text-slate-900 mt-1">108</p></div></div>)} className="dropdown-item"><i data-lucide="phone-call" className="w-4 h-4 mr-3 text-red-500"></i> Emergency</button>
-                    <div className="dropdown-divider"></div>
-                    <button onClick={clearSession} className="dropdown-item text-red-600"><i data-lucide="log-out" className="w-4 h-4 mr-3"></i> Logout</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </nav>
-
         <div className="flex-1 overflow-y-auto">
           <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             <div>
