@@ -317,6 +317,36 @@ export default function Rooms() {
     return nextRooms;
   };
 
+  const markBedOccupied = (roomId, bedIndex, tenantId, tenantName) => {
+    const applyBedUpdate = (room) => {
+      const normalizedRoom = normalizeRoomRecord(room, owner?.loginId || "");
+      const beds = toLegacyBeds(normalizedRoom);
+      beds[bedIndex] = {
+        status: "occupied",
+        tenantId,
+        tenantName
+      };
+      return { ...normalizedRoom, beds };
+    };
+
+    setRooms((prevRooms) => prevRooms.map((room) => (
+      String(room.id || room._id) === String(roomId) ? applyBedUpdate(room) : room
+    )));
+
+    const localRooms = readJson("roomhy_rooms", []);
+    const localRoomIndex = localRooms.findIndex((room) => String(room.id || room._id) === String(roomId));
+    const nextLocalRooms = [...localRooms];
+    if (localRoomIndex >= 0) {
+      nextLocalRooms[localRoomIndex] = applyBedUpdate(nextLocalRooms[localRoomIndex]);
+    } else {
+      const currentRoom = rooms.find((room) => String(room.id || room._id) === String(roomId));
+      if (currentRoom) {
+        nextLocalRooms.push(applyBedUpdate(currentRoom));
+      }
+    }
+    writeJson("roomhy_rooms", nextLocalRooms);
+  };
+
   const ensurePropertyId = async (session, propertyList) => {
     const existingProperty = propertyList?.[0];
     if (existingProperty?._id) return existingProperty._id;
@@ -535,20 +565,7 @@ export default function Rooms() {
       }
 
       await assignTenant(payload);
-      persistRooms((allRooms) => {
-        const next = [...allRooms];
-        const roomIndex = next.findIndex((room) => (room.id || room._id) === (selectedRoom.id || selectedRoom._id));
-        if (roomIndex === -1) return allRooms;
-        const room = normalizeRoomRecord(next[roomIndex], owner.loginId);
-        const beds = toLegacyBeds(room);
-        beds[selectedBedIndex] = {
-          status: "occupied",
-          tenantId: assignedTenantId,
-          tenantName: assignedTenantName
-        };
-        next[roomIndex] = { ...room, beds };
-        return next;
-      });
+      markBedOccupied(selectedRoom.id || selectedRoom._id, selectedBedIndex, assignedTenantId, assignedTenantName);
       setAssignModalOpen(false);
       await loadPage(owner);
     } catch (err) {
