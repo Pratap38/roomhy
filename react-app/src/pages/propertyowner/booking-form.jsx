@@ -782,6 +782,10 @@ export default function PropertyownerBookingForm() {
               <i data-lucide="home" className="w-5 h-5"></i>
               Go to Home
             </button>
+            <button type="button" onClick={() => setShowRefund(true)} className="w-full border border-red-200 text-red-600 py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-red-50">
+              <i data-lucide="undo-2" className="w-5 h-5"></i>
+              Request Refund / Alternative Property
+            </button>
           </div>
         ) : (
           <>

@@ -1353,6 +1353,26 @@ exports.createRefundRequest = async (req, res) => {
 
         await refundRequest.save();
 
+        try {
+            await notifySuperadmin({
+                type: 'refund_request',
+                from: 'website',
+                subject: request_type === 'refund' ? 'New Refund Request' : 'New Alternative Property Request',
+                message: `${user_name || 'A user'} submitted a ${request_type} request.`,
+                meta: {
+                    refundRequestId: String(refundRequest._id || ''),
+                    bookingId: booking_id || '',
+                    userId: user_id || '',
+                    userName: user_name || '',
+                    userEmail: user_email || '',
+                    amount: refund_amount || 500,
+                    requestType: request_type || ''
+                }
+            });
+        } catch (notifyErr) {
+            console.warn('Failed to notify superadmin about refund request:', notifyErr.message);
+        }
+
         res.status(201).json({
             success: true,
             message: `${request_type === 'refund' ? 'Refund' : 'Alternative property'} request submitted successfully`,

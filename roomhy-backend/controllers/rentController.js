@@ -5,6 +5,34 @@ const { sendMail } = require('../utils/mailer');
 const Notification = require('../models/Notification');
 const Owner = require('../models/Owner');
 
+async function getTenantProfileByLoginId(loginId) {
+    const normalizedLoginId = String(loginId || '').trim().toUpperCase();
+    if (!normalizedLoginId) return null;
+    try {
+        const tenant = await Tenant.findOne({ loginId: normalizedLoginId }).lean();
+        return tenant || null;
+    } catch (err) {
+        console.warn('Failed to load tenant profile for rent hydration:', err.message);
+        return null;
+    }
+}
+
+function applyTenantProfileToRent(rent, tenantProfile = {}) {
+    if (!rent || !tenantProfile) return rent;
+
+    rent.tenantLoginId = rent.tenantLoginId || tenantProfile.loginId;
+    rent.tenantId = rent.tenantId || tenantProfile._id;
+    rent.tenantName = rent.tenantName || tenantProfile.name || '';
+    rent.tenantEmail = rent.tenantEmail || tenantProfile.email || '';
+    rent.tenantPhone = rent.tenantPhone || tenantProfile.phone || '';
+    rent.roomNumber = rent.roomNumber || tenantProfile.roomNo || '';
+    rent.ownerLoginId = rent.ownerLoginId || tenantProfile.ownerLoginId || '';
+    rent.propertyName = rent.propertyName || tenantProfile.propertyTitle || '';
+    rent.rentAmount = Number(rent.rentAmount || tenantProfile.agreedRent || 0);
+    rent.totalDue = Number(rent.totalDue || rent.rentAmount || tenantProfile.agreedRent || 0);
+    return rent;
+}
+
 // Create rent record for tenant
 exports.createRent = async (req, res) => {
     try {
@@ -135,6 +163,8 @@ exports.recordPaymentByTenant = async (req, res) => {
             return res.status(400).json({ error: 'tenantId and paidAmount required' });
         }
 
+        const tenantProfile = await getTenantProfileByLoginId(tenantId);
+
         // Find the most recent unpaid or partially paid rent for this tenant
         // Search by tenantLoginId (string field) instead of tenantId (ObjectId)
         let rent = await Rent.findOne({
@@ -162,10 +192,15 @@ exports.recordPaymentByTenant = async (req, res) => {
             
             rent = new Rent({
                 tenantLoginId: tenantId,
-                tenantName: `Tenant ${tenantId}`,
-                tenantEmail: 'unknown@email.com',
-                rentAmount: paidAmount, // Use paid amount as rent amount
-                totalDue: paidAmount,
+                tenantId: tenantProfile?._id,
+                ownerLoginId: tenantProfile?.ownerLoginId || '',
+                tenantName: tenantProfile?.name || `Tenant ${tenantId}`,
+                tenantEmail: tenantProfile?.email || '',
+                tenantPhone: tenantProfile?.phone || '',
+                propertyName: tenantProfile?.propertyTitle || '',
+                roomNumber: tenantProfile?.roomNo || '',
+                rentAmount: Number(tenantProfile?.agreedRent || paidAmount),
+                totalDue: Number(tenantProfile?.agreedRent || paidAmount),
                 paidAmount: paidAmount,
                 paymentStatus: paidAmount > 0 ? 'paid' : 'pending',
                 paymentMethod: paymentMethod || 'razorpay',
@@ -173,6 +208,7 @@ exports.recordPaymentByTenant = async (req, res) => {
                 paymentDate: new Date(),
                 collectionMonth: new Date().toISOString().slice(0, 7)
             });
+            applyTenantProfileToRent(rent, tenantProfile);
             
             await rent.save();
             console.log(`✅ [recordPaymentByTenant] Created new rent record: ${rent._id}`);
@@ -190,6 +226,7 @@ exports.recordPaymentByTenant = async (req, res) => {
         }
         
         console.log(`✅ [recordPaymentByTenant] Found rent: ${rent._id}`);
+        applyTenantProfileToRent(rent, tenantProfile);
 
         rent.paidAmount = (rent.paidAmount || 0) + paidAmount;
         rent.razorpayPaymentId = razorpayPaymentId;
@@ -607,6 +644,8 @@ exports.requestCashPayment = async (req, res) => {
 
         const month = new Date().toISOString().slice(0, 7);
 
+        const tenantProfile = await getTenantProfileByLoginId(loginId);
+
         let rent = await Rent.findOne({
             tenantLoginId: loginId,
             ownerLoginId: ownerId,
@@ -617,11 +656,12 @@ exports.requestCashPayment = async (req, res) => {
             rent = await Rent.create({
                 tenantLoginId: loginId,
                 ownerLoginId: ownerId,
-                tenantName: tenantName || '',
-                tenantEmail: tenantEmail || '',
-                tenantPhone: tenantPhone || '',
-                propertyName: propertyName || '',
-                roomNumber: roomNumber || '',
+                tenantId: tenantProfile?._id,
+                tenantName: tenantName || tenantProfile?.name || '',
+                tenantEmail: tenantEmail || tenantProfile?.email || '',
+                tenantPhone: tenantPhone || tenantProfile?.phone || '',
+                propertyName: propertyName || tenantProfile?.propertyTitle || '',
+                roomNumber: roomNumber || tenantProfile?.roomNo || '',
                 rentAmount,
                 totalDue: rentAmount,
                 paidAmount: 0,
@@ -630,6 +670,7 @@ exports.requestCashPayment = async (req, res) => {
                 collectionMonth: month
             });
         } else {
+            applyTenantProfileToRent(rent, tenantProfile);
             rent.paymentMethod = 'cash';
             rent.paymentStatus = rent.paymentStatus === 'paid' ? 'paid' : 'pending';
             rent.rentAmount = rentAmount || rent.rentAmount;
