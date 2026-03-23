@@ -24,7 +24,6 @@ export default function Tenantdashboard() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [payOpen, setPayOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (window?.lucide) window.lucide.createIcons();
@@ -84,48 +83,6 @@ export default function Tenantdashboard() {
   return (
     <div className="html-page">
       <div className="flex flex-col min-h-screen overflow-hidden bg-slate-50">
-        <nav className="top-navbar sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between min-h-16 py-3 gap-3">
-              <div className="flex items-center gap-3 md:gap-8 min-w-0">
-                <button type="button" className="md:hidden inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-600" onClick={() => setMobileMenuOpen((open) => !open)}>
-                  <i data-lucide={mobileMenuOpen ? "x" : "menu"} className="w-5 h-5"></i>
-                </button>
-                <div className="flex items-center min-w-0">
-                  <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-12 sm:h-16 w-auto" />
-                </div>
-                <div className="hidden md:flex items-center gap-1">
-                  <a href="/tenant/tenantdashboard" className="nav-item active">
-                    <i data-lucide="home" className="w-4 h-4 mr-2"></i>Dashboard
-                  </a>
-                  <button onClick={() => setPayOpen(true)} className="nav-item">
-                    <i data-lucide="credit-card" className="w-4 h-4 mr-2"></i>Pay Rent
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 sm:gap-4">
-                <a href="/tenant/tenantcomplints" className="hidden sm:inline-flex nav-item">
-                  <i data-lucide="flag" className="w-4 h-4 mr-2"></i>Complaints
-                </a>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm">
-                  {tenant?.name ? tenant.name.charAt(0).toUpperCase() : "T"}
-                </div>
-              </div>
-            </div>
-            <div className={`${mobileMenuOpen ? "grid" : "hidden"} md:hidden gap-2 pb-3`}>
-              <a href="/tenant/tenantdashboard" className="nav-item active justify-center">
-                <i data-lucide="home" className="w-4 h-4 mr-2"></i>Dashboard
-              </a>
-              <button onClick={() => setPayOpen(true)} className="nav-item justify-center">
-                <i data-lucide="credit-card" className="w-4 h-4 mr-2"></i>Pay Rent
-              </button>
-              <a href="/tenant/tenantcomplints" className="nav-item justify-center">
-                <i data-lucide="flag" className="w-4 h-4 mr-2"></i>Complaints
-              </a>
-            </div>
-          </div>
-        </nav>
-
         <div className="flex-1 overflow-y-auto">
           <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8">
             <div>
