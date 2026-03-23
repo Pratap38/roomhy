@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 import routes from "./routes";
 import SharedShell from "./components/SharedShell.jsx";
@@ -43,17 +43,53 @@ const HtmlRedirectOrHome = () => {
   return <Navigate to={resolveHostHome()} replace />;
 };
 
+const RouteChromeCleanup = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname || "";
+    if (!path.startsWith("/tenant/")) return;
+
+    const cleanup = () => {
+      const shell = document.querySelector(".shared-shell");
+      if (!shell) return;
+
+      shell.querySelectorAll(".shared-sidebar, .shared-header").forEach((node) => node.remove());
+
+      const content = shell.querySelector(".shared-content");
+      if (content) {
+        content.style.padding = "0";
+        content.style.minHeight = "100vh";
+      }
+
+      shell.setAttribute("data-tenant-cleanup", "1");
+      shell.style.display = "block";
+      shell.style.background = "transparent";
+      shell.style.minHeight = "auto";
+    };
+
+    cleanup();
+    const timer = window.setTimeout(cleanup, 50);
+    return () => window.clearTimeout(timer);
+  }, [location.pathname]);
+
+  return null;
+};
+
 export default function App() {
   return (
-    <Routes>
-      {renderRoutes(routes)}
-      <Route path="/" element={<Navigate to={resolveHostHome()} replace />} />
-      <Route path="/superadmin" element={<Navigate to="/superadmin/index" replace />} />
-      <Route path="/employee" element={<Navigate to="/employee/areaadmin" replace />} />
-      <Route path="/employee/superadmin" element={<Navigate to="/employee/areaadmin" replace />} />
-      <Route path="/propertyowner" element={<Navigate to="/propertyowner/index" replace />} />
-      <Route path="/website" element={<Navigate to="/website/index" replace />} />
-      <Route path="*" element={<HtmlRedirectOrHome />} />
-    </Routes>
+    <>
+      <RouteChromeCleanup />
+      <Routes>
+        {renderRoutes(routes)}
+        <Route path="/" element={<Navigate to={resolveHostHome()} replace />} />
+        <Route path="/superadmin" element={<Navigate to="/superadmin/index" replace />} />
+        <Route path="/employee" element={<Navigate to="/employee/areaadmin" replace />} />
+        <Route path="/employee/superadmin" element={<Navigate to="/employee/areaadmin" replace />} />
+        <Route path="/propertyowner" element={<Navigate to="/propertyowner/index" replace />} />
+        <Route path="/website" element={<Navigate to="/website/index" replace />} />
+        <Route path="*" element={<HtmlRedirectOrHome />} />
+      </Routes>
+    </>
   );
 }
