@@ -144,14 +144,13 @@ export const resolveSectionFromPath = (path = "") => {
   if (
     path === "/propertyowner/index" ||
     path === "/propertyowner/ownerlogin" ||
-    path === "/tenant/tenantlogin"
+    path.startsWith("/tenant/")
   ) {
     return null;
   }
   if (path.startsWith("/superadmin/")) return "superadmin";
   // Property owner pages render their own admin.html-style shell.
   if (path.startsWith("/propertyowner/")) return null;
-  if (path.startsWith("/tenant/")) return "tenant";
   // Digital check-in pages render as standalone forms without the shared shell.
   if (path.startsWith("/digital-checkin/")) return null;
   return null;
