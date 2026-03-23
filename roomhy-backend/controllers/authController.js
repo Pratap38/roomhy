@@ -756,7 +756,8 @@ exports.setOwnerPassword = async (req, res) => {
 // Verify tenant temporary password (used by tenant login UI)
 exports.verifyTenantTemp = async (req, res) => {
     try {
-        const { loginId, tempPassword } = req.body;
+        const loginId = String(req.body.loginId || '').trim().toUpperCase();
+        const tempPassword = String(req.body.tempPassword || '');
         if (!loginId || !tempPassword) return res.status(400).json({ message: 'Missing fields' });
 
         const user = await User.findOne({ loginId, role: 'tenant' });
@@ -764,11 +765,21 @@ exports.verifyTenantTemp = async (req, res) => {
 
         if (user.isActive === false) return res.status(403).json({ success: false, message: 'Account disabled' });
 
-        const ok = await user.matchPassword(tempPassword);
-        if (!ok) return res.status(401).json({ success: false, message: 'Invalid temporary password' });
-
-        // Get tenant record for additional info
         const tenant = await Tenant.findOne({ loginId });
+        const ok = await user.matchPassword(tempPassword);
+        const plainTempMatch =
+            tenant &&
+            tenant.tempPassword &&
+            String(tenant.tempPassword).trim() &&
+            String(tenant.tempPassword).trim() === tempPassword.trim();
+
+        const verified = ok || plainTempMatch;
+        if (!verified) return res.status(401).json({ success: false, message: 'Invalid temporary password' });
+
+        if (!ok && plainTempMatch) {
+            user.password = tempPassword;
+            await user.save();
+        }
 
         res.json({ 
             success: true, 
@@ -790,17 +801,31 @@ exports.verifyTenantTemp = async (req, res) => {
 // Set new password for tenant after verifying temp password
 exports.setTenantPassword = async (req, res) => {
     try {
-        const { loginId, tempPassword, newPassword } = req.body;
+        const loginId = String(req.body.loginId || '').trim().toUpperCase();
+        const tempPassword = String(req.body.tempPassword || '');
+        const newPassword = String(req.body.newPassword || '');
         if (!loginId || !tempPassword || !newPassword) return res.status(400).json({ success: false, message: 'Missing fields' });
 
         const user = await User.findOne({ loginId, role: 'tenant' });
         if (!user) return res.status(404).json({ success: false, message: 'Tenant not found' });
 
+        const tenant = await Tenant.findOne({ loginId });
         const ok = await user.matchPassword(tempPassword);
-        if (!ok) return res.status(401).json({ success: false, message: 'Invalid temporary password' });
+        const plainTempMatch =
+            tenant &&
+            tenant.tempPassword &&
+            String(tenant.tempPassword).trim() &&
+            String(tenant.tempPassword).trim() === tempPassword.trim();
+        if (!ok && !plainTempMatch) return res.status(401).json({ success: false, message: 'Invalid temporary password' });
 
         user.password = newPassword; // will be hashed by pre-save hook
         await user.save();
+
+        if (tenant) {
+            tenant.tempPassword = null;
+            tenant.status = tenant.status === 'pending' ? 'active' : tenant.status;
+            await tenant.save();
+        }
 
         // Auto-login: return JWT on successful password set
         const token = generateToken(user);
