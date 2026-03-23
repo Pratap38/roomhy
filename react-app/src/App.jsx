@@ -7,6 +7,7 @@ import { resolveSectionFromPath } from "./components/sharedNavConfig";
 const wrapWithShell = (path, element) => {
   if (path.startsWith("/superadmin/")) return element;
   if (path.startsWith("/employee/")) return element;
+  if (path.startsWith("/tenant/")) return element;
   const section = resolveSectionFromPath(path);
   if (!section) return element;
   return <SharedShell>{element}</SharedShell>;
