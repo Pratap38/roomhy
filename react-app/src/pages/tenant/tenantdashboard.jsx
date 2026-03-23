@@ -104,7 +104,6 @@ export default function Tenantdashboard() {
   const [rent, setRent] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [genericModal, setGenericModal] = useState(null);
@@ -197,7 +196,7 @@ export default function Tenantdashboard() {
 
   useEffect(() => {
     if (window?.lucide) window.lucide.createIcons();
-  }, [tenant, rent, history, payOpen, mobileOpen, userMenuOpen, genericModal, cashPanelOpen]);
+  }, [tenant, rent, history, payOpen, userMenuOpen, genericModal, cashPanelOpen]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -382,7 +381,6 @@ export default function Tenantdashboard() {
                   <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-16 w-auto" />
                 </div>
                 <div className="hidden md:flex items-center gap-1">
-                  <a href="/tenant/tenantdashboard" className="nav-item active"><i data-lucide="home" className="w-4 h-4 mr-2"></i>Dashboard</a>
                   <button onClick={() => setPayOpen(true)} className="nav-item"><i data-lucide="credit-card" className="w-4 h-4 mr-2"></i>Pay Rent</button>
                 </div>
               </div>
@@ -390,9 +388,6 @@ export default function Tenantdashboard() {
                 <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
                   <i data-lucide="bell" className="w-5 h-5"></i>
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
-                </button>
-                <button onClick={() => setMobileOpen((value) => !value)} className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
-                  <i data-lucide="menu" className="w-5 h-5"></i>
                 </button>
                 <div className="relative" onMouseEnter={() => setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 text-white flex items-center justify-center font-bold text-sm cursor-pointer hover:shadow-lg transition-shadow">
@@ -413,13 +408,6 @@ export default function Tenantdashboard() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          <div className={`md:hidden border-t border-slate-100 bg-slate-50 ${mobileOpen ? "" : "hidden"}`}>
-            <div className="px-4 py-3 space-y-2">
-              <a href="/tenant/tenantdashboard" className="block w-full text-left px-4 py-2 rounded-lg bg-blue-50 text-blue-600 font-medium"><i data-lucide="home" className="w-4 h-4 inline mr-2"></i>Dashboard</a>
-              <button onClick={() => setPayOpen(true)} className="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 font-medium transition"><i data-lucide="credit-card" className="w-4 h-4 inline mr-2"></i>Pay Rent</button>
-              <button onClick={() => document.getElementById("documents")?.scrollIntoView({ behavior: "smooth" })} className="block w-full text-left px-4 py-2 rounded-lg hover:bg-slate-100 text-slate-700 transition"><i data-lucide="file-text" className="w-4 h-4 inline mr-2"></i>Documents</button>
             </div>
           </div>
         </nav>
