@@ -34,6 +34,13 @@ function applyTenantProfileToRent(rent, tenantProfile = {}) {
     return rent;
 }
 
+function buildRazorpayReceipt(prefix, primaryId, fallbackId) {
+    const safePrefix = String(prefix || 'rcpt').replace(/[^a-zA-Z0-9]/g, '').slice(0, 6) || 'rcpt';
+    const safePrimary = String(primaryId || fallbackId || 'na').replace(/[^a-zA-Z0-9]/g, '').slice(0, 12) || 'na';
+    const stamp = Date.now().toString(36).slice(-8);
+    return `${safePrefix}_${safePrimary}_${stamp}`.slice(0, 40);
+}
+
 // Create rent record for tenant
 exports.createRent = async (req, res) => {
     try {
@@ -653,7 +660,7 @@ exports.createRazorpayOrder = async (req, res) => {
         const options = {
             amount: amount * 100, // Convert to paise
             currency: 'INR',
-            receipt: `rent_${rentId || tenantId}_${Date.now()}`,
+            receipt: buildRazorpayReceipt('rent', rentId, tenantId),
             notes: {
                 tenantId: tenantId || 'unknown',
                 rentId: rentId || 'unknown',
