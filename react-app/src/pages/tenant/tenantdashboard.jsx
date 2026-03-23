@@ -199,6 +199,23 @@ export default function Tenantdashboard() {
   }, [tenant, rent, history, payOpen, userMenuOpen, genericModal, cashPanelOpen]);
 
   useEffect(() => {
+    const page = document.querySelector(".html-page");
+    const shell = page?.closest(".shared-shell");
+    if (!shell) return;
+
+    const sidebar = shell.querySelector(".shared-sidebar");
+    const header = shell.querySelector(".shared-header");
+    const content = shell.querySelector(".shared-content");
+
+    if (sidebar) sidebar.remove();
+    if (header) header.remove();
+    if (content) {
+      content.style.padding = "0";
+      content.style.minHeight = "100vh";
+    }
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("pay") === "online") setPayOpen(true);
     if (params.get("pay") === "cash") {
