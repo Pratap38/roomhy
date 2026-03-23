@@ -83,9 +83,13 @@ export const getOwnerRuntimeSession = () => {
 export const clearOwnerRuntimeSession = () => {
   try {
     sessionStorage.removeItem("owner_session");
+    localStorage.removeItem("owner_session");
     sessionStorage.removeItem("owner_user");
+    localStorage.removeItem("owner_user");
     sessionStorage.removeItem("user");
     localStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
   } catch (_) {
     // ignore
   }
@@ -149,6 +153,9 @@ export const normalizeBooking = (item = {}) => ({
   status: item.status || "pending"
 });
 
+const matchesOwnerLoginId = (candidate, ownerId) =>
+  normalizeOwnerLoginId(candidate) === normalizeOwnerLoginId(ownerId);
+
 export const normalizeBid = (item = {}) => ({
   ...item,
   key: item._id || item.id || item.bidId || Math.random().toString(36).slice(2),
@@ -187,14 +194,20 @@ export const downloadCsv = (filename, rows) => {
 
 export const fetchOwnerProperties = async (loginId) => {
   const response = await fetchJson(`/api/owners/${encodeURIComponent(loginId)}/properties`);
-  const properties = response?.properties || [];
+  const properties = (response?.properties || []).filter((item) => {
+    const candidateOwner = item?.ownerLoginId || item?.ownerId || item?.owner || "";
+    return !candidateOwner || matchesOwnerLoginId(candidateOwner, loginId);
+  });
   writeJson("roomhy_properties", properties);
   return properties;
 };
 
 export const fetchOwnerRooms = async (loginId) => {
   const response = await fetchJson(`/api/owners/${encodeURIComponent(loginId)}/rooms`);
-  const rooms = response?.rooms || [];
+  const rooms = (response?.rooms || []).filter((item) => {
+    const candidateOwner = item?.ownerLoginId || item?.ownerId || item?.owner || item?.property?.ownerLoginId || "";
+    return !candidateOwner || matchesOwnerLoginId(candidateOwner, loginId);
+  });
   if (rooms.length) {
     writeJson("roomhy_rooms", rooms);
   }
@@ -272,7 +285,11 @@ export const updateBookingDecision = async (bookingId, action) => {
 
 export const fetchBookingRequestsForOwner = async (ownerId) => {
   const response = await fetchJson(`/api/booking/requests?owner_id=${encodeURIComponent(ownerId)}`);
-  return Array.isArray(response) ? response : response?.requests || response?.data || [];
+  const list = Array.isArray(response) ? response : response?.requests || response?.data || [];
+  return list.filter((item) => {
+    const candidateOwner = item?.owner_id || item?.ownerId || item?.owner_login_id || item?.ownerLoginId || item?.owner || "";
+    return !candidateOwner || matchesOwnerLoginId(candidateOwner, ownerId);
+  });
 };
 
 export const fetchBids = async (ownerId) => {

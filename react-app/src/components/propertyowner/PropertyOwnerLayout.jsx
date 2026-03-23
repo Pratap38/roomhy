@@ -100,9 +100,13 @@ export default function PropertyOwnerLayout({
     }
     try {
       sessionStorage.removeItem("owner_session");
+      localStorage.removeItem("owner_session");
       sessionStorage.removeItem("owner_user");
+      localStorage.removeItem("owner_user");
       sessionStorage.removeItem("user");
       localStorage.removeItem("user");
+      sessionStorage.removeItem("token");
+      localStorage.removeItem("token");
     } catch (_) {
       // ignore
     }
