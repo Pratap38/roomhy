@@ -4,6 +4,7 @@ const Property = require('../models/Property');
 const { sendMail } = require('../utils/mailer');
 const Notification = require('../models/Notification');
 const Owner = require('../models/Owner');
+const crypto = require('crypto');
 
 async function getTenantProfileByLoginId(loginId) {
     const normalizedLoginId = String(loginId || '').trim().toUpperCase();
@@ -263,6 +264,65 @@ exports.recordPaymentByTenant = async (req, res) => {
     }
 };
 
+exports.verifyRazorpayPayment = async (req, res) => {
+    try {
+        const {
+            tenantId,
+            rentId,
+            paidAmount,
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature
+        } = req.body || {};
+
+        if (!tenantId || !paidAmount || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return res.status(400).json({ success: false, error: 'tenantId, paidAmount and Razorpay payment fields are required' });
+        }
+
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        if (!keySecret) {
+            return res.status(500).json({ success: false, error: 'Razorpay secret is not configured' });
+        }
+
+        const expectedSignature = crypto
+            .createHmac('sha256', keySecret)
+            .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+            .digest('hex');
+
+        if (expectedSignature !== razorpay_signature) {
+            return res.status(400).json({ success: false, error: 'Invalid Razorpay payment signature' });
+        }
+
+        req.body.razorpayPaymentId = razorpay_payment_id;
+        req.body.paymentMethod = 'razorpay';
+
+        const originalJson = res.json.bind(res);
+        res.json = async (payload) => {
+            try {
+                const resolvedRentId = payload?.rent?._id || rentId;
+                if (resolvedRentId) {
+                    await Rent.findByIdAndUpdate(resolvedRentId, {
+                        $set: {
+                            razorpayOrderId: razorpay_order_id,
+                            razorpayPaymentId: razorpay_payment_id,
+                            razorpaySignature: razorpay_signature,
+                            paymentMethod: 'razorpay'
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('Failed to persist Razorpay verification metadata:', e.message);
+            }
+            return originalJson({ ...payload, verified: true });
+        };
+
+        return exports.recordPaymentByTenant(req, res);
+    } catch (err) {
+        console.error('verifyRazorpayPayment error:', err);
+        return res.status(500).json({ success: false, error: err.message || 'Failed to verify Razorpay payment' });
+    }
+};
+
 // Get rent/payment history for a tenant by loginId
 exports.getRentsByTenant = async (req, res) => {
     try {
@@ -289,6 +349,7 @@ exports.getRentsByTenant = async (req, res) => {
 async function sendPaymentConfirmationEmail(rent) {
     try {
         const subject = `Payment Confirmation - ${rent.propertyName}`;
+        const transactionId = rent.razorpayPaymentId || rent.razorpayOrderId || 'N/A';
         const html = `
                 <h2>Payment Confirmation</h2>
                 <p>Dear ${rent.tenantName},</p>
@@ -300,6 +361,8 @@ async function sendPaymentConfirmationEmail(rent) {
                     <li>Amount Paid: ₹${rent.paidAmount}</li>
                     <li>Total Due: ₹${rent.totalDue}</li>
                     <li>Payment Status: ${rent.paymentStatus}</li>
+                    <li>Payment Method: ${rent.paymentMethod || 'N/A'}</li>
+                    <li>Transaction ID: ${transactionId}</li>
                     <li>Payment Date: ${new Date(rent.paymentDate).toLocaleDateString()}</li>
                 </ul>
                 <p>Thank you for your payment!</p>

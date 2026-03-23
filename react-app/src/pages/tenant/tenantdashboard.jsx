@@ -286,13 +286,15 @@ export default function Tenantdashboard() {
         },
         handler: async (response) => {
           try {
-            await fetchJson("/api/rents/record-payment-by-tenant", {
+            await fetchJson("/api/rents/verify-payment", {
               method: "POST",
               body: JSON.stringify({
                 tenantId: loginId,
-                razorpayPaymentId: response.razorpay_payment_id,
+                rentId: rent?._id,
                 paidAmount: rentAmount,
-                paymentMethod: "razorpay"
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
               })
             });
             await syncPaymentState();

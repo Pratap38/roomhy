@@ -35,7 +35,9 @@ const rentSchema = new mongoose.Schema({
     paidAmount: { type: Number, default: 0 },
     paymentDate: Date,
     paymentMethod: { type: String, enum: ['cash', 'razorpay', 'bank_transfer', 'other'] },
+    razorpayOrderId: String,
     razorpayPaymentId: String,
+    razorpaySignature: String,
     // Owner payout tracking (platform -> owner transfer)
     ownerPayoutStatus: {
         type: String,

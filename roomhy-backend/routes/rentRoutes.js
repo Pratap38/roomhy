@@ -25,6 +25,7 @@ router.post('/create-order', rentController.createRazorpayOrder);
 // Record payment by tenant (for Razorpay callback) - BEFORE parameterized routes
 router.post('/record-payment', rentController.recordPaymentByTenant);
 router.post('/record-payment-by-tenant', rentController.recordPaymentByTenant);
+router.post('/verify-payment', rentController.verifyRazorpayPayment);
 router.post('/cash/request', rentController.requestCashPayment);
 router.post('/cash/owner-received', rentController.markCashReceivedByOwner);
 router.post('/cash/verify-otp', rentController.verifyCashPaymentOtp);
