@@ -413,7 +413,12 @@ export default function Visit() {
         locationCode: visit?.locationCode || visit?.propertyInfo?.locationCode || visit?.area || visit?.propertyInfo?.area || "",
         city: visit?.city || visit?.propertyInfo?.city || "",
         area: visit?.area || visit?.propertyInfo?.area || "",
-        description: visit?.description || ""
+        description: visit?.description || "",
+        propertyType: visit?.propertyType || visit?.propertyInfo?.propertyType || "",
+        monthlyRent: visit?.monthlyRent || visit?.propertyInfo?.monthlyRent || 0,
+        ownerName: visit?.ownerName || visit?.propertyInfo?.ownerName || "",
+        ownerEmail: visit?.ownerEmail || visit?.propertyInfo?.ownerEmail || "",
+        ownerPhone: visit?.contactPhone || visit?.ownerPhone || visit?.propertyInfo?.contactPhone || ""
       };
 
       await fetchJson(`/api/owners/${encodeURIComponent(ownerLoginId)}/properties`, {

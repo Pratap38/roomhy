@@ -100,7 +100,7 @@ export default function SuperadminEnquiry() {
 
   const apiUrl = getApiUrl();
   const [visits, setVisits] = useState([]);
-  const [roomApprovals, setRoomApprovals] = useState([]);
+  const [propertyUnderOwner, setPropertyUnderOwner] = useState([]);
   const [activeTab, setActiveTab] = useState("visits");
   const [currentApprovingId, setCurrentApprovingId] = useState(null);
   const [showApprove, setShowApprove] = useState(false);
@@ -111,15 +111,22 @@ export default function SuperadminEnquiry() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotif, setShowNotif] = useState(false);
+  const [actionModal, setActionModal] = useState({
+    open: false,
+    type: "hold",
+    visitId: "",
+    reason: "",
+    action: "edit"
+  });
   const pollRef = useRef(null);
 
   useEffect(() => {
     window.lucide?.createIcons();
-  }, [visits, roomApprovals, activeTab, showApprove, showSuccess, showGallery, notifications, showNotif]);
+  }, [visits, propertyUnderOwner, activeTab, showApprove, showSuccess, showGallery, notifications, showNotif, actionModal]);
 
   useEffect(() => {
     fetchEnquiries();
-    fetchRoomApprovals();
+    fetchPropertyUnderOwner();
     startPolling();
     const interval = setInterval(fetchEnquiries, 15000);
     return () => {
@@ -240,10 +247,55 @@ export default function SuperadminEnquiry() {
     setVisits(list);
   };
 
-  const fetchRoomApprovals = () => {
-    const list = loadLocalVisits();
-    const pending = list.filter((v) => v.status === "pending" && (v.type === "room_add" || v.type === "bed_add"));
-    setRoomApprovals(pending);
+  const fetchPropertyUnderOwner = async () => {
+    try {
+      const token = sessionStorage.getItem("token") || localStorage.getItem("token") || "";
+      const ownerResponse = await fetch(`${apiUrl}/api/owners`, {
+        headers: token ? { Authorization: token } : {}
+      });
+      if (!ownerResponse.ok) throw new Error("Failed to load owners");
+
+      const ownerPayload = await ownerResponse.json();
+      const owners = Array.isArray(ownerPayload?.owners) ? ownerPayload.owners : [];
+      const rows = (
+        await Promise.all(
+          owners
+            .filter((owner) => owner?.loginId)
+            .map(async (owner) => {
+              try {
+                const propertyResponse = await fetch(`${apiUrl}/api/owners/${encodeURIComponent(owner.loginId)}/properties`, {
+                  headers: token ? { Authorization: token } : {}
+                });
+                if (!propertyResponse.ok) return [];
+                const propertyPayload = await propertyResponse.json();
+                const properties = Array.isArray(propertyPayload?.properties) ? propertyPayload.properties : [];
+                return properties.map((property) => ({
+                  ownerLoginId: owner.loginId,
+                  ownerName: owner.name || owner.profile?.name || property.ownerName || "-",
+                  ownerEmail: owner.email || owner.profile?.email || property.ownerEmail || "-",
+                  propertyId: property._id,
+                  propertyTitle: property.title || "-",
+                  propertyType: property.propertyType || "-",
+                  address: property.address || "-",
+                  area: property.area || "-",
+                  city: property.city || "-",
+                  locationCode: property.locationCode || "-",
+                  monthlyRent: property.monthlyRent || 0,
+                  status: property.status || "-",
+                  createdAt: property.createdAt
+                }));
+              } catch (_) {
+                return [];
+              }
+            })
+        )
+      ).flat();
+
+      setPropertyUnderOwner(rows);
+    } catch (error) {
+      console.error("Error fetching property under owner data:", error);
+      setPropertyUnderOwner([]);
+    }
   };
 
   const statusCounts = useMemo(() => {
@@ -367,27 +419,68 @@ export default function SuperadminEnquiry() {
     setShowSuccess(true);
     setCurrentApprovingId(null);
     fetchEnquiries();
+    fetchPropertyUnderOwner();
   };
 
-  const holdVisit = async (id) => {
-    const reason = prompt("Enter hold reason:");
-    if (reason === null) return;
+  const openActionModal = (type, visitId) => {
+    setActionModal({
+      open: true,
+      type,
+      visitId,
+      reason: "",
+      action: type === "reject" ? "reupload" : "edit"
+    });
+  };
+
+  const closeActionModal = () => {
+    setActionModal({
+      open: false,
+      type: "hold",
+      visitId: "",
+      reason: "",
+      action: "edit"
+    });
+  };
+
+  const submitActionModal = async () => {
+    if (!actionModal.visitId) return;
+    if (!actionModal.reason.trim()) {
+      window.alert(actionModal.type === "reject" ? "Please enter reason for reject." : "Please enter reason for hold.");
+      return;
+    }
+
     try {
-      const response = await fetch(`${apiUrl}/api/visits/hold`, {
+      const endpoint = actionModal.type === "reject" ? `${apiUrl}/api/visits/reject` : `${apiUrl}/api/visits/hold`;
+      const body =
+        actionModal.type === "reject"
+          ? {
+              visitId: actionModal.visitId,
+              rejectReason: actionModal.reason.trim(),
+              rejectAction: actionModal.action
+            }
+          : {
+              visitId: actionModal.visitId,
+              holdReason: actionModal.reason.trim(),
+              holdAction: actionModal.action
+            };
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitId: id, holdReason: reason })
+        body: JSON.stringify(body)
       });
       const data = await response.json();
       if (data.success) {
-        alert("Visit held successfully");
+        window.alert(actionModal.type === "reject" ? "Visit rejected successfully" : "Visit held successfully");
+        closeActionModal();
         fetchEnquiries();
+        fetchPropertyUnderOwner();
       } else {
-        alert("Error holding visit: " + data.message);
+        window.alert((actionModal.type === "reject" ? "Error rejecting visit: " : "Error holding visit: ") + data.message);
       }
     } catch (error) {
-      console.error("Error holding visit:", error);
-      alert("Error holding visit: " + error.message);
+      console.error(`Error ${actionModal.type} visit:`, error);
+      window.alert((actionModal.type === "reject" ? "Error rejecting visit: " : "Error holding visit: ") + error.message);
     }
   };
 
@@ -428,15 +521,6 @@ export default function SuperadminEnquiry() {
     window.XLSX.utils.book_append_sheet(wb, ws, "Visits");
     const date = new Date().toISOString().split("T")[0];
     window.XLSX.writeFile(wb, `Roomhy_Visits_${date}.xlsx`);
-  };
-
-  const approveRoomNotification = (id, approve) => {
-    const list = loadLocalVisits();
-    const idx = list.findIndex((v) => v._id === id);
-    if (idx === -1) return;
-    list[idx].status = approve ? "approved" : "rejected";
-    persistLocalVisits(list);
-    fetchRoomApprovals();
   };
 
   const currentPage = "enquiry";
@@ -484,7 +568,7 @@ export default function SuperadminEnquiry() {
               <h1 className="text-xl font-bold text-gray-800">Pending Approvals</h1>
             </div>
             <div className="flex items-center gap-4">
-              <button onClick={fetchEnquiries} className="text-sm text-purple-600 hover:underline flex items-center gap-1">
+              <button onClick={() => { fetchEnquiries(); fetchPropertyUnderOwner(); }} className="text-sm text-purple-600 hover:underline flex items-center gap-1">
                 <i data-lucide="refresh-cw" className="w-3 h-3"></i> Refresh
               </button>
               <button onClick={exportVisitsExcel} className="text-sm text-gray-600 hover:underline flex items-center gap-1">
@@ -579,7 +663,7 @@ export default function SuperadminEnquiry() {
 
               <div className="flex border-b border-gray-200 bg-white rounded-t-lg px-4 pt-4">
                 <button onClick={() => setActiveTab("visits")} className={`px-6 py-3 font-semibold transition-all ${activeTab === "visits" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500 border-b-2 border-transparent"}`}>Visit Reports</button>
-                <button onClick={() => setActiveTab("rooms")} className={`px-6 py-3 font-semibold transition-all ${activeTab === "rooms" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500 border-b-2 border-transparent"}`}>Room Approvals</button>
+                <button onClick={() => setActiveTab("properties")} className={`px-6 py-3 font-semibold transition-all ${activeTab === "properties" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500 border-b-2 border-transparent"}`}>Property Under Owner</button>
               </div>
 
               {activeTab === "visits" ? (
@@ -678,8 +762,9 @@ export default function SuperadminEnquiry() {
                                 <td className="px-4 py-3 font-mono text-sm">{password}</td>
                                 <td className="px-4 py-3 text-center">
                                   <div className="flex items-center justify-center gap-2">
-                                    <button onClick={() => openApproveModal(v.visitId || v._id)} className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors" title="Approve"><i data-lucide="check" className="w-4 h-4"></i></button>
-                                    <button onClick={() => holdVisit(v.visitId || v._id)} className="p-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors" title="Hold"><i data-lucide="pause" className="w-4 h-4"></i></button>
+                                    <button onClick={() => openApproveModal(v.visitId || v._id)} className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-xs font-semibold" title="Approve">Approve</button>
+                                    <button onClick={() => openActionModal("reject", v.visitId || v._id)} className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-xs font-semibold" title="Reject">Reject</button>
+                                    <button onClick={() => openActionModal("hold", v.visitId || v._id)} className="px-3 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-xs font-semibold" title="Hold">Hold</button>
                                   </div>
                                 </td>
                               </tr>
@@ -696,27 +781,34 @@ export default function SuperadminEnquiry() {
                     <table className="w-full text-left border-collapse">
                       <thead className="bg-gray-50 text-gray-500 text-[10px] uppercase border-b">
                         <tr>
+                          <th className="px-6 py-4">Owner Login ID</th>
                           <th className="px-6 py-4">Owner Name</th>
-                          <th className="px-6 py-4">Room No</th>
+                          <th className="px-6 py-4">Property Name</th>
+                          <th className="px-6 py-4">Type</th>
+                          <th className="px-6 py-4">Address</th>
+                          <th className="px-6 py-4">Area</th>
+                          <th className="px-6 py-4">City</th>
+                          <th className="px-6 py-4">Location Code</th>
                           <th className="px-6 py-4">Rent/mo</th>
-                          <th className="px-6 py-4 text-right">Action</th>
+                          <th className="px-6 py-4">Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {roomApprovals.length === 0 ? (
-                          <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-400">No room approvals pending.</td></tr>
+                        {propertyUnderOwner.length === 0 ? (
+                          <tr><td colSpan={10} className="px-6 py-12 text-center text-gray-400">No property-under-owner records found.</td></tr>
                         ) : (
-                          roomApprovals.map((n) => (
-                            <tr key={n._id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 text-sm">{n.submittedBy || n.propertyInfo?.ownerName || "-"}</td>
-                              <td className="px-6 py-4 text-sm font-mono">{n.room?.number || n.room?.id || "-"}</td>
-                              <td className="px-6 py-4 text-right font-bold">{"\u20B9"}{n.room?.rent ?? "-"}</td>
-                              <td className="px-6 py-4 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button onClick={() => approveRoomNotification(n._id, true)} className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm">Approve</button>
-                                  <button onClick={() => approveRoomNotification(n._id, false)} className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm">Reject</button>
-                                </div>
-                              </td>
+                          propertyUnderOwner.map((property) => (
+                            <tr key={`${property.ownerLoginId}-${property.propertyId}`} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 text-sm font-mono text-purple-700">{property.ownerLoginId}</td>
+                              <td className="px-6 py-4 text-sm">{property.ownerName}</td>
+                              <td className="px-6 py-4 text-sm font-semibold text-slate-700">{property.propertyTitle}</td>
+                              <td className="px-6 py-4 text-sm">{property.propertyType}</td>
+                              <td className="px-6 py-4 text-sm">{property.address}</td>
+                              <td className="px-6 py-4 text-sm">{property.area}</td>
+                              <td className="px-6 py-4 text-sm">{property.city}</td>
+                              <td className="px-6 py-4 text-sm font-mono">{property.locationCode}</td>
+                              <td className="px-6 py-4 text-sm font-bold">{"\u20B9"}{property.monthlyRent || 0}</td>
+                              <td className="px-6 py-4 text-sm">{property.status}</td>
                             </tr>
                           ))
                         )}
@@ -754,6 +846,79 @@ export default function SuperadminEnquiry() {
               <div className="text-xs text-gray-500 mt-2">Password:</div><div className="font-mono font-bold text-slate-600">{generatedCreds.password}</div>
             </div>
             <button onClick={() => { setShowSuccess(false); fetchEnquiries(); }} className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition">Close</button>
+          </div>
+        </div>
+      ) : null}
+
+      {actionModal.open ? (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900">
+              {actionModal.type === "reject" ? "Reject Property" : "Hold Property"}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1 mb-4">
+              {actionModal.type === "reject"
+                ? "Enter reason for reject and choose what should happen next."
+                : "Enter reason for hold and choose the next step."}
+            </p>
+            <textarea
+              rows={4}
+              value={actionModal.reason}
+              onChange={(event) => setActionModal((prev) => ({ ...prev, reason: event.target.value }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              placeholder={actionModal.type === "reject" ? "Reason for reject" : "Reason for hold"}
+            />
+            <div className="mt-4">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                {actionModal.type === "reject" ? "Next Step" : "Action"}
+              </label>
+              <div className="mt-2 flex gap-2">
+                {actionModal.type === "reject" ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActionModal((prev) => ({ ...prev, action: "reupload" }))}
+                      className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${actionModal.action === "reupload" ? "border-red-500 bg-red-50 text-red-700" : "border-gray-300 text-gray-600"}`}
+                    >
+                      Reupload
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActionModal((prev) => ({ ...prev, action: "cancel" }))}
+                      className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${actionModal.action === "cancel" ? "border-gray-700 bg-gray-100 text-gray-700" : "border-gray-300 text-gray-600"}`}
+                    >
+                      Cancel Property
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setActionModal((prev) => ({ ...prev, action: "edit" }))}
+                      className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${actionModal.action === "edit" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-300 text-gray-600"}`}
+                    >
+                      Ask to Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActionModal((prev) => ({ ...prev, action: "none" }))}
+                      className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium ${actionModal.action === "none" ? "border-gray-700 bg-gray-100 text-gray-700" : "border-gray-300 text-gray-600"}`}
+                    >
+                      Hold Only
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={closeActionModal} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition">Close</button>
+              <button
+                onClick={submitActionModal}
+                className={`flex-1 py-2 rounded-lg text-white transition ${actionModal.type === "reject" ? "bg-red-600 hover:bg-red-700" : "bg-orange-600 hover:bg-orange-700"}`}
+              >
+                {actionModal.type === "reject" ? "Reject" : "Hold"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

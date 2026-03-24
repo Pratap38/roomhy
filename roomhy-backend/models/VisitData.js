@@ -83,6 +83,20 @@ const VisitDataSchema = new mongoose.Schema({
     approvedAt: Date,
     approvalNotes: String,
     approvedBy: String,
+    holdReason: String,
+    holdAction: {
+        type: String,
+        enum: ['edit', 'none', ''],
+        default: ''
+    },
+    holdAt: Date,
+    rejectReason: String,
+    rejectAction: {
+        type: String,
+        enum: ['reupload', 'cancel', ''],
+        default: ''
+    },
+    rejectedAt: Date,
     generatedCredentials: {
         loginId: String,
         tempPassword: String

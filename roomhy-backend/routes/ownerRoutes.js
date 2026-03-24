@@ -139,7 +139,19 @@ router.get('/:loginId/properties', async (req, res) => {
 router.post('/:loginId/properties', auditTrail('owners'), async (req, res) => {
     try {
         const loginId = String(req.params.loginId || '').toUpperCase();
-        const { title, address, locationCode, city, area, description } = req.body || {};
+        const {
+            title,
+            address,
+            locationCode,
+            city,
+            area,
+            description,
+            propertyType,
+            monthlyRent,
+            ownerName,
+            ownerEmail,
+            ownerPhone
+        } = req.body || {};
 
         if (!title || !String(title).trim()) {
             return res.status(400).json({ success: false, message: 'Property title is required' });
@@ -157,12 +169,33 @@ router.post('/:loginId/properties', auditTrail('owners'), async (req, res) => {
             property = await Property.create({
                 title: normalizedTitle,
                 address: address || '',
+                city: city || '',
+                area: area || '',
                 locationCode: normalizedLocationCode,
                 ownerLoginId: loginId,
                 description: description || '',
+                propertyType: propertyType || '',
+                monthlyRent: Number(monthlyRent || 0),
+                ownerName: ownerName || '',
+                ownerEmail: ownerEmail || '',
+                ownerPhone: ownerPhone || '',
                 status: 'active',
                 isPublished: true
             });
+        } else {
+            property.address = address || property.address || '';
+            property.city = city || property.city || '';
+            property.area = area || property.area || '';
+            property.locationCode = normalizedLocationCode || property.locationCode;
+            property.description = description || property.description || '';
+            property.propertyType = propertyType || property.propertyType || '';
+            property.monthlyRent = Number(monthlyRent || property.monthlyRent || 0);
+            property.ownerName = ownerName || property.ownerName || '';
+            property.ownerEmail = ownerEmail || property.ownerEmail || '';
+            property.ownerPhone = ownerPhone || property.ownerPhone || '';
+            property.status = 'active';
+            property.isPublished = true;
+            await property.save();
         }
 
         return res.status(201).json({ success: true, property });

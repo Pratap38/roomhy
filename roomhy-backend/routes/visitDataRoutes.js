@@ -371,6 +371,13 @@ router.post('/approve', async (req, res) => {
                 title: propertyTitle,
                 description: visit.description || '',
                 address: propertyAddress,
+                city: visit.city || '',
+                area: ownerArea || '',
+                propertyType: visit.propertyType || '',
+                monthlyRent: Number(visit.monthlyRent || 0),
+                ownerName,
+                ownerEmail: ownerEmailFromVisit,
+                ownerPhone,
                 locationCode: propertyLocationCode || 'GEN',
                 ownerLoginId: finalLoginId,
                 status: 'active',
@@ -379,6 +386,13 @@ router.post('/approve', async (req, res) => {
         } else {
             ownerProperty.description = visit.description || ownerProperty.description || '';
             ownerProperty.address = propertyAddress || ownerProperty.address || '';
+            ownerProperty.city = visit.city || ownerProperty.city || '';
+            ownerProperty.area = ownerArea || ownerProperty.area || '';
+            ownerProperty.propertyType = visit.propertyType || ownerProperty.propertyType || '';
+            ownerProperty.monthlyRent = Number(visit.monthlyRent || ownerProperty.monthlyRent || 0);
+            ownerProperty.ownerName = ownerName || ownerProperty.ownerName || '';
+            ownerProperty.ownerEmail = ownerEmailFromVisit || ownerProperty.ownerEmail || '';
+            ownerProperty.ownerPhone = ownerPhone || ownerProperty.ownerPhone || '';
             ownerProperty.locationCode = propertyLocationCode || ownerProperty.locationCode || 'GEN';
             ownerProperty.ownerLoginId = finalLoginId;
             ownerProperty.status = 'active';
@@ -508,7 +522,7 @@ router.post('/approve', async (req, res) => {
 // ============================================================
 router.post('/hold', async (req, res) => {
     try {
-        const { visitId, holdReason } = req.body;
+        const { visitId, holdReason, holdAction } = req.body;
 
         if (!visitId) {
             return res.status(400).json({
@@ -523,6 +537,7 @@ router.post('/hold', async (req, res) => {
             {
                 status: 'hold',
                 holdReason: holdReason || '',
+                holdAction: holdAction || 'edit',
                 holdAt: new Date()
             },
             { new: true }
@@ -933,6 +948,55 @@ router.put('/:visitId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error updating visit',
+            error: error.message
+        });
+    }
+});
+
+// ============================================================
+// POST: Reject a visit with explicit reason and next action
+// ============================================================
+router.post('/reject', async (req, res) => {
+    try {
+        const { visitId, rejectReason, rejectAction } = req.body;
+
+        if (!visitId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing visitId'
+            });
+        }
+
+        const visit = await VisitData.findOneAndUpdate(
+            { $or: [{ _id: visitId }, { visitId: visitId }] },
+            {
+                status: 'rejected',
+                rejectReason: rejectReason || '',
+                rejectAction: rejectAction || 'cancel',
+                rejectedAt: new Date()
+            },
+            { new: true }
+        );
+
+        if (!visit) {
+            return res.status(404).json({
+                success: false,
+                message: 'Visit not found'
+            });
+        }
+
+        console.log('? [visits/reject] Visit rejected:', visitId);
+
+        res.json({
+            success: true,
+            message: 'Visit rejected successfully',
+            visit
+        });
+    } catch (error) {
+        console.error('? [visits/reject] Error rejecting visit:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error rejecting visit',
             error: error.message
         });
     }
