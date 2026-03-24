@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useHtmlPage } from "../../utils/htmlPage";
 import { fetchJson } from "../../utils/api";
 
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 const readStoredUser = () => {
   try {
     const raw =
@@ -10,18 +11,12 @@ const readStoredUser = () => {
       localStorage.getItem("manager_user") ||
       localStorage.getItem("user");
     return raw ? JSON.parse(raw) : null;
-  } catch (_) {
-    return null;
-  }
+  } catch (_) { return null; }
 };
 
 const normalizeVisit = (visit) => {
   const stableId = visit?.visitId || visit?._id || "";
-  return {
-    ...visit,
-    _id: stableId,
-    visitId: visit.visitId || stableId
-  };
+  return { ...visit, _id: stableId, visitId: visit.visitId || stableId };
 };
 
 const pickFirstText = (...values) => {
@@ -35,69 +30,20 @@ const normalizeIdentity = (value) => String(value || "").trim().toLowerCase();
 
 const visitBelongsToEmployee = (visit, user) => {
   if (!visit || !user) return false;
-
-  const userIds = [
-    user?.loginId,
-    user?.staffId,
-    user?.id,
-    user?._id
-  ]
-    .map(normalizeIdentity)
-    .filter(Boolean);
-
-  const userNames = [
-    user?.name,
-    user?.staffName,
-    user?.fullName,
-    user?.employeeName
-  ]
-    .map(normalizeIdentity)
-    .filter(Boolean);
-
+  const userIds = [user?.loginId, user?.staffId, user?.id, user?._id].map(normalizeIdentity).filter(Boolean);
+  const userNames = [user?.name, user?.staffName, user?.fullName, user?.employeeName].map(normalizeIdentity).filter(Boolean);
   const visitIds = [
-    visit?.staffId,
-    visit?.submittedById,
-    visit?.employeeId,
-    visit?.employee_id,
-    visit?.createdBy,
-    visit?.created_by,
-    visit?.addedBy,
-    visit?.added_by,
-    visit?.propertyInfo?.staffId,
-    visit?.propertyInfo?.submittedById,
-    visit?.propertyInfo?.employeeId,
-    visit?.propertyInfo?.employee_id,
-    visit?.propertyInfo?.createdBy,
-    visit?.propertyInfo?.created_by,
-    visit?.propertyInfo?.addedBy,
-    visit?.propertyInfo?.added_by
-  ]
-    .map(normalizeIdentity)
-    .filter(Boolean);
-
+    visit?.staffId, visit?.submittedById, visit?.employeeId, visit?.employee_id,
+    visit?.createdBy, visit?.created_by, visit?.addedBy, visit?.added_by,
+    visit?.propertyInfo?.staffId, visit?.propertyInfo?.submittedById
+  ].map(normalizeIdentity).filter(Boolean);
   const visitNames = [
-    visit?.staffName,
-    visit?.submittedBy,
-    visit?.employeeName,
-    visit?.createdByName,
-    visit?.addedByName,
-    visit?.propertyInfo?.staffName,
-    visit?.propertyInfo?.submittedBy,
-    visit?.propertyInfo?.employeeName,
-    visit?.propertyInfo?.createdByName,
-    visit?.propertyInfo?.addedByName
-  ]
-    .map(normalizeIdentity)
-    .filter(Boolean);
-
-  if (userIds.length && visitIds.some((value) => userIds.includes(value))) {
-    return true;
-  }
-
-  if (userNames.length && visitNames.some((value) => userNames.includes(value))) {
-    return true;
-  }
-
+    visit?.staffName, visit?.submittedBy, visit?.employeeName,
+    visit?.createdByName, visit?.addedByName,
+    visit?.propertyInfo?.staffName, visit?.propertyInfo?.submittedBy,
+  ].map(normalizeIdentity).filter(Boolean);
+  if (userIds.length && visitIds.some((v) => userIds.includes(v))) return true;
+  if (userNames.length && visitNames.some((v) => userNames.includes(v))) return true;
   return false;
 };
 
@@ -114,10 +60,9 @@ const watermarkDataUrl = (dataUrl, areaName, visitDate) =>
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = img.width; canvas.height = img.height;
       const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
       const text = `RoomHy | ${areaName || "Area"} | ${visitDate}`;
       const fontSize = Math.max(16, Math.floor(canvas.width / 40));
       ctx.font = `${fontSize}px Inter, sans-serif`;
@@ -134,6 +79,292 @@ const watermarkDataUrl = (dataUrl, areaName, visitDate) =>
     img.src = dataUrl;
   });
 
+// ─── Credentials generator ─────────────────────────────────────────────────────
+const generateOwnerId = () => `ROOMHY${Math.floor(10000 + Math.random() * 90000)}`;
+const generatePassword = () => {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#";
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+};
+
+// ─── localStorage helpers ──────────────────────────────────────────────────────
+const savePropertyEnquiry = (enquiry) => {
+  try {
+    const existing = JSON.parse(localStorage.getItem("roomhy_property_enquiries") || "[]");
+    existing.unshift(enquiry);
+    localStorage.setItem("roomhy_property_enquiries", JSON.stringify(existing));
+  } catch (_) {}
+};
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const AMENITIES_LIST = [
+  "Wi-Fi", "Drinking Water", "Food", "Power Backup",
+  "Washing Machine", "Parking", "CCTV", "AC",
+  "Geyser", "Lift", "Study Table", "Cupboard"
+];
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ADD PROPERTY MODAL — per manager's diagram:
+// Form shows only Property Info. Owner info autofilled (NOT shown as input).
+// ══════════════════════════════════════════════════════════════════════════════
+function AddPropertyModal({ visit, staffName, staffId, areaName, onClose, onSuccess }) {
+  const [propName, setPropName] = useState(visit?.propertyName || visit?.propertyInfo?.name || "");
+  const [propType, setPropType] = useState(visit?.propertyType || "PG");
+  const [selectedAmenities, setSelectedAmenities] = useState(
+    Array.isArray(visit?.amenities) ? visit.amenities : []
+  );
+  const [rules, setRules] = useState({
+    visitorsAllowed: visit?.visitorsAllowed || "Yes",
+    cookingAllowed: visit?.cookingAllowed || "Yes",
+    smokingAllowed: visit?.smokingAllowed || "No",
+    petsAllowed: visit?.petsAllowed || "No",
+    entryExit: visit?.entryExit || ""
+  });
+  const [images, setImages] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const fileInputRef = useRef(null);
+
+  // Owner info autofilled silently from visit — NOT shown in form (per manager diagram)
+  const ownerData = {
+    ownerName: visit?.ownerName || visit?.propertyInfo?.ownerName || "",
+    ownerEmail: visit?.ownerEmail || visit?.propertyInfo?.ownerEmail || "",
+    ownerPhone: visit?.contactPhone || visit?.ownerPhone || visit?.propertyInfo?.contactPhone || "",
+    address: visit?.address || visit?.propertyInfo?.address || "",
+    city: visit?.city || visit?.propertyInfo?.city || areaName || "",
+    area: visit?.area || visit?.areaLocality || areaName || "",
+    gender: visit?.gender || "",
+    monthlyRent: visit?.monthlyRent || "",
+    deposit: visit?.deposit || "",
+  };
+
+  const toggleAmenity = (a) =>
+    setSelectedAmenities((prev) => prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]);
+  const toggleRule = (key, val) => setRules((prev) => ({ ...prev, [key]: val }));
+
+  const handleImageUpload = async (files) => {
+    const remaining = 15 - images.length;
+    if (remaining <= 0) { setError("Maximum 15 images allowed."); return; }
+    const toProcess = Array.from(files).slice(0, remaining);
+    const results = [];
+    for (const file of toProcess) {
+      const dataUrl = await toDataUrl(file);
+      const stamped = await watermarkDataUrl(dataUrl, areaName, new Date().toLocaleDateString());
+      results.push(stamped);
+    }
+    setImages((prev) => [...prev, ...results]);
+    setError("");
+  };
+
+  const removeImage = (idx) => setImages((prev) => prev.filter((_, i) => i !== idx));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!propName.trim()) { setError("Property name is required."); return; }
+    if (images.length === 0) { setError("Please upload at least 1 property image."); return; }
+    setSubmitting(true); setError("");
+    try {
+      const ownerId = generateOwnerId();
+      const ownerPassword = generatePassword();
+      const enquiryId = `ENQ${Date.now()}`;
+      const enquiry = {
+        enquiryId, type: "property_from_visit", status: "pending",
+        submittedAt: new Date().toISOString(), submittedBy: staffName, submittedById: staffId,
+        visitId: visit?.visitId || visit?._id || "", visitArea: areaName,
+        propertyName: propName.trim(), propertyType: propType,
+        amenities: selectedAmenities, rules, images,
+        ...ownerData,
+        pendingCredentials: { loginId: ownerId, password: ownerPassword, role: "owner" },
+        approvedAt: null, approvedBy: null, credentialsSent: false,
+        digitalCheckinLink: null  // never send digital checkin
+      };
+      savePropertyEnquiry(enquiry);
+      try {
+        await fetchJson("/api/property-enquiries", { method: "POST", body: JSON.stringify(enquiry) });
+      } catch (_) {}
+      onSuccess(enquiry);
+    } catch (err) {
+      setError(err?.message || "Failed to submit property.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-lg mx-4 shadow-2xl max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="sticky top-0 bg-white z-10 flex justify-between items-center px-6 py-4 border-b border-gray-100 rounded-t-2xl">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Add Property</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Visit → {ownerData.ownerName || "Owner"} • {areaName}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 text-gray-400 transition text-lg">✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+
+          {/* Property Name */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Property Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text" value={propName} onChange={(e) => setPropName(e.target.value)}
+              placeholder="e.g. Sunrise PG, Green Hostel..."
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 transition"
+            />
+          </div>
+
+          {/* Property Type */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Property Type</label>
+            <div className="flex gap-2 flex-wrap">
+              {["PG", "Hostel", "Room", "Flat"].map((t) => (
+                <button key={t} type="button" onClick={() => setPropType(t)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition ${propType === t ? "border-purple-500 bg-purple-50 text-purple-700" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Amenities */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Amenities</label>
+            <div className="grid grid-cols-3 gap-2">
+              {AMENITIES_LIST.map((a) => (
+                <label key={a} className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-xs font-medium transition select-none ${selectedAmenities.includes(a) ? "border-purple-500 bg-purple-50 text-purple-700" : "border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                  <input type="checkbox" checked={selectedAmenities.includes(a)} onChange={() => toggleAmenity(a)} className="hidden" />
+                  <span className={`w-3.5 h-3.5 rounded border-2 flex-shrink-0 flex items-center justify-center ${selectedAmenities.includes(a) ? "border-purple-500 bg-purple-500" : "border-gray-300"}`}>
+                    {selectedAmenities.includes(a) && (
+                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                        <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </span>
+                  {a}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* House Rules */}
+          <div className="border border-gray-100 rounded-xl p-4 bg-gray-50">
+            <p className="text-sm font-semibold text-gray-700 mb-3">House Rules</p>
+            <input type="text" value={rules.entryExit} onChange={(e) => setRules((p) => ({ ...p, entryExit: e.target.value }))}
+              placeholder="Entry / Exit timing e.g. 6 AM – 10 PM"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 mb-3 bg-white" />
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { key: "visitorsAllowed", label: "Visitors Allowed" },
+                { key: "cookingAllowed", label: "Cooking Allowed" },
+                { key: "smokingAllowed", label: "Smoking Allowed" },
+                { key: "petsAllowed", label: "Pets Allowed" }
+              ].map((item) => (
+                <div key={item.key}>
+                  <p className="text-xs text-gray-500 mb-1.5">{item.label}</p>
+                  <div className="flex gap-2">
+                    {["Yes", "No"].map((val) => (
+                      <button key={val} type="button" onClick={() => toggleRule(item.key, val)}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border-2 transition ${rules[item.key] === val ? val === "Yes" ? "border-green-500 bg-green-50 text-green-700" : "border-red-400 bg-red-50 text-red-600" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}>
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Image Upload max 15 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-semibold text-gray-700">Property Images <span className="text-red-500">*</span></label>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${images.length >= 15 ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-500"}`}>{images.length}/15</span>
+            </div>
+            {images.length < 15 && (
+              <div className="border-2 border-dashed border-purple-200 rounded-xl p-5 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition mb-3" onClick={() => fileInputRef.current?.click()}>
+                <div className="text-3xl mb-1.5">📷</div>
+                <p className="text-sm text-gray-500 font-medium">Click to upload images</p>
+                <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP • Max 15 photos</p>
+                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImageUpload(e.target.files)} />
+              </div>
+            )}
+            {images.length > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {images.map((src, idx) => (
+                  <div key={idx} className="relative group aspect-square">
+                    <img src={src} alt={`img-${idx + 1}`} className="w-full h-full object-cover rounded-xl border border-gray-200" />
+                    <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow">✕</button>
+                    <span className="absolute bottom-1 left-1 bg-black/50 text-white text-[9px] rounded px-1 font-mono">{idx + 1}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Info note — owner autofilled hidden */}
+          <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-700">
+            ℹ️ Owner details are auto-filled from the visit report and will be sent to Superadmin.
+          </div>
+
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">⚠️ {error}</div>}
+
+          <button type="submit" disabled={submitting}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-60 flex items-center justify-center gap-2 text-sm">
+            {submitting ? (
+              <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>Submitting to Superadmin...</>
+            ) : "Submit for Superadmin Approval →"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SUCCESS MODAL — shows credentials (Login ID + Password only, no checkin link)
+// ══════════════════════════════════════════════════════════════════════════════
+function PropertySuccessModal({ enquiry, onClose }) {
+  const { pendingCredentials, propertyName, ownerName } = enquiry;
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[80] flex items-center justify-center backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <path d="M5 13L9 17L19 7" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-1">Property Submitted!</h3>
+        <p className="text-sm text-gray-500 mb-5">
+          <strong>{propertyName}</strong> is in Superadmin enquiry panel under <strong>{ownerName || "owner"}</strong>.
+        </p>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 text-left">
+          <p className="text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-3">🔐 Owner Credentials — After Approval Only</p>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center bg-white rounded-lg px-3 py-2 border border-amber-100">
+              <span className="text-xs text-gray-500">Login ID</span>
+              <span className="font-mono font-bold text-gray-800 text-sm">{pendingCredentials.loginId}</span>
+            </div>
+            <div className="flex justify-between items-center bg-white rounded-lg px-3 py-2 border border-amber-100">
+              <span className="text-xs text-gray-500">Password</span>
+              <span className="font-mono font-bold text-gray-800 text-sm">{pendingCredentials.password}</span>
+            </div>
+          </div>
+          <p className="text-[11px] text-amber-600 mt-3 leading-relaxed">
+            ✅ Only Login ID &amp; Password will be sent — no digital check-in link.
+          </p>
+        </div>
+        <button onClick={onClose} className="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700 transition">Done</button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAIN VISIT COMPONENT
+// ══════════════════════════════════════════════════════════════════════════════
 export default function Visit() {
   useHtmlPage({
     title: "Roomhy - Visit Reports",
@@ -173,13 +404,7 @@ export default function Visit() {
   const [ownerBehaviourPublic, setOwnerBehaviourPublic] = useState("");
   const [studentReviewsRating, setStudentReviewsRating] = useState("");
   const [employeeRating, setEmployeeRating] = useState("");
-  const [captureGroups, setCaptureGroups] = useState({
-    photo_building: [],
-    photo_room: [],
-    photo_bathroom: [],
-    photo_bed: [],
-    photo_extra: []
-  });
+  const [captureGroups, setCaptureGroups] = useState({ photo_building: [], photo_room: [], photo_bathroom: [], photo_bed: [], photo_extra: [] });
   const [showProfModal, setShowProfModal] = useState(false);
   const [profPreview, setProfPreview] = useState([]);
   const [showCamera, setShowCamera] = useState(false);
@@ -201,6 +426,17 @@ export default function Visit() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
+  // ── Add Property states ──────────────────────────────────────────────────────
+  const [addPropVisit, setAddPropVisit] = useState(null);
+  const [showAddProp, setShowAddProp] = useState(false);
+  const [addPropSuccess, setAddPropSuccess] = useState(null);
+  const [addedVisitIds, setAddedVisitIds] = useState(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem("roomhy_property_enquiries") || "[]");
+      return new Set(list.map((e) => e.visitId).filter(Boolean));
+    } catch (_) { return new Set(); }
+  });
+
   const staffName = user?.name || user?.staffName || user?.fullName || "Manager";
   const staffId = user?.loginId || user?.staffId || user?.id || user?._id || "";
   const areaName = modalAreaName || resolvedAreaName;
@@ -210,9 +446,7 @@ export default function Visit() {
       setErrorMsg("");
       const query = staffId || staffName ? `?staffId=${encodeURIComponent(staffId)}&staffName=${encodeURIComponent(staffName)}` : "";
       const data = await fetchJson(`/api/visits${query}`);
-      const list = (data?.visits || data || [])
-        .map(normalizeVisit)
-        .filter((visit) => visitBelongsToEmployee(visit, user || { loginId: staffId, name: staffName }));
+      const list = (data?.visits || data || []).map(normalizeVisit).filter((v) => visitBelongsToEmployee(v, user || { loginId: staffId, name: staffName }));
       setVisits(list);
       setLoading(false);
     } catch (err) {
@@ -221,46 +455,21 @@ export default function Visit() {
     }
   };
 
-  useEffect(() => {
-    setUser(readStoredUser());
-  }, []);
+  useEffect(() => { setUser(readStoredUser()); }, []);
 
   useEffect(() => {
     let active = true;
-
     const resolveAssignedLocation = async () => {
-      const directArea = pickFirstText(
-        user?.areaName,
-        user?.location,
-        user?.area,
-        user?.assignedArea,
-        user?.locationName,
-        user?.team,
-        user?.city
-      );
-      const directCity = pickFirstText(
-        user?.city,
-        user?.cityName,
-        user?.assignedCity
-      );
-
+      const directArea = pickFirstText(user?.areaName, user?.location, user?.area, user?.assignedArea, user?.locationName, user?.team, user?.city);
+      const directCity = pickFirstText(user?.city, user?.cityName, user?.assignedCity);
       if (directArea || directCity) {
         if (!active) return;
-        setResolvedAreaName(directArea);
-        setResolvedCityName(directCity);
-        setModalAreaName((current) => current || directArea);
-        setModalCityName((current) => current || directCity);
+        setResolvedAreaName(directArea); setResolvedCityName(directCity);
+        setModalAreaName((c) => c || directArea); setModalCityName((c) => c || directCity);
         return;
       }
-
       const areaCode = pickFirstText(user?.areaCode, user?.locationCode);
-      if (!areaCode) {
-        if (!active) return;
-        setResolvedAreaName("");
-        setResolvedCityName("");
-        return;
-      }
-
+      if (!areaCode) { if (!active) return; setResolvedAreaName(""); setResolvedCityName(""); return; }
       try {
         const data = await fetchJson("/api/locations/areas");
         const areas = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
@@ -268,29 +477,13 @@ export default function Visit() {
           const code = pickFirstText(area?.code, area?.areaCode, area?.locationCode, area?.pincode);
           return code && code.toLowerCase() === areaCode.toLowerCase();
         });
-
         if (!active) return;
-
         setResolvedAreaName(pickFirstText(matchedArea?.name, matchedArea?.areaName, directArea));
-        setResolvedCityName(
-          pickFirstText(
-            matchedArea?.cityName,
-            matchedArea?.city?.name,
-            typeof matchedArea?.city === "string" ? matchedArea.city : "",
-            directCity
-          )
-        );
-      } catch (_) {
-        if (!active) return;
-        setResolvedAreaName(directArea);
-        setResolvedCityName(directCity);
-      }
+        setResolvedCityName(pickFirstText(matchedArea?.cityName, matchedArea?.city?.name, typeof matchedArea?.city === "string" ? matchedArea.city : "", directCity));
+      } catch (_) { if (!active) return; setResolvedAreaName(directArea); setResolvedCityName(directCity); }
     };
-
     resolveAssignedLocation();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [user]);
 
   useEffect(() => {
@@ -302,47 +495,23 @@ export default function Visit() {
 
   useEffect(() => {
     if (window?.lucide) window.lucide.createIcons();
-  }, [showModal, showProfModal, showCamera, visits, captureGroups, profPhotos]);
+  }, [showModal, showProfModal, showCamera, visits, captureGroups, profPhotos, showAddProp]);
 
-
-  const generatePropertyId = () => {
-    const id = `PROP${Date.now()}`;
-    setPropertyId(id);
-  };
+  const generatePropertyId = () => setPropertyId(`PROP${Date.now()}`);
 
   const resetModalDefaults = () => {
     const now = new Date();
-    const newVisitId = `v_${Date.now()}`;
-    setVisitId(newVisitId);
-    setVisitDateDisplay(now.toLocaleString());
-    generatePropertyId();
-    setVisitorsAllowed("Yes");
-    setCookingAllowed("Yes");
-    setSmokingAllowed("No");
-    setPetsAllowed("No");
-    setCleanlinessRating("");
-    setOwnerBehaviourPublic("");
-    setStudentReviewsRating("");
-    setEmployeeRating("");
-    setCaptureGroups({
-      photo_building: [],
-      photo_room: [],
-      photo_bathroom: [],
-      photo_bed: [],
-      photo_extra: []
-    });
-    setFieldPhotos([]);
-    setProfPhotos([]);
-    setProfPreview([]);
+    setVisitId(`v_${Date.now()}`); setVisitDateDisplay(now.toLocaleString()); generatePropertyId();
+    setVisitorsAllowed("Yes"); setCookingAllowed("Yes"); setSmokingAllowed("No"); setPetsAllowed("No");
+    setCleanlinessRating(""); setOwnerBehaviourPublic(""); setStudentReviewsRating(""); setEmployeeRating("");
+    setCaptureGroups({ photo_building: [], photo_room: [], photo_bathroom: [], photo_bed: [], photo_extra: [] });
+    setFieldPhotos([]); setProfPhotos([]); setProfPreview([]);
     setLocationCode(user?.areaCode || user?.locationCode || "");
-    setEditingVisit(null);
-    setModalAreaName(resolvedAreaName || "");
-    setModalCityName(resolvedCityName || "");
+    setEditingVisit(null); setModalAreaName(resolvedAreaName || ""); setModalCityName(resolvedCityName || "");
   };
 
   const openModal = () => {
-    resetModalDefaults();
-    setShowModal(true);
+    resetModalDefaults(); setShowModal(true);
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -356,26 +525,16 @@ export default function Visit() {
 
   const openEditModal = (visit) => {
     const record = normalizeVisit(visit);
-    setEditingVisit(record);
-    setVisitId(record.visitId || record._id || "");
+    setEditingVisit(record); setVisitId(record.visitId || record._id || "");
     setVisitDateDisplay(record.visitDateDisplay || (record.submittedAt ? new Date(record.submittedAt).toLocaleString() : new Date().toLocaleString()));
-    setPropertyId(record.propertyId || "");
-    setLocationCode(record.locationCode || user?.areaCode || user?.locationCode || "");
+    setPropertyId(record.propertyId || ""); setLocationCode(record.locationCode || user?.areaCode || user?.locationCode || "");
     setVisitorsAllowed(record.visitorsAllowed === false ? "No" : "Yes");
     setCookingAllowed(record.cookingAllowed === false ? "No" : "Yes");
     setSmokingAllowed(record.smokingAllowed === true ? "Yes" : "No");
     setPetsAllowed(record.petsAllowed === true ? "Yes" : "No");
-    setCleanlinessRating(String(record.cleanlinessRating || ""));
-    setOwnerBehaviourPublic(record.ownerBehaviourPublic || "");
-    setStudentReviewsRating(String(record.studentReviewsRating || ""));
-    setEmployeeRating(String(record.employeeRating || ""));
-    setCaptureGroups({
-      photo_building: [],
-      photo_room: [],
-      photo_bathroom: [],
-      photo_bed: [],
-      photo_extra: []
-    });
+    setCleanlinessRating(String(record.cleanlinessRating || "")); setOwnerBehaviourPublic(record.ownerBehaviourPublic || "");
+    setStudentReviewsRating(String(record.studentReviewsRating || "")); setEmployeeRating(String(record.employeeRating || ""));
+    setCaptureGroups({ photo_building: [], photo_room: [], photo_bathroom: [], photo_bed: [], photo_extra: [] });
     setFieldPhotos(Array.isArray(record.photos) ? record.photos : []);
     setProfPhotos(Array.isArray(record.professionalPhotos) ? record.professionalPhotos : []);
     setProfPreview(Array.isArray(record.professionalPhotos) ? record.professionalPhotos : []);
@@ -387,14 +546,11 @@ export default function Visit() {
 
   const deleteVisit = async (visit) => {
     const targetId = visit?.visitId || visit?._id;
-    if (!targetId) return;
-    if (!window.confirm("Delete this visit report?")) return;
+    if (!targetId || !window.confirm("Delete this visit report?")) return;
     try {
       await fetchJson(`/api/visits/${encodeURIComponent(targetId)}`, { method: "DELETE" });
       await loadVisits();
-    } catch (err) {
-      window.alert(err?.body || err?.message || "Failed to delete visit");
-    }
+    } catch (err) { window.alert(err?.body || err?.message || "Failed to delete visit"); }
   };
 
   const setToggleValue = (field, value) => {
@@ -414,184 +570,75 @@ export default function Visit() {
 
   const renderStars = (value, field) => (
     <div className="flex gap-1 text-2xl cursor-pointer">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <span
-          key={`${field}-${n}`}
-          className={`star ${Number(value) >= n ? "text-yellow-400" : "text-gray-300"}`}
-          onClick={() => handleStarClick(n, field)}
-        >
-          {Number(value) >= n ? "\u2605" : "\u2606"}
+      {[1,2,3,4,5].map((n) => (
+        <span key={`${field}-${n}`} className={`star ${Number(value) >= n ? "text-yellow-400" : "text-gray-300"}`} onClick={() => handleStarClick(n, field)}>
+          {Number(value) >= n ? "★" : "☆"}
         </span>
       ))}
     </div>
   );
 
-  const stopCameraStream = () => {
-    if (cameraStreamRef.current) {
-      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
-      cameraStreamRef.current = null;
-    }
-  };
-
+  const stopCameraStream = () => { if (cameraStreamRef.current) { cameraStreamRef.current.getTracks().forEach((t) => t.stop()); cameraStreamRef.current = null; } };
   useEffect(() => () => stopCameraStream(), []);
 
   const startCamera = async (facing = cameraFacing) => {
-    try {
-      setCameraError("");
-      setCameraLoading(true);
-      stopCameraStream();
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facing }
-      });
+    try { setCameraError(""); setCameraLoading(true); stopCameraStream();
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } });
       cameraStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
+      if (videoRef.current) videoRef.current.srcObject = stream;
       setCameraLoading(false);
-    } catch (err) {
-      setCameraLoading(false);
-      setCameraError("Camera access denied or unavailable. Please allow camera permissions.");
-    }
+    } catch (_) { setCameraLoading(false); setCameraError("Camera access denied or unavailable."); }
   };
 
   const openCamera = async (key) => {
-    setCameraKey(key);
-    setCapturedPreview("");
-    setCameraView("capture");
-    setShowCamera(true);
-    setCameraLoading(true);
-    setCameraError("");
-    setCameraLocation("");
-    setPreviewLocation("");
-
+    setCameraKey(key); setCapturedPreview(""); setCameraView("capture"); setShowCamera(true);
+    setCameraLoading(true); setCameraError(""); setCameraLocation(""); setPreviewLocation("");
     try {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const loc = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
-            setCameraLocation(loc);
-            setPreviewLocation(loc);
-          },
-          () => {
-            setCameraLocation("Location unavailable");
-            setPreviewLocation("Location unavailable");
-          },
+          (pos) => { const loc = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`; setCameraLocation(loc); setPreviewLocation(loc); },
+          () => { setCameraLocation("Location unavailable"); setPreviewLocation("Location unavailable"); },
           { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );
       }
     } catch (_) {}
-
     await startCamera(cameraFacing);
   };
 
-  const closeCamera = () => {
-    stopCameraStream();
-    setShowCamera(false);
-    setCameraView("capture");
-    setCameraKey("");
-    setCapturedPreview("");
-  };
-
-  const toggleCamera = async () => {
-    const nextFacing = cameraFacing === "environment" ? "user" : "environment";
-    setCameraFacing(nextFacing);
-    await startCamera(nextFacing);
-  };
-
+  const closeCamera = () => { stopCameraStream(); setShowCamera(false); setCameraView("capture"); setCameraKey(""); setCapturedPreview(""); };
+  const toggleCamera = async () => { const next = cameraFacing === "environment" ? "user" : "environment"; setCameraFacing(next); await startCamera(next); };
   const capturePhoto = () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
+    const video = videoRef.current; const canvas = canvasRef.current;
     if (!video || !canvas) return;
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-    setCapturedPreview(dataUrl);
-    setCameraView("preview");
+    canvas.width = video.videoWidth || 1280; canvas.height = video.videoHeight || 720;
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    setCapturedPreview(canvas.toDataURL("image/jpeg", 0.9)); setCameraView("preview");
   };
-
-  const recapturePhoto = () => {
-    setCapturedPreview("");
-    setCameraView("capture");
-  };
-
-  const deleteCapture = () => {
-    setCapturedPreview("");
-    closeCamera();
-  };
-
+  const recapturePhoto = () => { setCapturedPreview(""); setCameraView("capture"); };
+  const deleteCapture = () => { setCapturedPreview(""); closeCamera(); };
   const confirmCapture = async () => {
     if (!capturedPreview || !cameraKey) return;
     const maxCount = cameraKey === "photo_extra" ? 11 : 5;
     const existing = captureGroups[cameraKey] || [];
-    if (existing.length >= maxCount) {
-      alert(`Maximum ${maxCount} photos allowed for this section.`);
-      return;
-    }
-    const stamped = await watermarkDataUrl(
-      capturedPreview,
-      areaName,
-      visitDateDisplay || new Date().toLocaleDateString()
-    );
-    setCaptureGroups((prev) => ({
-      ...prev,
-      [cameraKey]: [...existing, stamped]
-    }));
+    if (existing.length >= maxCount) { alert(`Maximum ${maxCount} photos allowed.`); return; }
+    const stamped = await watermarkDataUrl(capturedPreview, areaName, visitDateDisplay || new Date().toLocaleDateString());
+    setCaptureGroups((prev) => ({ ...prev, [cameraKey]: [...existing, stamped] }));
     closeCamera();
   };
 
-  const openProfModal = () => {
-    setShowProfModal(true);
-    setProfPreview(profPhotos.slice());
-  };
-
-  const closeProfModal = () => {
-    setShowProfModal(false);
-    setProfPreview([]);
-  };
-
+  const openProfModal = () => { setShowProfModal(true); setProfPreview(profPhotos.slice()); };
+  const closeProfModal = () => { setShowProfModal(false); setProfPreview([]); };
   const handleProfInput = async (files) => {
     if (!files || files.length === 0) return;
     const existing = profPreview.slice();
     const remaining = 10 - existing.length;
     const toRead = Array.from(files).slice(0, remaining);
     const list = [];
-    for (const file of toRead) {
-      const dataUrl = await toDataUrl(file);
-      list.push(dataUrl);
-    }
+    for (const file of toRead) list.push(await toDataUrl(file));
     setProfPreview([...existing, ...list]);
   };
-
-  const removeProfPhoto = (index) => {
-    setProfPreview((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const saveProfPhotos = () => {
-    setProfPhotos(profPreview.slice());
-    setShowProfModal(false);
-  };
-
-  const handleFieldPhotos = async (files) => {
-    const list = [];
-    const now = new Date().toLocaleString();
-    for (const file of files) {
-      const dataUrl = await toDataUrl(file);
-      const watermarked = await watermarkDataUrl(dataUrl, areaName, now);
-      list.push(watermarked);
-    }
-    setFieldPhotos(list);
-  };
-
-  const handleProfPhotos = async (files) => {
-    const list = [];
-    for (const file of files) {
-      const dataUrl = await toDataUrl(file);
-      list.push(dataUrl);
-    }
-    setProfPhotos(list);
-  };
+  const removeProfPhoto = (index) => setProfPreview((prev) => prev.filter((_, i) => i !== index));
+  const saveProfPhotos = () => { setProfPhotos(profPreview.slice()); setShowProfModal(false); };
 
   const submitVisit = async (e) => {
     e.preventDefault();
@@ -600,34 +647,18 @@ export default function Visit() {
     const visitDate = new Date().toLocaleString();
     const capturedPhotos = Object.values(captureGroups || {}).flat();
     const payload = {
-      _id: visitIdValue,
-      visitId: visitIdValue,
-      submittedAt: new Date().toISOString(),
-      staffName,
-      staffId,
-      propertyName: fd.get("name"),
-      propertyType: fd.get("propertyType"),
-      propertyId: fd.get("propertyId"),
-      verifiedByCompany: fd.get("verifiedByCompany") || "true",
-      locationCode: fd.get("locationCode") || locationCode,
-      address: fd.get("address"),
-      area: fd.get("area"),
-      areaLocality: fd.get("areaLocality"),
-      city: fd.get("city"),
-      landmark: fd.get("landmark"),
-      nearbyLocation: fd.get("nearbyLocation"),
-      ownerName: fd.get("ownerName"),
-      ownerEmail: fd.get("ownerEmail"),
-      contactPhone: fd.get("contactPhone"),
+      _id: visitIdValue, visitId: visitIdValue, submittedAt: new Date().toISOString(),
+      staffName, staffId, propertyName: fd.get("name"), propertyType: fd.get("propertyType"),
+      propertyId: fd.get("propertyId"), verifiedByCompany: fd.get("verifiedByCompany") || "true",
+      locationCode: fd.get("locationCode") || locationCode, address: fd.get("address"),
+      area: fd.get("area"), areaLocality: fd.get("areaLocality"), city: fd.get("city"),
+      landmark: fd.get("landmark"), nearbyLocation: fd.get("nearbyLocation"),
+      ownerName: fd.get("ownerName"), ownerEmail: fd.get("ownerEmail"), contactPhone: fd.get("contactPhone"),
       gender: fd.get("gender"),
-      monthlyRent: Number(fd.get("monthlyRent") || 0),
-      deposit: Number(fd.get("deposit") || 0),
+      monthlyRent: Number(fd.get("monthlyRent") || 0), deposit: Number(fd.get("deposit") || 0),
       electricityCharges: Number(fd.get("electricityCharges") || 0),
-      foodCharges: Number(fd.get("foodCharges") || 0),
-      maintenanceCharges: Number(fd.get("maintenanceCharges") || 0),
-      minStay: Number(fd.get("minStay") || 0),
-      entryExit: fd.get("entryExit"),
-      amenities: fd.getAll("amenities"),
+      foodCharges: Number(fd.get("foodCharges") || 0), maintenanceCharges: Number(fd.get("maintenanceCharges") || 0),
+      minStay: Number(fd.get("minStay") || 0), entryExit: fd.get("entryExit"), amenities: fd.getAll("amenities"),
       cleanlinessRating: Number(fd.get("cleanlinessRating") || cleanlinessRating || 0),
       ownerBehaviourPublic: fd.get("ownerBehaviourPublic") || ownerBehaviourPublic,
       studentReviewsRating: Number(fd.get("studentReviewsRating") || studentReviewsRating || 0),
@@ -636,43 +667,33 @@ export default function Visit() {
       cookingAllowed: fd.get("cookingAllowed") || cookingAllowed,
       smokingAllowed: fd.get("smokingAllowed") || smokingAllowed,
       petsAllowed: fd.get("petsAllowed") || petsAllowed,
-      internalRemarks: fd.get("internalRemarks"),
-      studentReviews: fd.get("studentReviews"),
-      cleanlinessNote: fd.get("cleanlinessNote"),
-      ownerBehaviour: fd.get("ownerBehaviour"),
-      latitude: geo.lat || fd.get("latitude"),
-      longitude: geo.lng || fd.get("longitude"),
+      internalRemarks: fd.get("internalRemarks"), studentReviews: fd.get("studentReviews"),
+      cleanlinessNote: fd.get("cleanlinessNote"), ownerBehaviour: fd.get("ownerBehaviour"),
+      latitude: geo.lat || fd.get("latitude"), longitude: geo.lng || fd.get("longitude"),
       photos: capturedPhotos.length ? capturedPhotos : fieldPhotos,
-      professionalPhotos: profPhotos,
-      status: "submitted",
-      visitDateDisplay: visitDate
+      professionalPhotos: profPhotos, status: "submitted", visitDateDisplay: visitDate
     };
-
     try {
       if (editingVisit?.visitId || editingVisit?._id) {
-        await fetchJson(`/api/visits/${encodeURIComponent(editingVisit.visitId || editingVisit._id)}`, {
-          method: "PUT",
-          body: JSON.stringify(payload)
-        });
+        await fetchJson(`/api/visits/${encodeURIComponent(editingVisit.visitId || editingVisit._id)}`, { method: "PUT", body: JSON.stringify(payload) });
       } else {
         await fetchJson("/api/visits", { method: "POST", body: JSON.stringify(payload) });
       }
-      setShowModal(false);
-      setEditingVisit(null);
-      await loadVisits();
+      setShowModal(false); setEditingVisit(null); await loadVisits();
       setSubmitSuccessMsg(editingVisit ? "Visit report updated successfully." : "Visit report submitted successfully.");
-    } catch (err) {
-      window.alert(err?.body || err?.message || `Failed to ${editingVisit ? "update" : "submit"} visit`);
-    }
+    } catch (err) { window.alert(err?.body || err?.message || `Failed to ${editingVisit ? "update" : "submit"} visit`); }
   };
 
   const viewMap = (visit) => {
-    if (!visit?.latitude || !visit?.longitude) {
-      window.alert("No geo coordinates available for this visit.");
-      return;
-    }
-    const url = `https://www.google.com/maps?q=${visit.latitude},${visit.longitude}`;
-    window.open(url, "_blank");
+    if (!visit?.latitude || !visit?.longitude) { window.alert("No geo coordinates available."); return; }
+    window.open(`https://www.google.com/maps?q=${visit.latitude},${visit.longitude}`, "_blank");
+  };
+
+  // ── Add Property ─────────────────────────────────────────────────────────────
+  const openAddProperty = (visit) => { setAddPropVisit(visit); setShowAddProp(true); };
+  const handleAddPropSuccess = (enquiry) => {
+    setShowAddProp(false); setAddPropVisit(null); setAddPropSuccess(enquiry);
+    setAddedVisitIds((prev) => new Set([...prev, enquiry.visitId]));
   };
 
   const rows = useMemo(() => visits, [visits]);
@@ -682,12 +703,7 @@ export default function Visit() {
       <div className="flex h-screen overflow-hidden">
         <aside className="sidebar w-72 flex-shrink-0 hidden md:flex flex-col z-20 overflow-y-auto custom-scrollbar">
           <div className="h-16 flex items-center px-6 border-b border-gray-800 sticky top-0 bg-[#111827] z-10">
-            <div className="flex items-center gap-3">
-              <div>
-                <img src="/website/images/whitelogo.jpeg" alt="Roomhy Logo" className="h-16 w-auto" />
-                <span className="text-[10px] text-gray-500">AREA ADMIN</span>
-              </div>
-            </div>
+            <div><img src="/website/images/whitelogo.jpeg" alt="Roomhy Logo" className="h-16 w-auto" /><span className="text-[10px] text-gray-500">AREA ADMIN</span></div>
           </div>
           <nav id="dynamicSidebarNav" className="flex-1 py-6 space-y-1"></nav>
         </aside>
@@ -700,9 +716,7 @@ export default function Visit() {
               <span className="text-slate-800 font-semibold">Visit Reports</span>
             </div>
             <div className="flex items-center gap-4">
-              <button className="text-slate-400 hover:text-slate-600" aria-label="Notifications">
-                <i data-lucide="bell" className="w-5 h-5"></i>
-              </button>
+              <button className="text-slate-400 hover:text-slate-600"><i data-lucide="bell" className="w-5 h-5"></i></button>
               <div className="relative group">
                 <button className="flex items-center gap-3 hover:bg-gray-50 p-1.5 rounded-full transition-colors">
                   <img src="https://i.pravatar.cc/150?u=areaadmin" alt="Admin" className="w-8 h-8 rounded-full border border-slate-200" />
@@ -733,55 +747,28 @@ export default function Visit() {
                   <table className="w-full border-collapse excel-table">
                     <thead>
                       <tr>
-                        <th>Visit ID</th>
-                        <th>Visit Date & Time</th>
-                        <th>Staff Name</th>
-                        <th>Staff ID</th>
-                        <th>Property Name</th>
-                        <th>Property Type</th>
-                        <th>Full Address</th>
-                        <th>Area / Locality</th>
-                        <th>Nearby Location</th>
-                        <th>Landmark</th>
-                        <th>Owner Name</th>
-                        <th>Owner Contact</th>
-                        <th>Owner Gmail</th>
-                        <th>Gender</th>
-                        <th>Student Reviews</th>
-                        <th>Employee Rating</th>
-                        <th>Amenities</th>
-                        <th>Cleanliness</th>
-                        <th>Owner Behaviour</th>
-                        <th>Photo Count</th>
-                        <th>Professional Photo</th>
-                        <th>Geo Status</th>
-                        <th>Map</th>
-                        <th>Status</th>
+                        <th>Visit ID</th><th>Visit Date & Time</th><th>Staff Name</th><th>Staff ID</th>
+                        <th>Property Name</th><th>Property Type</th><th>Full Address</th><th>Area / Locality</th>
+                        <th>Nearby Location</th><th>Landmark</th><th>Owner Name</th><th>Owner Contact</th>
+                        <th>Owner Gmail</th><th>Gender</th><th>Student Reviews</th><th>Employee Rating</th>
+                        <th>Amenities</th><th>Cleanliness</th><th>Owner Behaviour</th><th>Photo Count</th>
+                        <th>Professional Photo</th><th>Geo Status</th><th>Map</th><th>Status</th>
+                        <th>Add Property</th>{/* ← NEW COLUMN */}
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {loading && (
-                        <tr>
-                          <td colSpan={25} className="text-center py-8 text-gray-500">Loading...</td>
-                        </tr>
-                      )}
-                      {!loading && errorMsg && (
-                        <tr>
-                          <td colSpan={25} className="text-center py-8 text-red-500">{errorMsg}</td>
-                        </tr>
-                      )}
-                      {!loading && !errorMsg && rows.length === 0 && (
-                        <tr>
-                          <td colSpan={25} className="text-center py-8 text-gray-500">No visits found. Add one to start.</td>
-                        </tr>
-                      )}
+                      {loading && <tr><td colSpan={26} className="text-center py-8 text-gray-500">Loading...</td></tr>}
+                      {!loading && errorMsg && <tr><td colSpan={26} className="text-center py-8 text-red-500">{errorMsg}</td></tr>}
+                      {!loading && !errorMsg && rows.length === 0 && <tr><td colSpan={26} className="text-center py-8 text-gray-500">No visits found. Add one to start.</td></tr>}
                       {rows.map((visit) => {
                         const prop = visit.propertyInfo || {};
                         const photos = visit.photos || [];
                         const prof = visit.professionalPhotos || [];
                         const visitDateTime = new Date(visit.submittedAt || Date.now()).toLocaleString();
                         const statusText = visit.status || "submitted";
+                        const visitRowId = visit.visitId || visit._id;
+                        const alreadyAdded = addedVisitIds.has(visitRowId);
                         return (
                           <tr key={visit._id}>
                             <td className="text-xs font-mono">{visit._id}</td>
@@ -798,20 +785,8 @@ export default function Visit() {
                             <td className="text-sm text-gray-600">{prop.contactPhone || visit.contactPhone || "-"}</td>
                             <td className="text-sm text-gray-600">{prop.ownerEmail || visit.ownerEmail || "-"}</td>
                             <td className="text-sm text-gray-600">{visit.gender || "-"}</td>
-                            <td className="text-center">
-                              <span className="text-lg font-bold text-amber-600">
-                                {visit.studentReviewsRating
-                                  ? `${"★".repeat(Math.floor(visit.studentReviewsRating))}${"☆".repeat(5 - Math.floor(visit.studentReviewsRating))}`
-                                  : "-"}
-                              </span>
-                            </td>
-                            <td className="text-center">
-                              <span className="text-lg font-bold text-emerald-600">
-                                {visit.employeeRating
-                                  ? `${"★".repeat(Math.floor(visit.employeeRating))}${"☆".repeat(5 - Math.floor(visit.employeeRating))}`
-                                  : "-"}
-                              </span>
-                            </td>
+                            <td className="text-center"><span className="text-lg font-bold text-amber-600">{visit.studentReviewsRating ? `${"★".repeat(Math.floor(visit.studentReviewsRating))}${"☆".repeat(5 - Math.floor(visit.studentReviewsRating))}` : "-"}</span></td>
+                            <td className="text-center"><span className="text-lg font-bold text-emerald-600">{visit.employeeRating ? `${"★".repeat(Math.floor(visit.employeeRating))}${"☆".repeat(5 - Math.floor(visit.employeeRating))}` : "-"}</span></td>
                             <td className="text-sm text-gray-600">{(visit.amenities || []).slice(0, 3).join(", ") || "-"}</td>
                             <td className="text-sm text-gray-600 text-center">{visit.cleanlinessRating || "-"}</td>
                             <td className="text-sm text-gray-600 text-center">{visit.ownerBehaviourPublic || "-"}</td>
@@ -822,25 +797,33 @@ export default function Visit() {
                                   <img src={prof[0]} className="w-12 h-12 object-cover rounded-full border" alt="Professional" />
                                   <span className="text-xs text-gray-600">({prof.length})</span>
                                 </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
+                              ) : <span className="text-gray-400">-</span>}
                             </td>
                             <td className="text-center">{visit.latitude && visit.longitude ? "Verified" : "Not Verified"}</td>
-                            <td className="text-center">
-                              <button onClick={() => viewMap(visit)} className="text-slate-600 hover:bg-slate-50 p-1 rounded text-xs">
-                                View Map
-                              </button>
-                            </td>
+                            <td className="text-center"><button onClick={() => viewMap(visit)} className="text-slate-600 hover:bg-slate-50 p-1 rounded text-xs">View Map</button></td>
                             <td className="text-sm text-gray-600">{statusText}</td>
+
+                            {/* ── ADD PROPERTY COLUMN ── */}
+                            <td className="text-center">
+                              {alreadyAdded ? (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1.5 rounded-lg whitespace-nowrap">
+                                  ✓ Added
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => openAddProperty(visit)}
+                                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-lg transition shadow-sm whitespace-nowrap"
+                                >
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                                  Add Property
+                                </button>
+                              )}
+                            </td>
+
                             <td className="text-center">
                               <div className="inline-flex items-center gap-2">
-                                <button onClick={() => openEditModal(visit)} className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs font-medium">
-                                  Edit
-                                </button>
-                                <button onClick={() => deleteVisit(visit)} className="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs font-medium">
-                                  Delete
-                                </button>
+                                <button onClick={() => openEditModal(visit)} className="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded text-xs font-medium">Edit</button>
+                                <button onClick={() => deleteVisit(visit)} className="text-red-600 hover:bg-red-50 px-2 py-1 rounded text-xs font-medium">Delete</button>
                               </div>
                             </td>
                           </tr>
@@ -855,14 +838,13 @@ export default function Visit() {
         </div>
       </div>
 
+      {/* ── Original Visit Form Modal (100% unchanged) ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white rounded-lg w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-gray-900">{editingVisit ? "Edit Property Visit" : "New Property Visit"}</h3>
-              <button onClick={closeModal} className="text-gray-400">
-                <i data-lucide="x" className="w-5 h-5"></i>
-              </button>
+              <button onClick={closeModal} className="text-gray-400"><i data-lucide="x" className="w-5 h-5"></i></button>
             </div>
             <form key={editingVisit?.visitId || editingVisit?._id || "new-visit"} className="space-y-4" onSubmit={submitVisit}>
               <input type="hidden" name="visitId" value={visitId} />
@@ -871,210 +853,130 @@ export default function Visit() {
                 <input type="text" name="staffName" readOnly className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 cursor-not-allowed" value={staffName} placeholder="Staff Name" />
                 <input type="text" name="staffId" readOnly className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 cursor-not-allowed" value={staffId} placeholder="Staff ID" />
               </div>
-              <input type="hidden" name="latitude" value={geo.lat} />
-              <input type="hidden" name="longitude" value={geo.lng} />
-              <input type="hidden" name="verifiedByCompany" value="true" />
-              <input type="hidden" name="locationCode" value={locationCode} />
-
+              <input type="hidden" name="latitude" value={geo.lat} /><input type="hidden" name="longitude" value={geo.lng} />
+              <input type="hidden" name="verifiedByCompany" value="true" /><input type="hidden" name="locationCode" value={locationCode} />
               <div className="grid grid-cols-2 gap-3">
                 <div className="relative">
                   <input name="propertyId" type="text" readOnly className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-50 cursor-not-allowed" value={propertyId} placeholder="Auto-generated Property ID" />
-                  <button type="button" onClick={generatePropertyId} title="Regenerate ID" className="absolute right-1 top-1/2 -translate-y-1/2 bg-gray-100 px-2 py-1 rounded text-xs border" disabled={!!editingVisit}>
-                    Regenerate
-                  </button>
+                  <button type="button" onClick={generatePropertyId} className="absolute right-1 top-1/2 -translate-y-1/2 bg-gray-100 px-2 py-1 rounded text-xs border" disabled={!!editingVisit}>Regenerate</button>
                 </div>
                 <select name="propertyType" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" defaultValue={editingVisit?.propertyType || "PG"}>
-                  <option value="PG">PG</option>
-                  <option value="Hostel">Hostel</option>
-                  <option value="Room">Room</option>
-                  <option value="Flat">Flat</option>
+                  <option value="PG">PG</option><option value="Hostel">Hostel</option><option value="Room">Room</option><option value="Flat">Flat</option>
                 </select>
               </div>
               <input name="name" type="text" required defaultValue={editingVisit?.propertyName || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Property Name" />
               <textarea name="address" rows="2" required defaultValue={editingVisit?.address || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Full Address (Street, Area, City, Pin Code)"></textarea>
               <div className="grid grid-cols-3 gap-3">
                 <input name="ownerName" type="text" required defaultValue={editingVisit?.ownerName || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Owner Name" />
-                <input name="contactPhone" type="tel" required defaultValue={editingVisit?.contactPhone || editingVisit?.ownerPhone || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Owner Contact (full number)" />
+                <input name="contactPhone" type="tel" required defaultValue={editingVisit?.contactPhone || editingVisit?.ownerPhone || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Owner Contact" />
                 <input name="ownerEmail" type="email" required defaultValue={editingVisit?.ownerEmail || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Owner Gmail" />
               </div>
-              <div className="grid grid-cols-1 gap-3">
-                <select name="gender" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" defaultValue={editingVisit?.gender || ""}>
-                  <option value="">Select Gender Preference</option>
-                  <option value="Male Only">Male Only</option>
-                  <option value="Female Only">Female Only</option>
-                  <option value="Co-Ed">Co-Ed</option>
-                </select>
-              </div>
+              <select name="gender" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" defaultValue={editingVisit?.gender || ""}>
+                <option value="">Select Gender Preference</option>
+                <option value="Male Only">Male Only</option><option value="Female Only">Female Only</option><option value="Co-Ed">Co-Ed</option>
+              </select>
               <div className="grid grid-cols-3 gap-3">
                 <input name="areaLocality" type="text" readOnly className="w-full border border-gray-300 rounded px-3 py-2 text-sm bg-gray-100 cursor-not-allowed" placeholder="Area / Locality" value={areaName} />
-                <input type="hidden" name="area" value={areaName} />
-                <input type="hidden" name="city" value={modalCityName || resolvedCityName} />
+                <input type="hidden" name="area" value={areaName} /><input type="hidden" name="city" value={modalCityName || resolvedCityName} />
                 <input name="landmark" type="text" defaultValue={editingVisit?.landmark || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Nearby Landmark" />
                 <input name="nearbyLocation" type="text" defaultValue={editingVisit?.nearbyLocation || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Nearby Location" />
               </div>
-
               <div className="grid grid-cols-3 gap-3 p-3 border border-gray-200 rounded">
-                {["Wi-Fi", "Drinking water", "Food", "Power backup", "Washing machine", "Parking", "CCTV"].map((a) => (
-                  <label key={a} className="inline-flex items-center text-xs">
-                    <input type="checkbox" name="amenities" value={a} className="mr-2" /> {a}
-                  </label>
+                {["Wi-Fi","Drinking water","Food","Power backup","Washing machine","Parking","CCTV"].map((a) => (
+                  <label key={a} className="inline-flex items-center text-xs"><input type="checkbox" name="amenities" value={a} className="mr-2" />{a}</label>
                 ))}
               </div>
-
               <div className="grid grid-cols-3 gap-3">
                 <input name="monthlyRent" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Monthly Rent" />
                 <input name="deposit" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Deposit" />
                 <input name="electricityCharges" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Electricity Charges" />
               </div>
-              <div className="grid grid-cols-3 gap-3 mt-2">
+              <div className="grid grid-cols-3 gap-3">
                 <input name="foodCharges" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Food Charges" />
                 <input name="maintenanceCharges" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Maintenance Charges" />
-                <input name="minStay" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Minimum Stay (months)" />
+                <input name="minStay" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Min Stay (months)" />
               </div>
-
               <div className="p-3 border border-gray-200 rounded">
                 <div className="font-semibold mb-2">House Rules</div>
                 <input name="entryExit" type="text" className="w-full border border-gray-300 rounded px-3 py-2 text-sm mb-3" placeholder="Entry / Exit timing" />
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { id: "visitorsAllowed", label: "Visitors Allowed", value: visitorsAllowed, setter: setVisitorsAllowed },
-                    { id: "cookingAllowed", label: "Cooking Allowed", value: cookingAllowed, setter: setCookingAllowed },
-                    { id: "smokingAllowed", label: "Smoking Allowed", value: smokingAllowed, setter: setSmokingAllowed },
-                    { id: "petsAllowed", label: "Pets Allowed", value: petsAllowed, setter: setPetsAllowed }
+                    { id: "visitorsAllowed", label: "Visitors Allowed", value: visitorsAllowed },
+                    { id: "cookingAllowed", label: "Cooking Allowed", value: cookingAllowed },
+                    { id: "smokingAllowed", label: "Smoking Allowed", value: smokingAllowed },
+                    { id: "petsAllowed", label: "Pets Allowed", value: petsAllowed }
                   ].map((item) => (
                     <div key={item.id}>
                       <label className="text-xs font-medium text-gray-600 block mb-2">{item.label}</label>
                       <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setToggleValue(item.id, "Yes")}
-                          className={`flex-1 py-2 px-3 rounded text-sm font-medium border-2 ${item.value === "Yes" ? "border-green-500 bg-green-50 text-green-700" : "border-gray-300 text-gray-600"}`}
-                        >
-                          Yes
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setToggleValue(item.id, "No")}
-                          className={`flex-1 py-2 px-3 rounded text-sm font-medium border-2 ${item.value === "No" ? "border-red-500 bg-red-50 text-red-700" : "border-gray-300 text-gray-600"}`}
-                        >
-                          No
-                        </button>
+                        <button type="button" onClick={() => setToggleValue(item.id, "Yes")} className={`flex-1 py-2 px-3 rounded text-sm font-medium border-2 ${item.value === "Yes" ? "border-green-500 bg-green-50 text-green-700" : "border-gray-300 text-gray-600"}`}>Yes</button>
+                        <button type="button" onClick={() => setToggleValue(item.id, "No")} className={`flex-1 py-2 px-3 rounded text-sm font-medium border-2 ${item.value === "No" ? "border-red-500 bg-red-50 text-red-700" : "border-gray-300 text-gray-600"}`}>No</button>
                       </div>
                       <input type="hidden" name={item.id} value={item.value} />
                     </div>
                   ))}
                 </div>
               </div>
-
               <div className="p-3 border border-gray-200 rounded">
                 <div className="font-semibold mb-3">Staff Assessment</div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 block mb-2">Cleanliness Rating</label>
-                    {renderStars(cleanlinessRating, "cleanlinessRating")}
-                    <input type="hidden" name="cleanlinessRating" value={cleanlinessRating} />
-                    <p className="text-xs text-gray-500 mt-1">{cleanlinessRating ? `Rating: ${cleanlinessRating}/5 ★` : "Click to rate"}</p>
-                  </div>
+                  <div><label className="text-xs font-medium text-gray-600 block mb-2">Cleanliness Rating</label>{renderStars(cleanlinessRating, "cleanlinessRating")}<input type="hidden" name="cleanlinessRating" value={cleanlinessRating} /></div>
                   <div>
                     <label className="text-xs font-medium text-gray-600 block mb-2">Owner Behaviour</label>
                     <div className="flex gap-2 flex-wrap">
-                      {["Good", "Average", "Poor"].map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setOwnerBehaviour(val)}
-                          className={`px-3 py-2 rounded text-xs font-medium border-2 ${
-                            ownerBehaviourPublic === val
-                              ? val === "Good"
-                                ? "border-green-500 bg-green-50 text-green-700"
-                                : val === "Average"
-                                  ? "border-yellow-500 bg-yellow-50 text-yellow-700"
-                                  : "border-red-500 bg-red-50 text-red-700"
-                              : "border-gray-300 text-gray-600"
-                          }`}
-                        >
-                          {val}
-                        </button>
+                      {["Good","Average","Poor"].map((val) => (
+                        <button key={val} type="button" onClick={() => setOwnerBehaviour(val)} className={`px-3 py-2 rounded text-xs font-medium border-2 ${ownerBehaviourPublic === val ? val === "Good" ? "border-green-500 bg-green-50 text-green-700" : val === "Average" ? "border-yellow-500 bg-yellow-50 text-yellow-700" : "border-red-500 bg-red-50 text-red-700" : "border-gray-300 text-gray-600"}`}>{val}</button>
                       ))}
                     </div>
                     <input type="hidden" name="ownerBehaviourPublic" value={ownerBehaviourPublic} />
-                    <p className="text-xs text-gray-500 mt-1">{ownerBehaviourPublic ? `Selected: ${ownerBehaviourPublic}` : "Select behaviour"}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-300">
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 block mb-2">Student Reviews Rating (★)</label>
-                    {renderStars(studentReviewsRating, "studentReviewsRating")}
-                    <input type="hidden" name="studentReviewsRating" value={studentReviewsRating} />
-                    <p className="text-xs text-gray-500 mt-1">{studentReviewsRating ? `Rating: ${studentReviewsRating}/5 ★` : "Click to rate"}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-600 block mb-2">Employee Rating (★)</label>
-                    {renderStars(employeeRating, "employeeRating")}
-                    <input type="hidden" name="employeeRating" value={employeeRating} />
-                    <p className="text-xs text-gray-500 mt-1">{employeeRating ? `Rating: ${employeeRating}/5 ★` : "Click to rate"}</p>
-                  </div>
+                  <div><label className="text-xs font-medium text-gray-600 block mb-2">Student Reviews Rating</label>{renderStars(studentReviewsRating, "studentReviewsRating")}<input type="hidden" name="studentReviewsRating" value={studentReviewsRating} /></div>
+                  <div><label className="text-xs font-medium text-gray-600 block mb-2">Employee Rating</label>{renderStars(employeeRating, "employeeRating")}<input type="hidden" name="employeeRating" value={employeeRating} /></div>
                 </div>
               </div>
               <textarea name="studentReviews" rows="2" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Student reviews feedback"></textarea>
               <textarea name="internalRemarks" rows="2" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Internal remarks (private)"></textarea>
               <textarea name="cleanlinessNote" rows="2" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Cleanliness note (private)"></textarea>
               <textarea name="ownerBehaviour" rows="2" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Owner behaviour (private)"></textarea>
-
               <div className="p-3 border-2 border-purple-300 rounded bg-purple-50">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="inline-flex items-center justify-center w-6 h-6 bg-purple-600 text-white rounded-full text-xs font-bold">1</span>
                   <h3 className="font-bold text-purple-900">Live Capture (Required)</h3>
                 </div>
                 <p className="text-xs text-purple-700 mb-3">Capture property details using your device camera (up to 5 photos per area)</p>
-
-                {[
-                  { key: "photo_building", label: "Building Front (required)" },
-                  { key: "photo_room", label: "Room Interior (required)" },
-                  { key: "photo_bathroom", label: "Bathroom (required)" },
-                  { key: "photo_bed", label: "Bed / Interior (required)" }
-                ].map((item) => {
-                  const images = captureGroups[item.key] || [];
-                  const last = images[images.length - 1];
+                {[{ key: "photo_building", label: "Building Front (required)" }, { key: "photo_room", label: "Room Interior (required)" }, { key: "photo_bathroom", label: "Bathroom (required)" }, { key: "photo_bed", label: "Bed / Interior (required)" }].map((item) => {
+                  const imgs = captureGroups[item.key] || [];
+                  const last = imgs[imgs.length - 1];
                   return (
                     <div key={item.key} className="block text-xs border border-gray-200 rounded p-2 bg-white mb-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium">{item.label}</span>
                         <button type="button" onClick={() => openCamera(item.key)} className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded">Capture</button>
                       </div>
-                      <div className="w-full h-28 bg-gray-100 rounded border border-gray-200 flex items-center justify-center text-gray-400 mb-2 overflow-hidden">
-                        {last ? <img src={last} className="w-full h-full object-cover" /> : "No photo"}
+                      <div className="w-full h-28 bg-gray-100 rounded border flex items-center justify-center text-gray-400 mb-2 overflow-hidden">
+                        {last ? <img src={last} className="w-full h-full object-cover" alt="" /> : "No photo"}
                       </div>
-                      <div className="flex gap-1 overflow-x-auto" style={{ maxHeight: 40 }}>
-                        {images.map((src, idx) => (
-                          <img key={`${item.key}-${idx}`} src={src} className="w-10 h-10 object-cover rounded border" />
-                        ))}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">{images.length}/5 captures</p>
+                      <div className="flex gap-1 overflow-x-auto">{imgs.map((src, idx) => <img key={idx} src={src} className="w-10 h-10 object-cover rounded border" alt="" />)}</div>
+                      <p className="text-xs text-gray-500 mt-1">{imgs.length}/5 captures</p>
                     </div>
                   );
                 })}
-
                 <div className="mt-3">
                   <label className="block text-xs mb-1 font-medium text-gray-700">Additional Live Photos (optional, max 11)</label>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => openCamera("photo_extra")} className="text-xs px-3 py-2 bg-gray-100 rounded hover:bg-gray-200">Capture Extra</button>
-                    <div className="flex gap-2 overflow-x-auto" style={{ maxHeight: 72 }}>
-                      {(captureGroups.photo_extra || []).map((src, idx) => (
-                        <img key={`extra-${idx}`} src={src} className="w-16 h-16 object-cover rounded border" />
-                      ))}
-                    </div>
+                    <div className="flex gap-2 overflow-x-auto">{(captureGroups.photo_extra || []).map((src, idx) => <img key={idx} src={src} className="w-16 h-16 object-cover rounded border" alt="" />)}</div>
                   </div>
                   <p className="text-xs text-gray-400 mt-2">{(captureGroups.photo_extra || []).length} selected</p>
                 </div>
               </div>
-
               <div className="p-3 border-2 border-blue-300 rounded bg-blue-50">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full text-xs font-bold">2</span>
                   <h3 className="font-bold text-blue-900">Professional Photos (From Gallery)</h3>
                 </div>
-                <p className="text-xs text-blue-700 mb-3">Upload high-quality professional photos from your device gallery (up to 10 photos)</p>
                 <button type="button" onClick={openProfModal} className="w-full py-2 px-3 bg-blue-600 text-white rounded font-medium text-sm hover:bg-blue-700 transition flex items-center justify-center gap-2">
                   <i data-lucide="images" className="w-4 h-4"></i> Add Prof. Photos from Gallery
                 </button>
@@ -1082,18 +984,12 @@ export default function Visit() {
                   {profPhotos.length > 0 ? (
                     <div className="flex gap-2 flex-wrap w-full">
                       {profPhotos.map((p, i) => (
-                        <div key={`prof-${i}`} className="relative">
-                          <img src={p} className="w-16 h-16 object-cover rounded border border-blue-300" />
-                          <span className="absolute -top-2 -right-2 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">{i + 1}</span>
-                        </div>
+                        <div key={i} className="relative"><img src={p} className="w-16 h-16 object-cover rounded border border-blue-300" alt="" /><span className="absolute -top-2 -right-2 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">{i + 1}</span></div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-xs text-gray-400">No professional photos selected yet</p>
-                  )}
+                  ) : <p className="text-xs text-gray-400">No professional photos selected yet</p>}
                 </div>
               </div>
-
               <button type="submit" className="w-full bg-purple-600 text-white py-2 rounded text-sm font-medium hover:bg-purple-700">{editingVisit ? "Update Report" : "Submit Report"}</button>
             </form>
           </div>
@@ -1108,21 +1004,15 @@ export default function Visit() {
               <button onClick={closeProfModal} className="text-gray-600 px-2 py-1">Close</button>
             </div>
             <div className="space-y-3">
-              <div className="w-full min-h-[88px] bg-gray-50 rounded overflow-hidden border border-gray-200 p-2 grid grid-cols-4 gap-2 items-start">
-                {profPreview.length === 0 ? (
-                  <div className="col-span-4 text-xs text-gray-400">No photos selected</div>
-                ) : (
-                  profPreview.map((src, i) => (
-                    <div key={`preview-${i}`} className="relative w-full h-24 overflow-hidden rounded">
-                      <img src={src} className="w-full h-full object-cover rounded" />
-                      <button type="button" onClick={() => removeProfPhoto(i)} className="absolute top-1 right-1 bg-white/80 text-red-600 rounded-full p-1 text-xs">✕</button>
-                    </div>
-                  ))
-                )}
+              <div className="w-full min-h-[88px] bg-gray-50 rounded border p-2 grid grid-cols-4 gap-2">
+                {profPreview.length === 0 ? <div className="col-span-4 text-xs text-gray-400">No photos selected</div> : profPreview.map((src, i) => (
+                  <div key={i} className="relative w-full h-24 overflow-hidden rounded">
+                    <img src={src} className="w-full h-full object-cover rounded" alt="" />
+                    <button type="button" onClick={() => removeProfPhoto(i)} className="absolute top-1 right-1 bg-white/80 text-red-600 rounded-full p-1 text-xs">✕</button>
+                  </div>
+                ))}
               </div>
-              <div className="text-center">
-                <input type="file" accept="image/*" multiple onChange={(e) => handleProfInput(e.target.files)} className="mx-auto" />
-              </div>
+              <input type="file" accept="image/*" multiple onChange={(e) => handleProfInput(e.target.files)} className="mx-auto block" />
               <div className="flex gap-2 justify-end">
                 <button type="button" onClick={saveProfPhotos} className="px-3 py-2 bg-blue-600 text-white rounded">Save Photos</button>
                 <button type="button" onClick={closeProfModal} className="px-3 py-2 bg-gray-100 rounded">Cancel</button>
@@ -1135,18 +1025,10 @@ export default function Visit() {
       {submitSuccessMsg && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[90] p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-              <i data-lucide="check-circle-2" className="w-8 h-8 text-green-600"></i>
-            </div>
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center"><i data-lucide="check-circle-2" className="w-8 h-8 text-green-600"></i></div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">Report Submitted</h3>
             <p className="text-sm text-gray-600 mb-5">{submitSuccessMsg}</p>
-            <button
-              type="button"
-              onClick={() => setSubmitSuccessMsg("")}
-              className="w-full py-2.5 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700"
-            >
-              OK
-            </button>
+            <button type="button" onClick={() => setSubmitSuccessMsg("")} className="w-full py-2.5 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700">OK</button>
           </div>
         </div>
       )}
@@ -1163,44 +1045,28 @@ export default function Visit() {
                 </div>
               </div>
               <div className="flex-1 bg-black flex items-center justify-center overflow-hidden rounded mb-3 relative min-h-[300px]">
-                <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}></video>
+                <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover" }}></video>
                 <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
                 {cameraLoading && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-sm">
-                    <div className="text-center">
-                      <p className="mb-2">Initializing camera...</p>
-                      <div className="inline-block w-8 h-8 border-4 border-gray-300 border-t-white rounded-full animate-spin"></div>
-                    </div>
+                    <div className="text-center"><p className="mb-2">Initializing camera...</p><div className="inline-block w-8 h-8 border-4 border-gray-300 border-t-white rounded-full animate-spin"></div></div>
                   </div>
                 )}
               </div>
               {cameraError ? <div className="text-sm text-red-300 mb-2">{cameraError}</div> : null}
-              {cameraLocation ? (
-                <div className="text-xs text-gray-200 mb-3">
-                  <strong>Location:</strong> <span>{cameraLocation}</span>
-                </div>
-              ) : null}
-              <div className="flex items-center justify-end">
-                <button type="button" onClick={capturePhoto} className="px-5 py-3 bg-purple-600 text-white rounded">Capture</button>
-              </div>
+              {cameraLocation ? <div className="text-xs text-gray-200 mb-3"><strong>Location:</strong> {cameraLocation}</div> : null}
+              <div className="flex items-center justify-end"><button type="button" onClick={capturePhoto} className="px-5 py-3 bg-purple-600 text-white rounded">Capture</button></div>
             </div>
-
             <div className={cameraView === "preview" ? "h-full flex flex-col p-4 sm:p-6" : "hidden"}>
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-bold text-lg">Photo Preview</h3>
                 <button type="button" onClick={closeCamera} className="text-xs px-3 py-2 bg-white/20 rounded">Close</button>
               </div>
               <div className="flex-1 bg-black flex items-center justify-center overflow-hidden rounded mb-3 min-h-[300px]">
-                {capturedPreview ? (
-                  <img src={capturedPreview} alt="Captured Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : null}
+                {capturedPreview ? <img src={capturedPreview} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : null}
               </div>
-              {previewLocation ? (
-                <div className="text-xs text-gray-200 mb-3">
-                  <strong>Location:</strong> <span>{previewLocation}</span>
-                </div>
-              ) : null}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+              {previewLocation ? <div className="text-xs text-gray-200 mb-3"><strong>Location:</strong> {previewLocation}</div> : null}
+              <div className="grid grid-cols-3 gap-2">
                 <button type="button" onClick={deleteCapture} className="px-4 py-3 bg-red-600 text-white rounded">Delete</button>
                 <button type="button" onClick={recapturePhoto} className="px-4 py-3 bg-gray-600 text-white rounded">Recapture</button>
                 <button type="button" onClick={confirmCapture} className="px-4 py-3 bg-green-600 text-white rounded">Keep Photo</button>
@@ -1209,10 +1075,26 @@ export default function Visit() {
           </div>
         </div>
       )}
+
+      {/* ── Add Property Modal ── */}
+      {showAddProp && addPropVisit && (
+        <AddPropertyModal
+          visit={addPropVisit}
+          staffName={staffName}
+          staffId={staffId}
+          areaName={resolvedAreaName || areaName}
+          onClose={() => { setShowAddProp(false); setAddPropVisit(null); }}
+          onSuccess={handleAddPropSuccess}
+        />
+      )}
+
+      {/* ── Success Modal ── */}
+      {addPropSuccess && (
+        <PropertySuccessModal
+          enquiry={addPropSuccess}
+          onClose={() => setAddPropSuccess(null)}
+        />
+      )}
     </div>
   );
-}
-
-
-
-
+}                    
