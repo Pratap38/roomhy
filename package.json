@@ -13,11 +13,12 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",
     "agora-access-token": "^2.0.4",
-    "axios": "^1.6.0",
+    "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",
+    "body-parser": "^2.2.2",
     "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -39,5 +40,21 @@
     "postcss-cli": "^11.0.1",
     "tailwindcss": "^4.1.18",
     "vite": "^5.0.0"
-  }
+  },
+  "description": "",
+  "main": "add_kyc_data.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yasthakir-link/roomhy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yasthakir-link/roomhy/issues"
+  },
+  "homepage": "https://github.com/yasthakir-link/roomhy#readme"
 }

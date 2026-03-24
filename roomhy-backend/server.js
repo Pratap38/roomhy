@@ -193,6 +193,8 @@ try {
     console.log('  ✓ chatRoutes');
     app.use('/api/email', require('./routes/emailRoutes'));
     console.log('  ✓ emailRoutes');
+    app.use('/webhook', require('./routes/whatsappWebhookRoutes'));
+    console.log('  ✓ whatsappWebhookRoutes');
     app.use('/api/checkin', require('./routes/checkinRoutes'));
     console.log('  ✓ checkinRoutes');
     app.use('/api/rents', require('./routes/rentRoutes'));
