@@ -74,6 +74,42 @@ const persistLocalVisits = (list) => {
   }
 };
 
+const PROPERTY_ENQUIRIES_KEY = "roomhy_property_enquiries";
+
+const readPropertyEnquiries = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PROPERTY_ENQUIRIES_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+};
+
+const persistPropertyEnquiries = (list) => {
+  try {
+    localStorage.setItem(PROPERTY_ENQUIRIES_KEY, JSON.stringify(Array.isArray(list) ? list : []));
+  } catch (error) {
+    console.warn("Failed to persist property enquiries:", error);
+  }
+};
+
+const toLocationCode = (...values) => {
+  for (const value of values) {
+    const compact = String(value || "").trim().replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    if (compact) return compact.slice(0, 12);
+  }
+  return "GEN";
+};
+
+const emailHtmlEscape = (value) =>
+  String(value || "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  }[char] || char));
+
 export default function SuperadminEnquiry() {
   useHtmlPage({
     title: "Roomhy - Admin Enquiry",
@@ -103,11 +139,22 @@ export default function SuperadminEnquiry() {
   const apiUrl = getApiUrl();
   const [visits, setVisits] = useState([]);
   const [roomApprovals, setRoomApprovals] = useState([]);
-  const [activeTab, setActiveTab] = useState("visits");
+  const initialTab = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") === "owners" ? "owners" : "visits";
+  }, []);
+  const highlightedEnquiryId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("enquiryId") || "";
+  }, []);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [currentApprovingId, setCurrentApprovingId] = useState(null);
   const [showApprove, setShowApprove] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [generatedCreds, setGeneratedCreds] = useState({ loginId: "--", password: "--" });
+  const [ownerPropertyEnquiries, setOwnerPropertyEnquiries] = useState([]);
+  const [ownerApprovingId, setOwnerApprovingId] = useState(null);
+  const [ownerApprovalBusy, setOwnerApprovalBusy] = useState(false);
   const [galleryImages, setGalleryImages] = useState([]);
   const [showGallery, setShowGallery] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -122,6 +169,7 @@ export default function SuperadminEnquiry() {
   useEffect(() => {
     fetchEnquiries();
     fetchRoomApprovals();
+    loadOwnerPropertyEnquiries();
     startPolling();
     const interval = setInterval(fetchEnquiries, 15000);
     return () => {
@@ -209,6 +257,23 @@ export default function SuperadminEnquiry() {
     const pending = list.filter((v) => v.status === "pending" && (v.type === "room_add" || v.type === "bed_add"));
     setRoomApprovals(pending);
   };
+
+  const loadOwnerPropertyEnquiries = () => {
+    const list = readPropertyEnquiries()
+      .filter((item) => item && item.type === "property_from_visit")
+      .sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());
+    setOwnerPropertyEnquiries(list);
+  };
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (!event.key || event.key === PROPERTY_ENQUIRIES_KEY) {
+        loadOwnerPropertyEnquiries();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
 
   const statusCounts = useMemo(() => {
     const list = loadLocalVisits();
@@ -335,6 +400,153 @@ export default function SuperadminEnquiry() {
     fetchRoomApprovals();
   };
 
+  const updateOwnerEnquiryRecord = (enquiryId, updater) => {
+    const list = readPropertyEnquiries();
+    const idx = list.findIndex((item) => item.enquiryId === enquiryId);
+    if (idx === -1) return null;
+    const nextItem = typeof updater === "function" ? updater(list[idx]) : { ...list[idx], ...updater };
+    list[idx] = nextItem;
+    persistPropertyEnquiries(list);
+    loadOwnerPropertyEnquiries();
+    return nextItem;
+  };
+
+  const holdOwnerPropertyEnquiry = (enquiryId) => {
+    const reason = prompt("Enter hold reason:");
+    if (reason === null) return;
+    updateOwnerEnquiryRecord(enquiryId, (item) => ({
+      ...item,
+      status: "hold",
+      holdReason: reason.trim(),
+      holdAt: new Date().toISOString()
+    }));
+  };
+
+  const approveOwnerPropertyEnquiry = async (enquiryId) => {
+    const enquiry = ownerPropertyEnquiries.find((item) => item.enquiryId === enquiryId);
+    if (!enquiry || ownerApprovalBusy) return;
+
+    const loginId = String(
+      enquiry.pendingCredentials?.loginId ||
+      `ROOMHY${String(Math.floor(Math.random() * 100000)).padStart(5, "0")}`
+    ).trim().toUpperCase();
+    const password = String(
+      enquiry.pendingCredentials?.password ||
+      Math.random().toString(36).slice(-8)
+    ).trim();
+    const ownerName = enquiry.ownerName || "Owner";
+    const ownerEmail = String(enquiry.ownerEmail || "").trim();
+    const ownerPhone = String(enquiry.ownerPhone || "").trim();
+    const ownerArea = enquiry.area || enquiry.visitArea || "";
+    const locationCode = toLocationCode(ownerArea, enquiry.city, loginId);
+
+    setOwnerApprovingId(enquiryId);
+    setOwnerApprovalBusy(true);
+
+    try {
+      const ownerPayload = {
+        loginId,
+        name: ownerName,
+        email: ownerEmail,
+        phone: ownerPhone,
+        address: enquiry.address || "",
+        area: ownerArea,
+        locationCode,
+        profile: {
+          name: ownerName,
+          email: ownerEmail,
+          phone: ownerPhone,
+          address: enquiry.address || "",
+          locationCode,
+          updatedAt: new Date().toISOString()
+        },
+        credentials: {
+          password,
+          firstTime: true
+        },
+        checkinPassword: password,
+        isActive: true
+      };
+
+      const ownerResponse = await fetch(`${apiUrl}/api/owners`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ownerPayload)
+      });
+      if (!ownerResponse.ok && ownerResponse.status !== 200 && ownerResponse.status !== 409) {
+        throw new Error("Failed to create owner account.");
+      }
+
+      const propertyResponse = await fetch(`${apiUrl}/api/owners/${encodeURIComponent(loginId)}/properties`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: enquiry.propertyName || "Property",
+          address: enquiry.address || "",
+          city: enquiry.city || "",
+          area: ownerArea,
+          locationCode,
+          description: "",
+          propertyType: enquiry.propertyType || "",
+          monthlyRent: Number(enquiry.monthlyRent || 0),
+          ownerName,
+          ownerEmail,
+          ownerPhone
+        })
+      });
+      if (!propertyResponse.ok) {
+        throw new Error("Failed to create owner property.");
+      }
+
+      let emailSent = false;
+      if (ownerEmail) {
+        const subject = "RoomHy Owner Login Credentials";
+        const text = `Owner account created.\nProperty: ${enquiry.propertyName || "Property"}\nLogin ID: ${loginId}\nPassword: ${password}`;
+        const html = `
+          <div style="font-family: Arial, sans-serif; font-size: 14px; color: #111;">
+            <h2>Owner Account Created</h2>
+            <p><strong>Property:</strong> ${emailHtmlEscape(enquiry.propertyName || "Property")}</p>
+            <p><strong>Login ID:</strong> ${emailHtmlEscape(loginId)}</p>
+            <p><strong>Password:</strong> ${emailHtmlEscape(password)}</p>
+          </div>
+        `;
+
+        const emailResponse = await fetch(`${apiUrl}/api/email/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to: ownerEmail, subject, text, html })
+        });
+        emailSent = emailResponse.ok;
+      }
+
+      updateOwnerEnquiryRecord(enquiryId, (item) => ({
+        ...item,
+        status: "approved",
+        approvedAt: new Date().toISOString(),
+        approvedBy: "employee_enquiry",
+        credentialsSent: emailSent,
+        generatedCredentials: {
+          loginId,
+          tempPassword: password
+        },
+        pendingCredentials: {
+          loginId,
+          password,
+          role: "owner"
+        }
+      }));
+
+      setGeneratedCreds({ loginId, password });
+      setShowSuccess(true);
+      setActiveTab("owners");
+    } catch (error) {
+      alert(error?.message || "Failed to approve owner property enquiry.");
+    } finally {
+      setOwnerApprovingId(null);
+      setOwnerApprovalBusy(false);
+    }
+  };
+
   const currentPage = "enquiry";
 
   return (
@@ -355,7 +567,7 @@ export default function SuperadminEnquiry() {
               <h1 className="text-xl font-bold text-gray-800">Pending Approvals</h1>
             </div>
             <div className="flex items-center gap-4">
-              <button onClick={fetchEnquiries} className="text-sm text-purple-600 hover:underline flex items-center gap-1">
+              <button onClick={() => { fetchEnquiries(); fetchRoomApprovals(); loadOwnerPropertyEnquiries(); }} className="text-sm text-purple-600 hover:underline flex items-center gap-1">
                 <i data-lucide="refresh-cw" className="w-3 h-3"></i> Refresh
               </button>
               <button onClick={exportVisitsExcel} className="text-sm text-gray-600 hover:underline flex items-center gap-1">
@@ -451,6 +663,7 @@ export default function SuperadminEnquiry() {
               <div className="flex border-b border-gray-200 bg-white rounded-t-lg px-4 pt-4">
                 <button onClick={() => setActiveTab("visits")} className={`px-6 py-3 font-semibold transition-all ${activeTab === "visits" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500 border-b-2 border-transparent"}`}>Visit Reports</button>
                 <button onClick={() => setActiveTab("rooms")} className={`px-6 py-3 font-semibold transition-all ${activeTab === "rooms" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500 border-b-2 border-transparent"}`}>Room Approvals</button>
+                <button onClick={() => setActiveTab("owners")} className={`px-6 py-3 font-semibold transition-all ${activeTab === "owners" ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500 border-b-2 border-transparent"}`}>Owner Add Property</button>
               </div>
 
               {activeTab === "visits" ? (
@@ -561,7 +774,7 @@ export default function SuperadminEnquiry() {
                     </table>
                   </div>
                 </div>
-              ) : (
+              ) : activeTab === "rooms" ? (
                 <div className="bg-white rounded-b-lg shadow border border-gray-200 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -590,6 +803,92 @@ export default function SuperadminEnquiry() {
                               </td>
                             </tr>
                           ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-b-lg shadow border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="bg-gray-50 text-gray-500 text-[10px] uppercase border-b">
+                        <tr>
+                          <th className="px-4 py-3">Enquiry ID</th>
+                          <th className="px-4 py-3">Visit ID</th>
+                          <th className="px-4 py-3">Submitted At</th>
+                          <th className="px-4 py-3">Owner Name</th>
+                          <th className="px-4 py-3">Owner Gmail</th>
+                          <th className="px-4 py-3">Owner Contact</th>
+                          <th className="px-4 py-3">Property Name</th>
+                          <th className="px-4 py-3">Property Type</th>
+                          <th className="px-4 py-3">Area</th>
+                          <th className="px-4 py-3">Login ID</th>
+                          <th className="px-4 py-3">Password</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {ownerPropertyEnquiries.length === 0 ? (
+                          <tr><td colSpan={13} className="px-6 py-12 text-center text-gray-400">No owner add-property enquiries found.</td></tr>
+                        ) : (
+                          ownerPropertyEnquiries.map((item) => {
+                            const loginId = item.generatedCredentials?.loginId || item.pendingCredentials?.loginId || "-";
+                            const password = item.generatedCredentials?.tempPassword || item.pendingCredentials?.password || "-";
+                            const rowHighlighted = highlightedEnquiryId && highlightedEnquiryId === item.enquiryId;
+                            const statusTone =
+                              item.status === "approved"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : item.status === "hold"
+                                  ? "bg-orange-50 text-orange-700 border-orange-200"
+                                  : "bg-purple-50 text-purple-700 border-purple-200";
+
+                            return (
+                              <tr key={item.enquiryId} className={`${rowHighlighted ? "bg-yellow-50" : "hover:bg-gray-50"} transition-colors`}>
+                                <td className="px-4 py-3 font-mono text-xs text-gray-600">{item.enquiryId || "-"}</td>
+                                <td className="px-4 py-3 font-mono text-xs text-gray-600">{item.visitId || "-"}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">{item.submittedAt ? new Date(item.submittedAt).toLocaleString() : "-"}</td>
+                                <td className="px-4 py-3 text-sm font-semibold text-slate-700">{item.ownerName || "-"}</td>
+                                <td className="px-4 py-3 text-sm">{item.ownerEmail || "-"}</td>
+                                <td className="px-4 py-3 text-sm">{item.ownerPhone || "-"}</td>
+                                <td className="px-4 py-3 text-sm font-semibold">{item.propertyName || "-"}</td>
+                                <td className="px-4 py-3 text-sm">{item.propertyType || "-"}</td>
+                                <td className="px-4 py-3 text-sm">{item.area || item.visitArea || "-"}</td>
+                                <td className="px-4 py-3 font-mono text-sm text-purple-700">{loginId}</td>
+                                <td className="px-4 py-3 font-mono text-sm">{password}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${statusTone}`}>
+                                    {item.status || "pending"}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => approveOwnerPropertyEnquiry(item.enquiryId)}
+                                      disabled={item.status === "approved" || ownerApprovalBusy}
+                                      className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
+                                      title="Approve"
+                                    >
+                                      {ownerApprovingId === item.enquiryId ? (
+                                        <span className="inline-block w-4 h-4 border-2 border-green-700 border-t-transparent rounded-full animate-spin"></span>
+                                      ) : (
+                                        <i data-lucide="check" className="w-4 h-4"></i>
+                                      )}
+                                    </button>
+                                    <button
+                                      onClick={() => holdOwnerPropertyEnquiry(item.enquiryId)}
+                                      disabled={item.status === "approved" || ownerApprovalBusy}
+                                      className="p-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors disabled:opacity-50"
+                                      title="Hold"
+                                    >
+                                      <i data-lucide="pause" className="w-4 h-4"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
@@ -624,7 +923,7 @@ export default function SuperadminEnquiry() {
               <div className="text-xs text-gray-500">Login ID:</div><div className="font-mono font-bold text-purple-600">{generatedCreds.loginId}</div>
               <div className="text-xs text-gray-500 mt-2">Password:</div><div className="font-mono font-bold text-slate-600">{generatedCreds.password}</div>
             </div>
-            <button onClick={() => { setShowSuccess(false); fetchEnquiries(); }} className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition">Close</button>
+            <button onClick={() => { setShowSuccess(false); fetchEnquiries(); loadOwnerPropertyEnquiries(); }} className="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700 transition">Close</button>
           </div>
         </div>
       ) : null}

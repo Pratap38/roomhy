@@ -429,7 +429,6 @@ export default function Visit() {
   // ── Add Property states ──────────────────────────────────────────────────────
   const [addPropVisit, setAddPropVisit] = useState(null);
   const [showAddProp, setShowAddProp] = useState(false);
-  const [addPropSuccess, setAddPropSuccess] = useState(null);
   const [addedVisitIds, setAddedVisitIds] = useState(() => {
     try {
       const list = JSON.parse(localStorage.getItem("roomhy_property_enquiries") || "[]");
@@ -692,8 +691,9 @@ export default function Visit() {
   // ── Add Property ─────────────────────────────────────────────────────────────
   const openAddProperty = (visit) => { setAddPropVisit(visit); setShowAddProp(true); };
   const handleAddPropSuccess = (enquiry) => {
-    setShowAddProp(false); setAddPropVisit(null); setAddPropSuccess(enquiry);
+    setShowAddProp(false); setAddPropVisit(null);
     setAddedVisitIds((prev) => new Set([...prev, enquiry.visitId]));
+    window.location.href = `/employee/enquiry?tab=owners&enquiryId=${encodeURIComponent(enquiry.enquiryId || "")}`;
   };
 
   const rows = useMemo(() => visits, [visits]);
@@ -1089,12 +1089,6 @@ export default function Visit() {
       )}
 
       {/* ── Success Modal ── */}
-      {addPropSuccess && (
-        <PropertySuccessModal
-          enquiry={addPropSuccess}
-          onClose={() => setAddPropSuccess(null)}
-        />
-      )}
     </div>
   );
-}                    
+}
