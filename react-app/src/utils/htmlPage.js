@@ -250,6 +250,140 @@ const getEmployeeDisplayInfo = (user) => {
   return { name: String(name), role: String(role), initials, loginId: String(loginId) };
 };
 
+const isWebsiteRoute = () => {
+  if (typeof window === "undefined") return false;
+  return /^\/website(?:\/|$)/.test(window.location?.pathname || "");
+};
+
+const websiteFooterIcon = (path, viewBox = "0 0 24 24") =>
+  `<svg viewBox="${viewBox}" fill="currentColor" aria-hidden="true" class="h-4 w-4"><path d="${path}"></path></svg>`;
+
+const getWebsiteFooterMarkup = () => {
+  const year = new Date().getFullYear();
+
+  return `
+    <footer data-shared-website-footer="1" class="mt-auto border-t border-gray-200 bg-white">
+      <div class="container mx-auto px-4 py-12 sm:px-6">
+        <div class="grid grid-cols-1 gap-10 md:grid-cols-12">
+          <div class="md:col-span-4">
+            <a href="/website/index" class="inline-flex items-center gap-3">
+              <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy" class="h-10 w-auto" />
+            </a>
+            <p class="mt-4 max-w-sm text-sm text-gray-600">Find student housing smarter, simpler, and broker-free.</p>
+            <div class="mt-5 flex flex-wrap items-center gap-3 text-sm">
+              <a class="text-gray-600 transition-colors hover:text-blue-600" href="/website/contact">Help & Support</a>
+              <span class="text-gray-300">&bull;</span>
+              <a class="text-gray-600 transition-colors hover:text-blue-600" href="mailto:hello@roomhy.com">hello@roomhy.com</a>
+            </div>
+            <div class="mt-6 flex items-center gap-4 text-gray-600">
+              <a href="#" title="Facebook" class="transition-colors hover:text-blue-600" aria-label="Facebook">${websiteFooterIcon("M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.5-3.89 3.78-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12")}</a>
+              <a href="#" title="X" class="transition-colors hover:text-blue-600" aria-label="X">${websiteFooterIcon("M18.9 2H21l-4.58 5.24L21.8 22h-4.73l-3.7-4.84L9.13 22H7l4.9-5.6L2.2 2h4.85l3.34 4.4L18.9 2")}</a>
+              <a href="#" title="Instagram" class="transition-colors hover:text-blue-600" aria-label="Instagram">${websiteFooterIcon("M7 2C4.24 2 2 4.24 2 7v10c0 2.76 2.24 5 5 5h10c2.76 0 5-2.24 5-5V7c0-2.76-2.24-5-5-5H7zm0 2h10c1.65 0 3 1.35 3 3v10c0 1.65-1.35 3-3 3H7c-1.65 0-3-1.35-3-3V7c0-1.65 1.35-3 3-3zm11.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6")}</a>
+              <a href="#" title="LinkedIn" class="transition-colors hover:text-blue-600" aria-label="LinkedIn">${websiteFooterIcon("M6.94 8.5H3.56V20h3.38V8.5zM5.25 3A1.97 1.97 0 0 0 3.28 4.97c0 1.08.88 1.97 1.97 1.97a1.97 1.97 0 1 0 0-3zM20.44 13.02c0-3.05-1.63-4.47-3.8-4.47-1.75 0-2.53.96-2.96 1.64V8.5h-3.38c.05 1.12 0 11.5 0 11.5h3.38v-6.42c0-.34.02-.67.12-.92.27-.67.88-1.36 1.91-1.36 1.35 0 1.89 1.03 1.89 2.55V20H21v-6.98z")}</a>
+              <a href="#" title="YouTube" class="transition-colors hover:text-blue-600" aria-label="YouTube">${websiteFooterIcon("M21.58 7.19a2.98 2.98 0 0 0-2.1-2.11C17.63 4.5 12 4.5 12 4.5s-5.63 0-7.48.58a2.98 2.98 0 0 0-2.1 2.11A31.2 31.2 0 0 0 2 12a31.2 31.2 0 0 0 .42 4.81 2.98 2.98 0 0 0 2.1 2.11c1.85.58 7.48.58 7.48.58s5.63 0 7.48-.58a2.98 2.98 0 0 0 2.1-2.11A31.2 31.2 0 0 0 22 12a31.2 31.2 0 0 0-.42-4.81zM10 15.5v-7l6 3.5-6 3.5z")}</a>
+            </div>
+          </div>
+          <div class="md:col-span-8">
+            <div class="grid grid-cols-2 gap-8 sm:grid-cols-4">
+              <div>
+                <div class="text-sm font-semibold text-gray-900">Company</div>
+                <ul class="mt-4 space-y-2">
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/about">About Roomhy</a></li>
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/contact">Contact</a></li>
+                </ul>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900">Explore</div>
+                <ul class="mt-4 space-y-2">
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/index">Home</a></li>
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/ourproperty">Our Properties</a></li>
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/fast-bidding">Fast Bidding</a></li>
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/list">Post Property</a></li>
+                </ul>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900">Support</div>
+                <ul class="mt-4 space-y-2">
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/mystays">My Stays</a></li>
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/refund-request">Refund Request</a></li>
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/cancellation">Cancellation</a></li>
+                </ul>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900">Legal</div>
+                <ul class="mt-4 space-y-2">
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/terms">Terms & Conditions</a></li>
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/privacy">Privacy Policy</a></li>
+                  <li><a class="text-sm text-gray-600 transition-colors hover:text-blue-600" href="/website/refund">Refund Policy</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-10 flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div class="text-xs text-gray-500">&copy; ${year} Roomhy. All rights reserved.</div>
+          <div class="flex flex-wrap items-center gap-4 text-xs">
+            <a class="text-gray-500 transition-colors hover:text-blue-600" href="/website/terms">Terms</a>
+            <a class="text-gray-500 transition-colors hover:text-blue-600" href="/website/privacy">Privacy</a>
+            <a class="text-gray-500 transition-colors hover:text-blue-600" href="/website/refund">Refund</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  `;
+};
+
+const setupWebsiteSharedFooter = () => {
+  if (!isWebsiteRoute()) return () => {};
+
+  const page = document.querySelector(".html-page");
+  if (!page) return () => {};
+
+  const { element: styleEl, owned } = ensureElement("website-shared-footer-style", () => {
+    const style = document.createElement("style");
+    style.textContent = `
+      .html-page footer:not([data-shared-website-footer="1"]) {
+        display: none !important;
+      }
+    `;
+    return style;
+  });
+
+  const ensureFooter = () => {
+    const nextPage = document.querySelector(".html-page");
+    if (!nextPage || !document.body.contains(nextPage)) return;
+
+    nextPage.classList.add("min-h-screen", "flex", "flex-col");
+
+    if (!nextPage.querySelector('[data-shared-website-footer="1"]')) {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = getWebsiteFooterMarkup().trim();
+      const footer = wrapper.firstElementChild;
+      if (footer) {
+        nextPage.appendChild(footer);
+        try {
+          rescanTailwind();
+        } catch (err) {
+          console.debug("Website footer rescan error:", err);
+        }
+      }
+    }
+  };
+
+  ensureFooter();
+
+  const observer = new MutationObserver(() => {
+    ensureFooter();
+  });
+  observer.observe(page, { childList: true });
+
+  return () => {
+    observer.disconnect();
+    page.querySelector('[data-shared-website-footer="1"]')?.remove();
+    if (owned) styleEl.remove();
+  };
+};
+
 const applyEmployeeHeader = () => {
   const path = window.location?.pathname || "";
   if (!path.startsWith("/employee/")) return;
@@ -435,6 +569,7 @@ export const useHtmlPage = ({
     }
 
     const ownedElements = [];
+    let cleanupWebsiteFooter = null;
     const previousTitle = document.title;
     const previousBodyClass = document.body.className;
     const previousHtmlAttrs = {};
@@ -794,6 +929,7 @@ export const useHtmlPage = ({
 
         setTimeout(() => {
           if (!cancelled) {
+            cleanupWebsiteFooter = setupWebsiteSharedFooter();
             if (!disableMobileSidebar && (isSuperadminRoute || isEmployeeRoute) && typeof window._initMobileSidebar === 'function') {
               try {
                 window._initMobileSidebar();
@@ -862,6 +998,9 @@ export const useHtmlPage = ({
     load();
 
     return () => {
+      if (cleanupWebsiteFooter) {
+        cleanupWebsiteFooter();
+      }
       ownedElements.forEach((el) => el.remove());
       cancelled = true;
       if (title) {
