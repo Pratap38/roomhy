@@ -8,6 +8,8 @@ const { Server } = require('socket.io');
 const path = require('path');
 const { startCronJobs } = require('./services/cronJobs');
 const initChatSocket = require('./socket/chatSocket');
+const { startEscalationJob } = require('./controllers/complaintController');
+startEscalationJob();
 const { globalApiLimiter } = require('./middleware/security');
 const {
     compressionMiddleware,
