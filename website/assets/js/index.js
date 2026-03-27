@@ -604,7 +604,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const spacesSlider = document.querySelector('#top-spaces #spaces-slider');
             
             if (!spacesTitle || !spacesSlider) {
-                console.error("Could not find 'top-spaces-title' or 'spaces-slider'.");
                 return;
             }
 
@@ -695,7 +694,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const spacesSlider = document.querySelector('#top-spaces-kota #spaces-slider-kota');
             
             if (!spacesTitle || !spacesSlider) {
-                console.error("Could not find 'top-spaces-title-kota' or 'spaces-slider-kota'.");
                 return;
             }
 
@@ -971,7 +969,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Find the container to insert the section
                 const topSpacesKotaSection = document.getElementById('top-spaces-kota');
                 if (!topSpacesKotaSection) {
-                    console.log('Could not find top-spaces-kota container');
                     return;
                 }
                 
