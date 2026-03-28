@@ -1,0 +1,64 @@
+body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Sidebar Styling (match admin.html) */
+        .sidebar { background-color: #111827; color: #9ca3af; }
+        .sidebar-link { color: #9ca3af; font-weight: 500; transition: all 0.2s ease; display: flex; align-items: center; padding: 0.75rem 1.5rem; font-size: 0.9rem; border-left: 3px solid transparent; cursor: pointer; }
+        .sidebar-link:hover { color: #f3f4f6; background-color: #1f2937; }
+        .sidebar-link.active { background-color: #1f2937; color: #ffffff; border-left-color: #a855f7; }
+        
+        /* Profile Dropdown Transition */
+        .profile-dropdown { transition: opacity 0.2s ease-out, transform 0.2s ease-out; }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+
+        /* Room Card */
+        .room-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-top: 4px solid transparent;
+        }
+        .room-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .room-card-ac { border-top-color: #3b82f6; } /* Blue for AC */
+        .room-card-nonac { border-top-color: #f59e0b; } /* Amber for Non-AC */
+
+        /* Bed Visuals */
+        .bed-item { transition: all 0.2s; }
+        
+        .bed-occupied {
+            background: linear-gradient(to bottom right, #f0fdf4, #dcfce7);
+            border: 1px solid #bbf7d0;
+        }
+        .bed-occupied:hover { border-color: #86efac; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        .bed-empty {
+            background-color: #ffffff;
+            border: 1px dashed #cbd5e1;
+            color: #64748b;
+        }
+        .bed-empty:hover {
+            border-color: #a855f7;
+            color: #7e22ce;
+            background-color: #faf5ff;
+            cursor: pointer;
+        }
+
+        .add-bed-btn {
+            border: 1px dashed #e2e8f0;
+            color: #94a3b8;
+        }
+        .add-bed-btn:hover {
+            border-color: #cbd5e1;
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+        
+        /* Tab Button Active State */
+        .tab-btn.active {
+            background-color: #f3e8ff;
+            color: #7e22ce;
+            border-color: #d8b4fe;
+        }

@@ -1,0 +1,63 @@
+body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        
+        /* --- Sidebar Styling (Dark Theme) --- */
+        .sidebar {
+            background-color: #111827; /* Gray 900 */
+            color: #9ca3af;
+        }
+        
+        .sidebar-link {
+            color: #9ca3af; /* Gray 400 */
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+        }
+        
+        .sidebar-link:hover {
+            color: #f3f4f6; 
+            background-color: #1f2937; /* Gray 800 */
+        }
+        
+        /* Active Link Style */
+        .sidebar-link.active {
+            background-color: #1f2937;
+            color: #ffffff;
+            border-left-color: #a855f7; /* Purple-500 */
+        }
+
+        /* Submenu Styling */
+        .submenu {
+            background-color: #0f172a; /* Darker shade */
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            max-height: 0;
+        }
+        .submenu.open {
+            max-height: 500px; /* Arbitrary large height */
+        }
+        .submenu a {
+            padding-left: 3.5rem;
+            font-size: 0.85rem;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        .complaint-row { border-bottom: 1px solid #e5e7eb; padding: 16px; }
+        .complaint-row:hover { background-color: #f9fafb; }
+        .status-badge { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; }
+        .status-open { background-color: #fee2e2; color: #991b1b; }
+        .status-taken { background-color: #fef3c7; color: #92400e; }
+        .status-resolved { background-color: #dcfce7; color: #166534; }
+        .status-rejected { background-color: #f3f4f6; color: #374151; }

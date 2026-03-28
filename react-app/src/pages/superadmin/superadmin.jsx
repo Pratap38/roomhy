@@ -1,3 +1,4 @@
+import React from "react";
 import { useHeadAssets } from "../../utils/useHeadAssets.js";
 import { useTailwindProcessor } from "../../utils/useTailwindProcessor.js";
 

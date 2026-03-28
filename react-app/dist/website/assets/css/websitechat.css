@@ -1,0 +1,167 @@
+body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f2f6; 
+            color: #1F2937;
+        }
+
+        .light-card {
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .light-card:hover {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            transform: translateY(-4px);
+        }
+        
+        .glow-button {
+            transition: all 0.3s ease;
+        }
+        .glow-button:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Footer Styling */
+        .footer {
+          font-family: 'Inter', sans-serif;
+          color: #e5e7eb;
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .footer a {
+          color: #cbd5e1;
+          text-decoration: none;
+          transition: color 0.2s ease;
+        }
+
+        .footer a:hover {
+          color: #60a5fa;
+        }
+
+        .footer-main {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+          gap: 2rem;
+          padding: 3rem 2rem;
+          align-items: start;
+        }
+        
+        .footer-logo {
+            grid-column: span 1;
+        }
+
+        .footer-logo img {
+          width: 140px;
+          margin-bottom: 0.5rem;
+        }
+
+        .footer-logo p {
+          color: #9ca3af;
+          font-size: 0.9rem;
+        }
+
+        .footer-links h4,
+        .footer-legal h4,
+        .footer-contact h4 {
+          font-weight: 700;
+          color: #ffffff;
+          margin-bottom: 1rem;
+          position: relative;
+        }
+
+        .footer-links h4::after,
+        .footer-legal h4::after,
+        .footer-contact h4::after {
+          content: '';
+          position: absolute;
+          bottom: -0.4rem;
+          left: 0;
+          width: 40px;
+          height: 2px;
+          background: #60a5fa;
+          border-radius: 2px;
+        }
+
+        .footer-links ul,
+        .footer-legal ul {
+          list-style: none;
+          padding: 0;
+        }
+
+        .footer-links li,
+        .footer-legal li {
+          margin-bottom: 0.6rem;
+        }
+
+        .footer-contact p {
+          color: #d1d5db;
+          margin: 0.6rem 0;
+          font-size: 0.9rem;
+        }
+
+        .footer-contact i {
+          color: #60a5fa;
+          margin-right: 0.6rem;
+        }
+
+        .footer-social {
+          margin-top: 1.5rem;
+        }
+
+        .footer-social a {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
+          width: 35px;
+          height: 35px;
+          border-radius: 9999px;
+          margin-right: 0.8rem;
+          transition: all 0.3s ease;
+        }
+
+        .footer-social a:hover {
+          background: #60a5fa;
+          color: #0f172a;
+          transform: translateY(-2px);
+        }
+
+        .footer-bottom {
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          text-align: center;
+          padding: 1rem;
+          font-size: 0.85rem;
+          color: #9ca3af;
+          background: rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+          .footer-main {
+            grid-template-columns: 1fr;
+            text-align: left;
+          }
+          .footer-logo {
+            grid-column: span 1;
+            margin-bottom: 1.5rem;
+          }
+        }
+
+        .horizontal-slider::-webkit-scrollbar {
+            display: none;
+        }
+        .horizontal-slider {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }

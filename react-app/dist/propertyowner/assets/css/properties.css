@@ -1,0 +1,31 @@
+body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background for the main content area */
+        }
+        .sidebar {
+            background-color: #111827; /* Dark gray for sidebar */
+        }
+        .sidebar-link {
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+        .sidebar-link:hover, .sidebar-link.active {
+            background-color: #374151; /* Slightly lighter gray on hover/active */
+            color: #ffffff;
+        }
+        /* Dropdown transition */
+        .profile-dropdown {
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+         /* Table styles */
+        th {
+            @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50;
+        }
+        td {
+             @apply px-4 py-4 whitespace-nowrap text-sm text-gray-700;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        tbody tr:hover {
+            background-color: #f0f0f0;
+        }
