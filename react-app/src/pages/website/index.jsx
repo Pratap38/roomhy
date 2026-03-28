@@ -39,11 +39,23 @@ const withWebsiteAssetPrefix = (value) => {
     value.startsWith("images/") ||
     value.startsWith("css/")
   ) {
-    return `/website/${value}`;
+    return `/website1/${value}`;
   }
 
   return value;
 };
+
+const rewriteBodyAssetPaths = (html) =>
+  html.replace(
+    /\b(href|src)=("([^"]+)"|'([^']+)')/gi,
+    (full, attr, wrappedValue, doubleQuoted, singleQuoted) => {
+      const originalValue = doubleQuoted ?? singleQuoted ?? "";
+      const rewrittenValue = withWebsiteAssetPrefix(originalValue);
+      if (rewrittenValue === originalValue) return full;
+      const quote = doubleQuoted != null ? '"' : "'";
+      return `${attr}=${quote}${rewrittenValue}${quote}`;
+    }
+  );
 
 const extractTagAttributes = (tagName, source) => {
   const match = source.match(new RegExp(`<${tagName}\\b([^>]*)>`, "i"));
@@ -67,14 +79,29 @@ const extractBodyContent = (source) => {
   const match = source.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   if (!match) return "";
 
-  return match[1]
+  const cleanedBody = match[1]
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(
       /<footer class="footer container mx-auto px-4 sm:px-6 mt-16">/i,
       '<footer data-shared-website-footer="1" class="footer container mx-auto px-4 sm:px-6 mt-16">'
     )
-    .trim();
+    .replace(
+      /\bon(click|mouseover|mouseout)="([^"]*window\.location\.href\s*=\s*'([^']+)'.*?)"/gi,
+      (full, eventName, handler, target) =>
+        full.replace(target, withWebsiteAssetPrefix(target))
+    )
+    .replace(
+      /\bon(click|mouseover|mouseout)='([^']*window\.location\.href\s*=\s*"([^"]+)".*?)'/gi,
+      (full, eventName, handler, target) =>
+        full.replace(target, withWebsiteAssetPrefix(target))
+    )
+    .replace(
+      /\bonclick="globalLogout\(\)"/gi,
+      'onclick="globalLogout()"'
+    );
+
+  return rewriteBodyAssetPaths(cleanedBody).trim();
 };
 
 const title = templateHtml.match(/<title>([\s\S]*?)<\/title>/i)?.[1]?.trim() || "";
