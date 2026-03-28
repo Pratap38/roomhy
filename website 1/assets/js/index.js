@@ -601,7 +601,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const spacesSlider = document.querySelector('#top-spaces #spaces-slider');
             
             if (!spacesTitle || !spacesSlider) {
-                console.error("Could not find 'top-spaces-title' or 'spaces-slider'.");
                 return;
             }
 
@@ -692,7 +691,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const spacesSlider = document.querySelector('#top-spaces-kota #spaces-slider-kota');
             
             if (!spacesTitle || !spacesSlider) {
-                console.error("Could not find 'top-spaces-title-kota' or 'spaces-slider-kota'.");
                 return;
             }
 
@@ -781,7 +779,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const spacesSlider = document.querySelector('#featured #featured-slider');
             
             if (!spacesSlider) {
-                console.error("Could not find '#featured-slider'.");
                 return;
             }
 
@@ -968,7 +965,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Find the container to insert the section
                 const topSpacesKotaSection = document.getElementById('top-spaces-kota');
                 if (!topSpacesKotaSection) {
-                    console.log('Could not find top-spaces-kota container');
                     return;
                 }
                 
@@ -1295,6 +1291,272 @@ document.addEventListener("DOMContentLoaded", function() {
             path2.style.strokeDashoffset = path2Length * (1 - progress2);
         }
 
+        function setupRoomhyScrollStory() {
+            const shell = document.getElementById('how-it-works');
+            const stepsContainer = document.querySelector('.roomhy-scroll-steps');
+            const steps = document.querySelectorAll('.roomhy-scroll-step');
+            const visuals = document.querySelectorAll('.roomhy-visual-card');
+            if (!shell || !stepsContainer || !steps.length || !visuals.length) return;
+
+            const AUTO_SCROLL_INTERVAL = 1000;
+            const AUTO_SCROLL_RESUME_DELAY = 1500;
+            let autoScrollTimer = null;
+            let autoScrollResumeTimer = null;
+            let isAutoScrolling = false;
+
+            const activateStep = (stepNumber) => {
+                steps.forEach((step) => {
+                    step.classList.toggle('active', step.dataset.step === stepNumber);
+                });
+                visuals.forEach((visual) => {
+                    visual.classList.toggle('roomhy-visual-active', visual.dataset.visual === stepNumber);
+                });
+            };
+
+            const syncActiveStepFromScroll = () => {
+                let currentStep = steps[0];
+                const isDesktop = window.innerWidth >= 1024;
+                const containerMid = isDesktop
+                    ? stepsContainer.scrollTop + (stepsContainer.clientHeight * 0.5)
+                    : stepsContainer.scrollLeft + (stepsContainer.clientWidth * 0.5);
+
+                steps.forEach((step) => {
+                    const stepStart = isDesktop ? step.offsetTop : step.offsetLeft;
+                    const stepEnd = stepStart + (isDesktop ? step.offsetHeight : step.offsetWidth);
+                    if (containerMid >= stepStart && containerMid < stepEnd) {
+                        currentStep = step;
+                    }
+                });
+
+                activateStep(currentStep.dataset.step);
+            };
+
+            const getActiveStepIndex = () => {
+                const activeIndex = Array.from(steps).findIndex((step) => step.classList.contains('active'));
+                return activeIndex >= 0 ? activeIndex : 0;
+            };
+
+            const scrollToStep = (index) => {
+                const targetStep = steps[index];
+                if (!targetStep) return;
+
+                const isDesktop = window.innerWidth >= 1024;
+                isAutoScrolling = true;
+
+                if (isDesktop) {
+                    stepsContainer.scrollTo({
+                        top: targetStep.offsetTop,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    stepsContainer.scrollTo({
+                        left: targetStep.offsetLeft,
+                        behavior: 'smooth'
+                    });
+                }
+
+                activateStep(targetStep.dataset.step);
+
+                window.setTimeout(() => {
+                    isAutoScrolling = false;
+                }, 500);
+            };
+
+            const stopAutoScroll = () => {
+                if (autoScrollTimer) {
+                    window.clearInterval(autoScrollTimer);
+                    autoScrollTimer = null;
+                }
+            };
+
+            const startAutoScroll = () => {
+                stopAutoScroll();
+                autoScrollTimer = window.setInterval(() => {
+                    const nextIndex = (getActiveStepIndex() + 1) % steps.length;
+                    scrollToStep(nextIndex);
+                }, AUTO_SCROLL_INTERVAL);
+            };
+
+            const scheduleAutoScrollResume = () => {
+                stopAutoScroll();
+                if (autoScrollResumeTimer) {
+                    window.clearTimeout(autoScrollResumeTimer);
+                }
+                autoScrollResumeTimer = window.setTimeout(() => {
+                    startAutoScroll();
+                }, AUTO_SCROLL_RESUME_DELAY);
+            };
+
+            activateStep('1');
+            syncActiveStepFromScroll();
+
+            const handleWheelLock = (event) => {
+                scheduleAutoScrollResume();
+                if (window.innerWidth < 1024) return;
+
+                const maxScrollTop = stepsContainer.scrollHeight - stepsContainer.clientHeight;
+                if (maxScrollTop <= 0) return;
+
+                const atTop = stepsContainer.scrollTop <= 0;
+                const atBottom = stepsContainer.scrollTop >= maxScrollTop - 1;
+                const scrollingDown = event.deltaY > 0;
+                const pointerInsideShell = shell.matches(':hover');
+                if (!pointerInsideShell) return;
+
+                if ((scrollingDown && !atBottom) || (!scrollingDown && !atTop)) {
+                    event.preventDefault();
+                    stepsContainer.scrollTop += event.deltaY;
+                    syncActiveStepFromScroll();
+                }
+            };
+
+            let touchStartY = 0;
+            const handleTouchStart = (event) => {
+                scheduleAutoScrollResume();
+                if (window.innerWidth < 1024) return;
+                touchStartY = event.touches[0].clientY;
+            };
+
+            const handleTouchMove = (event) => {
+                scheduleAutoScrollResume();
+                if (window.innerWidth < 1024) return;
+                const maxScrollTop = stepsContainer.scrollHeight - stepsContainer.clientHeight;
+                if (maxScrollTop <= 0) return;
+
+                const currentY = event.touches[0].clientY;
+                const deltaY = touchStartY - currentY;
+                const atTop = stepsContainer.scrollTop <= 0;
+                const atBottom = stepsContainer.scrollTop >= maxScrollTop - 1;
+                const scrollingDown = deltaY > 0;
+                const scrollingUp = deltaY < 0;
+
+                if ((scrollingDown && !atBottom) || (scrollingUp && !atTop)) {
+                    event.preventDefault();
+                    stepsContainer.scrollTop += deltaY;
+                    touchStartY = currentY;
+                    syncActiveStepFromScroll();
+                }
+            };
+
+            shell.addEventListener('wheel', handleWheelLock, { passive: false });
+            shell.addEventListener('touchstart', handleTouchStart, { passive: true });
+            shell.addEventListener('touchmove', handleTouchMove, { passive: false });
+            shell.addEventListener('mouseenter', stopAutoScroll);
+            shell.addEventListener('mouseleave', scheduleAutoScrollResume);
+            shell.addEventListener('pointerdown', scheduleAutoScrollResume);
+            stepsContainer.addEventListener('scroll', () => {
+                syncActiveStepFromScroll();
+                if (!isAutoScrolling) {
+                    scheduleAutoScrollResume();
+                }
+            }, { passive: true });
+            window.addEventListener('resize', scheduleAutoScrollResume);
+
+            startAutoScroll();
+        }
+
+        function setupTrustScrollStory() {
+            const trustList = document.querySelector('.trust-editorial-stack');
+            const trustCards = document.querySelectorAll('.trust-editorial-stack .trust-ribbon-card');
+            if (!trustList || !trustCards.length) return;
+
+            const AUTO_SCROLL_INTERVAL = 2200;
+            const RESUME_DELAY = 2600;
+            let autoScrollTimer = null;
+            let resumeTimer = null;
+            let isAnimating = false;
+
+            const activateTrustCard = (card) => {
+                trustCards.forEach((item) => {
+                    item.classList.toggle('trust-ribbon-card-active', item === card);
+                });
+            };
+
+            const getActiveTrustIndex = () => {
+                const activeIndex = Array.from(trustCards).findIndex((card) => card.classList.contains('trust-ribbon-card-active'));
+                return activeIndex >= 0 ? activeIndex : 0;
+            };
+
+            const scrollToTrustCard = (index) => {
+                const targetCard = trustCards[index];
+                if (!targetCard) return;
+
+                isAnimating = true;
+                if (window.innerWidth < 1024) {
+                    trustList.scrollTo({
+                        left: targetCard.offsetLeft,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    trustList.scrollTo({
+                        top: targetCard.offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+                activateTrustCard(targetCard);
+
+                window.setTimeout(() => {
+                    isAnimating = false;
+                }, 500);
+            };
+
+            const stopAutoScroll = () => {
+                if (autoScrollTimer) {
+                    window.clearInterval(autoScrollTimer);
+                    autoScrollTimer = null;
+                }
+            };
+
+            const startAutoScroll = () => {
+                stopAutoScroll();
+                autoScrollTimer = window.setInterval(() => {
+                    const nextIndex = (getActiveTrustIndex() + 1) % trustCards.length;
+                    scrollToTrustCard(nextIndex);
+                }, AUTO_SCROLL_INTERVAL);
+            };
+
+            const scheduleResume = () => {
+                stopAutoScroll();
+                if (resumeTimer) {
+                    window.clearTimeout(resumeTimer);
+                }
+                resumeTimer = window.setTimeout(() => {
+                    startAutoScroll();
+                }, RESUME_DELAY);
+            };
+
+            activateTrustCard(trustCards[0]);
+
+            trustList.addEventListener('scroll', () => {
+                let currentCard = trustCards[0];
+                const isMobile = window.innerWidth < 1024;
+                const containerMid = isMobile
+                    ? trustList.scrollLeft + (trustList.clientWidth * 0.5)
+                    : trustList.scrollTop + (trustList.clientHeight * 0.35);
+
+                trustCards.forEach((card) => {
+                    const cardStart = isMobile ? card.offsetLeft : card.offsetTop;
+                    const cardEnd = cardStart + (isMobile ? card.offsetWidth : card.offsetHeight);
+                    if (containerMid >= cardStart && containerMid < cardEnd) {
+                        currentCard = card;
+                    }
+                });
+
+                activateTrustCard(currentCard);
+                if (!isAnimating) {
+                    scheduleResume();
+                }
+            }, { passive: true });
+
+            trustList.addEventListener('mouseenter', stopAutoScroll);
+            trustList.addEventListener('mouseleave', scheduleResume);
+            trustList.addEventListener('pointerdown', scheduleResume);
+            trustList.addEventListener('touchstart', scheduleResume, { passive: true });
+            window.addEventListener('resize', scheduleResume);
+
+            startAutoScroll();
+        }
+
         // Intersection Observer for Step Card Reveal
         const stepCardObserver = new IntersectionObserver((entries, observer) => {
             entries.forEach(entry => {
@@ -1340,6 +1602,8 @@ document.addEventListener("DOMContentLoaded", function() {
             setupHowItWorksPaths();
             // Initial call to draw path based on current scroll position
             updatePathDrawing(); 
+            setupRoomhyScrollStory();
+            setupTrustScrollStory();
         });
 
         // ======================================================
@@ -1600,26 +1864,31 @@ document.addEventListener("DOMContentLoaded", function() {
         Hero Slideshow
         ============================================================
         */
-        const heroWrapper = document.getElementById('hero-image-wrapper');
-        if (heroWrapper) {
-            const heroImages = heroWrapper.querySelectorAll('img');
-            const totalHeroImages = heroImages.length;
-            let currentHeroIndex = 0;
+        const initImageFadeCarousel = (wrapperId, interval = 5000) => {
+            const wrapper = document.getElementById(wrapperId);
+            if (!wrapper) return;
 
-            if (totalHeroImages > 1) {
-                setInterval(() => {
-                    const nextHeroIndex = (currentHeroIndex + 1) % totalHeroImages;
-                    
-                    heroImages[currentHeroIndex].classList.remove('opacity-100');
-                    heroImages[currentHeroIndex].classList.add('opacity-0');
-                    
-                    heroImages[nextHeroIndex].classList.remove('opacity-0');
-                    heroImages[nextHeroIndex].classList.add('opacity-100');
-                    
-                    currentHeroIndex = nextHeroIndex;
-                }, 5000);
-            }
-        }
+            const images = wrapper.querySelectorAll('img');
+            if (images.length <= 1) return;
+
+            let currentIndex = 0;
+            window.setInterval(() => {
+                const nextIndex = (currentIndex + 1) % images.length;
+
+                images[currentIndex].classList.remove('opacity-100');
+                images[currentIndex].classList.add('opacity-0');
+
+                images[nextIndex].classList.remove('opacity-0');
+                images[nextIndex].classList.add('opacity-100');
+
+                currentIndex = nextIndex;
+            }, interval);
+        };
+
+        initImageFadeCarousel('hero-image-wrapper', 5000);
+        initImageFadeCarousel('how-it-works-bg-wrapper', 5000);
+        initImageFadeCarousel('problem-solution-bg-wrapper', 5000);
+        initImageFadeCarousel('student-benefits-bg-wrapper', 5000);
         
         /*
         ============================================================

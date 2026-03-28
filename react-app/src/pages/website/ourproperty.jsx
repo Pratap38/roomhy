@@ -122,6 +122,8 @@ export default function WebsiteOurproperty() {
   const [showBidModal, setShowBidModal] = useState(false);
   const [showBidSuccess, setShowBidSuccess] = useState(false);
   const [successCount, setSuccessCount] = useState(0);
+  const [showFloatingActions, setShowFloatingActions] = useState(false);
+  const [showFloatingCoachmark, setShowFloatingCoachmark] = useState(false);
 
   const initialParams = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -153,7 +155,18 @@ export default function WebsiteOurproperty() {
     message: ""
   });
 
-  useLucideIcons([cities, areas, properties, favorites, filters, showBidModal, showBidSuccess, showFilterDrawer]);
+  useLucideIcons([
+    cities,
+    areas,
+    properties,
+    favorites,
+    filters,
+    showBidModal,
+    showBidSuccess,
+    showFilterDrawer,
+    showFloatingActions,
+    showFloatingCoachmark
+  ]);
 
   useEffect(() => {
     setFavorites(loadFavorites());
@@ -273,6 +286,52 @@ export default function WebsiteOurproperty() {
       window.removeEventListener("storage", handleStorage);
     };
   }, [apiUrl]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const actionRoot = event.target.closest?.("[data-floating-actions]");
+      if (!actionRoot) {
+        setShowFloatingActions(false);
+        setShowFloatingCoachmark(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    let shouldShowCoachmark = false;
+    try {
+      shouldShowCoachmark = sessionStorage.getItem("roomhy_floating_cta_seen") !== "true";
+    } catch (_) {
+      shouldShowCoachmark = true;
+    }
+
+    if (!shouldShowCoachmark) return;
+
+    const openTimer = window.setTimeout(() => {
+      setShowFloatingCoachmark(true);
+      setShowFloatingActions(true);
+    }, 900);
+
+    const closeTimer = window.setTimeout(() => {
+      setShowFloatingCoachmark(false);
+    }, 6500);
+
+    try {
+      sessionStorage.setItem("roomhy_floating_cta_seen", "true");
+    } catch (_) {
+      // ignore storage failures
+    }
+
+    return () => {
+      window.clearTimeout(openTimer);
+      window.clearTimeout(closeTimer);
+    };
+  }, []);
 
   const normalizeProperty = (prop) => {
     const info = prop.propertyInfo || {};
@@ -526,6 +585,18 @@ export default function WebsiteOurproperty() {
       return;
     }
     setShowBidModal(true);
+  };
+
+  const handleFloatingBidClick = () => {
+    setShowFloatingActions(false);
+    setShowFloatingCoachmark(false);
+    openBidModal();
+  };
+
+  const handleFloatingChatClick = () => {
+    setShowFloatingActions(false);
+    setShowFloatingCoachmark(false);
+    window.location.href = "/website/websitechat";
   };
 
   const submitAllBids = async () => {
@@ -1330,9 +1401,67 @@ export default function WebsiteOurproperty() {
       
           </main>
       
-          <a href="/website/contact" className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110">
-              <i data-lucide="message-circle" className="w-8 h-8"></i>
-          </a>
+          <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3" data-floating-actions>
+              {showFloatingCoachmark && (
+                  <div className="relative max-w-[240px] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-2xl">
+                      <div className="absolute -bottom-2 right-8 h-4 w-4 rotate-45 border-b border-r border-slate-200 bg-white"></div>
+                      <div className="flex items-start gap-3">
+                          <span className="text-2xl animate-bounce">👆</span>
+                          <p className="leading-5">
+                              <span className="block font-semibold text-slate-900">Need help choosing?</span>
+                              Bid on your budget or chat to explore more.
+                          </p>
+                      </div>
+                  </div>
+              )}
+
+              {showFloatingActions && (
+                  <div className="w-[250px] rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur">
+                      <button
+                          type="button"
+                          onClick={handleFloatingBidClick}
+                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-emerald-50"
+                      >
+                          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                              <i data-lucide="badge-indian-rupee" className="h-5 w-5"></i>
+                          </span>
+                          <span>
+                              <span className="block text-sm font-semibold text-slate-900">Bid on your budget</span>
+                              <span className="block text-xs text-slate-500">Send your budget to matching owners</span>
+                          </span>
+                      </button>
+
+                      <button
+                          type="button"
+                          onClick={handleFloatingChatClick}
+                          className="mt-2 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-sky-50"
+                      >
+                          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
+                              <i data-lucide="message-circle-more" className="h-5 w-5"></i>
+                          </span>
+                          <span>
+                              <span className="block text-sm font-semibold text-slate-900">Chat to explore more</span>
+                              <span className="block text-xs text-slate-500">Talk to us before you decide</span>
+                          </span>
+                      </button>
+                  </div>
+              )}
+
+              <button
+                  id="websiteChatBtn"
+                  type="button"
+                  aria-label="Open bidding and chat options"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowFloatingCoachmark(false);
+                    setShowFloatingActions((prev) => !prev);
+                  }}
+                  className={`relative flex h-16 w-16 items-center justify-center rounded-full bg-green-500 text-white shadow-[0_20px_45px_rgba(34,197,94,0.35)] transition duration-300 hover:bg-green-600 ${showFloatingCoachmark ? "animate-pulse scale-110" : "hover:scale-110"}`}
+              >
+                  {showFloatingCoachmark && <span className="absolute -top-1 right-0 h-3.5 w-3.5 rounded-full bg-amber-300 ring-4 ring-white"></span>}
+                  <i data-lucide="message-circle" className="w-8 h-8"></i>
+              </button>
+          </div>
           
           <footer className="bg-gray-800 text-gray-300">
               <div className="container mx-auto px-6 py-16">
