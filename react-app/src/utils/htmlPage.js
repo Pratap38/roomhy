@@ -183,6 +183,15 @@ const waitForTailwindComputed = async (timeoutMs = 450) => {
   probe.remove();
 };
 
+const dispatchSyntheticDomContentLoaded = () => {
+  if (typeof document === "undefined") return;
+  const event = new Event("DOMContentLoaded", {
+    bubbles: true,
+    cancelable: true
+  });
+  document.dispatchEvent(event);
+};
+
 const getEmployeeSessionUser = () => {
   try {
     const raw =
@@ -521,6 +530,7 @@ export const useHtmlPage = ({
   styles = [],
   scripts = [],
   inlineScripts = [],
+  scriptSequence = null,
   disableMobileSidebar = false
 }) => {
   const useClientLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -538,6 +548,7 @@ export const useHtmlPage = ({
             styles,
             scripts,
             inlineScripts,
+            scriptSequence,
             disableMobileSidebar
           })
         )
@@ -621,6 +632,7 @@ export const useHtmlPage = ({
     const pathName = window.location?.pathname || "";
     const isSuperadminRoute = pathName.startsWith("/superadmin");
     const isEmployeeRoute = pathName.startsWith("/employee");
+    const isWebsiteHtmlRoute = isWebsiteRoute();
     const isEmbed = (() => {
       try {
         return new URLSearchParams(window.location.search || "").get("embed") === "1";
@@ -769,7 +781,7 @@ export const useHtmlPage = ({
       .filter((script) => {
         if (!script?.src) return true;
         const isTailwindCdn = String(script.src).includes("cdn.tailwindcss.com");
-        if (isTailwindCdn && window.__TAILWIND_LOCAL__ && !isSuperadminRoute) {
+        if (isTailwindCdn && window.__TAILWIND_LOCAL__ && !isSuperadminRoute && !isWebsiteHtmlRoute) {
           return false;
         }
         return true;
@@ -789,6 +801,24 @@ export const useHtmlPage = ({
     if (!disableMobileSidebar && (isSuperadminRoute || isEmployeeRoute) && !normalizedScripts.some((s) => String(s?.src || "").includes("mobile-sidebar.js"))) {
       normalizedScripts.push({ src: "/superadmin/mobile-sidebar.js" });
     }
+
+    const normalizedScriptSequence = Array.isArray(scriptSequence)
+      ? scriptSequence.map((entry) => {
+          if (!entry || typeof entry !== "object") return entry;
+          if (entry.type === "external" && entry.attrs?.src) {
+            const nextAttrs = { ...entry.attrs };
+            const isTailwindCdn = String(nextAttrs.src).includes("cdn.tailwindcss.com");
+            if (isTailwindCdn && window.__TAILWIND_LOCAL__ && !isSuperadminRoute && !isWebsiteHtmlRoute) {
+              return null;
+            }
+            if (isSuperadminRoute && nextAttrs.src.startsWith("./")) {
+              nextAttrs.src = `/superadmin/${nextAttrs.src.slice(2)}`;
+            }
+            return { ...entry, attrs: nextAttrs };
+          }
+          return entry;
+        }).filter(Boolean)
+      : null;
 
     const load = async () => {
       let revealTimer = null;
@@ -815,24 +845,76 @@ export const useHtmlPage = ({
 
       await waitForStylesheets(stylesheetLinks);
 
-      const tailwindInline = inlineScripts.filter((script) => script.includes("tailwind.config"));
-      const otherInline = inlineScripts.filter((script) => !script.includes("tailwind.config"));
+      const runInlineScript = (script, index, keyPrefix = "post") => {
+        const key = `inline-script:${keyPrefix}:${hashString(script)}:${index}:${title || "page"}`;
+        if (wasInlineExecuted(key)) return;
+        markInlineExecuted(key);
+        if (cancelled) return;
+        const el = document.createElement("script");
+        const needsTailwindGuard = script.includes("tailwind.");
+        el.textContent = needsTailwindGuard
+          ? `window.tailwind = window.tailwind || {};\n${script}`
+          : script;
+        el.setAttribute("data-hp-key", key);
+        document.head.appendChild(el);
+      };
 
-      for (const script of normalizedScripts) {
-        try {
-          if (String(script?.src || "").includes("cdn.tailwindcss.com")) {
-            suppressTailwindCdnWarnings();
+      if (normalizedScriptSequence?.length) {
+        for (let index = 0; index < normalizedScriptSequence.length; index += 1) {
+          const entry = normalizedScriptSequence[index];
+          if (!entry) continue;
+
+          if (entry.type === "external" && entry.attrs?.src) {
+            try {
+              if (String(entry.attrs.src).includes("cdn.tailwindcss.com")) {
+                suppressTailwindCdnWarnings();
+              }
+              // eslint-disable-next-line no-await-in-loop
+              await loadScriptSequentially(entry.attrs);
+            } catch (err) {
+              console.error("Failed to load script", entry.attrs?.src, err);
+            }
+            continue;
           }
-          // Sequential load to ensure dependent globals (e.g., tailwind) exist.
-          // Keep scripts in head; don't remove on cleanup to avoid re-exec.
-          // eslint-disable-next-line no-await-in-loop
-          await loadScriptSequentially(script);
-        } catch (err) {
-          console.error("Failed to load script", script?.src, err);
+
+          if (entry.type === "inline" && entry.content) {
+            runInlineScript(entry.content, index, "sequence");
+          }
         }
+      } else {
+        const tailwindInline = inlineScripts.filter((script) => script.includes("tailwind.config"));
+        const otherInline = inlineScripts.filter((script) => !script.includes("tailwind.config"));
+
+        for (const script of normalizedScripts) {
+          try {
+            if (String(script?.src || "").includes("cdn.tailwindcss.com")) {
+              suppressTailwindCdnWarnings();
+            }
+            // Sequential load to ensure dependent globals (e.g., tailwind) exist.
+            // Keep scripts in head; don't remove on cleanup to avoid re-exec.
+            // eslint-disable-next-line no-await-in-loop
+            await loadScriptSequentially(script);
+          } catch (err) {
+            console.error("Failed to load script", script?.src, err);
+          }
+        }
+
+        otherInline.forEach((script, index) => {
+          runInlineScript(script, index, "post");
+        });
+
+        // Tailwind config must run after tailwind CDN is available.
+        tailwindInline.forEach((script, index) => {
+          runInlineScript(script, index, "tailwind");
+        });
       }
 
-      const hasTailwindScript = normalizedScripts.some((script) =>
+      const hasTailwindScript = (normalizedScriptSequence?.length
+        ? normalizedScriptSequence
+            .filter((entry) => entry?.type === "external")
+            .map((entry) => entry.attrs)
+        : normalizedScripts
+      ).some((script) =>
         String(script?.src || "").includes("cdn.tailwindcss.com")
       );
       await waitForTailwindStyles(hasTailwindScript);
@@ -874,31 +956,12 @@ export const useHtmlPage = ({
         window.addEventListener("resize", ensureMobileMenuButton);
       }
 
-      otherInline.forEach((script, index) => {
-        const key = `inline-script:post:${hashString(script)}:${index}:${title || "page"}`;
-        if (wasInlineExecuted(key)) return;
-        markInlineExecuted(key);
-        if (cancelled) return;
-        const el = document.createElement("script");
-        const needsTailwindGuard = script.includes("tailwind.");
-        el.textContent = needsTailwindGuard
-          ? `window.tailwind = window.tailwind || {};\n${script}`
-          : script;
-        el.setAttribute("data-hp-key", key);
-        document.head.appendChild(el);
-      });
-
-      // Tailwind config must run after tailwind CDN is available.
-      tailwindInline.forEach((script, index) => {
-        const key = `inline-script:tailwind:${hashString(script)}:${index}:${title || "page"}`;
-        if (wasInlineExecuted(key)) return;
-        markInlineExecuted(key);
-        if (cancelled) return;
-        const el = document.createElement("script");
-        el.textContent = `window.tailwind = window.tailwind || {};\n${script}`;
-        el.setAttribute("data-hp-key", key);
-        document.head.appendChild(el);
-      });
+      // Static HTML bundles often register page setup inside DOMContentLoaded.
+      // When we inject them after React has already mounted, the native browser
+      // DOMContentLoaded has already fired, so trigger a synthetic one now.
+      if (!cancelled) {
+        dispatchSyntheticDomContentLoaded();
+      }
 
       // Trigger Tailwind CSS to rescan the DOM for new classes
       if (!cancelled) {

@@ -229,6 +229,23 @@ async function ensureValidSession(redirectPage = 'signup') {
 
 function showAuthPromptModal(message = 'Please login or signup to continue.') {
     try {
+        const brandedModal = document.getElementById('roomhy-auth-modal');
+        if (brandedModal) {
+            const description = brandedModal.querySelector('#roomhy-modal-title + p');
+            if (description && message) {
+                description.textContent = message;
+            }
+
+            if (typeof window.roomhyOpenAuthModal === 'function') {
+                window.roomhyOpenAuthModal();
+                return;
+            }
+
+            brandedModal.classList.add('roomhy-modal-active');
+            document.body.style.overflow = 'hidden';
+            return;
+        }
+
         const existing = document.getElementById('roomhy-auth-prompt-overlay');
         if (existing) existing.remove();
 

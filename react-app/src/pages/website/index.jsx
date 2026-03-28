@@ -113,6 +113,22 @@ const links = extractHeadTagEntries("link", templateHtml).map((link) => ({
   href: withWebsiteAssetPrefix(link.href),
 }));
 const scriptEntries = extractWrappedTagEntries("script", templateHtml);
+const scriptSequence = scriptEntries.map((entry) => {
+  if (entry.attrs.src) {
+    return {
+      type: "external",
+      attrs: {
+        ...entry.attrs,
+        src: withWebsiteAssetPrefix(entry.attrs.src),
+      },
+    };
+  }
+
+  return {
+    type: "inline",
+    content: entry.content,
+  };
+});
 const scripts = scriptEntries
   .filter((entry) => entry.attrs.src)
   .map((entry) => ({
@@ -138,6 +154,7 @@ export default function WebsiteIndex() {
     scripts,
     styles,
     inlineScripts,
+    scriptSequence,
   });
 
   return <div className="html-page" dangerouslySetInnerHTML={{ __html: bodyHtml }} />;
