@@ -9,6 +9,9 @@ const parseAttributes = (input = "") => {
 
   while ((match = regex.exec(input))) {
     const key = match[1];
+    if (!key || key === "/" || key.endsWith("/")) {
+      continue;
+    }
     const value = match[2] ?? match[3] ?? match[4];
     attrs[key] = value ?? true;
   }
