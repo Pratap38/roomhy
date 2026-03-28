@@ -2,8 +2,63 @@ import React from "react";
 import templateHtml from "./index.template.html?raw";
 import { useHtmlPage } from "../../utils/htmlPage";
 
-const extractMatches = (pattern, source) =>
-  Array.from(source.matchAll(pattern), (match) => match[1].trim()).filter(Boolean);
+const parseAttributes = (input = "") => {
+  const attrs = {};
+  const regex = /([^\s=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+  let match;
+
+  while ((match = regex.exec(input))) {
+    const key = match[1];
+    const value = match[2] ?? match[3] ?? match[4];
+    attrs[key] = value ?? true;
+  }
+
+  return attrs;
+};
+
+const withWebsiteAssetPrefix = (value) => {
+  if (!value || typeof value !== "string") return value;
+  if (
+    value.startsWith("/") ||
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("mailto:") ||
+    value.startsWith("tel:") ||
+    value.startsWith("#") ||
+    value.startsWith("data:")
+  ) {
+    return value;
+  }
+
+  if (
+    value.startsWith("assets/") ||
+    value.startsWith("js/") ||
+    value.startsWith("images/") ||
+    value.startsWith("css/")
+  ) {
+    return `/website/${value}`;
+  }
+
+  return value;
+};
+
+const extractTagAttributes = (tagName, source) => {
+  const match = source.match(new RegExp(`<${tagName}\\b([^>]*)>`, "i"));
+  return parseAttributes(match?.[1] || "");
+};
+
+const extractHeadTagEntries = (tagName, source) => {
+  const regex = new RegExp(`<${tagName}\\b([^>]*)>`, "gi");
+  return Array.from(source.matchAll(regex), (match) => parseAttributes(match[1] || ""));
+};
+
+const extractWrappedTagEntries = (tagName, source) => {
+  const regex = new RegExp(`<${tagName}\\b([^>]*)>([\\s\\S]*?)<\\/${tagName}>`, "gi");
+  return Array.from(source.matchAll(regex), (match) => ({
+    attrs: parseAttributes(match[1] || ""),
+    content: match[2]?.trim() || "",
+  }));
+};
 
 const extractBodyContent = (source) => {
   const match = source.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -19,44 +74,38 @@ const extractBodyContent = (source) => {
     .trim();
 };
 
-const inlineScripts = extractMatches(/<script>([\s\S]*?)<\/script>/gi, templateHtml);
-const styles = extractMatches(/<style>([\s\S]*?)<\/style>/gi, templateHtml);
+const title = templateHtml.match(/<title>([\s\S]*?)<\/title>/i)?.[1]?.trim() || "";
+const htmlAttrs = extractTagAttributes("html", templateHtml);
+const bodyAttrs = extractTagAttributes("body", templateHtml);
+const metas = extractHeadTagEntries("meta", templateHtml);
+const links = extractHeadTagEntries("link", templateHtml).map((link) => ({
+  ...link,
+  href: withWebsiteAssetPrefix(link.href),
+}));
+const scriptEntries = extractWrappedTagEntries("script", templateHtml);
+const scripts = scriptEntries
+  .filter((entry) => entry.attrs.src)
+  .map((entry) => ({
+    ...entry.attrs,
+    src: withWebsiteAssetPrefix(entry.attrs.src),
+  }));
+const inlineScripts = scriptEntries
+  .filter((entry) => !entry.attrs.src)
+  .map((entry) => entry.content)
+  .filter(Boolean);
+const styles = extractWrappedTagEntries("style", templateHtml)
+  .map((entry) => entry.content)
+  .filter(Boolean);
 const bodyHtml = extractBodyContent(templateHtml);
 
 export default function WebsiteIndex() {
   useHtmlPage({
-    title: "Roomhy - Find Your Student Home",
-    bodyClass: "text-gray-800",
-    htmlAttrs: {
-      lang: "en",
-      class: "scroll-smooth",
-    },
-    metas: [
-      { charset: "UTF-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-      { name: "referrer", content: "no-referrer-when-downgrade" },
-    ],
-    links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: true },
-      {
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
-        rel: "stylesheet",
-      },
-      {
-        rel: "stylesheet",
-        href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css",
-        crossorigin: "anonymous",
-        referrerpolicy: "no-referrer",
-      },
-      { rel: "stylesheet", href: "/website/assets/css/index.css" },
-    ],
-    scripts: [
-      { src: "https://cdn.tailwindcss.com" },
-      { src: "https://unpkg.com/lucide@latest" },
-      { src: "/website/js/auth-utils.js" },
-      { src: "/website/assets/js/index.js" },
-    ],
+    title,
+    bodyClass: bodyAttrs.class === true ? "" : bodyAttrs.class || "",
+    htmlAttrs,
+    metas,
+    links,
+    scripts,
     styles,
     inlineScripts,
   });
