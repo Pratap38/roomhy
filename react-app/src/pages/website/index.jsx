@@ -39,7 +39,7 @@ const withWebsiteAssetPrefix = (value) => {
     value.startsWith("images/") ||
     value.startsWith("css/")
   ) {
-    return `/website1/${value}`;
+    return `/website/${value}`;
   }
 
   return value;
