@@ -720,28 +720,46 @@ router.post('/owner/agreement/complete', async (req, res) => {
     }
 });
 
-router.get('/owner/agreement/callback', async (req, res) => {
+async function handleOwnerAgreementCallback(req, res) {
     try {
-        const loginId = req.query.loginId || req.query.loginid || req.query.ownerLoginId || '';
-        const requestId = req.query.requestId || req.query.request_id || '';
-        const status = String(req.query.status || req.query.action_status || 'completed').toLowerCase();
+        const payload = {
+            ...(req.query || {}),
+            ...(req.body || {})
+        };
+        const loginId = payload.loginId || payload.loginid || payload.ownerLoginId || payload.owner_login_id || '';
+        const requestId = payload.requestId || payload.request_id || payload.document_id || payload.documentId || '';
+        const status = String(payload.status || payload.action_status || payload.request_status || 'completed').toLowerCase();
+
+        console.log('[ZOHO CALLBACK] owner agreement callback received', {
+            method: req.method,
+            loginId,
+            requestId,
+            status
+        });
+
         if (!loginId) {
             return res.status(400).send('Missing loginId');
         }
+
         if (!['completed', 'complete', 'signed', 'success'].includes(status)) {
             return res.redirect(`${DIGITAL_CHECKIN_URL}/digital-checkin/owner-success?loginId=${encodeURIComponent(String(loginId).toUpperCase())}&agreementPending=1`);
         }
+
         await completeOwnerAgreementAndNotify(loginId, {
             requestId,
             provider: 'zoho-sign',
-            callbackPayload: req.query
+            callbackPayload: payload
         });
+
         return res.redirect(`${DIGITAL_CHECKIN_URL}/digital-checkin/owner-success?loginId=${encodeURIComponent(String(loginId).toUpperCase())}&agreementSigned=1`);
     } catch (err) {
         console.error('owner/agreement/callback error:', err);
         return res.status(500).send(err.message);
     }
-});
+}
+
+router.get('/owner/agreement/callback', handleOwnerAgreementCallback);
+router.post('/owner/agreement/callback', handleOwnerAgreementCallback);
 
 router.post('/tenant/profile', async (req, res) => {
     try {
