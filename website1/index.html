@@ -793,6 +793,7 @@
         const budgetActionBtn    = document.getElementById('budgetActionBtn');
         const chatExploreBtn     = document.getElementById('chatExploreBtn');
         const floatingActionWrap = document.getElementById('floatingActionWrap');
+        const whatsappExploreUrl = 'https://wa.me/918667296566?text=' + encodeURIComponent('Hi RoomHy, I want to explore properties.');
         let menuOpen = false;
 
         function setFloatingMenu(open) {
@@ -810,7 +811,7 @@
 
         floatingActionBtn.addEventListener('click', (e) => { e.stopPropagation(); setFloatingMenu(!menuOpen); });
         budgetActionBtn.addEventListener('click', () => { window.location.href = 'fast-bidding.html'; });
-        chatExploreBtn.addEventListener('click', () => { window.location.href = 'websitechat.html'; });
+        chatExploreBtn.addEventListener('click', () => { window.open(whatsappExploreUrl, '_blank'); });
         document.addEventListener('click', (e) => { if (!floatingActionWrap.contains(e.target)) setFloatingMenu(false); });
     </script>
 
