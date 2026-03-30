@@ -7,6 +7,7 @@ const ChatRoom = require('../models/ChatRoom');
 const ChatMessage = require('../models/ChatMessage');
 const mailer = require('../utils/mailer');
 const { notifySuperadmin } = require('../utils/superadminNotifier');
+const { sendBookingConfirmationButtons } = require('../utils/whatsappBot');
 
 function normalizeWebsiteUserId(raw) {
     const value = String(raw || '').trim().toLowerCase();
@@ -1239,6 +1240,24 @@ exports.confirmBooking = async (req, res) => {
             }
         } catch (mailErr) {
             console.warn('Booking confirmation email dispatch failed:', mailErr.message);
+        }
+
+        // WhatsApp bot buttons for refund / alternative property.
+        try {
+            const cityName =
+                address_city ||
+                booking.address_city ||
+                '';
+            await sendBookingConfirmationButtons({
+                phone: phone || booking.phone || '',
+                email: email || booking.email || '',
+                userId: normalizedUserId || booking.user_id || '',
+                cityName,
+                areaName: finalArea || booking.area || '',
+                propertyName: normalizedPropertyName || booking.property_name || normalizedPropertyId || 'Property'
+            });
+        } catch (whatsAppErr) {
+            console.warn('Booking confirmation WhatsApp dispatch failed:', whatsAppErr.message);
         }
 
         res.status(201).json({
