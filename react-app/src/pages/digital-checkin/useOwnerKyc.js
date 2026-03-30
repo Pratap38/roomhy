@@ -146,7 +146,13 @@ export const useOwnerKyc = () => {
         "/api/checkin/owner/kyc/digilocker/complete",
         { loginId: trimmedLogin, aadhaarNumber: aadhaarRaw, referenceId },
         apiBases
-      );
+      ).then((data) => {
+        const fetchedAadhaar = data?.aadhaarNumber || "";
+        if (fetchedAadhaar) {
+          setAadhaarNumber(formatAadhaarWithSpaces(fetchedAadhaar));
+          saveKycState({ aadhaarNumber: fetchedAadhaar, referenceId });
+        }
+      });
       setOtpMsg({ type: "success", text: "DigiLocker verification completed successfully." });
       setNextVisible(true);
     } catch (err) {

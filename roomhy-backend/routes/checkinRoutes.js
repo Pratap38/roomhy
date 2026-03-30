@@ -12,11 +12,13 @@ const {
     getDigilockerVerificationStatus,
     getDigilockerDocument
 } = require('../services/cashfreeDigilockerService');
+const { createOwnerAgreementRequest } = require('../services/zohoSignService');
 
 const WEBSITE_URL = process.env.WEBSITE_URL || 'https://roomhy.com';
 const ADMIN_URL = process.env.ADMIN_URL || process.env.FRONTEND_URL || 'https://admin.roomhy.com';
 const APP_URL = process.env.APP_URL || process.env.APP_BASE_URL || process.env.WEB_APP_URL || 'https://app.roomhy.com';
 const DIGITAL_CHECKIN_URL = process.env.DIGITAL_CHECKIN_URL || ADMIN_URL;
+const BACKEND_URL = process.env.BACKEND_URL || process.env.API_BASE_URL || 'https://api.roomhy.com';
 
 const otpStore = new Map();
 
@@ -47,6 +49,110 @@ function isOwnerKycVerified(record) {
 
 function isTenantKycVerified(record) {
     return Boolean(record?.tenantKyc?.otpVerified || record?.tenantKyc?.digilockerVerified);
+}
+
+function extractAadhaarNumber(value) {
+    if (!value) return '';
+    if (typeof value === 'string') {
+        const digits = value.replace(/\D/g, '');
+        return digits.length === 12 ? digits : '';
+    }
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            const extracted = extractAadhaarNumber(item);
+            if (extracted) return extracted;
+        }
+        return '';
+    }
+    if (typeof value === 'object') {
+        const keys = [
+            'aadhaar_number',
+            'aadhaarNumber',
+            'aadhar_number',
+            'aadharNumber',
+            'document_number',
+            'documentNumber',
+            'id_number',
+            'idNumber',
+            'uid',
+            'number',
+            'value'
+        ];
+        for (const key of keys) {
+            const extracted = extractAadhaarNumber(value[key]);
+            if (extracted) return extracted;
+        }
+        for (const nested of Object.values(value)) {
+            const extracted = extractAadhaarNumber(nested);
+            if (extracted) return extracted;
+        }
+    }
+    return '';
+}
+
+function buildOwnerLoginEmail(owner, dashboardUrl) {
+    return `
+        <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+            <div style="background:#1d4ed8;color:#fff;padding:18px 20px;">
+                <h2 style="margin:0;font-size:20px;">RoomHy Owner Login Ready</h2>
+            </div>
+            <div style="padding:18px 20px;color:#111827;line-height:1.55;">
+                <p style="margin-top:0;">Your owner profile, DigiLocker Aadhaar verification, and agreement signing are complete.</p>
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin:14px 0;">
+                    <p style="margin:0 0 8px;"><strong>Login ID:</strong> ${owner.loginId || '-'}</p>
+                    <p style="margin:0 0 8px;"><strong>Password:</strong> ${owner.checkinPassword || owner.credentials?.password || '-'}</p>
+                    <p style="margin:0;"><strong>Email:</strong> ${owner.email || '-'}</p>
+                </div>
+                <p style="margin:14px 0 18px;">
+                    <a href="${dashboardUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:700;">Open Owner Login</a>
+                </p>
+                <p style="font-size:12px;color:#6b7280;">If button does not work, copy this link: ${dashboardUrl}</p>
+            </div>
+        </div>
+    `;
+}
+
+async function completeOwnerAgreementAndNotify(loginId, { requestId = '', provider = '', callbackPayload = null } = {}) {
+    const normalizedLoginId = String(loginId || '').toUpperCase();
+    const record = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'owner' });
+    if (!record) throw new Error('Owner check-in record not found');
+
+    const owner = await Owner.findOne({ loginId: normalizedLoginId });
+    if (!owner) throw new Error('Owner not found');
+
+    record.ownerAgreement = {
+        ...(record.ownerAgreement || {}),
+        provider: provider || record.ownerAgreement?.provider || 'zoho-sign',
+        requestId: requestId || record.ownerAgreement?.requestId || '',
+        status: 'signed',
+        signedAt: new Date(),
+        completedAt: new Date(),
+        callbackPayload: callbackPayload || record.ownerAgreement?.callbackPayload || null
+    };
+    record.ownerFinalVerified = true;
+    record.ownerSubmittedAt = new Date();
+    await record.save();
+
+    owner.agreementRequestId = requestId || owner.agreementRequestId || '';
+    owner.agreementStatus = 'signed';
+    owner.agreementSignedAt = new Date();
+    owner.isActive = true;
+    owner.kyc = owner.kyc || {};
+    owner.kyc.status = owner.kyc.status || 'submitted';
+    await owner.save();
+
+    const dashboardUrl = `${APP_URL}/propertyowner/index`;
+    let loginEmailSent = false;
+    if (owner.email) {
+        try {
+            await sendMail(owner.email, 'RoomHy Owner Login Link', '', buildOwnerLoginEmail(owner, dashboardUrl));
+            loginEmailSent = true;
+        } catch (emailErr) {
+            console.error('[OWNER AGREEMENT COMPLETE] Email send error:', emailErr.message);
+        }
+    }
+
+    return { record, owner, dashboardUrl, loginEmailSent };
 }
 
 router.post('/owner/profile', async (req, res) => {
@@ -216,6 +322,15 @@ router.post('/owner/kyc/verify-otp', otpLimiter, async (req, res) => {
             { $set: { 'kyc.status': 'submitted', 'kyc.submittedAt': new Date() } },
             { new: true }
         );
+
+        return res.json({
+            success: true,
+            record,
+            owner: updatedOwner,
+            message: owner?.email
+                ? 'OTP verified successfully. Continue to owner agreement signing.'
+                : 'OTP verified successfully.'
+        });
 
         // Send login credentials email
         if (owner && owner.email) {
@@ -443,6 +558,8 @@ router.post('/owner/kyc/digilocker/complete', otpLimiter, async (req, res) => {
         record.ownerKyc.digilockerVerifiedAt = new Date();
         record.ownerKyc.digilockerVerificationId = checkVerificationId || '';
         record.ownerKyc.digilockerReferenceId = checkReferenceId || '';
+        const fetchedAadhaarNumber = extractAadhaarNumber(aadhaarDocument) || String(aadhaarNumber);
+        record.ownerKyc.aadhaarNumber = fetchedAadhaarNumber;
         if (aadhaarDocument) {
             record.ownerKyc.digilockerDocument = aadhaarDocument;
         }
@@ -450,13 +567,22 @@ router.post('/owner/kyc/digilocker/complete', otpLimiter, async (req, res) => {
 
         const owner = await Owner.findOneAndUpdate(
             { loginId: normalizedLoginId },
-            { $set: { 'kyc.status': 'submitted', 'kyc.provider': 'digilocker', 'kyc.submittedAt': new Date() } },
+            {
+                $set: {
+                    checkinAadhaarNumber: fetchedAadhaarNumber,
+                    'kyc.status': 'submitted',
+                    'kyc.provider': 'digilocker',
+                    'kyc.submittedAt': new Date(),
+                    'kyc.aadharNumber': fetchedAadhaarNumber
+                }
+            },
             { new: true }
         );
 
         return res.json({
             success: true,
             message: 'DigiLocker verification completed successfully',
+            aadhaarNumber: fetchedAadhaarNumber,
             verificationStatus,
             record,
             owner
@@ -503,45 +629,117 @@ router.post('/owner/final-submit', async (req, res) => {
         if (!record.ownerTermsAcceptedAt) {
             return res.status(400).json({ success: false, message: 'Accept terms and conditions first' });
         }
-
-        record.ownerFinalVerified = true;
-        record.ownerSubmittedAt = new Date();
-        await record.save();
-
-        // Send owner dashboard link email after final submit
         const owner = ownerDoc || await Owner.findOne({ loginId: normalizedLoginId }).lean();
-        const targetEmail = (owner && owner.email) || (record.ownerProfile && record.ownerProfile.email) || '';
-        const baseUrl = APP_URL;
-        const dashboardUrl = `${baseUrl}/propertyowner/index`;
-        let loginEmailSent = false;
-
-        if (targetEmail) {
-            const emailHtml = `
-                <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
-                    <div style="background: #1d4ed8; color: white; padding: 18px 20px;">
-                        <h2 style="margin: 0; font-size: 20px;">RoomHy Owner Check-in Completed</h2>
-                    </div>
-                    <div style="padding: 18px 20px; color: #111827; line-height: 1.55;">
-                        <p style="margin-top: 0;">Your owner digital check-in is now fully submitted.</p>
-                        <p style="margin: 14px 0 18px;">
-                            <a href="${dashboardUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:700;">Open Login Page</a>
-                        </p>
-                        <p style="font-size: 12px; color: #6b7280;">If button does not work, copy this link: ${dashboardUrl}</p>
-                    </div>
-                </div>
-            `;
-            try {
-                await sendMail(targetEmail, 'RoomHy Owner Login Link', '', emailHtml);
-                loginEmailSent = true;
-            } catch (emailErr) {
-                console.error('[CHECKIN FINAL SUBMIT] Email send error:', emailErr.message);
-            }
+        const aadhaarNumber =
+            record.ownerAgreement?.aadhaarNumber ||
+            record.ownerKyc?.aadhaarNumber ||
+            owner?.checkinAadhaarNumber ||
+            owner?.kyc?.aadharNumber ||
+            '';
+        if (!aadhaarNumber) {
+            return res.status(400).json({ success: false, message: 'DigiLocker Aadhaar number is missing. Complete DigiLocker verification again.' });
         }
 
-        return res.json({ success: true, message: 'Owner digital check-in submitted', record, dashboardUrl, loginEmailSent });
+        if (record.ownerAgreement?.status === 'signed') {
+            const dashboardUrl = `${APP_URL}/propertyowner/index`;
+            return res.json({
+                success: true,
+                message: 'Owner agreement already signed',
+                record,
+                dashboardUrl,
+                agreementStatus: 'signed'
+            });
+        }
+
+        const callbackBase = process.env.ZOHO_SIGN_CALLBACK_URL || `${BACKEND_URL}/api/checkin/owner/agreement/callback`;
+        const callbackUrl = `${callbackBase}${callbackBase.includes('?') ? '&' : '?'}loginId=${encodeURIComponent(normalizedLoginId)}`;
+        const agreementRequest = await createOwnerAgreementRequest({
+            owner,
+            loginId: normalizedLoginId,
+            aadhaarNumber,
+            callbackUrl
+        });
+
+        record.ownerAgreement = {
+            ...(record.ownerAgreement || {}),
+            provider: agreementRequest.provider,
+            aadhaarNumber,
+            requestId: agreementRequest.requestId,
+            signUrl: agreementRequest.signUrl,
+            status: 'pending_signature',
+            initiatedAt: new Date()
+        };
+        await record.save();
+
+        await Owner.findOneAndUpdate(
+            { loginId: normalizedLoginId },
+            {
+                $set: {
+                    agreementRequestId: agreementRequest.requestId,
+                    agreementStatus: 'pending_signature',
+                    checkinAadhaarNumber: aadhaarNumber,
+                    'kyc.aadharNumber': aadhaarNumber
+                }
+            }
+        );
+
+        return res.json({
+            success: true,
+            message: 'Owner agreement created. Continue to signing.',
+            record,
+            agreementStatus: 'pending_signature',
+            provider: agreementRequest.provider,
+            requestId: agreementRequest.requestId,
+            signUrl: agreementRequest.signUrl
+        });
     } catch (err) {
         console.error('owner/final-submit error:', err);
         return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/owner/agreement/complete', async (req, res) => {
+    try {
+        const { loginId, requestId, provider, callbackPayload } = req.body || {};
+        if (!loginId) {
+            return res.status(400).json({ success: false, message: 'Missing loginId' });
+        }
+        const result = await completeOwnerAgreementAndNotify(loginId, {
+            requestId,
+            provider,
+            callbackPayload
+        });
+        return res.json({
+            success: true,
+            message: 'Owner agreement completed',
+            ...result
+        });
+    } catch (err) {
+        console.error('owner/agreement/complete error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.get('/owner/agreement/callback', async (req, res) => {
+    try {
+        const loginId = req.query.loginId || req.query.loginid || req.query.ownerLoginId || '';
+        const requestId = req.query.requestId || req.query.request_id || '';
+        const status = String(req.query.status || req.query.action_status || 'completed').toLowerCase();
+        if (!loginId) {
+            return res.status(400).send('Missing loginId');
+        }
+        if (!['completed', 'complete', 'signed', 'success'].includes(status)) {
+            return res.redirect(`${DIGITAL_CHECKIN_URL}/digital-checkin/owner-success?loginId=${encodeURIComponent(String(loginId).toUpperCase())}&agreementPending=1`);
+        }
+        await completeOwnerAgreementAndNotify(loginId, {
+            requestId,
+            provider: 'zoho-sign',
+            callbackPayload: req.query
+        });
+        return res.redirect(`${DIGITAL_CHECKIN_URL}/digital-checkin/owner-success?loginId=${encodeURIComponent(String(loginId).toUpperCase())}&agreementSigned=1`);
+    } catch (err) {
+        console.error('owner/agreement/callback error:', err);
+        return res.status(500).send(err.message);
     }
 });
 

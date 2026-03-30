@@ -1,4 +1,5 @@
 import React from "react";
+import { getApiBases, postWithFallback } from "./utils";
 import { useHtmlPage } from "../../utils/htmlPage";
 
 export default function DigitalCheckinOwnerSuccess() {
@@ -18,19 +19,67 @@ export default function DigitalCheckinOwnerSuccess() {
   });
 
   const params = new URLSearchParams(window.location.search);
+  const loginId = params.get("loginId") || "";
   const nextUrl = params.get("next") || "/propertyowner/index";
+  const shouldCompleteAgreement = params.get("completeAgreement") === "1";
+  const agreementSigned = params.get("agreementSigned") === "1";
+  const agreementPending = params.get("agreementPending") === "1";
+  const provider = params.get("mockAgreement") === "1" ? "mock-zoho-sign" : "zoho-sign";
+  const [state, setState] = React.useState(
+    agreementPending
+      ? { loading: false, title: "Agreement Pending", text: "Owner agreement is still pending signature.", done: false }
+      : agreementSigned
+        ? { loading: false, title: "Welcome to RoomHy", text: "Owner agreement completed. Login link with owner ID and password has been sent.", done: true }
+        : { loading: shouldCompleteAgreement, title: "Finalizing Agreement", text: "Completing owner agreement and sending login details.", done: false }
+  );
+
+  React.useEffect(() => {
+    if (!shouldCompleteAgreement || !loginId) return;
+    let active = true;
+    const run = async () => {
+      try {
+        const resp = await postWithFallback(
+          "/api/checkin/owner/agreement/complete",
+          { loginId, provider },
+          getApiBases()
+        );
+        if (!active) return;
+        if (!resp.success) throw new Error(resp.message || "Unable to complete agreement");
+        setState({
+          loading: false,
+          title: "Welcome to RoomHy",
+          text: "Owner agreement completed. Login link with owner ID and password has been sent.",
+          done: true
+        });
+      } catch (err) {
+        if (!active) return;
+        setState({
+          loading: false,
+          title: "Agreement Completion Failed",
+          text: err.message,
+          done: false
+        });
+      }
+    };
+    run();
+    return () => {
+      active = false;
+    };
+  }, [loginId, provider, shouldCompleteAgreement]);
 
   return (
     <div className="html-page w-full">
       <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white p-10 shadow-xl text-center">
-        <h1 className="text-3xl font-bold text-slate-900 mb-4">Welcome to RoomHy</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mb-4">{state.title}</h1>
         <p className="text-slate-600 mb-8">
-          Your owner digital check-in has been completed successfully.
-          Please login through the link below.
+          {state.text}
         </p>
+        {state.loading ? (
+          <div className="text-sm font-medium text-blue-600">Processing...</div>
+        ) : null}
         <a
           href={nextUrl}
-          className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700"
+          className={`inline-flex items-center justify-center rounded-xl px-6 py-3 font-semibold text-white ${state.done ? "bg-blue-600 hover:bg-blue-700" : "bg-slate-400 pointer-events-none"}`}
         >
           Go to Property Owner Login
         </a>

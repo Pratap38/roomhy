@@ -40,8 +40,12 @@ export const useOwnerTerms = () => {
         apiBases
       );
       if (!submitResp.success) return alert(submitResp.message || "Submit failed");
+      if (submitResp.signUrl) {
+        window.location.href = submitResp.signUrl;
+        return;
+      }
       const nextUrl = encodeURIComponent(submitResp.dashboardUrl || "/propertyowner/index");
-      window.location.href = `/digital-checkin/owner-success?loginId=${encodeURIComponent(loginId)}&next=${nextUrl}`;
+      window.location.href = `/digital-checkin/owner-success?loginId=${encodeURIComponent(loginId)}&next=${nextUrl}&agreementSigned=1`;
     } catch (err) {
       alert(`Error: ${err.message}`);
     }

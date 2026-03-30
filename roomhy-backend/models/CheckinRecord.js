@@ -33,6 +33,17 @@ const checkinRecordSchema = new mongoose.Schema(
             otpVerified: { type: Boolean, default: false }
         },
         ownerTermsAcceptedAt: Date,
+        ownerAgreement: {
+            provider: String,
+            aadhaarNumber: String,
+            requestId: String,
+            signUrl: String,
+            status: String,
+            initiatedAt: Date,
+            signedAt: Date,
+            completedAt: Date,
+            callbackPayload: mongoose.Schema.Types.Mixed
+        },
         ownerFinalVerified: { type: Boolean, default: false },
         ownerSubmittedAt: Date,
 
@@ -62,4 +73,3 @@ const checkinRecordSchema = new mongoose.Schema(
 checkinRecordSchema.index({ loginId: 1, role: 1 }, { unique: true });
 
 module.exports = mongoose.model('CheckinRecord', checkinRecordSchema);
-

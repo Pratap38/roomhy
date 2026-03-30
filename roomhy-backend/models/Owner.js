@@ -46,6 +46,9 @@ const ownerSchema = new mongoose.Schema({
     checkinIfscCode: String,
     checkinBankName: String,
     checkinBranchName: String,
+    agreementRequestId: String,
+    agreementStatus: String,
+    agreementSignedAt: Date,
     checkinCancelledCheque: {
         name: String,
         mimeType: String,  // Changed from "type" to avoid Mongoose keyword conflict

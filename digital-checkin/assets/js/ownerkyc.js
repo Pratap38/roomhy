@@ -176,6 +176,11 @@ document.getElementById('completeDigiLockerBtn').onclick = async () => {
       loginId,
       aadhaarNumber,
       referenceId
+    }).then((data) => {
+      if (data?.aadhaarNumber) {
+        document.getElementById('aadhaarNumber').value = formatAadhaar(data.aadhaarNumber);
+        saveKycState({ aadhaarNumber: data.aadhaarNumber, referenceId });
+      }
     });
     document.getElementById('otpMsg').innerHTML = '<span class="success">DigiLocker verification completed successfully.</span>';
     document.getElementById('nextBtn').style.display = 'inline-block';
@@ -190,3 +195,10 @@ document.getElementById('nextBtn').onclick = () => {
   const emailPart = ownerEmail ? `&email=${encodeURIComponent(ownerEmail)}` : '';
   location.href = `/digital-checkin/ownerterms?loginId=${encodeURIComponent(loginId)}${emailPart}`;
 };
+
+function formatAadhaar(value) {
+  let val = String(value || '').replace(/\D/g, '');
+  if (val.length > 8) return `${val.substring(0, 4)} ${val.substring(4, 8)} ${val.substring(8, 12)}`;
+  if (val.length > 4) return `${val.substring(0, 4)} ${val.substring(4)}`;
+  return val;
+}

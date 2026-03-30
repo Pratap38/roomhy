@@ -146,6 +146,10 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
         }
         const data = await postWithFallback('/api/checkin/owner/final-submit', { loginId, finalVerified: true });
         if (!data.success) return alert(data.message || 'Submit failed');
+        if (data.signUrl) {
+          location.href = data.signUrl;
+          return;
+        }
         showFinalConfirmation(data.dashboardUrl || '');
       } catch (err) {
         alert(`Error: ${err.message}`);
