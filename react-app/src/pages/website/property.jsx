@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import WebsiteFooter from "../../components/website/WebsiteFooter";
 import { useHtmlPage } from "../../utils/htmlPage";
-import { buildBreadcrumbJsonLd, buildSeoConfig } from "../../utils/websiteSeo";
 import { getWebsiteApiUrl, getWebsiteUser, getWebsiteUserId, isWebsiteLoggedIn, logoutWebsite } from "../../utils/websiteSession";
 import { addFavorite, isFavorite, loadFavorites, removeFavorite } from "../../utils/websiteFavorites";
 import { useHeroSlideshow, useLucideIcons, useWebsiteCommon, useWebsiteMenu } from "../../utils/websiteUi";
@@ -217,11 +217,9 @@ export default function WebsiteProperty() {
     const facts = [];
     if (info.propertyId) facts.push({ label: "Property ID", value: info.propertyId });
     if (info.propertyType || record.propertyType) facts.push({ label: "Type", value: info.propertyType || record.propertyType });
-    if (record.vacantRooms) facts.push({ label: "Vacant Rooms", value: record.vacantRooms });
-    if (record.vacantBeds) facts.push({ label: "Vacant Beds", value: record.vacantBeds });
-    if (record.occupiedRooms) facts.push({ label: "Occupied Rooms", value: record.occupiedRooms });
+    if (record.roomsAvailable) facts.push({ label: "Rooms", value: record.roomsAvailable });
     if (record.roomType) facts.push({ label: "Room Type", value: record.roomType });
-    if (record.occupiedBeds) facts.push({ label: "Occupied Beds", value: record.occupiedBeds });
+    if (record.bedCount) facts.push({ label: "Beds", value: record.bedCount });
     if (record.bathroomType) facts.push({ label: "Bathroom", value: record.bathroomType });
     if (record.furnishing) facts.push({ label: "Furnishing", value: record.furnishing });
     if (record.ventilation) facts.push({ label: "Ventilation", value: record.ventilation });
@@ -368,74 +366,19 @@ export default function WebsiteProperty() {
   const handleSignupRedirect = () => { setShowSignupModal(false); window.location.href = "signup"; };
   const handleContinueAsGuest = () => setShowSignupModal(false);
 
-  const seo = useMemo(() => {
-    const info = propertyData?.propertyInfo || {};
-    const propertyId = new URLSearchParams(window.location.search).get("id") || "";
-    const name = info.name || info.title || propertyData?.property_name || propertyData?.title || "Roomhy Property";
-    const city = info.city || info.cityName || propertyData?.city || "";
-    const area = info.area || info.locality || propertyData?.locality || propertyData?.area || "";
-    const rentValue = info.monthlyRent || info.rent || propertyData?.monthlyRent || propertyData?.rent || "";
-    const rentText = rentValue ? ` from Rs. ${String(rentValue).replace(/[^\d]/g, "") || rentValue}` : "";
-    const locationText = [area, city].filter(Boolean).join(", ");
-    const description = locationText
-      ? `${name} in ${locationText}${rentText}. View photos, amenities, room and bed availability, rent and booking details on Roomhy.`
-      : `${name}${rentText}. View photos, amenities, availability and booking details on Roomhy.`;
-    const path = propertyId ? `/website/property?id=${encodeURIComponent(propertyId)}` : "/website/property";
-    const image =
-      galleryPhotos[0] ||
-      bannerPhoto ||
-      "https://roomhy.com/website/images/logoroomhy.jpg";
-
-    return buildSeoConfig({
-      title: `${name}${locationText ? ` | ${locationText}` : ""} | Roomhy`,
-      description,
-      path,
-      image,
-      type: "article",
-      keywords: [name, city, area, "student rental", "pg", "hostel", "roomhy"].filter(Boolean),
-      jsonLd: [
-        buildBreadcrumbJsonLd([
-          { name: "Home", path: "/website/index" },
-          { name: "Our Properties", path: "/website/ourproperty" },
-          { name, path }
-        ]),
-        {
-          "@context": "https://schema.org",
-          "@type": "Residence",
-          name,
-          description,
-          url: path.startsWith("http") ? path : `https://roomhy.com${path}`,
-          image,
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: area || city || "",
-            addressRegion: city || ""
-          }
-        }
-      ]
-    });
-  }, [bannerPhoto, galleryPhotos, propertyData]);
-
   useHtmlPage({
-    title: seo.title || "Roomhy Property",
+    title: "Roomhy Property",
     bodyClass: "text-gray-800",
     htmlAttrs: { "lang": "en", "class": "scroll-smooth" },
-    metas: [
-      { "charset": "UTF-8" },
-      { "name": "viewport", "content": "width=device-width, initial-scale=1.0" },
-      { "name": "referrer", "content": "no-referrer-when-downgrade" },
-      ...seo.metas
-    ],
+    metas: [{ "charset": "UTF-8" }, { "name": "viewport", "content": "width=device-width, initial-scale=1.0" }, { "name": "referrer", "content": "no-referrer-when-downgrade" }],
     bases: [],
     links: [
       { "rel": "preconnect", "href": "https://fonts.googleapis.com" },
       { "rel": "preconnect", "href": "https://fonts.gstatic.com", "crossorigin": true },
       { "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap", "rel": "stylesheet" },
       { "rel": "stylesheet", "href": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css", "crossorigin": "anonymous", "referrerpolicy": "no-referrer" },
-      { "rel": "stylesheet", "href": "/website/assets/css/property.css" },
-      ...seo.links
+      { "rel": "stylesheet", "href": "/website/assets/css/property.css" }
     ],
-    headScripts: seo.headScripts,
     styles: [],
     scripts: [{ "src": "https://cdn.tailwindcss.com" }, { "src": "https://unpkg.com/lucide@latest" }],
     inlineScripts: [],
@@ -450,6 +393,143 @@ export default function WebsiteProperty() {
 
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", backgroundColor: "#fff", color: "#000" }}>
+
+      {/* ── RESPONSIVE STYLES (layout only) ──────────────────────────────── */}
+      <style>{`
+        /* Gallery grid */
+        .rh-gallery-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr;
+          gap: 0.75rem;
+          margin-bottom: 3rem;
+        }
+        .rh-gallery-main {
+          grid-row: span 2;
+          height: 500px;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        .rh-gallery-sub {
+          height: 246px;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+
+        /* Two-column content + sidebar */
+        .rh-content-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+          gap: 4rem;
+          align-items: start;
+        }
+
+        /* Sidebar sticky */
+        .rh-sidebar {
+          position: sticky;
+          top: 6rem;
+        }
+
+        /* Ratings grid */
+        .rh-ratings-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+        }
+
+        /* Back + actions bar */
+        .rh-topbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+
+        /* Nearby grid */
+        .rh-nearby-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+
+        /* ── TABLET (≤ 900px) ─────────────────────────────────────────── */
+        @media (max-width: 900px) {
+          .rh-gallery-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+          .rh-gallery-main {
+            grid-column: span 2;
+            grid-row: span 1;
+            height: 320px;
+          }
+          .rh-gallery-sub {
+            height: 180px;
+          }
+          /* Hide the last two sub-images on tablet to avoid awkward odd grid */
+          .rh-gallery-sub:nth-child(4),
+          .rh-gallery-sub:nth-child(5) {
+            display: none;
+          }
+
+          .rh-content-grid {
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+          }
+          .rh-sidebar {
+            position: static;
+          }
+        }
+
+        /* ── MOBILE (≤ 640px) ─────────────────────────────────────────── */
+        @media (max-width: 640px) {
+          .rh-gallery-grid {
+            grid-template-columns: 1fr;
+            margin-bottom: 2rem;
+          }
+          .rh-gallery-main {
+            grid-column: span 1;
+            height: 260px;
+          }
+          /* Show only first sub-image on mobile, hide the rest */
+          .rh-gallery-sub {
+            height: 180px;
+            display: none;
+          }
+          .rh-gallery-sub:nth-child(2) {
+            display: block; /* "View All" overlay tile */
+          }
+
+          .rh-ratings-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .rh-nearby-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .rh-topbar {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          /* Make action buttons full-width on very small screens */
+          .rh-topbar-actions {
+            display: flex;
+            gap: 0.75rem;
+            width: 100%;
+          }
+          .rh-topbar-actions button {
+            flex: 1;
+            justify-content: center;
+          }
+
+          /* Map height on mobile */
+          .rh-map-container {
+            height: 260px !important;
+          }
+        }
+      `}</style>
 
       {/* ── HEADER — 100% UNCHANGED ──────────────────────────────────────── */}
       <header className="sticky top-0 z-30 w-full bg-white/98 backdrop-blur-xl shadow-md border-b border-slate-200 flex-shrink-0">
@@ -560,12 +640,12 @@ export default function WebsiteProperty() {
       {/* ── MAIN ─────────────────────────────────────────────────────────── */}
       <main style={{ maxWidth: "88rem", margin: "0 auto", padding: "2.5rem 1.5rem" }}>
 
-        {/* Back + Save/Share */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+        {/* Back + Save/Share — now uses rh-topbar class for responsive wrapping */}
+        <div className="rh-topbar">
           <a href="javascript:history.back()" style={{ fontSize: "0.875rem", fontWeight: 600, color: "#000", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
             <i data-lucide="arrow-left" style={{ width: "1rem", height: "1rem" }}></i>Back to listings
           </a>
-          <div style={{ display: "flex", gap: "1rem" }}>
+          <div className="rh-topbar-actions" style={{ display: "flex", gap: "1rem" }}>
             <button onClick={handleFavoriteClick} style={btnOutline}>
               <i data-lucide="heart" style={{ width: "1rem", height: "1rem" }}></i>{isSaved ? "Saved" : "Save"}
             </button>
@@ -586,10 +666,10 @@ export default function WebsiteProperty() {
           </p>
         </div>
 
-        {/* ── 4-GRID GALLERY ────────────────────────────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "0.75rem", marginBottom: "3rem" }}>
+        {/* ── 4-GRID GALLERY — uses rh-gallery-* classes ────────────────── */}
+        <div className="rh-gallery-grid">
           {/* Big main image */}
-          <div style={{ gridRow: "span 2", height: "500px", borderRadius: "8px", overflow: "hidden" }}>
+          <div className="rh-gallery-main">
             <img
               id="mainGalleryImage"
               src={activeGalleryImage}
@@ -599,12 +679,13 @@ export default function WebsiteProperty() {
             />
           </div>
           {/* Sub image 1 */}
-          <div style={{ height: "246px", borderRadius: "8px", overflow: "hidden" }}>
+          <div className="rh-gallery-sub">
             <img src={galleryPhotoAt(1)} alt="Gallery 2" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           {/* Sub image 2 with View All overlay */}
           <div
-            style={{ height: "246px", borderRadius: "8px", overflow: "hidden", position: "relative", cursor: "pointer" }}
+            className="rh-gallery-sub"
+            style={{ position: "relative", cursor: "pointer" }}
             onClick={handleOpenZoom}
             onMouseEnter={(e) => e.currentTarget.querySelector(".ov").style.background = "rgba(0,0,0,0.7)"}
             onMouseLeave={(e) => e.currentTarget.querySelector(".ov").style.background = "rgba(0,0,0,0.5)"}
@@ -617,11 +698,11 @@ export default function WebsiteProperty() {
             </div>
           </div>
           {/* Sub image 3 */}
-          <div style={{ height: "246px", borderRadius: "8px", overflow: "hidden" }}>
+          <div className="rh-gallery-sub">
             <img src={galleryPhotoAt(3)} alt="Gallery 4" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           {/* Sub image 4 */}
-          <div style={{ height: "246px", borderRadius: "8px", overflow: "hidden" }}>
+          <div className="rh-gallery-sub">
             <img src={galleryPhotoAt(4)} alt="Gallery 5" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
         </div>
@@ -650,8 +731,8 @@ export default function WebsiteProperty() {
           </div>
         )}
 
-        {/* ── TWO-COLUMN LAYOUT ─────────────────────────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: "4rem", alignItems: "start" }}>
+        {/* ── TWO-COLUMN LAYOUT — uses rh-content-grid class ───────────── */}
+        <div className="rh-content-grid">
           <div>
 
             {/* ABOUT PROPERTY */}
@@ -675,10 +756,10 @@ export default function WebsiteProperty() {
               </div>
             </section>
 
-            {/* RATINGS */}
+            {/* RATINGS — uses rh-ratings-grid class */}
             <section style={divider}>
               <h2 style={sectionH2}>Ratings & Reviews</h2>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+              <div className="rh-ratings-grid">
                 {[
                   { id: "student", label: "Student Rating", rId: "student-reviews-rating", sId: "student-reviews-stars", cId: "student-reviews-comment" },
                   { id: "employee", label: "Professional Assessment", rId: "employee-rating-rating", sId: "employee-rating-stars", cId: "employee-rating-comment" },
@@ -713,7 +794,8 @@ export default function WebsiteProperty() {
             {/* LOCATION MAPPING */}
             <section style={divider}>
               <h2 style={sectionH2}>Location Mapping</h2>
-              <div style={{ width: "100%", height: "400px", borderRadius: "8px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
+              {/* rh-map-container class lets mobile override the height */}
+              <div className="rh-map-container" style={{ width: "100%", height: "400px", borderRadius: "8px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
                 <iframe
                   id="propertyMapIframe"
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15125.93170782271!2d73.7302436871582!3d18.597144800000004!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2bbc048041d6f%3A0x2c608fa4f67c696f!2sHinjawadi%2C%20Pune%2C%20Maharashtra%2C%20India!5e0!3m2!1sen!2sus!4v1730248835251!5m2!1sen!2sus"
@@ -724,7 +806,8 @@ export default function WebsiteProperty() {
               {normalized.nearbyLocation && (
                 <div style={{ marginTop: "1.5rem" }}>
                   <h3 style={{ fontSize: "0.9rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.075em", marginBottom: "1rem", color: "#000" }}>Nearby</h3>
-                  <div id="whats-nearby-dynamic" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}></div>
+                  {/* rh-nearby-grid class stacks to 1-col on mobile */}
+                  <div id="whats-nearby-dynamic" className="rh-nearby-grid"></div>
                 </div>
               )}
               {!normalized.nearbyLocation && <div id="whats-nearby-dynamic" style={{ display: "none" }}></div>}
@@ -747,8 +830,8 @@ export default function WebsiteProperty() {
 
           </div>
 
-          {/* ── BOOKING SIDEBAR ───────────────────────────────────────────── */}
-          <div style={{ position: "sticky", top: "6rem" }}>
+          {/* ── BOOKING SIDEBAR — uses rh-sidebar class ───────────────────── */}
+          <div className="rh-sidebar">
             <div style={{ border: "2px solid #000", padding: "2rem", background: "#fff" }}>
               <p style={infoLabel}>Monthly Rent</p>
               <div style={{ display: "flex", alignItems: "baseline", gap: "0.25rem", marginTop: "0.5rem", marginBottom: "2rem" }}>
@@ -821,51 +904,7 @@ export default function WebsiteProperty() {
       </main>
 
       {/* ── FOOTER — 100% UNCHANGED ──────────────────────────────────────── */}
-      <footer className="footer container mx-auto px-4 sm:px-6 mt-16">
-        <div className="footer-main">
-          <div className="footer-logo">
-            <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-10 w-auto" />
-            <p className="mt-4">Discover Your Next Home, Together. Zero Brokerage, Student-First Approach.</p>
-          </div>
-          <div className="footer-links">
-            <h4>Company</h4>
-            <ul>
-              <li><a href="/website/about">About Us</a></li>
-              <li><a href="#featured">Featured Stays</a></li>
-              <li><a href="#faq">FAQ</a></li>
-              <li><a href="/website/contact">Contact Us</a></li>
-            </ul>
-          </div>
-          <div className="footer-links">
-            <h4>Top Cities</h4>
-            <ul>
-              <li><a href="/website/ourproperty?city=kota">Kota</a></li>
-              <li><a href="/website/ourproperty?city=sikar">Sikar</a></li>
-              <li><a href="/website/ourproperty?city=indore">Indore</a></li>
-            </ul>
-          </div>
-          <div className="footer-contact">
-            <h4>Support & Legal</h4>
-            <div className="space-y-2">
-              <p><i className="fas fa-phone"></i> +91 99830 05030</p>
-              <p><i className="fas fa-envelope"></i> hello@roomhy.com</p>
-            </div>
-            <ul className="mt-4 space-y-1 text-sm">
-              <li><a href="/website/terms">Terms & Conditions</a></li>
-              <li><a href="/website/privacy">Privacy Policy</a></li>
-            </ul>
-          </div>
-          <div className="footer-social lg:col-span-1">
-            <a href="#" title="Facebook"><i className="fab fa-facebook-f"></i></a>
-            <a href="#" title="X"><i className="fab fa-x-twitter"></i></a>
-            <a href="#" title="Instagram"><i className="fab fa-instagram"></i></a>
-            <a href="#" title="LinkedIn"><i className="fab fa-linkedin-in"></i></a>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          <p>&copy; 2025 <strong>Roomhy</strong>. All Rights Reserved. Made for students, with love.</p>
-        </div>
-      </footer>
+      <WebsiteFooter />
 
       {/* ── MODALS ───────────────────────────────────────────────────────── */}
       {showAuthModal && (

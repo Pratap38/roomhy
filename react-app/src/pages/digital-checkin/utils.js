@@ -1,7 +1,19 @@
 export const isLocalHost = () =>
   window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
-export const getApiBases = () => (isLocalHost() ? ["http://localhost:5001"] : ["https://api.roomhy.com", ""]);
+const uniqueBases = (bases) => [...new Set(bases.filter(Boolean))];
+
+export const getApiBases = () => {
+  if (isLocalHost()) return ["http://localhost:5001"];
+
+  const apiBase = "https://api.roomhy.com";
+  const currentOrigin = String(window.location.origin || "").replace(/\/$/, "");
+
+  // Digital check-in runs on admin/public hosts, so same-origin `/api/...` fallback
+  // can hit the wrong server and return 405. Only use the API host in production.
+  if (currentOrigin === apiBase) return [apiBase];
+  return uniqueBases([apiBase]);
+};
 
 export const getParamValue = (names) => {
   const params = new URLSearchParams(window.location.search);

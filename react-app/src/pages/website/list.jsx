@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import WebsiteFooter from "../../components/website/WebsiteFooter";
 import { useHtmlPage } from "../../utils/htmlPage";
 import { buildBreadcrumbJsonLd, buildOrganizationJsonLd, buildSeoConfig } from "../../utils/websiteSeo";
 import { getWebsiteApiUrl } from "../../utils/websiteSession";
@@ -365,22 +366,23 @@ export default function WebsiteList() {
                 <i data-lucide="clipboard-list" className="w-6 h-6 mr-3 text-blue-600"></i>
                 <h2 className="text-xl font-semibold text-gray-800">Required Details</h2>
               </div>
+              {/* below requred detaul  */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-                  <input type="text" id="name" name="name" required className="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter your name" value={formData.name} onChange={handleChange} />
+                  <input type="text" id="name" name="name" required className="form-input w-full p-1.5 border-gray-300 rounded-md shadow-sm" placeholder="Enter your name" value={formData.name} onChange={handleChange} />
                 </div>
                 <div>
                   <label htmlFor="property_name" className="block text-sm font-medium text-gray-700 mb-1">Property Name <span className="text-red-500">*</span></label>
-                  <input type="text" id="property_name" name="property_name" required className="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter property name" value={formData.property_name} onChange={handleChange} />
+                  <input type="text" id="property_name" name="property_name" required className="form-input w-full p-1.5 border-gray-300 rounded-md shadow-sm" placeholder="Enter property name" value={formData.property_name} onChange={handleChange} />
                 </div>
                 <div>
                   <label htmlFor="tenants_managed" className="block text-sm font-medium text-gray-700 mb-1">Number of Tenant Managed <span className="text-red-500">*</span></label>
-                  <input type="number" id="tenants_managed" name="tenants_managed" min="0" required className="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter number of tenants" value={formData.tenants_managed} onChange={handleChange} />
+                  <input type="number" id="tenants_managed" name="tenants_managed" min="0" required className="form-input w-full p-1.5 border-gray-300 rounded-md shadow-sm" placeholder="Enter number of tenants" value={formData.tenants_managed} onChange={handleChange} />
                 </div>
                 <div>
                   <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
-                  <select id="city" name="city" required className="form-select w-full border-gray-300 rounded-md shadow-sm" value={formData.city} onChange={handleChange}>
+                  <select id="city" name="city" required className="form-select w-full p-1.5 border-gray-300 rounded-md shadow-sm" value={formData.city} onChange={handleChange}>
                     <option value="">Select City</option>
                     {cityOptions.map((city) => (
                       <option key={city} value={city}>{city}</option>
@@ -390,15 +392,15 @@ export default function WebsiteList() {
                 </div>
                 <div>
                   <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">Country <span className="text-red-500">*</span></label>
-                  <input type="text" id="country" name="country" required className="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter country" value={formData.country} onChange={handleChange} />
+                  <input type="text" id="country" name="country" required className="form-input w-full p-1.5 border-gray-300 rounded-md shadow-sm" placeholder="Enter country" value={formData.country} onChange={handleChange} />
                 </div>
                 <div>
                   <label htmlFor="contact_name" className="block text-sm font-medium text-gray-700 mb-1">Contact Name <span className="text-red-500">*</span></label>
-                  <input type="text" id="contact_name" name="contact_name" required className="form-input w-full border-gray-300 rounded-md shadow-sm" placeholder="Enter contact person name" value={formData.contact_name} onChange={handleChange} />
+                  <input type="text" id="contact_name" name="contact_name" required className="form-input w-full p-1.5 border-gray-300 rounded-md shadow-sm" placeholder="Enter contact person name" value={formData.contact_name} onChange={handleChange} />
                 </div>
                 <div className="md:col-span-2">
                   <label htmlFor="additional_message" className="block text-sm font-medium text-gray-700 mb-1">Additional Message (if any)</label>
-                  <textarea id="additional_message" name="additional_message" rows="4" className="form-textarea w-full border-gray-300 rounded-md shadow-sm" placeholder="Type additional message..." value={formData.additional_message} onChange={handleChange}></textarea>
+                  <textarea id="additional_message" name="additional_message" rows="4" className="form-textarea w-full p-1.5 border-gray-300 rounded-md shadow-sm" placeholder="Type additional message..." value={formData.additional_message} onChange={handleChange}></textarea>
                 </div>
               </div>
             </div>
@@ -418,75 +420,7 @@ export default function WebsiteList() {
         <i data-lucide="message-circle" className="w-8 h-8"></i>
       </a>
 
-      <footer className="footer flex-shrink-0 mt-auto">
-        <div className="footer-top">
-          <h2>Our Presence</h2>
-          <div className="footer-presence">
-            <div>
-              <h4>Kota</h4>
-              <ul>
-                <li><a href="#">Hostels in Kota</a></li>
-                <li><a href="#">Apartments in Kota</a></li>
-                <li><a href="#">PG in Kota</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4>Indore</h4>
-              <ul>
-                <li><a href="#">Hostels in Indore</a></li>
-                <li><a href="#">Apartments in Indore</a></li>
-                <li><a href="#">PG in Indore</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4>Ahmedabad</h4>
-              <ul>
-                <li><a href="#">Hostels in Ahmedabad</a></li>
-                <li><a href="#">Apartments in Ahmedabad</a></li>
-                <li><a href="#">PG in Ahmedabad</a></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div className="footer-main">
-          <div className="footer-logo">
-            <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-10 w-25" />
-            <p>Discover Your Next Home, Together.</p>
-          </div>
-          <div className="footer-links">
-            <h4>Quick Links</h4>
-            <ul>
-              <li><a href="/website/contact">Contact Us</a></li>
-              <li><a href="/website/about">About Us</a></li>
-              <li><a href="/website/ourproperty">Our Properties</a></li>
-            </ul>
-          </div>
-          <div className="footer-legal">
-            <h4>Legal</h4>
-            <ul>
-              <li><a href="#">Terms & Conditions</a></li>
-              <li><a href="#">Privacy Policy</a></li>
-              <li><a href="#">Cancellation Policy</a></li>
-              <li><a href="#">Refund Policy</a></li>
-            </ul>
-          </div>
-          <div className="footer-contact">
-            <h4>Get in Touch</h4>
-            <p><i data-lucide="mail" className="w-4 h-4 inline-block"></i> contact@roomhy.com</p>
-            <p><i data-lucide="phone" className="w-4 h-4 inline-block"></i> +91 98765 43210</p>
-            <p><i data-lucide="map-pin" className="w-4 h-4 inline-block"></i> 123, Tech Park, Bangalore, India</p>
-            <div className="footer-social">
-              <a href="#" aria-label="Facebook"><i data-lucide="facebook" className="w-5 h-5"></i></a>
-              <a href="#" aria-label="Instagram"><i data-lucide="instagram" className="w-5 h-5"></i></a>
-              <a href="#" aria-label="Twitter"><i data-lucide="twitter" className="w-5 h-5"></i></a>
-              <a href="#" aria-label="LinkedIn"><i data-lucide="linkedin" className="w-5 h-5"></i></a>
-            </div>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          &copy; 2024 Roomhy. All rights reserved.
-        </div>
-      </footer>
+      <WebsiteFooter />
     </div>
   );
 }

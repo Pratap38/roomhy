@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   formatAadhaarWithSpaces,
   getApiBases,
@@ -73,6 +73,7 @@ const toRoomBedArrays = (roomInventory = [], fallback = emptyForm) => {
 
 export const useOwnerProfile = () => {
   const apiBases = useMemo(() => getApiBases(), []);
+  const hydratedLoginRef = useRef("");
   const [form, setForm] = useState(emptyForm);
   const [autoInfo, setAutoInfo] = useState({ email: "", area: "", password: "" });
   const [aadhaarLinkedPhone, setAadhaarLinkedPhone] = useState("");
@@ -229,47 +230,51 @@ export const useOwnerProfile = () => {
   useEffect(() => {
     const hydrateFromOwner = async () => {
       const id = form.loginId.trim();
-      if (!id) return;
+      if (!id || hydratedLoginRef.current === id) return;
+      hydratedLoginRef.current = id;
       try {
         const owner = await getWithFallback(`/api/owners/${encodeURIComponent(id)}`, apiBases);
         if (!owner || typeof owner !== "object") return;
 
-        const setIfEmpty = (key, value) => {
-          if (!form[key] && value) updateForm({ [key]: value });
-        };
+        setForm((prev) => {
+          const nextOccupiedRooms = Number(owner.occupiedRooms ?? prev.occupiedRooms ?? 0);
+          const nextOccupiedBeds = Number(owner.occupiedBeds ?? prev.occupiedBeds ?? 0);
+          const nextVacantRooms = Number(owner.vacantRooms ?? prev.vacantRooms ?? 0);
+          const nextVacantBeds = Number(owner.vacantBeds ?? prev.vacantBeds ?? 0);
 
-        setIfEmpty("name", owner.name || owner.profile?.name || "");
-        setIfEmpty("email", owner.email || owner.profile?.email || owner.checkinEmail || "");
-        setIfEmpty("area", owner.checkinArea || owner.locationCode || owner.profile?.locationCode || "");
-        setIfEmpty("dob", owner.checkinDob || "");
-        setIfEmpty("phone", owner.checkinPhone || owner.phone || owner.profile?.phone || "");
-        setIfEmpty("address", owner.checkinAddress || owner.address || owner.profile?.address || "");
-        setIfEmpty("bankName", owner.checkinBankName || owner.bankName || owner.profile?.bankName || "");
-        setIfEmpty("branchName", owner.checkinBranchName || owner.branchName || owner.profile?.branchName || "");
-        setIfEmpty(
-          "bankAccountNumber",
-          owner.checkinBankAccountNumber || owner.accountNumber || owner.profile?.accountNumber || ""
-        );
-        setIfEmpty("ifscCode", owner.checkinIfscCode || owner.ifscCode || owner.profile?.ifscCode || "");
-        setIfEmpty(
-          "accountHolderName",
-          owner.checkinAccountHolderName || owner.profile?.accountHolderName || ""
-        );
-        setIfEmpty("upiId", owner.checkinUpiId || owner.profile?.upiId || "");
-
-        setForm((prev) => ({
-          ...prev,
-          vacantRooms: Number(owner.vacantRooms ?? prev.vacantRooms ?? 0),
-          vacantBeds: Number(owner.vacantBeds ?? prev.vacantBeds ?? 0),
-          occupiedRooms: Number(owner.occupiedRooms ?? prev.occupiedRooms ?? 0),
-          occupiedBeds: Number(owner.occupiedBeds ?? prev.occupiedBeds ?? 0),
-          ...toRoomBedArrays(owner.roomInventory, {
-            occupiedRooms: Number(owner.occupiedRooms ?? prev.occupiedRooms ?? 0),
-            occupiedBeds: Number(owner.occupiedBeds ?? prev.occupiedBeds ?? 0),
-            vacantRooms: Number(owner.vacantRooms ?? prev.vacantRooms ?? 0),
-            vacantBeds: Number(owner.vacantBeds ?? prev.vacantBeds ?? 0)
-          })
-        }));
+          return {
+            ...prev,
+            name: prev.name || owner.name || owner.profile?.name || "",
+            email: prev.email || owner.email || owner.profile?.email || owner.checkinEmail || "",
+            area: prev.area || owner.checkinArea || owner.locationCode || owner.profile?.locationCode || "",
+            dob: prev.dob || owner.checkinDob || "",
+            phone: prev.phone || owner.checkinPhone || owner.phone || owner.profile?.phone || "",
+            address: prev.address || owner.checkinAddress || owner.address || owner.profile?.address || "",
+            bankName: prev.bankName || owner.checkinBankName || owner.bankName || owner.profile?.bankName || "",
+            branchName:
+              prev.branchName || owner.checkinBranchName || owner.branchName || owner.profile?.branchName || "",
+            bankAccountNumber:
+              prev.bankAccountNumber ||
+              owner.checkinBankAccountNumber ||
+              owner.accountNumber ||
+              owner.profile?.accountNumber ||
+              "",
+            ifscCode: prev.ifscCode || owner.checkinIfscCode || owner.ifscCode || owner.profile?.ifscCode || "",
+            accountHolderName:
+              prev.accountHolderName || owner.checkinAccountHolderName || owner.profile?.accountHolderName || "",
+            upiId: prev.upiId || owner.checkinUpiId || owner.profile?.upiId || "",
+            vacantRooms: nextVacantRooms,
+            vacantBeds: nextVacantBeds,
+            occupiedRooms: nextOccupiedRooms,
+            occupiedBeds: nextOccupiedBeds,
+            ...toRoomBedArrays(owner.roomInventory, {
+              occupiedRooms: nextOccupiedRooms,
+              occupiedBeds: nextOccupiedBeds,
+              vacantRooms: nextVacantRooms,
+              vacantBeds: nextVacantBeds
+            })
+          };
+        });
 
         setAutoInfo((prev) => ({
           email: prev.email || owner.email || owner.profile?.email || owner.checkinEmail || "",
@@ -289,7 +294,7 @@ export const useOwnerProfile = () => {
     };
 
     hydrateFromOwner();
-  }, [apiBases, form, updateForm]);
+  }, [apiBases, form.loginId]);
 
   const showAutoInfo = Boolean(autoInfo.email || autoInfo.area || autoInfo.password);
 

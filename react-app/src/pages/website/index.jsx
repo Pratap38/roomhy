@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import templateHtml from "./index.template.html?raw";
 import { useHtmlPage } from "../../utils/htmlPage";
 import { buildOrganizationJsonLd, buildSeoConfig, buildWebsiteJsonLd } from "../../utils/websiteSeo";
+import { useWebsiteCommon } from "../../utils/websiteUi";
 
 const parseAttributes = (input = "") => {
   const attrs = {};
@@ -146,6 +147,8 @@ const styles = extractWrappedTagEntries("style", templateHtml)
 const bodyHtml = extractBodyContent(templateHtml);
 
 export default function WebsiteIndex() {
+  useWebsiteCommon();
+
   const seo = buildSeoConfig({
     title: "Roomhy | Student Rentals, PG, Hostels and Coliving in India",
     description:
@@ -175,6 +178,94 @@ export default function WebsiteIndex() {
     inlineScripts,
     scriptSequence,
   });
+
+  useEffect(() => {
+    const KNOWN_CITIES = [
+      "Indore",
+      "Kota",
+      "Sikar",
+      "Bengaluru",
+      "Bangalore",
+      "Mumbai",
+      "Delhi",
+      "Pune",
+      "Hyderabad",
+      "Agra",
+      "Jaipur",
+      "Lucknow",
+      "Bhopal",
+      "Surat",
+      "Vadodara",
+      "Patna",
+      "Kanpur",
+      "Nagpur",
+      "Visakhapatnam",
+      "Chennai"
+    ];
+    const CITY_ALIAS = { BANGALORE: "Bengaluru" };
+    const TYPE_KEYWORDS = [
+      ["paying guest", "pg"],
+      ["hostel", "hostel"],
+      ["apartment", "apartment"],
+      ["flat", "apartment"],
+      ["pg", "pg"]
+    ];
+
+    const parseSearch = (raw) => {
+      const q = String(raw || "").toLowerCase().trim();
+      let city = null;
+      let type = null;
+
+      for (const entry of KNOWN_CITIES) {
+        if (q.includes(entry.toLowerCase())) {
+          city = CITY_ALIAS[entry.toUpperCase()] || entry;
+          break;
+        }
+      }
+
+      for (const [keyword, mappedType] of TYPE_KEYWORDS) {
+        if (q.includes(keyword)) {
+          type = mappedType;
+          break;
+        }
+      }
+
+      return { city, type };
+    };
+
+    const doSearch = () => {
+      const input = document.getElementById("hero-search-input");
+      if (!input) return;
+      const raw = String(input.value || "").trim();
+      if (!raw) return;
+
+      const result = parseSearch(raw);
+      const params = new URLSearchParams();
+      if (result.city) params.set("city", result.city);
+      if (result.type) params.set("type", result.type);
+      if (!result.city && !result.type) params.set("search", raw);
+      window.location.href = `/website/ourproperty?${params.toString()}`;
+    };
+
+    const btn = document.getElementById("hero-search-btn");
+    const input = document.getElementById("hero-search-input");
+    if (!btn || !input) return undefined;
+
+    const onClick = () => doSearch();
+    const onKeyDown = (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        doSearch();
+      }
+    };
+
+    btn.addEventListener("click", onClick);
+    input.addEventListener("keydown", onKeyDown);
+    return () => {
+      btn.removeEventListener("click", onClick);
+      input.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
 
   return <div className="html-page" dangerouslySetInnerHTML={{ __html: bodyHtml }} />;
 }
