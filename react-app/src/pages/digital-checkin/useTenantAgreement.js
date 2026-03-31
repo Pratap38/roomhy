@@ -21,13 +21,15 @@ export const useTenantAgreement = () => {
 
     setSubmitting(true);
     try {
-      await postExpectSuccess(
+      const agreementResp = await postExpectSuccess(
         "/api/checkin/tenant/agreement",
         { loginId: loginId.trim(), eSignName: eSignName.trim(), accepted: true },
         apiBases
       );
-      await postExpectSuccess("/api/checkin/tenant/final-submit", { loginId: loginId.trim() }, apiBases);
-      window.location.href = `/digital-checkin/tenant-confirmation?loginId=${encodeURIComponent(loginId.trim())}`;
+      if (!agreementResp.signUrl) {
+        throw new Error("Zoho Sign URL was not returned");
+      }
+      window.location.href = agreementResp.signUrl;
     } catch (err) {
       alert(err.message || "Unable to submit tenant agreement");
     } finally {

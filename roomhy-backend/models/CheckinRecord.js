@@ -63,7 +63,15 @@ const checkinRecordSchema = new mongoose.Schema(
         },
         tenantAgreement: {
             eSignName: String,
-            acceptedAt: Date
+            acceptedAt: Date,
+            provider: String,
+            requestId: String,
+            signUrl: String,
+            status: String,
+            initiatedAt: Date,
+            signedAt: Date,
+            completedAt: Date,
+            callbackPayload: mongoose.Schema.Types.Mixed
         },
         tenantSubmittedAt: Date
     },

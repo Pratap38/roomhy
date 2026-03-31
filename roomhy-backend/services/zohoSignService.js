@@ -1,4 +1,5 @@
-const DEFAULT_COMPLETE_PATH = '/digital-checkin/owner-success';
+const OWNER_COMPLETE_PATH = '/digital-checkin/owner-success';
+const TENANT_COMPLETE_PATH = '/digital-checkin/tenant-confirmation';
 
 function getFrontendBaseUrl() {
     return (
@@ -15,12 +16,24 @@ function getBearerHeaders() {
     return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 }
 
-function getCompleteUrl(loginId) {
+function buildCompleteUrl(pathname, loginId, extraParams = {}) {
     const base = new URL(getFrontendBaseUrl());
-    base.pathname = DEFAULT_COMPLETE_PATH;
+    base.pathname = pathname;
     base.searchParams.set('loginId', String(loginId || '').toUpperCase());
-    base.searchParams.set('completeAgreement', '1');
+    Object.entries(extraParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            base.searchParams.set(key, String(value));
+        }
+    });
     return base.toString();
+}
+
+function getOwnerCompleteUrl(loginId) {
+    return buildCompleteUrl(OWNER_COMPLETE_PATH, loginId, { completeAgreement: '1' });
+}
+
+function getTenantCompleteUrl(loginId) {
+    return buildCompleteUrl(TENANT_COMPLETE_PATH, loginId, { completeAgreement: '1' });
 }
 
 function isZohoConfigured() {
@@ -37,7 +50,7 @@ function buildOwnerAgreementPayload({ owner = {}, loginId, aadhaarNumber, callba
         templateId: process.env.ZOHO_SIGN_TEMPLATE_ID || '',
         documentName: `RoomHy Owner Agreement - ${normalizedLoginId}`,
         callbackUrl,
-        redirectUrl: getCompleteUrl(normalizedLoginId),
+        redirectUrl: getOwnerCompleteUrl(normalizedLoginId),
         owner: {
             loginId: normalizedLoginId,
             name: owner.name || owner.profile?.name || '',
@@ -57,17 +70,57 @@ function buildOwnerAgreementPayload({ owner = {}, loginId, aadhaarNumber, callba
     };
 }
 
-async function createOwnerAgreementRequest({ owner = {}, loginId, aadhaarNumber, callbackUrl }) {
+function buildTenantAgreementPayload({ tenant = {}, loginId, eSignName, callbackUrl }) {
     const normalizedLoginId = String(loginId || '').toUpperCase();
-    const payload = buildOwnerAgreementPayload({ owner, loginId: normalizedLoginId, aadhaarNumber, callbackUrl });
+    const tenantName = tenant.name || tenant.digitalCheckin?.profile?.name || '';
+    const tenantEmail = tenant.email || tenant.digitalCheckin?.profile?.email || '';
+    const propertyName = tenant.propertyTitle || tenant.digitalCheckin?.profile?.propertyName || '';
+    const roomNo = tenant.roomNo || tenant.digitalCheckin?.profile?.roomNo || '';
+    const agreedRent = tenant.agreedRent || tenant.digitalCheckin?.profile?.agreedRent || '';
+    const moveInDate = tenant.moveInDate
+        ? new Date(tenant.moveInDate).toISOString().slice(0, 10)
+        : (tenant.digitalCheckin?.profile?.moveInDate || '');
+
+    return {
+        templateId: process.env.ZOHO_SIGN_TEMPLATE_ID || '',
+        documentName: `RoomHy Tenant Rental Agreement - ${normalizedLoginId}`,
+        callbackUrl,
+        redirectUrl: getTenantCompleteUrl(normalizedLoginId),
+        tenant: {
+            loginId: normalizedLoginId,
+            name: tenantName,
+            email: tenantEmail,
+            phone: tenant.phone || '',
+            propertyName,
+            roomNo,
+            agreedRent,
+            moveInDate,
+            eSignName: eSignName || tenantName
+        },
+        fields: {
+            tenant_name: tenantName,
+            tenant_email: tenantEmail,
+            tenant_phone: tenant.phone || '',
+            tenant_login_id: normalizedLoginId,
+            property_name: propertyName,
+            room_no: roomNo,
+            agreed_rent: agreedRent,
+            move_in_date: moveInDate,
+            tenant_esign_name: eSignName || tenantName
+        }
+    };
+}
+
+async function createZohoRequest({ payload, loginId, providerLabel, completeUrl }) {
+    const normalizedLoginId = String(loginId || '').toUpperCase();
 
     if (!isZohoConfigured()) {
         const requestId = `MOCK-ZOHO-${normalizedLoginId}-${Date.now()}`;
         return {
-            provider: 'mock-zoho-sign',
+            provider: `mock-${providerLabel}`,
             requestId,
             status: 'pending_signature',
-            signUrl: getCompleteUrl(normalizedLoginId),
+            signUrl: completeUrl(normalizedLoginId),
             payload,
             raw: { mock: true }
         };
@@ -115,17 +168,42 @@ async function createOwnerAgreementRequest({ owner = {}, loginId, aadhaarNumber,
     ]) || `ZOHO-${normalizedLoginId}-${Date.now()}`;
 
     return {
-        provider: 'zoho-sign',
+        provider: providerLabel,
         requestId,
         status: 'pending_signature',
-        signUrl: signUrl || getCompleteUrl(normalizedLoginId),
+        signUrl: signUrl || completeUrl(normalizedLoginId),
         payload,
         raw: data
     };
 }
 
+async function createOwnerAgreementRequest({ owner = {}, loginId, aadhaarNumber, callbackUrl }) {
+    const normalizedLoginId = String(loginId || '').toUpperCase();
+    const payload = buildOwnerAgreementPayload({ owner, loginId: normalizedLoginId, aadhaarNumber, callbackUrl });
+    return createZohoRequest({
+        payload,
+        loginId: normalizedLoginId,
+        providerLabel: 'zoho-sign',
+        completeUrl: getOwnerCompleteUrl
+    });
+}
+
+async function createTenantAgreementRequest({ tenant = {}, loginId, eSignName, callbackUrl }) {
+    const normalizedLoginId = String(loginId || '').toUpperCase();
+    const payload = buildTenantAgreementPayload({ tenant, loginId: normalizedLoginId, eSignName, callbackUrl });
+    return createZohoRequest({
+        payload,
+        loginId: normalizedLoginId,
+        providerLabel: 'zoho-sign',
+        completeUrl: getTenantCompleteUrl
+    });
+}
+
 module.exports = {
     buildOwnerAgreementPayload,
+    buildTenantAgreementPayload,
     createOwnerAgreementRequest,
-    getCompleteUrl
+    createTenantAgreementRequest,
+    getOwnerCompleteUrl,
+    getTenantCompleteUrl
 };

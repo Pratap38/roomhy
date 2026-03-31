@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo } from "react";
+import React from "react";
+import { getApiBases, postWithFallback } from "./utils";
 import { useHtmlPage } from "../../utils/htmlPage";
 
 const resolveTenantLoginUrl = () => {
@@ -23,10 +24,57 @@ export default function DigitalCheckinTenantConfirmation() {
     inlineScripts: []
   });
 
-  const nextUrl = useMemo(() => (typeof window === "undefined" ? "" : resolveTenantLoginUrl()), []);
+  const params = new URLSearchParams(window.location.search);
+  const loginId = params.get("loginId") || "";
+  const shouldCompleteAgreement = params.get("completeAgreement") === "1";
+  const agreementSigned = params.get("agreementSigned") === "1";
+  const agreementPending = params.get("agreementPending") === "1";
+  const provider = params.get("mockAgreement") === "1" ? "mock-zoho-sign" : "zoho-sign";
+  const nextUrl = React.useMemo(() => (typeof window === "undefined" ? "" : resolveTenantLoginUrl()), []);
+  const [state, setState] = React.useState(
+    agreementPending
+      ? { loading: false, title: "Agreement Pending", text: "Tenant rental agreement is still pending signature.", done: false }
+      : agreementSigned
+        ? { loading: false, title: "Welcome to RoomHy", text: "Your tenant rental agreement is completed.", done: true }
+        : { loading: shouldCompleteAgreement, title: "Finalizing Agreement", text: "Completing tenant agreement and sending login details.", done: false }
+  );
 
-  useEffect(() => {
-    if (!nextUrl) return;
+  React.useEffect(() => {
+    if (!shouldCompleteAgreement || !loginId) return;
+    let active = true;
+    const run = async () => {
+      try {
+        const resp = await postWithFallback(
+          "/api/checkin/tenant/agreement/complete",
+          { loginId, provider },
+          getApiBases()
+        );
+        if (!active) return;
+        if (!resp.success) throw new Error(resp.message || "Unable to complete agreement");
+        setState({
+          loading: false,
+          title: "Welcome to RoomHy",
+          text: "Your tenant rental agreement is completed. Login details have been sent to your email.",
+          done: true
+        });
+      } catch (err) {
+        if (!active) return;
+        setState({
+          loading: false,
+          title: "Agreement Completion Failed",
+          text: err.message,
+          done: false
+        });
+      }
+    };
+    run();
+    return () => {
+      active = false;
+    };
+  }, [loginId, provider, shouldCompleteAgreement]);
+
+  React.useEffect(() => {
+    if (!state.done || !nextUrl) return undefined;
     const timer = setTimeout(() => {
       try {
         window.location.replace(nextUrl);
@@ -35,19 +83,21 @@ export default function DigitalCheckinTenantConfirmation() {
       }
     }, 5000);
     return () => clearTimeout(timer);
-  }, [nextUrl]);
+  }, [nextUrl, state.done]);
 
   return (
     <div className="html-page">
       <div className="card">
         <div className="icon">&#10003;</div>
-        <h1>Welcome to RoomHy</h1>
-        <p>Your tenant agreement has been submitted successfully.</p>
-        <p>We have sent the login link to your registered Gmail.</p>
-        <div className="meta" id="redirectText">Redirecting to login page in 5 seconds...</div>
-        <a className="btn" href={nextUrl || "../tenant//tenant/tenantlogin"}>Go to Tenant Login Now</a>
+        <h1>{state.title}</h1>
+        <p>{state.text}</p>
+        <div className="meta" id="redirectText">
+          {state.done ? "Redirecting to login page in 5 seconds..." : state.loading ? "Processing..." : "Please complete the agreement flow and retry."}
+        </div>
+        <a className={`btn${state.done ? "" : " disabled"}`} href={nextUrl || "../tenant//tenant/tenantlogin"}>
+          Go to Tenant Login Now
+        </a>
       </div>
     </div>
   );
 }
-

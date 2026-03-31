@@ -48,6 +48,8 @@ const TenantSchema = new mongoose.Schema({
     agreementSigned: { type: Boolean, default: false },
     agreementSignedAt: { type: Date },
     agreementESignName: { type: String },
+    agreementRequestId: { type: String },
+    agreementStatus: { type: String },
 
     // Tenant Digital Check-In (owner flow parity)
     digitalCheckin: {

@@ -27,10 +27,10 @@ export default function DigitalCheckinOwnerSuccess() {
   const provider = params.get("mockAgreement") === "1" ? "mock-zoho-sign" : "zoho-sign";
   const [state, setState] = React.useState(
     agreementPending
-      ? { loading: false, title: "Agreement Pending", text: "Owner agreement is still pending signature.", done: false }
+      ? { loading: false, title: "Verification Pending", text: "Owner verification is still pending.", done: false }
       : agreementSigned
-        ? { loading: false, title: "Welcome to RoomHy", text: "Owner agreement completed. Login link with owner ID and password has been sent.", done: true }
-        : { loading: shouldCompleteAgreement, title: "Finalizing Agreement", text: "Completing owner agreement and sending login details.", done: false }
+        ? { loading: false, title: "Welcome to RoomHy", text: "Owner check-in completed. Login link with owner ID and password has been sent.", done: true }
+        : { loading: shouldCompleteAgreement, title: "Finalizing Check-in", text: "Completing owner verification and sending login details.", done: false }
   );
 
   React.useEffect(() => {
@@ -48,7 +48,7 @@ export default function DigitalCheckinOwnerSuccess() {
         setState({
           loading: false,
           title: "Welcome to RoomHy",
-          text: "Owner agreement completed. Login link with owner ID and password has been sent.",
+          text: "Owner check-in completed. Login link with owner ID and password has been sent.",
           done: true
         });
       } catch (err) {

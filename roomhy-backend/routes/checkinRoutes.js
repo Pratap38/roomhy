@@ -12,7 +12,10 @@ const {
     getDigilockerVerificationStatus,
     getDigilockerDocument
 } = require('../services/cashfreeDigilockerService');
-const { createOwnerAgreementRequest } = require('../services/zohoSignService');
+const {
+    createOwnerAgreementRequest,
+    createTenantAgreementRequest
+} = require('../services/zohoSignService');
 
 const WEBSITE_URL = process.env.WEBSITE_URL || 'https://roomhy.com';
 const ADMIN_URL = process.env.ADMIN_URL || process.env.FRONTEND_URL || 'https://admin.roomhy.com';
@@ -112,6 +115,66 @@ function buildOwnerLoginEmail(owner, dashboardUrl) {
     `;
 }
 
+function buildTenantLoginEmail(tenant, dashboardUrl) {
+    return `
+        <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+            <div style="background:#16a34a;color:#fff;padding:16px 20px;">
+                <h2 style="margin:0;font-size:20px;">RoomHy Tenant Check-in Completed</h2>
+            </div>
+            <div style="padding:18px 20px;color:#111827;line-height:1.55;">
+                <p style="margin-top:0;">Your tenant digital check-in and rental agreement signing are complete.</p>
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;margin:14px 0;">
+                    <p style="margin:0 0 8px;"><strong>Login ID:</strong> ${tenant.loginId || '-'}</p>
+                    <p style="margin:0 0 8px;"><strong>Email:</strong> ${tenant.email || '-'}</p>
+                    <p style="margin:0;"><strong>Property:</strong> ${tenant.propertyTitle || '-'}</p>
+                </div>
+                <p style="margin:14px 0 18px;">
+                    <a href="${dashboardUrl}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:700;">Open Tenant Login</a>
+                </p>
+                <p style="font-size:12px;color:#6b7280;">If button does not work, copy this link: ${dashboardUrl}</p>
+            </div>
+        </div>
+    `;
+}
+
+async function completeOwnerCheckinAndNotify(loginId) {
+    const normalizedLoginId = String(loginId || '').toUpperCase();
+    const record = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'owner' });
+    if (!record) throw new Error('Owner check-in record not found');
+
+    const owner = await Owner.findOne({ loginId: normalizedLoginId });
+    if (!owner) throw new Error('Owner not found');
+
+    record.ownerFinalVerified = true;
+    record.ownerSubmittedAt = new Date();
+    record.ownerAgreement = {
+        ...(record.ownerAgreement || {}),
+        provider: record.ownerAgreement?.provider || 'owner-terms',
+        status: record.ownerAgreement?.status || 'accepted_terms',
+        completedAt: record.ownerAgreement?.completedAt || new Date()
+    };
+    await record.save();
+
+    owner.agreementStatus = owner.agreementStatus || 'accepted_terms';
+    owner.isActive = true;
+    owner.kyc = owner.kyc || {};
+    owner.kyc.status = owner.kyc.status || 'submitted';
+    await owner.save();
+
+    const dashboardUrl = `${APP_URL}/propertyowner/index`;
+    let loginEmailSent = false;
+    if (owner.email) {
+        try {
+            await sendMail(owner.email, 'RoomHy Owner Login Link', '', buildOwnerLoginEmail(owner, dashboardUrl));
+            loginEmailSent = true;
+        } catch (emailErr) {
+            console.error('[OWNER CHECKIN COMPLETE] Email send error:', emailErr.message);
+        }
+    }
+
+    return { record, owner, dashboardUrl, loginEmailSent };
+}
+
 async function completeOwnerAgreementAndNotify(loginId, { requestId = '', provider = '', callbackPayload = null } = {}) {
     const normalizedLoginId = String(loginId || '').toUpperCase();
     const record = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'owner' });
@@ -153,6 +216,57 @@ async function completeOwnerAgreementAndNotify(loginId, { requestId = '', provid
     }
 
     return { record, owner, dashboardUrl, loginEmailSent };
+}
+
+async function completeTenantAgreementAndNotify(loginId, { requestId = '', provider = '', callbackPayload = null } = {}) {
+    const normalizedLoginId = String(loginId || '').toUpperCase();
+    const record = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'tenant' });
+    if (!record) throw new Error('Tenant check-in record not found');
+
+    const tenant = await Tenant.findOne({ loginId: normalizedLoginId });
+    if (!tenant) throw new Error('Tenant not found');
+
+    record.tenantAgreement = {
+        ...(record.tenantAgreement || {}),
+        provider: provider || record.tenantAgreement?.provider || 'zoho-sign',
+        requestId: requestId || record.tenantAgreement?.requestId || '',
+        status: 'signed',
+        signedAt: new Date(),
+        completedAt: new Date(),
+        callbackPayload: callbackPayload || record.tenantAgreement?.callbackPayload || null
+    };
+    record.tenantSubmittedAt = new Date();
+    await record.save();
+
+    tenant.agreementSigned = true;
+    tenant.agreementSignedAt = new Date();
+    tenant.agreementRequestId = requestId || tenant.agreementRequestId || '';
+    tenant.agreementStatus = 'signed';
+    tenant.digitalCheckin = tenant.digitalCheckin || {};
+    tenant.digitalCheckin.agreement = {
+        ...(tenant.digitalCheckin.agreement || {}),
+        acceptedAt: tenant.digitalCheckin.agreement?.acceptedAt || record.tenantAgreement?.acceptedAt || new Date(),
+        eSignName: tenant.agreementESignName || record.tenantAgreement?.eSignName || tenant.name || ''
+    };
+    tenant.digitalCheckin.submittedAt = new Date();
+    tenant.status = 'active';
+    tenant.kycStatus = tenant.kycStatus || 'submitted';
+    tenant.updatedAt = new Date();
+    await tenant.save();
+
+    const dashboardUrl = `${APP_URL}/tenant/tenantdashboard`;
+    const tenantLoginUrl = `${APP_URL}/tenant/tenantlogin`;
+    let loginEmailSent = false;
+    if (tenant.email) {
+        try {
+            await sendMail(tenant.email, 'RoomHy Tenant Login Link', '', buildTenantLoginEmail(tenant, dashboardUrl));
+            loginEmailSent = true;
+        } catch (emailErr) {
+            console.error('[TENANT AGREEMENT COMPLETE] Email send error:', emailErr.message);
+        }
+    }
+
+    return { record, tenant, dashboardUrl, tenantLoginUrl, loginEmailSent };
 }
 
 router.post('/owner/profile', async (req, res) => {
@@ -328,7 +442,7 @@ router.post('/owner/kyc/verify-otp', otpLimiter, async (req, res) => {
             record,
             owner: updatedOwner,
             message: owner?.email
-                ? 'OTP verified successfully. Continue to owner agreement signing.'
+                ? 'OTP verified successfully. Continue to owner terms acceptance.'
                 : 'OTP verified successfully.'
         });
 
@@ -629,68 +743,24 @@ router.post('/owner/final-submit', async (req, res) => {
         if (!record.ownerTermsAcceptedAt) {
             return res.status(400).json({ success: false, message: 'Accept terms and conditions first' });
         }
-        const owner = ownerDoc || await Owner.findOne({ loginId: normalizedLoginId }).lean();
-        const aadhaarNumber =
-            record.ownerAgreement?.aadhaarNumber ||
-            record.ownerKyc?.aadhaarNumber ||
-            owner?.checkinAadhaarNumber ||
-            owner?.kyc?.aadharNumber ||
-            '';
-        if (!aadhaarNumber) {
-            return res.status(400).json({ success: false, message: 'DigiLocker Aadhaar number is missing. Complete DigiLocker verification again.' });
-        }
-
-        if (record.ownerAgreement?.status === 'signed') {
+        if (record.ownerFinalVerified) {
             const dashboardUrl = `${APP_URL}/propertyowner/index`;
             return res.json({
                 success: true,
-                message: 'Owner agreement already signed',
+                message: 'Owner check-in already completed',
                 record,
                 dashboardUrl,
-                agreementStatus: 'signed'
+                agreementStatus: record.ownerAgreement?.status || 'accepted_terms'
             });
         }
 
-        const callbackBase = process.env.ZOHO_SIGN_CALLBACK_URL || `${BACKEND_URL}/api/checkin/owner/agreement/callback`;
-        const callbackUrl = `${callbackBase}${callbackBase.includes('?') ? '&' : '?'}loginId=${encodeURIComponent(normalizedLoginId)}`;
-        const agreementRequest = await createOwnerAgreementRequest({
-            owner,
-            loginId: normalizedLoginId,
-            aadhaarNumber,
-            callbackUrl
-        });
-
-        record.ownerAgreement = {
-            ...(record.ownerAgreement || {}),
-            provider: agreementRequest.provider,
-            aadhaarNumber,
-            requestId: agreementRequest.requestId,
-            signUrl: agreementRequest.signUrl,
-            status: 'pending_signature',
-            initiatedAt: new Date()
-        };
-        await record.save();
-
-        await Owner.findOneAndUpdate(
-            { loginId: normalizedLoginId },
-            {
-                $set: {
-                    agreementRequestId: agreementRequest.requestId,
-                    agreementStatus: 'pending_signature',
-                    checkinAadhaarNumber: aadhaarNumber,
-                    'kyc.aadharNumber': aadhaarNumber
-                }
-            }
-        );
+        const result = await completeOwnerCheckinAndNotify(normalizedLoginId);
 
         return res.json({
             success: true,
-            message: 'Owner agreement created. Continue to signing.',
-            record,
-            agreementStatus: 'pending_signature',
-            provider: agreementRequest.provider,
-            requestId: agreementRequest.requestId,
-            signUrl: agreementRequest.signUrl
+            message: 'Owner terms accepted and check-in completed.',
+            ...result,
+            agreementStatus: result.record?.ownerAgreement?.status || 'accepted_terms'
         });
     } catch (err) {
         console.error('owner/final-submit error:', err);
@@ -1089,17 +1159,30 @@ router.post('/tenant/agreement', async (req, res) => {
         }
         const normalizedLoginId = String(loginId).toUpperCase();
         const acceptedAt = new Date();
+        const existingRecord = await CheckinRecord.findOne({ loginId: normalizedLoginId, role: 'tenant' }).lean();
         const record = await upsertRecord(normalizedLoginId, 'tenant', {
-            tenantAgreement: { eSignName, acceptedAt: new Date() }
+            tenantAgreement: {
+                ...((existingRecord && existingRecord.tenantAgreement) || {}),
+                eSignName,
+                acceptedAt
+            }
         });
 
         const tenant = await Tenant.findOne({ loginId: normalizedLoginId });
         if (!tenant) {
             return res.status(404).json({ success: false, message: 'Tenant not found for this login ID' });
         }
+        const kycVerified = Boolean(
+            record?.tenantKyc?.otpVerified ||
+            record?.tenantKyc?.digilockerVerified ||
+            tenant?.kyc?.otpVerified ||
+            tenant?.kyc?.digilockerVerified ||
+            tenant?.kycStatus === 'verified'
+        );
+        if (!kycVerified) {
+            return res.status(400).json({ success: false, message: 'Complete tenant KYC verification first' });
+        }
 
-        tenant.agreementSigned = true;
-        tenant.agreementSignedAt = acceptedAt;
         tenant.agreementESignName = eSignName;
         tenant.digitalCheckin = tenant.digitalCheckin || {};
         tenant.digitalCheckin.agreement = {
@@ -1110,7 +1193,56 @@ router.post('/tenant/agreement', async (req, res) => {
         tenant.updatedAt = new Date();
         await tenant.save();
 
-        return res.json({ success: true, record, tenant });
+        if (record.tenantAgreement?.status === 'signed' || tenant.agreementSigned) {
+            const dashboardUrl = `${APP_URL}/tenant/tenantdashboard`;
+            return res.json({
+                success: true,
+                message: 'Tenant rental agreement already signed',
+                record,
+                tenant,
+                dashboardUrl,
+                agreementStatus: 'signed'
+            });
+        }
+
+        const callbackBase = process.env.ZOHO_SIGN_CALLBACK_URL || `${BACKEND_URL}/api/checkin/tenant/agreement/callback`;
+        const normalizedCallbackBase = callbackBase.includes('/owner/agreement/callback')
+            ? callbackBase.replace('/owner/agreement/callback', '/tenant/agreement/callback')
+            : callbackBase;
+        const callbackUrl = `${normalizedCallbackBase}${normalizedCallbackBase.includes('?') ? '&' : '?'}loginId=${encodeURIComponent(normalizedLoginId)}`;
+        const agreementRequest = await createTenantAgreementRequest({
+            tenant,
+            loginId: normalizedLoginId,
+            eSignName,
+            callbackUrl
+        });
+
+        record.tenantAgreement = {
+            ...(record.tenantAgreement || {}),
+            eSignName,
+            acceptedAt,
+            provider: agreementRequest.provider,
+            requestId: agreementRequest.requestId,
+            signUrl: agreementRequest.signUrl,
+            status: 'pending_signature',
+            initiatedAt: new Date()
+        };
+        await record.save();
+
+        tenant.agreementRequestId = agreementRequest.requestId;
+        tenant.agreementStatus = 'pending_signature';
+        await tenant.save();
+
+        return res.json({
+            success: true,
+            message: 'Tenant rental agreement created. Continue to signing.',
+            record,
+            tenant,
+            agreementStatus: 'pending_signature',
+            provider: agreementRequest.provider,
+            requestId: agreementRequest.requestId,
+            signUrl: agreementRequest.signUrl
+        });
     } catch (err) {
         console.error('tenant/agreement error:', err);
         return res.status(500).json({ success: false, message: err.message });
@@ -1128,65 +1260,89 @@ router.post('/tenant/final-submit', async (req, res) => {
         if (!record.tenantAgreement || !record.tenantAgreement.acceptedAt) {
             return res.status(400).json({ success: false, message: 'Accept rental agreement first' });
         }
-
-        record.tenantSubmittedAt = new Date();
-        await record.save();
-
-        const tenant = tenantModel || await Tenant.findOne({ loginId: normalizedLoginId });
-        if (!tenant) {
-            return res.status(404).json({ success: false, message: 'Tenant not found for this login ID' });
+        if (record.tenantAgreement?.status !== 'signed' && !(tenantModel && tenantModel.agreementSigned)) {
+            return res.status(400).json({ success: false, message: 'Tenant rental agreement signature is still pending' });
         }
 
-        tenant.digitalCheckin = tenant.digitalCheckin || {};
-        tenant.digitalCheckin.submittedAt = new Date();
-        tenant.status = 'active';
-        tenant.kycStatus = tenant.kycStatus || 'submitted';
-        tenant.updatedAt = new Date();
-        await tenant.save();
-
-        const targetEmail = tenant.email || record?.tenantProfile?.email || '';
-        const baseUrl = APP_URL;
-        const tenantLoginUrl = `${baseUrl}/tenant/tenantlogin`;
-        const dashboardUrl = `${baseUrl}/tenant/tenantdashboard`;
-        let loginEmailSent = false;
-
-        if (targetEmail) {
-            const html = `
-                <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
-                    <div style="background:#16a34a;color:#fff;padding:16px 20px;">
-                        <h2 style="margin:0;font-size:20px;">RoomHy Tenant Check-in Completed</h2>
-                    </div>
-                    <div style="padding:18px 20px;color:#111827;line-height:1.55;">
-                        <p style="margin-top:0;">Your tenant digital check-in is fully submitted.</p>
-                        <p style="margin:14px 0 18px;">
-                            <a href="${dashboardUrl}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:10px 16px;border-radius:6px;font-weight:700;">Open Login Page</a>
-                        </p>
-                        <p style="font-size:12px;color:#6b7280;">If button does not work, copy this link: ${dashboardUrl}</p>
-                    </div>
-                </div>
-            `;
-            try {
-                await sendMail(targetEmail, 'RoomHy Tenant Login Link', '', html);
-                loginEmailSent = true;
-            } catch (emailErr) {
-                console.error('[TENANT CHECKIN FINAL] Email send error:', emailErr.message);
-            }
-        }
+        const result = await completeTenantAgreementAndNotify(normalizedLoginId, {
+            requestId: record.tenantAgreement?.requestId || tenantModel?.agreementRequestId || '',
+            provider: record.tenantAgreement?.provider || tenantModel?.agreementStatus || 'zoho-sign',
+            callbackPayload: { source: 'tenant-final-submit' }
+        });
 
         return res.json({
             success: true,
             message: 'Tenant digital check-in submitted',
-            record,
-            tenant,
-            dashboardUrl,
-            tenantLoginUrl,
-            loginEmailSent
+            ...result
         });
     } catch (err) {
         console.error('tenant/final-submit error:', err);
         return res.status(500).json({ success: false, message: err.message });
     }
 });
+
+router.post('/tenant/agreement/complete', async (req, res) => {
+    try {
+        const { loginId, requestId, provider, callbackPayload } = req.body || {};
+        if (!loginId) {
+            return res.status(400).json({ success: false, message: 'Missing loginId' });
+        }
+        const result = await completeTenantAgreementAndNotify(loginId, {
+            requestId,
+            provider,
+            callbackPayload
+        });
+        return res.json({
+            success: true,
+            message: 'Tenant agreement completed',
+            ...result
+        });
+    } catch (err) {
+        console.error('tenant/agreement/complete error:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+async function handleTenantAgreementCallback(req, res) {
+    try {
+        const payload = {
+            ...(req.query || {}),
+            ...(req.body || {})
+        };
+        const loginId = payload.loginId || payload.loginid || payload.tenantLoginId || payload.tenant_login_id || '';
+        const requestId = payload.requestId || payload.request_id || payload.document_id || payload.documentId || '';
+        const status = String(payload.status || payload.action_status || payload.request_status || 'completed').toLowerCase();
+
+        console.log('[ZOHO CALLBACK] tenant agreement callback received', {
+            method: req.method,
+            loginId,
+            requestId,
+            status
+        });
+
+        if (!loginId) {
+            return res.status(400).send('Missing loginId');
+        }
+
+        if (!['completed', 'complete', 'signed', 'success'].includes(status)) {
+            return res.redirect(`${DIGITAL_CHECKIN_URL}/digital-checkin/tenant-confirmation?loginId=${encodeURIComponent(String(loginId).toUpperCase())}&agreementPending=1`);
+        }
+
+        await completeTenantAgreementAndNotify(loginId, {
+            requestId,
+            provider: 'zoho-sign',
+            callbackPayload: payload
+        });
+
+        return res.redirect(`${DIGITAL_CHECKIN_URL}/digital-checkin/tenant-confirmation?loginId=${encodeURIComponent(String(loginId).toUpperCase())}&agreementSigned=1`);
+    } catch (err) {
+        console.error('tenant/agreement/callback error:', err);
+        return res.status(500).send(err.message);
+    }
+}
+
+router.get('/tenant/agreement/callback', handleTenantAgreementCallback);
+router.post('/tenant/agreement/callback', handleTenantAgreementCallback);
 
 router.get('/:role/:loginId', async (req, res) => {
     try {

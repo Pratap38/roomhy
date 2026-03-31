@@ -60,7 +60,7 @@ export default function Tenantagreement() {
     }
     setErrorMsg("");
     try {
-      await fetchJson("/api/checkin/tenant/agreement", {
+      const resp = await fetchJson("/api/checkin/tenant/agreement", {
         method: "POST",
         body: JSON.stringify({
           loginId: tenant?.loginId,
@@ -68,7 +68,11 @@ export default function Tenantagreement() {
           accepted: true
         })
       });
-      window.location.href = "/tenant//tenant/tenantdashboard";
+      if (resp?.signUrl) {
+        window.location.href = resp.signUrl;
+        return;
+      }
+      setErrorMsg("Zoho Sign URL was not returned.");
     } catch (err) {
       setErrorMsg(err?.body || err?.message || "Failed to submit agreement.");
     }

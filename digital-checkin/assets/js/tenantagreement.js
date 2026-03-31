@@ -48,15 +48,9 @@ const API_BASES = (location.hostname === 'localhost' || location.hostname === '1
       submitBtn.textContent = 'Submitting...';
 
       try {
-        // Do not block on stale local check-in reads.
-        // Backend /tenant/final-submit already validates OTP/DigiLocker from both
-        // CheckinRecord and Tenant model and returns authoritative result.
-        await postWithFallback('/api/checkin/tenant/agreement', { loginId, eSignName, accepted: true });
-
-        await postWithFallback('/api/checkin/tenant/final-submit', { loginId });
-
-        const confirmationUrl = `/digital-checkin/tenant-confirmation?loginId=${encodeURIComponent(loginId)}`;
-        window.location.href = confirmationUrl;
+        const data = await postWithFallback('/api/checkin/tenant/agreement', { loginId, eSignName, accepted: true });
+        if (!data.signUrl) throw new Error(data.message || 'Zoho Sign URL was not returned');
+        window.location.href = data.signUrl;
       } catch (err) {
         alert(err.message || 'Unable to submit tenant agreement');
       } finally {
