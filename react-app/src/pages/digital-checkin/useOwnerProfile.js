@@ -21,10 +21,55 @@ const emptyForm = {
   bankAccountNumber: "",
   ifscCode: "",
   accountHolderName: "",
-  upiId: ""
+  upiId: "",
+  vacantRooms: 0,
+  vacantBeds: 0,
+  occupiedRooms: 0,
+  occupiedBeds: 0,
+  occupiedRoomBeds: [1],
+  vacantRoomBeds: [1]
 };
 
 const OWNER_KYC_STATE_KEY = "roomhy_owner_kyc_state";
+
+const distributeBeds = (totalBeds, roomCount) => {
+  const safeRoomCount = Math.max(0, Number(roomCount || 0));
+  if (safeRoomCount <= 0) return [];
+  const safeBeds = Math.max(0, Number(totalBeds || 0));
+  const base = Math.floor(safeBeds / safeRoomCount);
+  let remainder = safeBeds % safeRoomCount;
+  return Array.from({ length: safeRoomCount }, () => {
+    const next = base + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder -= 1;
+    return Math.max(1, next);
+  });
+};
+
+const normalizeBedsArray = (values, count) =>
+  Array.from({ length: Math.max(0, Number(count || 0)) }, (_, index) => Math.max(1, Number(values?.[index] || 1)));
+
+const toRoomBedArrays = (roomInventory = [], fallback = emptyForm) => {
+  const occupiedRoomBeds = [];
+  const vacantRoomBeds = [];
+
+  (Array.isArray(roomInventory) ? roomInventory : []).forEach((room) => {
+    const beds = Array.isArray(room?.beds) ? room.beds : [];
+    const occupiedBeds = beds.filter((bed) => String(bed?.status || "").toLowerCase() === "occupied").length;
+    const vacantBeds = Math.max(0, beds.length - occupiedBeds);
+
+    if (occupiedBeds > 0) occupiedRoomBeds.push(occupiedBeds);
+    if (vacantBeds > 0) vacantRoomBeds.push(vacantBeds);
+  });
+
+  return {
+    occupiedRoomBeds: occupiedRoomBeds.length
+      ? occupiedRoomBeds
+      : distributeBeds(fallback.occupiedBeds, fallback.occupiedRooms),
+    vacantRoomBeds: vacantRoomBeds.length
+      ? vacantRoomBeds
+      : distributeBeds(fallback.vacantBeds, fallback.vacantRooms)
+  };
+};
 
 export const useOwnerProfile = () => {
   const apiBases = useMemo(() => getApiBases(), []);
@@ -40,6 +85,34 @@ export const useOwnerProfile = () => {
 
   const updateForm = useCallback((patch) => {
     setForm((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const updateRoomCount = useCallback((key, value) => {
+    const safeCount = Math.max(0, Number(value || 0));
+    setForm((prev) => {
+      const bedsKey = key === "occupiedRooms" ? "occupiedRoomBeds" : "vacantRoomBeds";
+      const nextBeds = normalizeBedsArray(prev[bedsKey], safeCount);
+      const next = {
+        ...prev,
+        [key]: safeCount,
+        [bedsKey]: nextBeds
+      };
+      next.occupiedBeds = next.occupiedRoomBeds.reduce((sum, item) => sum + Number(item || 0), 0);
+      next.vacantBeds = next.vacantRoomBeds.reduce((sum, item) => sum + Number(item || 0), 0);
+      return next;
+    });
+  }, []);
+
+  const updateRoomBed = useCallback((group, index, value) => {
+    setForm((prev) => {
+      const key = group === "occupied" ? "occupiedRoomBeds" : "vacantRoomBeds";
+      const nextBeds = [...prev[key]];
+      nextBeds[index] = Math.max(1, Number(value || 1));
+      const next = { ...prev, [key]: nextBeds };
+      next.occupiedBeds = next.occupiedRoomBeds.reduce((sum, item) => sum + Number(item || 0), 0);
+      next.vacantBeds = next.vacantRoomBeds.reduce((sum, item) => sum + Number(item || 0), 0);
+      return next;
+    });
   }, []);
 
   const saveProfile = useCallback(
@@ -62,6 +135,40 @@ export const useOwnerProfile = () => {
         address: formValue.address.trim(),
         area: areaValue,
         password: passwordValue,
+        occupiedRooms: normalizeBedsArray(formValue.occupiedRoomBeds, formValue.occupiedRooms).length,
+        occupiedBeds: normalizeBedsArray(formValue.occupiedRoomBeds, formValue.occupiedRooms).reduce((sum, value) => sum + Number(value || 0), 0),
+        vacantRooms: normalizeBedsArray(formValue.vacantRoomBeds, formValue.vacantRooms).length,
+        vacantBeds: normalizeBedsArray(formValue.vacantRoomBeds, formValue.vacantRooms).reduce((sum, value) => sum + Number(value || 0), 0),
+        roomInventory: [
+          ...normalizeBedsArray(formValue.occupiedRoomBeds, formValue.occupiedRooms).map((bedCount, index) => ({
+            id: `OWNER-OCC-${loginIdValue}-${index + 1}`,
+            number: `Occupied Room ${index + 1}`,
+            roomNo: `Occupied Room ${index + 1}`,
+            title: `Occupied Room ${index + 1}`,
+            type: "Occupied",
+            roomType: "Occupied",
+            gender: "Mixed",
+            beds: Array.from({ length: bedCount }, (_, bedIndex) => ({
+              status: "occupied",
+              tenantId: `OCC-${index + 1}-${bedIndex + 1}`,
+              tenantName: "Occupied"
+            }))
+          })),
+          ...normalizeBedsArray(formValue.vacantRoomBeds, formValue.vacantRooms).map((bedCount, index) => ({
+            id: `OWNER-VAC-${loginIdValue}-${index + 1}`,
+            number: `Vacant Room ${index + 1}`,
+            roomNo: `Vacant Room ${index + 1}`,
+            title: `Vacant Room ${index + 1}`,
+            type: "Vacant",
+            roomType: "Vacant",
+            gender: "Mixed",
+            beds: Array.from({ length: bedCount }, () => ({
+              status: "available",
+              tenantId: "",
+              tenantName: ""
+            }))
+          }))
+        ],
         payment: {
           bankName: formValue.bankName.trim(),
           branchName: formValue.branchName.trim(),
@@ -149,6 +256,20 @@ export const useOwnerProfile = () => {
           owner.checkinAccountHolderName || owner.profile?.accountHolderName || ""
         );
         setIfEmpty("upiId", owner.checkinUpiId || owner.profile?.upiId || "");
+
+        setForm((prev) => ({
+          ...prev,
+          vacantRooms: Number(owner.vacantRooms ?? prev.vacantRooms ?? 0),
+          vacantBeds: Number(owner.vacantBeds ?? prev.vacantBeds ?? 0),
+          occupiedRooms: Number(owner.occupiedRooms ?? prev.occupiedRooms ?? 0),
+          occupiedBeds: Number(owner.occupiedBeds ?? prev.occupiedBeds ?? 0),
+          ...toRoomBedArrays(owner.roomInventory, {
+            occupiedRooms: Number(owner.occupiedRooms ?? prev.occupiedRooms ?? 0),
+            occupiedBeds: Number(owner.occupiedBeds ?? prev.occupiedBeds ?? 0),
+            vacantRooms: Number(owner.vacantRooms ?? prev.vacantRooms ?? 0),
+            vacantBeds: Number(owner.vacantBeds ?? prev.vacantBeds ?? 0)
+          })
+        }));
 
         setAutoInfo((prev) => ({
           email: prev.email || owner.email || owner.profile?.email || owner.checkinEmail || "",
@@ -256,6 +377,8 @@ export const useOwnerProfile = () => {
   return {
     form,
     updateForm,
+    updateRoomCount,
+    updateRoomBed,
     autoInfo,
     showAutoInfo,
     aadhaarLinkedPhone,

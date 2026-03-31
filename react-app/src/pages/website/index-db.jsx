@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useHtmlPage } from "../../utils/htmlPage";
+import { buildSeoConfig } from "../../utils/websiteSeo";
 import { getWebsiteApiUrl } from "../../utils/websiteSession";
 import { useLucideIcons, useWebsiteCommon } from "../../utils/websiteUi";
 
@@ -13,6 +14,14 @@ const getPhotoList = (prop) => {
 
 export default function WebsiteIndexDb() {
   useWebsiteCommon();
+
+  const seo = buildSeoConfig({
+    title: "Available Properties - Roomhy",
+    description:
+      "Browse available Roomhy properties by city and type. This page supports internal discovery of verified rental listings.",
+    path: "/website/index-db",
+    robots: "noindex, follow"
+  });
 
   const apiUrl = useMemo(() => getWebsiteApiUrl(), []);
   const [allProperties, setAllProperties] = useState([]);
@@ -110,15 +119,18 @@ export default function WebsiteIndexDb() {
     },
     metas: [
       { charset: "UTF-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1.0" }
+      { name: "viewport", content: "width=device-width, initial-scale=1.0" },
+      ...seo.metas
     ],
     bases: [],
     links: [
       {
         rel: "stylesheet",
         href: "/website/assets/css/index-db.css"
-      }
+      },
+      ...seo.links
     ],
+    headScripts: seo.headScripts,
     styles: [],
     scripts: [
       { src: "https://cdn.tailwindcss.com" }

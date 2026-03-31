@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-03-31T12:52:51.994Z",
+  "environment": "development",
+  "totalTests": 11,
+  "passedTests": 11,
+  "failedTests": 0,
+  "results": [
+    {
+      "id": 1,
+      "name": "welcome_main_menu",
+      "status": "PASSED"
+    },
+    {
+      "id": 2,
+      "name": "signup_link",
+      "status": "PASSED"
+    },
+    {
+      "id": 3,
+      "name": "login_link",
+      "status": "PASSED"
+    },
+    {
+      "id": 4,
+      "name": "city_selection_prompt",
+      "status": "PASSED"
+    },
+    {
+      "id": 5,
+      "name": "area_selection_prompt",
+      "status": "PASSED"
+    },
+    {
+      "id": 6,
+      "name": "property_results",
+      "status": "PASSED"
+    },
+    {
+      "id": 7,
+      "name": "booking_confirmed_menu",
+      "status": "PASSED"
+    },
+    {
+      "id": 8,
+      "name": "refund_request_link",
+      "status": "PASSED"
+    },
+    {
+      "id": 12,
+      "name": "support_menu",
+      "status": "PASSED"
+    },
+    {
+      "id": 13,
+      "name": "owner_support",
+      "status": "PASSED"
+    },
+    {
+      "id": 14,
+      "name": "tenant_support",
+      "status": "PASSED"
+    }
+  ]
+}

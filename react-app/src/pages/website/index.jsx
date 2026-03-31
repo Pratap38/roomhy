@@ -1,6 +1,7 @@
 import React from "react";
 import templateHtml from "./index.template.html?raw";
 import { useHtmlPage } from "../../utils/htmlPage";
+import { buildOrganizationJsonLd, buildSeoConfig, buildWebsiteJsonLd } from "../../utils/websiteSeo";
 
 const parseAttributes = (input = "") => {
   const attrs = {};
@@ -145,12 +146,30 @@ const styles = extractWrappedTagEntries("style", templateHtml)
 const bodyHtml = extractBodyContent(templateHtml);
 
 export default function WebsiteIndex() {
+  const seo = buildSeoConfig({
+    title: "Roomhy | Student Rentals, PG, Hostels and Coliving in India",
+    description:
+      "Find verified PGs, hostels, coliving spaces and student rentals on Roomhy. Compare locations, rent, beds and availability without brokerage.",
+    path: "/website/index",
+    keywords: [
+      "student rental website",
+      "pg for rent",
+      "hostel near college",
+      "rooms for rent",
+      "coliving in india",
+      "broker free rentals",
+      "roomhy"
+    ],
+    jsonLd: [buildOrganizationJsonLd(), buildWebsiteJsonLd()]
+  });
+
   useHtmlPage({
-    title,
+    title: "Roomhy | Student Rentals, PG, Hostels and Coliving in India",
     bodyClass: bodyAttrs.class === true ? "" : bodyAttrs.class || "",
     htmlAttrs,
-    metas,
-    links,
+    metas: [...metas, ...seo.metas],
+    links: [...links, ...seo.links],
+    headScripts: seo.headScripts,
     scripts,
     styles,
     inlineScripts,

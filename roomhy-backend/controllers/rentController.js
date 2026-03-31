@@ -2,6 +2,7 @@ const Rent = require('../models/Rent');
 const Tenant = require('../models/Tenant');
 const Property = require('../models/Property');
 const { sendMail } = require('../utils/mailer');
+const { sendTemplateToResolvedUser } = require('../utils/whatsappBot');
 const Notification = require('../models/Notification');
 const Owner = require('../models/Owner');
 const crypto = require('crypto');
@@ -382,6 +383,18 @@ async function sendPaymentConfirmationEmail(rent) {
             await sendMail(process.env.ADMIN_EMAIL, `[Copy] ${subject}`, '', html);
         }
 
+        try {
+            await sendTemplateToResolvedUser({
+                phone: rent.tenantPhone || '',
+                email: rent.tenantEmail || '',
+                userId: rent.tenantLoginId || '',
+                templateName: 'roomhy_payment_received',
+                variables: [String(rent.paidAmount || 0), rent.propertyName || 'Property', rent.tenantName || 'Tenant']
+            });
+        } catch (whatsAppErr) {
+            console.warn('payment received whatsapp failed:', whatsAppErr.message);
+        }
+
         console.log('Payment confirmation email attempted for', rent.tenantEmail || 'no-tenant-email');
     } catch (err) {
         console.error('Failed to send payment email:', err.message);
@@ -525,6 +538,23 @@ async function sendRentReminderEmail(rent, type = 'initial') {
         }
         if (process.env.ADMIN_EMAIL) {
             await sendMail(process.env.ADMIN_EMAIL, `[Copy] ${subject}`, text, html);
+        }
+
+        try {
+            await sendTemplateToResolvedUser({
+                phone: rent.tenantPhone || '',
+                email: rent.tenantEmail || '',
+                userId: rent.tenantLoginId || '',
+                templateName: 'roomhy_rent_due_reminder',
+                variables: [
+                    rent.tenantName || 'Tenant',
+                    rent.propertyName || 'Property',
+                    `15 ${String(rent.collectionMonth || '').trim()}`.trim(),
+                    String(rent.rentAmount || 0)
+                ]
+            });
+        } catch (whatsAppErr) {
+            console.warn('rent due whatsapp failed:', whatsAppErr.message);
         }
 
         console.log('Rent reminder email attempted for', rent.tenantEmail || 'no-tenant-email');
@@ -902,6 +932,18 @@ exports.markCashReceivedByOwner = async (req, res) => {
             </div>
         `;
         await sendMail(rent.tenantEmail, 'RoomHy Cash Payment OTP', '', html);
+
+        try {
+            await sendTemplateToResolvedUser({
+                phone: rent.tenantPhone || '',
+                email: rent.tenantEmail || '',
+                userId: rent.tenantLoginId || '',
+                templateName: 'roomhy_otp_verification',
+                variables: [otp, '10']
+            });
+        } catch (whatsAppErr) {
+            console.warn('cash otp whatsapp failed:', whatsAppErr.message);
+        }
 
         return res.json({ success: true, message: 'OTP sent to tenant email', rentId: String(rent._id) });
     } catch (err) {

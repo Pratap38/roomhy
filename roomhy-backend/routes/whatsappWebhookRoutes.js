@@ -6,6 +6,7 @@ const {
     clearSession,
     getSession,
     sendButtonMessage,
+    sendTemplateMessage,
     sendTextMessage,
     setSession
 } = require('../utils/whatsappBot');
@@ -223,91 +224,154 @@ async function sendPropertyResults(to, phone, cityName, areaName) {
         return;
     }
 
-    const lines = [
-        `Properties in ${areaName}, ${cityName}:`,
-        ''
-    ];
+    const propertyLinks = properties
+        .map((property, index) =>
+            `${index + 1}. ${property.name} - INR ${property.rent || 0}\n${getWebsiteLink(`/website/property?id=${encodeURIComponent(property.id)}`)}`
+        )
+        .join('\n\n');
 
-    properties.forEach((property, index) => {
-        lines.push(`${index + 1}. ${property.name}`);
-        lines.push(`Rent: INR ${property.rent || 0}`);
-        lines.push(getWebsiteLink(`/website/property?id=${encodeURIComponent(property.id)}`));
-        lines.push('');
-    });
+    const sent = await sendTemplateMessage(
+        to,
+        'roomhy_property_results',
+        ['Guest', cityName, areaName, `${propertyLinks}\n\nMore: ${browseLink}`.slice(0, 1024)],
+        { skipPhoneNormalization: true }
+    );
 
-    lines.push(`More in this city: ${browseLink}`);
-    await sendTextMessage(to, compactText(lines));
+    if (!sent) {
+        const lines = [
+            `Properties in ${areaName}, ${cityName}:`,
+            ''
+        ];
+
+        properties.forEach((property, index) => {
+            lines.push(`${index + 1}. ${property.name}`);
+            lines.push(`Rent: INR ${property.rent || 0}`);
+            lines.push(getWebsiteLink(`/website/property?id=${encodeURIComponent(property.id)}`));
+            lines.push('');
+        });
+
+        lines.push(`More in this city: ${browseLink}`);
+        await sendTextMessage(to, compactText(lines));
+    }
 }
 
 async function sendSignupLink(to, phone) {
     setSession(phone, { step: 'awaiting_auth_completion' });
-    await sendTextMessage(
+    const sent = await sendTemplateMessage(
         to,
-        compactText([
-            'Signup here:',
-            getWebsiteLink('/website/signup?mode=signup'),
-            '',
-            'After signup is complete, reply with "done" or "menu".'
-        ])
+        'roomhy_signup_link',
+        ['Guest', getWebsiteLink('/website/signup?mode=signup')],
+        { skipPhoneNormalization: true }
     );
+    if (!sent) {
+        await sendTextMessage(
+            to,
+            compactText([
+                'Signup here:',
+                getWebsiteLink('/website/signup?mode=signup'),
+                '',
+                'After signup is complete, reply with "done" or "menu".'
+            ])
+        );
+    }
 }
 
 async function sendLoginLink(to, phone) {
     setSession(phone, { step: 'awaiting_auth_completion' });
-    await sendTextMessage(
+    const sent = await sendTemplateMessage(
         to,
-        compactText([
-            'Login here:',
-            getWebsiteLink('/website/signup?mode=login'),
-            '',
-            'After login is complete, reply with "done" or "menu".'
-        ])
+        'roomhy_login_link',
+        ['Guest', getWebsiteLink('/website/signup?mode=login')],
+        { skipPhoneNormalization: true }
     );
+    if (!sent) {
+        await sendTextMessage(
+            to,
+            compactText([
+                'Login here:',
+                getWebsiteLink('/website/signup?mode=login'),
+                '',
+                'After login is complete, reply with "done" or "menu".'
+            ])
+        );
+    }
 }
 
 async function sendBiddingLink(to) {
-    await sendTextMessage(
+    const sent = await sendTemplateMessage(
         to,
-        compactText([
-            'Fast bidding link:',
-            getWebsiteLink('/website/fast-bidding')
-        ])
+        'roomhy_fast_bidding_link',
+        ['Guest', getWebsiteLink('/website/fast-bidding')],
+        { skipPhoneNormalization: true }
     );
+    if (!sent) {
+        await sendTextMessage(
+            to,
+            compactText([
+                'Fast bidding link:',
+                getWebsiteLink('/website/fast-bidding')
+            ])
+        );
+    }
 }
 
 async function sendListingLink(to) {
-    await sendTextMessage(
+    const sent = await sendTemplateMessage(
         to,
-        compactText([
-            'List your property here:',
-            getWebsiteLink('/website/list')
-        ])
+        'roomhy_listing_link',
+        ['Guest', getWebsiteLink('/website/list')],
+        { skipPhoneNormalization: true }
     );
+    if (!sent) {
+        await sendTextMessage(
+            to,
+            compactText([
+                'List your property here:',
+                getWebsiteLink('/website/list')
+            ])
+        );
+    }
 }
 
 async function sendOwnerSupport(to) {
-    await sendTextMessage(
+    const sent = await sendTemplateMessage(
         to,
-        compactText([
-            'Owner support',
-            `Owner panel login: ${getAppLink('/propertyowner/ownerlogin')}`,
-            `Phone: ${BOT_SUPPORT_PHONE}`,
-            `Email: ${BOT_SUPPORT_EMAIL}`
-        ])
+        'roomhy_owner_support',
+        ['Owner', getAppLink('/propertyowner/ownerlogin'), BOT_SUPPORT_PHONE, BOT_SUPPORT_EMAIL],
+        { skipPhoneNormalization: true }
     );
+    if (!sent) {
+        await sendTextMessage(
+            to,
+            compactText([
+                'Owner support',
+                `Owner panel login: ${getAppLink('/propertyowner/ownerlogin')}`,
+                `Phone: ${BOT_SUPPORT_PHONE}`,
+                `Email: ${BOT_SUPPORT_EMAIL}`
+            ])
+        );
+    }
 }
 
 async function sendTenantSupport(to) {
-    await sendTextMessage(
+    const sent = await sendTemplateMessage(
         to,
-        compactText([
-            'Tenant support',
-            `Website login/signup: ${getWebsiteLink('/website/signup?mode=login')}`,
-            `My stays: ${getWebsiteLink('/website/mystays')}`,
-            `Phone: ${BOT_SUPPORT_PHONE}`,
-            `Email: ${BOT_SUPPORT_EMAIL}`
-        ])
+        'roomhy_tenant_support',
+        ['Tenant', getWebsiteLink('/website/signup?mode=login'), getWebsiteLink('/website/mystays'), BOT_SUPPORT_PHONE, BOT_SUPPORT_EMAIL],
+        { skipPhoneNormalization: true }
     );
+    if (!sent) {
+        await sendTextMessage(
+            to,
+            compactText([
+                'Tenant support',
+                `Website login/signup: ${getWebsiteLink('/website/signup?mode=login')}`,
+                `My stays: ${getWebsiteLink('/website/mystays')}`,
+                `Phone: ${BOT_SUPPORT_PHONE}`,
+                `Email: ${BOT_SUPPORT_EMAIL}`
+            ])
+        );
+    }
 }
 
 async function sendBookingConfirmationMenu(to, phone) {
@@ -337,15 +401,23 @@ async function sendBookingConfirmationMenu(to, phone) {
 }
 
 async function sendRefundLink(to) {
-    await sendTextMessage(
+    const sent = await sendTemplateMessage(
         to,
-        compactText([
-            'Refund request link:',
-            getWebsiteLink('/website/refund-request'),
-            '',
-            'If your booking is already visible in My Stays, you can also raise refund from there.'
-        ])
+        'roomhy_refund_link',
+        ['Tenant', getWebsiteLink('/website/refund-request')],
+        { skipPhoneNormalization: true }
     );
+    if (!sent) {
+        await sendTextMessage(
+            to,
+            compactText([
+                'Refund request link:',
+                getWebsiteLink('/website/refund-request'),
+                '',
+                'If your booking is already visible in My Stays, you can also raise refund from there.'
+            ])
+        );
+    }
 }
 
 async function sendAlternativePropertyFlow(to, phone) {
@@ -392,7 +464,15 @@ async function handleIncomingMessage(senderPhone, incomingText) {
 
     if (['hi', 'hello', 'hey', 'start'].includes(text)) {
         clearSession(senderPhone);
-        await sendMainMenu(senderPhone);
+        const sent = await sendTemplateMessage(
+            senderPhone,
+            'roomhy_bot_welcome',
+            ['Guest'],
+            { skipPhoneNormalization: true }
+        );
+        if (!sent) {
+            await sendMainMenu(senderPhone);
+        }
         return;
     }
 
@@ -487,19 +567,27 @@ async function handleIncomingMessage(senderPhone, incomingText) {
         return;
     }
 
-    await sendTextMessage(
+    const sent = await sendTemplateMessage(
         senderPhone,
-        compactText([
-            'Reply with one of these commands:',
-            'signup',
-            'login',
-            'bidding',
-            'view property',
-            'list property',
-            'support',
-            'booking confirmed'
-        ])
+        'roomhy_bot_fallback',
+        ['Guest'],
+        { skipPhoneNormalization: true }
     );
+    if (!sent) {
+        await sendTextMessage(
+            senderPhone,
+            compactText([
+                'Reply with one of these commands:',
+                'signup',
+                'login',
+                'bidding',
+                'view property',
+                'list property',
+                'support',
+                'booking confirmed'
+            ])
+        );
+    }
 }
 
 async function handleButtonReply(senderPhone, buttonId) {

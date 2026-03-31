@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useHtmlPage } from "../../utils/htmlPage";
+import { buildBreadcrumbJsonLd, buildSeoConfig } from "../../utils/websiteSeo";
 import { getWebsiteApiUrl, getWebsiteUser, getWebsiteUserId, isWebsiteLoggedIn, logoutWebsite } from "../../utils/websiteSession";
 import { addFavorite, isFavorite, loadFavorites, removeFavorite } from "../../utils/websiteFavorites";
 import { useHeroSlideshow, useLucideIcons, useWebsiteCommon, useWebsiteMenu } from "../../utils/websiteUi";
@@ -367,19 +368,74 @@ export default function WebsiteProperty() {
   const handleSignupRedirect = () => { setShowSignupModal(false); window.location.href = "signup"; };
   const handleContinueAsGuest = () => setShowSignupModal(false);
 
+  const seo = useMemo(() => {
+    const info = propertyData?.propertyInfo || {};
+    const propertyId = new URLSearchParams(window.location.search).get("id") || "";
+    const name = info.name || info.title || propertyData?.property_name || propertyData?.title || "Roomhy Property";
+    const city = info.city || info.cityName || propertyData?.city || "";
+    const area = info.area || info.locality || propertyData?.locality || propertyData?.area || "";
+    const rentValue = info.monthlyRent || info.rent || propertyData?.monthlyRent || propertyData?.rent || "";
+    const rentText = rentValue ? ` from Rs. ${String(rentValue).replace(/[^\d]/g, "") || rentValue}` : "";
+    const locationText = [area, city].filter(Boolean).join(", ");
+    const description = locationText
+      ? `${name} in ${locationText}${rentText}. View photos, amenities, room and bed availability, rent and booking details on Roomhy.`
+      : `${name}${rentText}. View photos, amenities, availability and booking details on Roomhy.`;
+    const path = propertyId ? `/website/property?id=${encodeURIComponent(propertyId)}` : "/website/property";
+    const image =
+      galleryPhotos[0] ||
+      bannerPhoto ||
+      "https://roomhy.com/website/images/logoroomhy.jpg";
+
+    return buildSeoConfig({
+      title: `${name}${locationText ? ` | ${locationText}` : ""} | Roomhy`,
+      description,
+      path,
+      image,
+      type: "article",
+      keywords: [name, city, area, "student rental", "pg", "hostel", "roomhy"].filter(Boolean),
+      jsonLd: [
+        buildBreadcrumbJsonLd([
+          { name: "Home", path: "/website/index" },
+          { name: "Our Properties", path: "/website/ourproperty" },
+          { name, path }
+        ]),
+        {
+          "@context": "https://schema.org",
+          "@type": "Residence",
+          name,
+          description,
+          url: path.startsWith("http") ? path : `https://roomhy.com${path}`,
+          image,
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: area || city || "",
+            addressRegion: city || ""
+          }
+        }
+      ]
+    });
+  }, [bannerPhoto, galleryPhotos, propertyData]);
+
   useHtmlPage({
-    title: "Roomhy Property",
+    title: seo.title || "Roomhy Property",
     bodyClass: "text-gray-800",
     htmlAttrs: { "lang": "en", "class": "scroll-smooth" },
-    metas: [{ "charset": "UTF-8" }, { "name": "viewport", "content": "width=device-width, initial-scale=1.0" }, { "name": "referrer", "content": "no-referrer-when-downgrade" }],
+    metas: [
+      { "charset": "UTF-8" },
+      { "name": "viewport", "content": "width=device-width, initial-scale=1.0" },
+      { "name": "referrer", "content": "no-referrer-when-downgrade" },
+      ...seo.metas
+    ],
     bases: [],
     links: [
       { "rel": "preconnect", "href": "https://fonts.googleapis.com" },
       { "rel": "preconnect", "href": "https://fonts.gstatic.com", "crossorigin": true },
       { "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap", "rel": "stylesheet" },
       { "rel": "stylesheet", "href": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css", "crossorigin": "anonymous", "referrerpolicy": "no-referrer" },
-      { "rel": "stylesheet", "href": "/website/assets/css/property.css" }
+      { "rel": "stylesheet", "href": "/website/assets/css/property.css" },
+      ...seo.links
     ],
+    headScripts: seo.headScripts,
     styles: [],
     scripts: [{ "src": "https://cdn.tailwindcss.com" }, { "src": "https://unpkg.com/lucide@latest" }],
     inlineScripts: [],

@@ -195,6 +195,8 @@ try {
     console.log('  ✓ chatRoutes');
     app.use('/api/email', require('./routes/emailRoutes'));
     console.log('  ✓ emailRoutes');
+    app.use('/api/whatsapp', require('./routes/whatsappRoutes'));
+    console.log('  ✓ whatsappRoutes');
     app.use('/webhook', require('./routes/whatsappWebhookRoutes'));
     console.log('  ✓ whatsappWebhookRoutes');
     app.use('/api/checkin', require('./routes/checkinRoutes'));

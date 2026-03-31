@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useHtmlPage } from "../../utils/htmlPage";
+import { buildBreadcrumbJsonLd, buildOrganizationJsonLd, buildSeoConfig } from "../../utils/websiteSeo";
 import { getWebsiteApiUrl } from "../../utils/websiteSession";
 import { useHeroSlideshow, useLucideIcons, useWebsiteCommon, useWebsiteMenu } from "../../utils/websiteUi";
 import { getStoredCities } from "../../utils/websiteData";
@@ -8,6 +9,21 @@ export default function WebsiteList() {
   useWebsiteCommon();
   useWebsiteMenu();
   useHeroSlideshow();
+
+  const seo = buildSeoConfig({
+    title: "List Your Property on Roomhy | Rental, PG and Hostel Owners",
+    description:
+      "List your hostel, PG, room or student rental on Roomhy. Reach verified demand, share availability, and manage leads with faster onboarding.",
+    path: "/website/list",
+    keywords: ["list rental property", "list pg", "hostel owner onboarding", "student rental leads"],
+    jsonLd: [
+      buildOrganizationJsonLd(),
+      buildBreadcrumbJsonLd([
+        { name: "Home", path: "/website/index" },
+        { name: "List Your Property", path: "/website/list" }
+      ])
+    ]
+  });
 
   const apiUrl = useMemo(() => getWebsiteApiUrl(), []);
   const [cityOptions, setCityOptions] = useState([]);
@@ -150,7 +166,7 @@ export default function WebsiteList() {
   };
 
   useHtmlPage({
-    title: "Roomhy - List Your Property",
+    title: "List Your Property on Roomhy | Rental, PG and Hostel Owners",
     bodyClass: "text-gray-800 flex flex-col min-h-screen",
     htmlAttrs: {
       lang: "en",
@@ -163,7 +179,8 @@ export default function WebsiteList() {
       {
         name: "viewport",
         content: "width=device-width, initial-scale=1.0"
-      }
+      },
+      ...seo.metas
     ],
     bases: [],
     links: [
@@ -183,8 +200,10 @@ export default function WebsiteList() {
       {
         rel: "stylesheet",
         href: "/website/assets/css/list.css"
-      }
+      },
+      ...seo.links
     ],
+    headScripts: seo.headScripts,
     styles: [],
     scripts: [
       {

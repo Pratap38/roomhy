@@ -1,5 +1,6 @@
 import React from "react";
 import { useHtmlPage } from "../../utils/htmlPage";
+import { buildBreadcrumbJsonLd, buildOrganizationJsonLd, buildSeoConfig } from "../../utils/websiteSeo";
 import { useHeroSlideshow, useWebsiteCommon, useWebsiteMenu } from "../../utils/websiteUi";
 
 export default function WebsiteAbout() {
@@ -7,8 +8,23 @@ export default function WebsiteAbout() {
   useWebsiteMenu();
   useHeroSlideshow();
 
+  const seo = buildSeoConfig({
+    title: "About Roomhy | Student Housing Platform in India",
+    description:
+      "Learn how Roomhy helps students find verified rentals, PGs, hostels and coliving spaces with a simpler, broker-free booking experience.",
+    path: "/website/about",
+    keywords: ["about roomhy", "student housing platform", "verified rentals india", "broker free accommodation"],
+    jsonLd: [
+      buildOrganizationJsonLd(),
+      buildBreadcrumbJsonLd([
+        { name: "Home", path: "/website/index" },
+        { name: "About", path: "/website/about" }
+      ])
+    ]
+  });
+
   useHtmlPage({
-    title: "About Roomhy - Our Mission, Vision, and Values",
+    title: "About Roomhy | Student Housing Platform in India",
     bodyClass: "text-gray-800 flex flex-col min-h-screen",
     htmlAttrs: {
   "lang": "en",
@@ -21,7 +37,8 @@ export default function WebsiteAbout() {
   {
     "name": "viewport",
     "content": "width=device-width, initial-scale=1.0"
-  }
+  },
+  ...seo.metas
 ],
     bases: [],
     links: [
@@ -45,8 +62,10 @@ export default function WebsiteAbout() {
   {
     "rel": "stylesheet",
     "href": "/website/assets/css/about.css"
-  }
+  },
+  ...seo.links
 ],
+    headScripts: seo.headScripts,
     styles: [],
     scripts: [
   {

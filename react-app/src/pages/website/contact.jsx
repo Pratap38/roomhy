@@ -1,5 +1,6 @@
 import React from "react";
 import { useHtmlPage } from "../../utils/htmlPage";
+import { buildBreadcrumbJsonLd, buildOrganizationJsonLd, buildSeoConfig } from "../../utils/websiteSeo";
 import { useHeroSlideshow, useWebsiteCommon, useWebsiteMenu } from "../../utils/websiteUi";
 
 export default function WebsiteContact() {
@@ -7,8 +8,23 @@ export default function WebsiteContact() {
   useWebsiteMenu();
   useHeroSlideshow();
 
+  const seo = buildSeoConfig({
+    title: "Contact Roomhy | Support for Rentals, PG and Hostel Bookings",
+    description:
+      "Contact Roomhy for help with student rentals, PG booking, hostel availability, owner onboarding and support across our listed cities.",
+    path: "/website/contact",
+    keywords: ["contact roomhy", "rental support", "pg booking help", "hostel support india"],
+    jsonLd: [
+      buildOrganizationJsonLd(),
+      buildBreadcrumbJsonLd([
+        { name: "Home", path: "/website/index" },
+        { name: "Contact", path: "/website/contact" }
+      ])
+    ]
+  });
+
   useHtmlPage({
-    title: "Contact Us - Roomhy",
+    title: "Contact Roomhy | Support for Rentals, PG and Hostel Bookings",
     bodyClass: "text-gray-800",
     htmlAttrs: {
   "lang": "en",
@@ -20,8 +36,9 @@ export default function WebsiteContact() {
   },
   {
     "name": "viewport",
-    "content": "width=device-width, initial-scale-1.0"
-  }
+    "content": "width=device-width, initial-scale=1.0"
+  },
+  ...seo.metas
 ],
     bases: [],
     links: [
@@ -41,8 +58,10 @@ export default function WebsiteContact() {
   {
     "rel": "stylesheet",
     "href": "/website/assets/css/contact.css"
-  }
+  },
+  ...seo.links
 ],
+    headScripts: seo.headScripts,
     styles: [],
     scripts: [
   {

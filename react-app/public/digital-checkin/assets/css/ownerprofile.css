@@ -123,6 +123,41 @@ form {
   gap: 16px;
 }
 
+.section-card {
+  margin-top: 6px;
+  padding: 20px;
+  border: 2px solid #111;
+  border-radius: 18px;
+  background: #f8f8f5;
+}
+
+.occupancy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.occupancy-block {
+  padding: 16px;
+  border: 2px solid #111;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.room-bed-row {
+  margin-top: 12px;
+}
+
+.occupancy-total {
+  margin: 12px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #111;
+}
+
 .full {
   grid-column: 1 / -1;
 }
@@ -229,7 +264,8 @@ button:disabled {
   }
 
   .grid,
-  .info-panel-grid {
+  .info-panel-grid,
+  .occupancy-grid {
     grid-template-columns: 1fr;
   }
 

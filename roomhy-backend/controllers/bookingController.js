@@ -7,7 +7,7 @@ const ChatRoom = require('../models/ChatRoom');
 const ChatMessage = require('../models/ChatMessage');
 const mailer = require('../utils/mailer');
 const { notifySuperadmin } = require('../utils/superadminNotifier');
-const { sendBookingConfirmationButtons } = require('../utils/whatsappBot');
+const { sendBookingConfirmationButtons, sendTemplateToResolvedUser } = require('../utils/whatsappBot');
 
 function normalizeWebsiteUserId(raw) {
     const value = String(raw || '').trim().toLowerCase();
@@ -221,6 +221,21 @@ exports.createBookingRequest = async (req, res) => {
                     </div>
                 `;
                 await mailer.sendMail(ownerEmail, subject, '', html);
+            }
+            try {
+                await sendTemplateToResolvedUser({
+                    email: ownerEmail || '',
+                    userId: owner_id || '',
+                    templateName: 'roomhy_booking_received',
+                    variables: [
+                        ownerName || 'Owner',
+                        property_name || 'Property',
+                        name || 'Guest',
+                        check_in_date || move_in_date || 'Not specified'
+                    ]
+                });
+            } catch (whatsAppErr) {
+                console.warn('booking received whatsapp failed:', whatsAppErr.message);
             }
         } catch (emailError) {
             console.error('Failed to send booking request notification email:', emailError);
@@ -676,6 +691,17 @@ exports.approveBooking = async (req, res) => {
                     actionUrl: '/website/mystays'
                 })
             }).catch(err => console.log('Notification API call failed:', err.message));
+
+            try {
+                await sendTemplateToResolvedUser({
+                    email: request.email || '',
+                    userId: request.user_id || '',
+                    templateName: 'roomhy_booking_approved',
+                    variables: [tenantName, propertyName]
+                });
+            } catch (whatsAppErr) {
+                console.warn('booking approved whatsapp failed:', whatsAppErr.message);
+            }
         } catch (emailErr) {
             console.error('Error sending approval email:', emailErr);
         }
@@ -717,6 +743,17 @@ exports.rejectBooking = async (req, res) => {
                 success: false, 
                 message: 'Booking request not found' 
             });
+        }
+
+        try {
+            await sendTemplateToResolvedUser({
+                email: request.email || '',
+                userId: request.user_id || '',
+                templateName: 'roomhy_booking_rejected',
+                variables: [request.property_name || 'Property', request.name || 'Guest']
+            });
+        } catch (whatsAppErr) {
+            console.warn('booking rejected whatsapp failed:', whatsAppErr.message);
         }
 
         res.status(200).json({ 
@@ -1254,7 +1291,8 @@ exports.confirmBooking = async (req, res) => {
                 userId: normalizedUserId || booking.user_id || '',
                 cityName,
                 areaName: finalArea || booking.area || '',
-                propertyName: normalizedPropertyName || booking.property_name || normalizedPropertyId || 'Property'
+                propertyName: normalizedPropertyName || booking.property_name || normalizedPropertyId || 'Property',
+                tenantName: full_name || booking.full_name || booking.name || booking.email || 'Guest'
             });
         } catch (whatsAppErr) {
             console.warn('Booking confirmation WhatsApp dispatch failed:', whatsAppErr.message);

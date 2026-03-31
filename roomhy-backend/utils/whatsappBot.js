@@ -9,8 +9,19 @@ function getConfig() {
         accessToken: process.env.WHATSAPP_ACCESS_TOKEN || process.env.ACCESS_TOKEN || '',
         phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.PHONE_NUMBER_ID || '',
         apiVersion: process.env.WHATSAPP_API_VERSION || 'v21.0',
-        defaultCountryCode: process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || '91'
+        defaultCountryCode: process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || '91',
+        templateLanguageCode: process.env.WHATSAPP_TEMPLATE_LANGUAGE_CODE || 'en'
     };
+}
+
+function toTemplateParameters(values = []) {
+    return values
+        .map((value) => (value == null ? '' : String(value).trim()))
+        .filter((value) => value.length > 0)
+        .map((text) => ({
+            type: 'text',
+            text: text.slice(0, 1024)
+        }));
 }
 
 function getSession(phone) {
@@ -144,6 +155,38 @@ async function sendWhatsAppPayload(payload) {
     return true;
 }
 
+async function sendTemplateMessage(to, templateName, variables = [], options = {}) {
+    if (!to || !templateName) return false;
+    const cfg = getConfig();
+    const normalizedTo = options.skipPhoneNormalization
+        ? String(to).trim()
+        : normalizePhoneNumber(to, cfg.defaultCountryCode);
+    if (!normalizedTo) return false;
+
+    const parameters = toTemplateParameters(Array.isArray(variables) ? variables : [variables]);
+    const template = {
+        name: String(templateName).trim(),
+        language: {
+            code: options.languageCode || cfg.templateLanguageCode || 'en'
+        }
+    };
+
+    if (parameters.length) {
+        template.components = [
+            {
+                type: 'body',
+                parameters
+            }
+        ];
+    }
+
+    return sendWhatsAppPayload({
+        to: normalizedTo,
+        type: 'template',
+        template
+    });
+}
+
 async function sendTextMessage(to, body) {
     if (!to || !body) return false;
     return sendWhatsAppPayload({
@@ -190,7 +233,8 @@ async function sendBookingConfirmationButtons({
     userId,
     cityName,
     areaName,
-    propertyName
+    propertyName,
+    tenantName
 }) {
     const resolvedPhone = await resolvePhoneByEmailOrUserId({ phone, email, userId });
     if (!resolvedPhone) return false;
@@ -200,17 +244,29 @@ async function sendBookingConfirmationButtons({
         selectedCityName: cityName || '',
         selectedAreaName: areaName || ''
     });
+    return sendTemplateMessage(
+        resolvedPhone,
+        'roomhy_booking_confirmation',
+        [
+            tenantName || 'Guest',
+            propertyName || 'your property'
+        ],
+        { skipPhoneNormalization: true }
+    );
+}
 
-    const body = [
-        `Booking confirmed for ${propertyName || 'your property'}.`,
-        'Choose refund or alternative property.'
-    ].join('\n');
-
-    return sendButtonMessage(resolvedPhone, body, [
-        { id: 'booking_refund', title: 'Refund' },
-        { id: 'booking_alternative', title: 'Alternative' },
-        { id: 'post_auth_menu', title: 'Main Menu' }
-    ]);
+async function sendTemplateToResolvedUser({
+    phone,
+    email,
+    userId,
+    templateName,
+    variables = []
+}) {
+    const resolvedPhone = await resolvePhoneByEmailOrUserId({ phone, email, userId });
+    if (!resolvedPhone) return false;
+    return sendTemplateMessage(resolvedPhone, templateName, variables, {
+        skipPhoneNormalization: true
+    });
 }
 
 module.exports = {
@@ -220,6 +276,8 @@ module.exports = {
     resolvePhoneByEmailOrUserId,
     sendBookingConfirmationButtons,
     sendButtonMessage,
+    sendTemplateMessage,
+    sendTemplateToResolvedUser,
     sendTextMessage,
     setSession
 };

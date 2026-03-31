@@ -527,6 +527,7 @@ export const useHtmlPage = ({
   metas = [],
   bases = [],
   links = [],
+  headScripts = [],
   styles = [],
   scripts = [],
   inlineScripts = [],
@@ -545,6 +546,7 @@ export const useHtmlPage = ({
             metas,
             bases,
             links,
+            headScripts,
             styles,
             scripts,
             inlineScripts,
@@ -623,6 +625,21 @@ export const useHtmlPage = ({
       const { element, owned } = ensureElement(key, () => {
         const el = document.createElement("meta");
         applyAttributes(el, metaTag);
+        return el;
+      });
+      if (owned) ownedElements.push(element);
+    });
+
+    headScripts.forEach((scriptTag, index) => {
+      const attrs = scriptTag?.attrs || {};
+      const content = scriptTag?.content || "";
+      const key = `head-script:${index}:${attrsKey("script", attrs)}:${hashString(content)}`;
+      const { element, owned } = ensureElement(key, () => {
+        const el = document.createElement("script");
+        applyAttributes(el, attrs);
+        if (content) {
+          el.textContent = content;
+        }
         return el;
       });
       if (owned) ownedElements.push(element);

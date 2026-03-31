@@ -20,6 +20,8 @@ export default function DigitalCheckinOwnerprofile() {
   const {
     form,
     updateForm,
+    updateRoomCount,
+    updateRoomBed,
     autoInfo,
     showAutoInfo,
     aadhaarLinkedPhone,
@@ -145,6 +147,57 @@ export default function DigitalCheckinOwnerprofile() {
               <input value={form.upiId} onChange={(e) => updateForm({ upiId: e.target.value })} />
             </div>
           </div>
+
+          <div className="full section-card">
+            <h2>Occupancy Details</h2>
+            <p>Enter occupied rooms, beds in each occupied room, vacant rooms, and beds in each vacant room.</p>
+            <div className="occupancy-grid">
+              <div className="occupancy-block">
+                <label>Occupied Rooms</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.occupiedRooms}
+                  onChange={(e) => updateRoomCount("occupiedRooms", e.target.value)}
+                />
+                {form.occupiedRoomBeds.map((beds, index) => (
+                  <div key={`occupied-${index}`} className="room-bed-row">
+                    <label>{`Occupied Room ${index + 1} Beds`}</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={beds}
+                      onChange={(e) => updateRoomBed("occupied", index, e.target.value)}
+                    />
+                  </div>
+                ))}
+                <p className="occupancy-total">{`Occupied Beds Total: ${form.occupiedBeds}`}</p>
+              </div>
+
+              <div className="occupancy-block">
+                <label>Vacant Rooms</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.vacantRooms}
+                  onChange={(e) => updateRoomCount("vacantRooms", e.target.value)}
+                />
+                {form.vacantRoomBeds.map((beds, index) => (
+                  <div key={`vacant-${index}`} className="room-bed-row">
+                    <label>{`Vacant Room ${index + 1} Beds`}</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={beds}
+                      onChange={(e) => updateRoomBed("vacant", index, e.target.value)}
+                    />
+                  </div>
+                ))}
+                <p className="occupancy-total">{`Vacant Beds Total: ${form.vacantBeds}`}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="full">
             <h2>Aadhaar OTP Verification</h2>
             <p>Send OTP to the Aadhaar-linked mobile number and complete owner verification on this page.</p>

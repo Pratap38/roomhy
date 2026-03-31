@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /superadmin/
+Disallow: /employee/
+Disallow: /propertyowner/
+Disallow: /tenant/
+Disallow: /digital-checkin/
+Disallow: /api/
+
+Sitemap: https://roomhy.com/sitemap.xml

@@ -6,6 +6,7 @@ const Property = require('../models/Property');
 const Tenant = require('../models/Tenant');
 const { normalizeRoomInventory, summarizeRoomInventory, syncOwnerPropertyOccupancy } = require('../utils/ownerOccupancy');
 const { sendMail } = require('../utils/mailer');
+const { sendTemplateMessage, sendTemplateToResolvedUser } = require('../utils/whatsappBot');
 const { otpLimiter } = require('../middleware/security');
 const { requestAadhaarOtp, verifyAadhaarOtp } = require('../services/cashfreeKycService');
 const {
@@ -174,6 +175,18 @@ async function completeOwnerCheckinAndNotify(loginId) {
         }
     }
 
+    try {
+        await sendTemplateToResolvedUser({
+            phone: owner.phone || owner.profile?.phone || '',
+            email: owner.email || owner.profile?.email || '',
+            userId: owner.loginId || '',
+            templateName: 'roomhy_owner_checkin_complete',
+            variables: [owner.name || owner.profile?.name || 'Owner', owner.loginId || '', dashboardUrl]
+        });
+    } catch (whatsAppErr) {
+        console.error('[OWNER CHECKIN COMPLETE] WhatsApp send error:', whatsAppErr.message);
+    }
+
     return { record, owner, dashboardUrl, loginEmailSent };
 }
 
@@ -215,6 +228,18 @@ async function completeOwnerAgreementAndNotify(loginId, { requestId = '', provid
         } catch (emailErr) {
             console.error('[OWNER AGREEMENT COMPLETE] Email send error:', emailErr.message);
         }
+    }
+
+    try {
+        await sendTemplateToResolvedUser({
+            phone: owner.phone || owner.profile?.phone || '',
+            email: owner.email || owner.profile?.email || '',
+            userId: owner.loginId || '',
+            templateName: 'roomhy_owner_checkin_complete',
+            variables: [owner.name || owner.profile?.name || 'Owner', owner.loginId || '', dashboardUrl]
+        });
+    } catch (whatsAppErr) {
+        console.error('[OWNER AGREEMENT COMPLETE] WhatsApp send error:', whatsAppErr.message);
     }
 
     return { record, owner, dashboardUrl, loginEmailSent };
@@ -266,6 +291,18 @@ async function completeTenantAgreementAndNotify(loginId, { requestId = '', provi
         } catch (emailErr) {
             console.error('[TENANT AGREEMENT COMPLETE] Email send error:', emailErr.message);
         }
+    }
+
+    try {
+        await sendTemplateToResolvedUser({
+            phone: tenant.phone || '',
+            email: tenant.email || '',
+            userId: tenant.loginId || '',
+            templateName: 'roomhy_tenant_checkin_complete',
+            variables: [tenant.name || 'Tenant', tenant.loginId || '', tenantLoginUrl]
+        });
+    } catch (whatsAppErr) {
+        console.error('[TENANT AGREEMENT COMPLETE] WhatsApp send error:', whatsAppErr.message);
     }
 
     return { record, tenant, dashboardUrl, tenantLoginUrl, loginEmailSent };
@@ -442,6 +479,18 @@ router.post('/owner/kyc/send-otp', otpLimiter, async (req, res) => {
         const k = keyFor('owner', loginId, aadhaarNumber);
         otpStore.set(k, { referenceId, expiresAt: Date.now() + 10 * 60 * 1000 });
 
+        try {
+            await sendTemplateToResolvedUser({
+                phone: aadhaarLinkedPhone,
+                email: owner.email || email || '',
+                userId: String(loginId || '').toUpperCase(),
+                templateName: 'roomhy_otp_verification',
+                variables: [raw?.mockOtp || 'OTP Sent', '10']
+            });
+        } catch (whatsAppErr) {
+            console.warn('owner kyc send otp whatsapp failed:', whatsAppErr.message);
+        }
+
         return res.json({
             success: true,
             message: 'OTP sent to Aadhaar linked mobile number',
@@ -475,6 +524,18 @@ router.post('/owner/kyc/verify-otp', otpLimiter, async (req, res) => {
             { $set: { 'kyc.status': 'submitted', 'kyc.submittedAt': new Date() } },
             { new: true }
         );
+
+        try {
+            await sendTemplateToResolvedUser({
+                phone: updatedOwner?.checkinAadhaarLinkedPhone || updatedOwner?.phone || '',
+                email: owner?.email || updatedOwner?.email || '',
+                userId: String(loginId || '').toUpperCase(),
+                templateName: 'roomhy_kyc_verified',
+                variables: [owner?.name || updatedOwner?.name || 'Owner']
+            });
+        } catch (whatsAppErr) {
+            console.warn('owner kyc verified whatsapp failed:', whatsAppErr.message);
+        }
 
         return res.json({
             success: true,
@@ -959,6 +1020,34 @@ router.post('/tenant/kyc/send-otp', otpLimiter, async (req, res) => {
         const k = keyFor('tenant', normalizedLoginId, aadhaarNumber);
         otpStore.set(k, { referenceId, expiresAt: Date.now() + 10 * 60 * 1000 });
         console.log('[CHECKIN OTP] tenant', normalizedLoginId, aadhaarNumber, 'Cashfree OTP requested');
+
+        try {
+            await sendTemplateToResolvedUser({
+                phone: aadhaarLinkedPhone,
+                email: tenant.email || '',
+                userId: normalizedLoginId,
+                templateName: 'roomhy_otp_verification',
+                variables: [raw?.mockOtp || 'OTP Sent', '10']
+            });
+        } catch (whatsAppErr) {
+            console.warn('tenant kyc send otp whatsapp failed:', whatsAppErr.message);
+        }
+
+        try {
+            await sendTemplateToResolvedUser({
+                phone: tenant.phone || aadhaarLinkedPhone || '',
+                email: tenant.email || '',
+                userId: normalizedLoginId,
+                templateName: 'roomhy_kyc_pending',
+                variables: [
+                    tenant.name || 'Tenant',
+                    `${DIGITAL_CHECKIN_URL}/digital-checkin/tenantkyc?loginId=${encodeURIComponent(normalizedLoginId)}`
+                ]
+            });
+        } catch (whatsAppErr) {
+            console.warn('tenant kyc pending whatsapp failed:', whatsAppErr.message);
+        }
+
         return res.json({
             success: true,
             message: 'OTP sent to Aadhaar linked mobile number',
@@ -1002,6 +1091,18 @@ router.post('/tenant/kyc/verify-otp', otpLimiter, async (req, res) => {
         };
         tenant.updatedAt = new Date();
         await tenant.save();
+
+        try {
+            await sendTemplateToResolvedUser({
+                phone: tenant.phone || tenant.kyc?.aadhaarLinkedPhone || '',
+                email: tenant.email || '',
+                userId: normalizedLoginId,
+                templateName: 'roomhy_kyc_verified',
+                variables: [tenant.name || 'Tenant']
+            });
+        } catch (whatsAppErr) {
+            console.warn('tenant kyc verified whatsapp failed:', whatsAppErr.message);
+        }
 
         return res.json({ success: true, record, tenant });
     } catch (err) {
@@ -1183,6 +1284,18 @@ router.post('/tenant/kyc/digilocker/complete', otpLimiter, async (req, res) => {
         };
         await tenant.save();
 
+        try {
+            await sendTemplateToResolvedUser({
+                phone: tenant.phone || tenant.kyc?.aadhaarLinkedPhone || '',
+                email: tenant.email || '',
+                userId: normalizedLoginId,
+                templateName: 'roomhy_kyc_verified',
+                variables: [tenant.name || 'Tenant']
+            });
+        } catch (whatsAppErr) {
+            console.warn('tenant digilocker verified whatsapp failed:', whatsAppErr.message);
+        }
+
         return res.json({ success: true, message: 'DigiLocker verification completed successfully', verificationStatus, record, tenant });
     } catch (err) {
         console.error('tenant/kyc/digilocker/complete error:', err);
@@ -1271,6 +1384,18 @@ router.post('/tenant/agreement', async (req, res) => {
         tenant.agreementRequestId = agreementRequest.requestId;
         tenant.agreementStatus = 'pending_signature';
         await tenant.save();
+
+        try {
+            await sendTemplateToResolvedUser({
+                phone: tenant.phone || '',
+                email: tenant.email || '',
+                userId: normalizedLoginId,
+                templateName: 'roomhy_agreement_sign_link',
+                variables: [tenant.name || 'Tenant', agreementRequest.signUrl]
+            });
+        } catch (whatsAppErr) {
+            console.warn('tenant agreement sign link whatsapp failed:', whatsAppErr.message);
+        }
 
         return res.json({
             success: true,

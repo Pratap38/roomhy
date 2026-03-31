@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useHtmlPage } from "../../utils/htmlPage";
+import { buildBreadcrumbJsonLd, buildOrganizationJsonLd, buildSeoConfig } from "../../utils/websiteSeo";
 import { getWebsiteApiUrl, getWebsiteUser, getWebsiteUserEmail, getWebsiteUserName, isWebsiteLoggedIn } from "../../utils/websiteSession";
 import { loadFavorites, addFavorite, removeFavorite, isFavorite as isFavoriteStored } from "../../utils/websiteFavorites";
 import { useHeroSlideshow, useLucideIcons, useWebsiteCommon, useWebsiteMenu } from "../../utils/websiteUi";
@@ -111,6 +112,28 @@ export default function WebsiteOurproperty() {
   useWebsiteCommon();
   useWebsiteMenu();
   useHeroSlideshow(6000);
+
+  const seo = buildSeoConfig({
+    title: "Student Rentals, PGs, Hostels and Rooms for Rent | Roomhy",
+    description:
+      "Browse verified student rentals, PGs, hostels and coliving spaces on Roomhy. Filter by city, area, price, room type, bed availability and gender suitability.",
+    path: "/website/ourproperty",
+    keywords: [
+      "student rentals",
+      "pg near me",
+      "hostels for rent",
+      "rooms for rent",
+      "coliving spaces",
+      "verified pg"
+    ],
+    jsonLd: [
+      buildOrganizationJsonLd(),
+      buildBreadcrumbJsonLd([
+        { name: "Home", path: "/website/index" },
+        { name: "Our Properties", path: "/website/ourproperty" }
+      ])
+    ]
+  });
 
   const apiUrl = useMemo(() => getWebsiteApiUrl(), []);
   const [cities, setCities] = useState([]);
@@ -672,7 +695,7 @@ export default function WebsiteOurproperty() {
   };
 
   useHtmlPage({
-    title: "Roomhy - Stays, PGs & Hostels",
+    title: "Student Rentals, PGs, Hostels and Rooms for Rent | Roomhy",
     bodyClass: "text-gray-800",
     htmlAttrs: {
   "lang": "en",
@@ -689,7 +712,8 @@ export default function WebsiteOurproperty() {
   {
     "name": "referrer",
     "content": "no-referrer-when-downgrade"
-  }
+  },
+  ...seo.metas
 ],
     bases: [],
     links: [
@@ -709,8 +733,10 @@ export default function WebsiteOurproperty() {
   {
     "rel": "stylesheet",
     "href": "/website/assets/css/ourproperty.css"
-  }
+  },
+  ...seo.links
 ],
+    headScripts: seo.headScripts,
     styles: [],
     scripts: [
       {

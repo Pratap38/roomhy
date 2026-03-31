@@ -5,6 +5,7 @@ const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 const mailer = require('../utils/mailer');
 const { notifySuperadmin } = require('../utils/superadminNotifier');
+const { sendTemplateToResolvedUser } = require('../utils/whatsappBot');
 const { formLimiter, otpLimiter, captchaProtection } = require('../middleware/security');
 
 // Temporary OTP store (for production, move to Redis/database)
@@ -119,6 +120,17 @@ router.post('/signup/request-otp', otpLimiter, captchaProtection({ required: fal
             `Your Roomhy verification code is ${otp}. It is valid for 10 minutes.`,
             renderOtpHtml(firstName, otp)
         );
+
+        try {
+            await sendTemplateToResolvedUser({
+                phone,
+                email,
+                templateName: 'roomhy_otp_verification',
+                variables: [otp, '10']
+            });
+        } catch (whatsAppErr) {
+            console.warn('signup/request-otp whatsapp error:', whatsAppErr.message);
+        }
 
         return res.json({
             success: true,
@@ -300,6 +312,18 @@ router.post('/login/request-otp', otpLimiter, captchaProtection({ required: fals
             `Your Roomhy login verification code is ${otp}. It is valid for 10 minutes.`,
             renderLoginOtpHtml(signup.firstName || user.name, otp)
         );
+
+        try {
+            await sendTemplateToResolvedUser({
+                phone: user.phone || '',
+                email,
+                userId: user.loginId || '',
+                templateName: 'roomhy_otp_verification',
+                variables: [otp, '10']
+            });
+        } catch (whatsAppErr) {
+            console.warn('login/request-otp whatsapp error:', whatsAppErr.message);
+        }
 
         return res.json({
             success: true,

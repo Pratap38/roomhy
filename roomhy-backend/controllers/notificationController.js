@@ -5,6 +5,7 @@ const Employee = require('../models/Employee');
 const AreaManager = require('../models/AreaManager');
 const Tenant = require('../models/Tenant');
 const mailer = require('../utils/mailer');
+const { sendTemplateToResolvedUser } = require('../utils/whatsappBot');
 
 async function resolveEmailByLoginId(loginId) {
   const id = (loginId || '').toString().trim().toUpperCase();
@@ -294,6 +295,19 @@ exports.sendEmailNotification = async (req, res) => {
         const sent = await mailer.sendMail(resolvedOwnerEmail, subject || 'RoomHy Notification', message || '', emailHTML);
         if (!sent) {
             return res.status(500).json({ error: 'Email transporter is not configured or delivery failed' });
+        }
+        try {
+            await sendTemplateToResolvedUser({
+                email: resolvedOwnerEmail,
+                userId: normalizedOwnerLoginId || '',
+                templateName: 'roomhy_general_notification',
+                variables: [
+                    data?.ownerName || data?.user_name || normalizedOwnerLoginId || 'User',
+                    message || subject || 'New account update'
+                ]
+            });
+        } catch (whatsAppErr) {
+            console.warn('general notification whatsapp failed:', whatsAppErr.message);
         }
         console.log(`✅ Email notification sent to ${resolvedOwnerEmail} for ${type}`);
         

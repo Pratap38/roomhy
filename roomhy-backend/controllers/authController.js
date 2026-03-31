@@ -6,6 +6,7 @@ const Owner = require('../models/Owner');
 const KYCVerification = require('../models/KYCVerification');
 const jwt = require('jsonwebtoken');
 const mailer = require('../utils/mailer');
+const { sendTemplateToResolvedUser } = require('../utils/whatsappBot');
 const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
 
 // OTP storage (in production, use Redis or database)
@@ -123,6 +124,16 @@ exports.forgotPasswordRequestOTP = async (req, res) => {
         // Store OTP with email and expiry
         otpStore.set(email, { otp, expiryTime });
         console.log('[ForgotPassword] Generated OTP for:', email);
+
+        try {
+            await sendTemplateToResolvedUser({
+                email,
+                templateName: 'roomhy_otp_verification',
+                variables: [otp, '10']
+            });
+        } catch (whatsAppErr) {
+            console.warn('[ForgotPassword] WhatsApp OTP send failed:', whatsAppErr.message);
+        }
 
         // Send OTP email
         const emailHtml = `
