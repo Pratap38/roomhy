@@ -119,7 +119,7 @@ const templateTests = [
     body: 'Owner support\n\nOwner panel login: {{app_url}}/propertyowner/ownerlogin\nPhone: {{support_phone}}\nEmail: {{support_email}}\n\nNeed help with listings, payments, or tenant management? We\'re here to help!',
     variables: {
       app_url: 'https://app.roomhy.com',
-      support_phone: '+91-8764425030',
+      support_phone: '+91-9597066788',
       support_email: 'support@roomhy.com'
     },
     description: 'Owner-specific support information'
@@ -131,7 +131,7 @@ const templateTests = [
     body: 'Tenant support\n\nWebsite login/signup: {{website_url}}/website/signup?mode=login\nMy stays: {{website_url}}/website/mystays\nPhone: {{support_phone}}\nEmail: {{support_email}}\n\nCheck your bookings, raise refunds, and chat with property owners from My Stays!',
     variables: {
       website_url: 'https://roomhy.com',
-      support_phone: '+91-8764425030',
+      support_phone: '+91-9597066788',
       support_email: 'support@roomhy.com'
     },
     description: 'Tenant-specific support information'
