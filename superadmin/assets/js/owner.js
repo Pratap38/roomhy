@@ -336,14 +336,14 @@ lucide.createIcons();
                 const latestRentInfo = latestRentMap[id] || {};
                 const statusRaw = (o.kycStatus || o.kyc?.status || '').toLowerCase();
                 const derivedKycStatus = (statusRaw === 'verified' || statusRaw === 'submitted' || o.checkinOtpVerified || o.checkinSubmittedAt) ? 'Verified' : 'Pending';
-                const vacantRooms = o.vacantRooms || visitInfo.vacantRooms || 0;
-                const vacantBeds = o.vacantBeds || visitInfo.vacantBeds || 0;
-                const occupiedRooms = o.occupiedRooms || visitInfo.occupiedRooms || 0;
-                const occupiedBeds = o.occupiedBeds || visitInfo.occupiedBeds || 0;
+                const vacantRooms = o.vacantRooms ?? visitInfo.vacantRooms ?? 0;
+                const vacantBeds = o.vacantBeds ?? visitInfo.vacantBeds ?? 0;
+                const occupiedRooms = o.occupiedRooms ?? visitInfo.occupiedRooms ?? 0;
+                const occupiedBeds = o.occupiedBeds ?? visitInfo.occupiedBeds ?? 0;
 
                 return {
                     "Owner ID": id,
-                    "Name & Contact": o.name || 'Unknown',
+                    "Name & Contact": [o.name || 'Unknown', o.checkinPhone || o.phone || '-', o.email || '-'].join(' | '),
                     "Property Under Owner": o.propertyTitle || o.propertyName || '-',
                     "DOB": o.checkinDob || '-',
                     "Gmail": o.email || '-',
@@ -397,10 +397,10 @@ lucide.createIcons();
                 const latestRentInfo = latestRentMap[id] || {};
                 const monthlyRent = visitInfo.monthlyRent || latestRentInfo.rentAmount || '-';
                 const securityDeposit = visitInfo.deposit || latestRentInfo.deposit || '-';
-                const vacantRooms = o.vacantRooms || visitInfo.vacantRooms || 0;
-                const vacantBeds = o.vacantBeds || visitInfo.vacantBeds || 0;
-                const occupiedRooms = o.occupiedRooms || visitInfo.occupiedRooms || 0;
-                const occupiedBeds = o.occupiedBeds || visitInfo.occupiedBeds || 0;
+                const vacantRooms = o.vacantRooms ?? visitInfo.vacantRooms ?? 0;
+                const vacantBeds = o.vacantBeds ?? visitInfo.vacantBeds ?? 0;
+                const occupiedRooms = o.occupiedRooms ?? visitInfo.occupiedRooms ?? 0;
+                const occupiedBeds = o.occupiedBeds ?? visitInfo.occupiedBeds ?? 0;
                 let kycBadge = `<span class="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded">Pending</span>`;
                 if (kycStatus === 'pending') kycBadge = `<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded font-bold">Pending</span>`;
                 if (kycStatus === 'verified') kycBadge = `<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded font-bold">Verified</span>`;

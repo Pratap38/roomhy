@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const CheckinRecord = require('../models/CheckinRecord');
 const Owner = require('../models/Owner');
+const Property = require('../models/Property');
 const Tenant = require('../models/Tenant');
 const { sendMail } = require('../utils/mailer');
 const { otpLimiter } = require('../middleware/security');
@@ -271,12 +272,34 @@ async function completeTenantAgreementAndNotify(loginId, { requestId = '', provi
 
 router.post('/owner/profile', async (req, res) => {
     try {
-        const { loginId, name, dob, email, phone, address, area, password, payment = {} } = req.body || {};
+        const {
+            loginId,
+            name,
+            dob,
+            email,
+            phone,
+            address,
+            area,
+            password,
+            payment = {},
+            vacantRooms = 0,
+            vacantBeds = 0,
+            occupiedRooms = 0,
+            occupiedBeds = 0
+        } = req.body || {};
         if (!loginId || !name || !dob || !email || !phone || !address || !area || !payment.bankAccountNumber || !payment.ifscCode || !payment.accountHolderName) {
             return res.status(400).json({ success: false, message: 'Missing required owner profile fields' });
         }
+        const occupancy = {
+            vacantRooms: Number(vacantRooms || 0),
+            vacantBeds: Number(vacantBeds || 0),
+            occupiedRooms: Number(occupiedRooms || 0),
+            occupiedBeds: Number(occupiedBeds || 0)
+        };
+        occupancy.roomCount = occupancy.vacantRooms + occupancy.occupiedRooms;
+        occupancy.bedCount = occupancy.vacantBeds + occupancy.occupiedBeds;
         const record = await upsertRecord(loginId, 'owner', {
-            ownerProfile: { name, dob, email, phone, address, area, password, payment }
+            ownerProfile: { name, dob, email, phone, address, area, password, payment, ...occupancy }
         });
 
         // Mirror to Owner collection so superadmin owner list can show this data
@@ -307,6 +330,7 @@ router.post('/owner/profile', async (req, res) => {
                     checkinBranchName: payment.branchName || '',
                     checkinUpiId: payment.upiId || '',
                     checkinCancelledCheque: payment.cancelledCheque || {},
+                    ...occupancy,
                     // Also set top-level fields for backward compatibility
                     accountNumber: payment.bankAccountNumber || '',
                     ifscCode: payment.ifscCode || '',
@@ -337,6 +361,16 @@ router.post('/owner/profile', async (req, res) => {
             },
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
+        const primaryProperty = await Property.findOne({ ownerLoginId: String(loginId).toUpperCase() }).sort({ createdAt: 1 });
+        if (primaryProperty) {
+            primaryProperty.roomCount = occupancy.roomCount;
+            primaryProperty.bedCount = occupancy.bedCount;
+            primaryProperty.vacantRooms = occupancy.vacantRooms;
+            primaryProperty.vacantBeds = occupancy.vacantBeds;
+            primaryProperty.occupiedRooms = occupancy.occupiedRooms;
+            primaryProperty.occupiedBeds = occupancy.occupiedBeds;
+            await primaryProperty.save();
+        }
         return res.json({ success: true, record, owner: updatedOwner });
     } catch (err) {
         console.error('owner/profile error:', err);

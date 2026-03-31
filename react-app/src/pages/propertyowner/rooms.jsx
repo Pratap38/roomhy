@@ -105,6 +105,10 @@ const mergeRoomSources = (ownerLoginId, property, backendRooms) => {
     merged.push(room);
   });
 
+  if (merged.length === 0) {
+    return buildSnapshotRooms(property, ownerLoginId, property);
+  }
+
   return merged;
 };
 
@@ -228,6 +232,61 @@ const getSnapshotOccupancy = (record) => {
     occupiedBeds,
     totalRooms: Number(record.roomCount ?? (vacantRooms + occupiedRooms))
   };
+};
+
+const distributeBeds = (totalBeds, roomCount) => {
+  if (roomCount <= 0) return [];
+  const safeBeds = Number(totalBeds || 0);
+  const base = safeBeds > 0 ? Math.floor(safeBeds / roomCount) : 0;
+  let remainder = safeBeds > 0 ? safeBeds % roomCount : 0;
+  return Array.from({ length: roomCount }, () => {
+    const count = base + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder -= 1;
+    return Math.max(count, 1);
+  });
+};
+
+const buildSnapshotRooms = (record, ownerLoginId, property) => {
+  const snapshot = getSnapshotOccupancy(record);
+  if (!snapshot || snapshot.totalRooms <= 0) return [];
+
+  const propertyId = property?._id || property?.id || property?.propertyId || "";
+  const propertyTitle = firstValidValue(property?.title, property?.name, property?.propertyName, "Owner Property");
+  const occupiedBedCounts = distributeBeds(snapshot.occupiedBeds, snapshot.occupiedRooms);
+  const vacantBedCounts = distributeBeds(snapshot.vacantBeds, snapshot.vacantRooms);
+  let sequence = 1;
+
+  const occupiedRooms = occupiedBedCounts.map((bedCount) =>
+    normalizeRoomRecord({
+      id: `SNAP-OCC-${ownerLoginId}-${sequence}`,
+      ownerLoginId,
+      propertyId,
+      propertyTitle,
+      number: `R${String(sequence++).padStart(3, "0")}`,
+      type: "Occupied",
+      roomType: "Occupied",
+      rent: Number(property?.monthlyRent ?? 0),
+      gender: property?.gender || "Mixed",
+      beds: Array.from({ length: bedCount }, () => ({ status: "occupied", tenantId: null, tenantName: "Occupied" }))
+    }, ownerLoginId)
+  );
+
+  const vacantRooms = vacantBedCounts.map((bedCount) =>
+    normalizeRoomRecord({
+      id: `SNAP-VAC-${ownerLoginId}-${sequence}`,
+      ownerLoginId,
+      propertyId,
+      propertyTitle,
+      number: `R${String(sequence++).padStart(3, "0")}`,
+      type: "Vacant",
+      roomType: "Vacant",
+      rent: Number(property?.monthlyRent ?? 0),
+      gender: property?.gender || "Mixed",
+      beds: Array.from({ length: bedCount }, () => ({ status: "available", tenantId: null, tenantName: null }))
+    }, ownerLoginId)
+  );
+
+  return [...occupiedRooms, ...vacantRooms];
 };
 
 const normalizeTextValue = (value) => {
