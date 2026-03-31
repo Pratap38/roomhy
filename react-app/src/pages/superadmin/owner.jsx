@@ -169,7 +169,7 @@ export default function Owner() {
                                     </tr>
                                 </thead>
                                 <tbody id="ownersTableBody">
-                                    <tr><td colspan="23" class="text-center py-8 text-gray-500">Loading owners...</td></tr>
+                                    <tr><td colspan="24" class="text-center py-8 text-gray-500">Loading owners...</td></tr>
                                 </tbody>
                             </table>
                         </div>

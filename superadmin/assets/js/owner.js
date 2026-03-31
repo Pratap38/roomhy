@@ -319,7 +319,7 @@ lucide.createIcons();
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="22" class="text-center py-8 text-gray-500">No owners found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="24" class="text-center py-8 text-gray-500">No owners found.</td></tr>`;
                 return;
             }
 
@@ -343,11 +343,10 @@ lucide.createIcons();
 
                 return {
                     "Owner ID": id,
-                    "Name": o.name || 'Unknown',
+                    "Name & Contact": o.name || 'Unknown',
                     "Property Under Owner": o.propertyTitle || o.propertyName || '-',
                     "DOB": o.checkinDob || '-',
-                    "Email": o.email || '-',
-                    "Phone": o.checkinPhone || o.phone || '-',
+                    "Gmail": o.email || '-',
                     "Aadhaar Linked Phone": o.checkinAadhaarLinkedPhone || '-',
                     "Aadhaar Number": o.checkinAadhaarNumber || o.aadharNumber || o.kyc?.aadharNumber || '-',
                     "Account Holder": o.checkinAccountHolderName || '-',
@@ -365,7 +364,6 @@ lucide.createIcons();
                     "Occupied Beds": occupiedBeds ?? '-',
                     "Monthly Rent": visitInfo.monthlyRent || latestRentInfo.rentAmount || '-',
                     "Security Deposit": visitInfo.deposit || latestRentInfo.deposit || '-',
-                    "Aadhar": o.aadharNumber || o.kyc?.aadharNumber || '-',
                     "KYC Status": derivedKycStatus
                 };
             });

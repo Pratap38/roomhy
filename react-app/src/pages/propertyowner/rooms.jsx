@@ -205,6 +205,31 @@ const summarizeOccupancy = (rooms = []) => {
   return summary;
 };
 
+const hasOccupancySnapshot = (record) =>
+  record && [
+    record.vacantRooms,
+    record.vacantBeds,
+    record.occupiedRooms,
+    record.occupiedBeds,
+    record.roomCount,
+    record.bedCount
+  ].some((value) => value !== undefined && value !== null && value !== "");
+
+const getSnapshotOccupancy = (record) => {
+  if (!hasOccupancySnapshot(record)) return null;
+  const vacantRooms = Number(record.vacantRooms ?? 0);
+  const vacantBeds = Number(record.vacantBeds ?? 0);
+  const occupiedRooms = Number(record.occupiedRooms ?? 0);
+  const occupiedBeds = Number(record.occupiedBeds ?? 0);
+  return {
+    vacantRooms,
+    vacantBeds,
+    occupiedRooms,
+    occupiedBeds,
+    totalRooms: Number(record.roomCount ?? (vacantRooms + occupiedRooms))
+  };
+};
+
 const normalizeTextValue = (value) => {
   const text = String(value || "").trim();
   if (!text) return "";
@@ -333,7 +358,14 @@ export default function Rooms() {
     () => tenants.filter((tenant) => !tenant.room && !tenant.roomNo && !tenant.roomNumber),
     [tenants]
   );
-  const occupancySummary = useMemo(() => summarizeOccupancy(rooms), [rooms]);
+  const occupancySummary = useMemo(
+    () =>
+      getSnapshotOccupancy(currentProperty) ||
+      getSnapshotOccupancy(cachedProperty) ||
+      getSnapshotOccupancy(owner) ||
+      summarizeOccupancy(rooms),
+    [cachedProperty, currentProperty, owner, rooms]
+  );
 
   const syncOccupancySummary = (nextRooms) => {
     const summary = summarizeOccupancy(nextRooms);
@@ -347,7 +379,7 @@ export default function Rooms() {
       vacantBeds: summary.vacantBeds,
       occupiedRooms: summary.occupiedRooms,
       occupiedBeds: summary.occupiedBeds,
-      bedCount: summary.occupiedBeds,
+      bedCount: summary.vacantBeds + summary.occupiedBeds,
       isLiveOnWebsite: summary.vacantRooms > 0
     });
 
