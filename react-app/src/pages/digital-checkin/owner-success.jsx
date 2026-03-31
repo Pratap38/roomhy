@@ -69,20 +69,33 @@ export default function DigitalCheckinOwnerSuccess() {
 
   return (
     <div className="html-page w-full">
-      <div className="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white p-10 shadow-xl text-center">
-        <h1 className="text-3xl font-bold text-slate-900 mb-4">{state.title}</h1>
-        <p className="text-slate-600 mb-8">
+      <div className="min-h-screen bg-[#f4f4f1]">
+        <header className="bg-black border-b border-black">
+          <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-4">
+            <img src="/website/images/whitelogo.jpeg" alt="Roomhy Logo" className="h-14 w-auto" />
+            <div className="text-white">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-zinc-400">Digital Check-In</p>
+              <h1 className="text-xl font-bold">Owner Success</h1>
+            </div>
+          </div>
+        </header>
+        <div className="mx-auto max-w-lg px-4 py-12">
+      <div className="rounded-[2rem] border-2 border-black bg-white p-10 shadow-[12px_12px_0_0_#000] text-center">
+        <h1 className="mb-4 text-3xl font-black uppercase tracking-tight text-slate-900">{state.title}</h1>
+        <p className="mb-8 text-slate-600">
           {state.text}
         </p>
         {state.loading ? (
-          <div className="text-sm font-medium text-blue-600">Processing...</div>
+          <div className="text-sm font-bold uppercase tracking-[0.2em] text-slate-700">Processing...</div>
         ) : null}
         <a
           href={nextUrl}
-          className={`inline-flex items-center justify-center rounded-xl px-6 py-3 font-semibold text-white ${state.done ? "bg-blue-600 hover:bg-blue-700" : "bg-slate-400 pointer-events-none"}`}
+          className={`inline-flex items-center justify-center rounded-xl border-2 border-black px-6 py-3 font-bold uppercase tracking-[0.14em] ${state.done ? "bg-black text-white hover:bg-white hover:text-black" : "pointer-events-none bg-zinc-300 text-zinc-500"}`}
         >
           Go to Property Owner Login
         </a>
+      </div>
+      </div>
       </div>
     </div>
   );

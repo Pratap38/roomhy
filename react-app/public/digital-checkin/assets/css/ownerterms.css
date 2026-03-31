@@ -1,16 +1,204 @@
-body { font-family: Arial, sans-serif; background: #f4f6fb; margin: 0; }
-    .wrap { max-width: 900px; margin: 30px auto; background: #fff; border-radius: 10px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-    h1 { margin-top: 0; }
-    .terms { border: 1px solid #d7ddea; border-radius: 8px; padding: 16px; max-height: 420px; overflow: auto; background: #fbfcff; }
-    .line { margin-bottom: 12px; line-height: 1.45; }
-    button { margin-top: 14px; background: #1f4fd6; color: #fff; border: 0; border-radius: 8px; padding: 11px 16px; cursor: pointer; font-weight: 700; }
-    .row { margin-top: 14px; }
-    input[type="checkbox"] { transform: scale(1.2); margin-right: 8px; }
-    .details { margin-top: 20px; border: 1px solid #d7ddea; border-radius: 8px; background: #fbfcff; padding: 14px; }
-    .details h3 { margin: 0 0 10px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
-    .kv { font-size: 13px; color: #374151; }
-    .kv strong { color: #111827; }
-    .edit-row { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .btn-muted { background: #334155; }
-    .status { margin-top: 10px; font-size: 13px; color: #334155; }
+body {
+  margin: 0;
+  font-family: "Inter", Arial, sans-serif;
+  background:
+    radial-gradient(circle at top right, rgba(0, 0, 0, 0.08), transparent 26%),
+    linear-gradient(180deg, #ece9e1 0%, #f6f4ef 100%);
+  color: #111;
+}
+
+.dc-header {
+  background: #000;
+  border-bottom: 1px solid #111;
+}
+
+.dc-header-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dc-logo {
+  height: 56px;
+  width: auto;
+}
+
+.dc-eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #8d8d8d;
+}
+
+.dc-header-title {
+  margin: 0;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.wrap {
+  max-width: 1040px;
+  margin: 32px auto;
+  background: rgba(255, 255, 255, 0.96);
+  border: 2px solid #111;
+  border-radius: 28px;
+  padding: 28px;
+  box-shadow: 14px 14px 0 rgba(0, 0, 0, 0.9);
+}
+
+.hero-card {
+  margin-bottom: 22px;
+  padding: 22px;
+  border: 2px solid #111;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fff 0%, #f0f0ec 100%);
+}
+
+.hero-kicker {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #575757;
+}
+
+.hero-title {
+  margin: 0 0 8px;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.hero-copy {
+  margin: 0;
+  color: #525252;
+}
+
+.terms {
+  border: 2px solid #111;
+  border-radius: 18px;
+  padding: 20px;
+  max-height: 460px;
+  overflow: auto;
+  background: #fff;
+}
+
+.line {
+  margin-bottom: 14px;
+  line-height: 1.55;
+  color: #353535;
+}
+
+button {
+  margin-top: 14px;
+  background: #000;
+  color: #fff;
+  border: 2px solid #000;
+  border-radius: 14px;
+  padding: 13px 16px;
+  cursor: pointer;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+button:hover {
+  background: #fff;
+  color: #000;
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.95);
+}
+
+.row {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 2px solid #111;
+  border-radius: 16px;
+  background: #f6f6f3;
+}
+
+input[type="checkbox"] {
+  transform: scale(1.2);
+  margin-right: 8px;
+  accent-color: #000;
+}
+
+.details {
+  margin-top: 20px;
+  border: 2px solid #111;
+  border-radius: 16px;
+  background: #fff;
+  padding: 14px;
+}
+
+.details h3 {
+  margin: 0 0 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+}
+
+.kv {
+  font-size: 13px;
+  color: #374151;
+}
+
+.kv strong {
+  color: #111827;
+}
+
+.edit-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-muted {
+  background: #fff;
+  color: #000;
+}
+
+.status {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #111;
+  border: 2px solid #111;
+  border-radius: 14px;
+  background: #f2f2ee;
+  padding: 12px 14px;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dc-header-inner,
+  .wrap {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .hero-title {
+    font-size: 26px;
+  }
+
+  .wrap {
+    margin: 20px 14px 28px;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.92);
+  }
+}

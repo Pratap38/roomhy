@@ -39,34 +39,35 @@ export default function DigitalCheckinOwnerprofile() {
 
   return (
     <div className="html-page">
+      <header className="dc-header">
+        <div className="dc-header-inner">
+          <img src="/website/images/whitelogo.jpeg" alt="Roomhy Logo" className="dc-logo" />
+          <div>
+            <p className="dc-eyebrow">Digital Check-In</p>
+            <h1 className="dc-header-title">Owner Profile</h1>
+          </div>
+        </div>
+      </header>
+
       <div className="wrap">
-        <h1>Owner Check-In Profile</h1>
-        <p>Fill owner details exactly as shared during onboarding.</p>
+        <div className="hero-card">
+          <p className="hero-kicker">Owner Onboarding</p>
+          <h2 className="hero-title">Complete your property owner check-in</h2>
+          <p className="hero-copy">Fill owner details exactly as shared during onboarding.</p>
+        </div>
 
         {showAutoInfo && (
-          <div
-            id="autoFetchedInfo"
-            style={{
-              background: "#e3f2fd",
-              border: "1px solid #2196f3",
-              borderRadius: "8px",
-              padding: "12px",
-              marginBottom: "16px"
-            }}
-          >
-            <p style={{ margin: "0 0 8px", fontWeight: "bold", color: "#1976d2" }}>
-              Auto-Fetched Information:
-            </p>
-            <div style={{ fontSize: "13px", color: "#555" }}>
-              <p style={{ margin: "4px 0" }}>
+          <div id="autoFetchedInfo" className="info-panel">
+            <p className="info-panel-title">Auto-Fetched Information</p>
+            <div className="info-panel-grid">
+              <p>
                 <strong>Email:</strong> <span>{autoInfo.email || "-"}</span>
               </p>
-              <p style={{ margin: "4px 0" }}>
+              <p>
                 <strong>Area:</strong> <span>{autoInfo.area || "-"}</span>
               </p>
-              <p style={{ margin: "4px 0" }}>
-                <strong>Password:</strong>{" "}
-                <span style={{ fontFamily: "monospace" }}>{autoInfo.password || "-"}</span>
+              <p>
+                <strong>Password:</strong> <span className="mono">{autoInfo.password || "-"}</span>
               </p>
             </div>
           </div>

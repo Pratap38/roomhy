@@ -26,9 +26,22 @@ export default function DigitalCheckinOwnerterms() {
 
   return (
     <div className="html-page">
+      <header className="dc-header">
+        <div className="dc-header-inner">
+          <img src="/website/images/whitelogo.jpeg" alt="Roomhy Logo" className="dc-logo" />
+          <div>
+            <p className="dc-eyebrow">Digital Check-In</p>
+            <h1 className="dc-header-title">Owner Terms</h1>
+          </div>
+        </div>
+      </header>
+
       <div className="wrap">
-        <h1>Owner Terms & Conditions</h1>
-        <p>Read and accept the terms below to complete owner onboarding.</p>
+        <div className="hero-card">
+          <p className="hero-kicker">Final Step</p>
+          <h2 className="hero-title">Review and accept the owner terms</h2>
+          <p className="hero-copy">Read and accept the terms below to complete owner onboarding.</p>
+        </div>
         {status ? <div className="status">{status}</div> : null}
         <div className="terms">
           <div className="line"><strong>1. Introduction</strong><br />By registering as a Property Owner/Landlord on Roomhy ("Platform"), you agree to comply with and be bound by these Terms & Conditions. These terms govern your access to and use of the Platform to list properties, manage tenants, and receive payments.</div>
