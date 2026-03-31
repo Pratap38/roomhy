@@ -56,6 +56,23 @@ const ApprovedPropertySchema = new mongoose.Schema({
         index: true
     },
     approvedBy: { type: String },
+    reuploadRequests: [{
+        requestId: { type: String, required: true },
+        ownerLoginId: String,
+        roomId: String,
+        roomNo: String,
+        bedNo: Number,
+        securityDepositSettled: { type: Boolean, default: false },
+        wantsReupload: { type: Boolean, default: false },
+        status: {
+            type: String,
+            enum: ['pending', 'published', 'cancelled'],
+            default: 'pending'
+        },
+        requestedAt: { type: Date, default: Date.now },
+        publishedAt: Date,
+        propertyInfo: mongoose.Schema.Types.Mixed
+    }],
     bannerPhoto: { type: String },
     websiteBannerPhoto: { type: String },
     createdAt: {

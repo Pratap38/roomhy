@@ -11,9 +11,11 @@ const Property = require('../models/Property');
 const Room = require('../models/Room');
 const Enquiry = require('../models/Enquiry');
 const CheckinRecord = require('../models/CheckinRecord');
+const ApprovedProperty = require('../models/ApprovedProperty');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const ownerController = require('../controllers/ownercontroller');
 const { auditTrail } = require('../middleware/auditTrail');
+const { normalizeRoomInventory, syncOwnerPropertyOccupancy } = require('../utils/ownerOccupancy');
 
 // 1. Create new owner (Preserved from original - used by enquiry approval/import)
 router.post('/', auditTrail('owners'), async (req, res) => {
@@ -132,6 +134,89 @@ router.get('/:loginId/properties', async (req, res) => {
     } catch (err) {
         console.error('❌ Error fetching owner properties:', err.message);
         return res.status(500).json({ error: err.message });
+    }
+});
+
+router.put('/:loginId/room-inventory', auditTrail('owners'), async (req, res) => {
+    try {
+        const loginId = String(req.params.loginId || '').trim().toUpperCase();
+        const {
+            rooms = [],
+            propertyId = '',
+            propertyTitle = '',
+            propertyLocationCode = ''
+        } = req.body || {};
+
+        const normalizedRooms = normalizeRoomInventory(rooms, { propertyId, propertyTitle });
+        const synced = await syncOwnerPropertyOccupancy({
+            loginId,
+            roomInventory: normalizedRooms,
+            propertyId,
+            propertyTitle,
+            propertyLocationCode
+        });
+
+        return res.json({
+            success: true,
+            rooms: synced.roomInventory,
+            summary: synced.summary,
+            liveOnWebsite: synced.liveOnWebsite,
+            owner: synced.owner
+        });
+    } catch (err) {
+        console.error('❌ Error saving room inventory:', err.message);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/:loginId/reupload-request', auditTrail('owners'), async (req, res) => {
+    try {
+        const loginId = String(req.params.loginId || '').trim().toUpperCase();
+        const {
+            approvedVisitId = '',
+            roomId = '',
+            roomNo = '',
+            bedNo = 0,
+            securityDepositSettled = false,
+            wantsReupload = false,
+            propertyInfo = {}
+        } = req.body || {};
+
+        const approvedProperty = approvedVisitId
+            ? await ApprovedProperty.findOne({ visitId: approvedVisitId })
+            : await ApprovedProperty.findOne({ 'generatedCredentials.loginId': loginId }).sort({ approvedAt: -1 });
+
+        if (!approvedProperty) {
+            return res.status(404).json({ success: false, message: 'Approved property not found for this owner' });
+        }
+
+        const requestId = `REUP-${Date.now()}`;
+        const nextRequest = {
+            requestId,
+            ownerLoginId: loginId,
+            roomId,
+            roomNo,
+            bedNo: Number(bedNo || 0),
+            securityDepositSettled: Boolean(securityDepositSettled),
+            wantsReupload: Boolean(wantsReupload),
+            status: 'pending',
+            requestedAt: new Date(),
+            propertyInfo: {
+                ...(approvedProperty.propertyInfo || {}),
+                ...(propertyInfo || {})
+            }
+        };
+
+        approvedProperty.reuploadRequests = Array.isArray(approvedProperty.reuploadRequests)
+            ? approvedProperty.reuploadRequests
+            : [];
+        approvedProperty.reuploadRequests.unshift(nextRequest);
+        await approvedProperty.save();
+
+        return res.status(201).json({ success: true, request: nextRequest, visitId: approvedProperty.visitId });
+    } catch (err) {
+        console.error('❌ Error creating reupload request:', err.message);
+        return res.status(500).json({ success: false, message: err.message });
     }
 });
 

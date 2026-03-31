@@ -20,7 +20,43 @@ const initialForm = {
   vacantRooms: 0,
   vacantBeds: 0,
   occupiedRooms: 0,
-  occupiedBeds: 0
+  occupiedBeds: 0,
+  occupiedRoomBeds: [1],
+  vacantRoomBeds: [1]
+};
+
+const distributeBeds = (totalBeds, roomCount) => {
+  const safeCount = Number(roomCount || 0);
+  if (safeCount <= 0) return [];
+  const safeBeds = Math.max(0, Number(totalBeds || 0));
+  const base = Math.floor(safeBeds / safeCount);
+  let remainder = safeBeds % safeCount;
+  return Array.from({ length: safeCount }, () => {
+    const value = base + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder -= 1;
+    return Math.max(value, 1);
+  });
+};
+
+const normalizeBedsArray = (values, count) => {
+  const safeCount = Math.max(0, Number(count || 0));
+  return Array.from({ length: safeCount }, (_, index) => Math.max(1, Number(values?.[index] || 1)));
+};
+
+const toRoomBedArrays = (roomInventory = [], fallback = initialForm) => {
+  const occupied = [];
+  const vacant = [];
+  (Array.isArray(roomInventory) ? roomInventory : []).forEach((room) => {
+    const beds = Array.isArray(room?.beds) ? room.beds : [];
+    const occupiedBeds = beds.filter((bed) => String(bed?.status || "").toLowerCase() === "occupied").length;
+    const vacantBeds = Math.max(0, beds.length - occupiedBeds);
+    if (occupiedBeds > 0) occupied.push(occupiedBeds);
+    if (vacantBeds > 0) vacant.push(vacantBeds);
+  });
+  return {
+    occupiedRoomBeds: occupied.length ? occupied : distributeBeds(fallback.occupiedBeds, fallback.occupiedRooms),
+    vacantRoomBeds: vacant.length ? vacant : distributeBeds(fallback.vacantBeds, fallback.vacantRooms)
+  };
 };
 
 export default function PropertyownerOwnerprofile() {
@@ -80,7 +116,13 @@ export default function PropertyownerOwnerprofile() {
           vacantRooms: Number(nextOwner.vacantRooms ?? 0),
           vacantBeds: Number(nextOwner.vacantBeds ?? 0),
           occupiedRooms: Number(nextOwner.occupiedRooms ?? 0),
-          occupiedBeds: Number(nextOwner.occupiedBeds ?? 0)
+          occupiedBeds: Number(nextOwner.occupiedBeds ?? 0),
+          ...toRoomBedArrays(nextOwner.roomInventory, {
+            occupiedRooms: Number(nextOwner.occupiedRooms ?? 0),
+            occupiedBeds: Number(nextOwner.occupiedBeds ?? 0),
+            vacantRooms: Number(nextOwner.vacantRooms ?? 0),
+            vacantBeds: Number(nextOwner.vacantBeds ?? 0)
+          })
         });
       } catch (_) {}
     };
@@ -90,12 +132,72 @@ export default function PropertyownerOwnerprofile() {
 
   const updateForm = (patch) => setForm((prev) => ({ ...prev, ...patch }));
 
+  const updateRoomCount = (key, count) => {
+    const safeCount = Math.max(0, Number(count || 0));
+    setForm((prev) => {
+      const bedsKey = key === "occupiedRooms" ? "occupiedRoomBeds" : "vacantRoomBeds";
+      const currentBeds = normalizeBedsArray(prev[bedsKey], safeCount);
+      const next = {
+        ...prev,
+        [key]: safeCount,
+        [bedsKey]: currentBeds
+      };
+      next.occupiedBeds = next.occupiedRoomBeds.reduce((sum, value) => sum + Number(value || 0), 0);
+      next.vacantBeds = next.vacantRoomBeds.reduce((sum, value) => sum + Number(value || 0), 0);
+      return next;
+    });
+  };
+
+  const updateRoomBed = (group, index, value) => {
+    setForm((prev) => {
+      const key = group === "occupied" ? "occupiedRoomBeds" : "vacantRoomBeds";
+      const nextBeds = [...prev[key]];
+      nextBeds[index] = Math.max(1, Number(value || 1));
+      const next = { ...prev, [key]: nextBeds };
+      next.occupiedBeds = next.occupiedRoomBeds.reduce((sum, item) => sum + Number(item || 0), 0);
+      next.vacantBeds = next.vacantRoomBeds.reduce((sum, item) => sum + Number(item || 0), 0);
+      return next;
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!owner?.loginId) return;
     setSaving(true);
     setMessage("");
     try {
+      const occupiedRoomBeds = normalizeBedsArray(form.occupiedRoomBeds, form.occupiedRooms);
+      const vacantRoomBeds = normalizeBedsArray(form.vacantRoomBeds, form.vacantRooms);
+      const roomInventory = [
+        ...occupiedRoomBeds.map((bedCount, index) => ({
+          id: `OWNER-OCC-${owner.loginId}-${index + 1}`,
+          number: `Occupied Room ${index + 1}`,
+          roomNo: `Occupied Room ${index + 1}`,
+          title: `Occupied Room ${index + 1}`,
+          type: "Occupied",
+          roomType: "Occupied",
+          gender: "Mixed",
+          beds: Array.from({ length: bedCount }, (_, bedIndex) => ({
+            status: "occupied",
+            tenantId: `OCC-${index + 1}-${bedIndex + 1}`,
+            tenantName: "Occupied"
+          }))
+        })),
+        ...vacantRoomBeds.map((bedCount, index) => ({
+          id: `OWNER-VAC-${owner.loginId}-${index + 1}`,
+          number: `Vacant Room ${index + 1}`,
+          roomNo: `Vacant Room ${index + 1}`,
+          title: `Vacant Room ${index + 1}`,
+          type: "Vacant",
+          roomType: "Vacant",
+          gender: "Mixed",
+          beds: Array.from({ length: bedCount }, () => ({
+            status: "available",
+            tenantId: "",
+            tenantName: ""
+          }))
+        }))
+      ];
       const payload = {
         loginId: owner.loginId,
         name: form.name,
@@ -105,10 +207,11 @@ export default function PropertyownerOwnerprofile() {
         address: form.address,
         area: form.area,
         password: owner.checkinPassword || owner.credentials?.password || "",
-        vacantRooms: Number(form.vacantRooms || 0),
-        vacantBeds: Number(form.vacantBeds || 0),
-        occupiedRooms: Number(form.occupiedRooms || 0),
-        occupiedBeds: Number(form.occupiedBeds || 0),
+        vacantRooms: vacantRoomBeds.length,
+        vacantBeds: vacantRoomBeds.reduce((sum, value) => sum + Number(value || 0), 0),
+        occupiedRooms: occupiedRoomBeds.length,
+        occupiedBeds: occupiedRoomBeds.reduce((sum, value) => sum + Number(value || 0), 0),
+        roomInventory,
         payment: {
           bankName: form.bankName,
           branchName: form.branchName,
@@ -126,7 +229,8 @@ export default function PropertyownerOwnerprofile() {
         ...(prev || {}),
         ...payload,
         roomCount: payload.vacantRooms + payload.occupiedRooms,
-        bedCount: payload.vacantBeds + payload.occupiedBeds
+        bedCount: payload.vacantBeds + payload.occupiedBeds,
+        roomInventory
       }));
       setMessage("Owner profile saved.");
     } catch (error) {
@@ -162,11 +266,21 @@ export default function PropertyownerOwnerprofile() {
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Occupancy Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input className="border border-gray-300 rounded-lg px-3 py-2" placeholder="Occupied Rooms" type="number" min="0" value={form.occupiedRooms} onChange={(e) => updateForm({ occupiedRooms: e.target.value })} />
-            <input className="border border-gray-300 rounded-lg px-3 py-2" placeholder="Beds In Occupied Rooms" type="number" min="0" value={form.occupiedBeds} onChange={(e) => updateForm({ occupiedBeds: e.target.value })} />
-            <input className="border border-gray-300 rounded-lg px-3 py-2" placeholder="Vacant Rooms" type="number" min="0" value={form.vacantRooms} onChange={(e) => updateForm({ vacantRooms: e.target.value })} />
-            <input className="border border-gray-300 rounded-lg px-3 py-2" placeholder="Beds In Vacant Rooms" type="number" min="0" value={form.vacantBeds} onChange={(e) => updateForm({ vacantBeds: e.target.value })} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <input className="border border-gray-300 rounded-lg px-3 py-2 w-full" placeholder="Occupied Rooms" type="number" min="0" value={form.occupiedRooms} onChange={(e) => updateRoomCount("occupiedRooms", e.target.value)} />
+              {form.occupiedRoomBeds.map((beds, index) => (
+                <input key={`occupied-${index}`} className="border border-gray-300 rounded-lg px-3 py-2 w-full" placeholder={`Occupied Room ${index + 1} Beds`} type="number" min="1" value={beds} onChange={(e) => updateRoomBed("occupied", index, e.target.value)} />
+              ))}
+              <div className="text-xs text-slate-500">{`Occupied Beds Total: ${form.occupiedBeds}`}</div>
+            </div>
+            <div className="space-y-3">
+              <input className="border border-gray-300 rounded-lg px-3 py-2 w-full" placeholder="Vacant Rooms" type="number" min="0" value={form.vacantRooms} onChange={(e) => updateRoomCount("vacantRooms", e.target.value)} />
+              {form.vacantRoomBeds.map((beds, index) => (
+                <input key={`vacant-${index}`} className="border border-gray-300 rounded-lg px-3 py-2 w-full" placeholder={`Vacant Room ${index + 1} Beds`} type="number" min="1" value={beds} onChange={(e) => updateRoomBed("vacant", index, e.target.value)} />
+              ))}
+              <div className="text-xs text-slate-500">{`Vacant Beds Total: ${form.vacantBeds}`}</div>
+            </div>
           </div>
         </div>
 

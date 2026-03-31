@@ -54,6 +54,24 @@ const ownerSchema = new mongoose.Schema({
     vacantBeds: { type: Number, default: 0 },
     occupiedRooms: { type: Number, default: 0 },
     occupiedBeds: { type: Number, default: 0 },
+    roomInventory: [{
+        id: String,
+        propertyId: String,
+        propertyTitle: String,
+        number: String,
+        roomNo: String,
+        title: String,
+        type: String,
+        roomType: String,
+        rent: { type: Number, default: 0 },
+        price: { type: Number, default: 0 },
+        gender: String,
+        beds: [{
+            status: { type: String, enum: ['available', 'occupied'], default: 'available' },
+            tenantId: String,
+            tenantName: String
+        }]
+    }],
     agreementRequestId: String,
     agreementStatus: String,
     agreementSignedAt: Date,

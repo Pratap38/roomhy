@@ -5,7 +5,6 @@ import { useHtmlPage } from "../../utils/htmlPage";
 import {
   assignTenant,
   clearOwnerRuntimeSession,
-  createRoom,
   fetchOwnerProperties,
   fetchOwnerRooms,
   fetchOwnerTenants,
@@ -25,6 +24,44 @@ const initialTenantForm = {
   name: "",
   phone: "",
   email: ""
+};
+
+const initialReuploadForm = {
+  propertyName: "",
+  propertyType: "",
+  city: "",
+  area: "",
+  address: "",
+  pincode: "",
+  landmark: "",
+  nearbyLocation: "",
+  description: "",
+  amenities: "",
+  genderSuitability: "",
+  monthlyRent: "",
+  deposit: "",
+  roomCount: "",
+  bedCount: "",
+  vacantRooms: "",
+  vacantBeds: "",
+  occupiedRooms: "",
+  occupiedBeds: "",
+  studentReviewsRating: "",
+  studentReviews: "",
+  employeeRating: "",
+  cleanlinessRating: "",
+  cleanliness: "",
+  ownerBehaviour: "",
+  furnishing: "",
+  ventilation: "",
+  minStay: "",
+  entryExit: "",
+  visitorsAllowed: false,
+  cookingAllowed: false,
+  smokingAllowed: false,
+  petsAllowed: false,
+  internalRemarks: "",
+  cleanlinessNote: ""
 };
 
 const readJson = (key, fallback) => {
@@ -342,10 +379,17 @@ export default function Rooms() {
   const [selectedBedIndex, setSelectedBedIndex] = useState(null);
   const [selectedTenantId, setSelectedTenantId] = useState("");
   const [newTenantForm, setNewTenantForm] = useState(initialTenantForm);
+  const [vacateModalOpen, setVacateModalOpen] = useState(false);
+  const [vacateContext, setVacateContext] = useState(null);
+  const [vacateDecision, setVacateDecision] = useState({
+    securityDepositSettled: "no",
+    wantsReupload: "no"
+  });
+  const [reuploadForm, setReuploadForm] = useState(initialReuploadForm);
 
   useEffect(() => {
     if (window.lucide?.createIcons) window.lucide.createIcons();
-  }, [rooms, properties, tenants, roomModalOpen, assignModalOpen]);
+  }, [rooms, properties, tenants, roomModalOpen, assignModalOpen, vacateModalOpen]);
 
   const currentProperty = useMemo(() => properties[0] || null, [properties]);
   const cachedProperty = useMemo(
@@ -426,6 +470,43 @@ export default function Rooms() {
     [cachedProperty, currentProperty, owner, rooms]
   );
 
+  const persistRooms = async (updater) => {
+    const localRooms = readJson("roomhy_rooms", []);
+    const baseRooms = localRooms.length > 0 ? localRooms : rooms;
+    const nextRooms = (typeof updater === "function" ? updater(baseRooms) : updater).map((room) =>
+      normalizeRoomRecord(room, owner?.loginId || "")
+    );
+
+    writeJson("roomhy_rooms", nextRooms);
+    setRooms(nextRooms);
+    syncOccupancySummary(nextRooms);
+
+    if (!owner?.loginId) return nextRooms;
+
+    try {
+      const response = await fetchJson(`/api/owners/${encodeURIComponent(owner.loginId)}/room-inventory`, {
+        method: "PUT",
+        body: JSON.stringify({
+          rooms: nextRooms,
+          propertyId: currentProperty?._id || currentProperty?.id || "",
+          propertyTitle: currentPropertyTitle,
+          propertyLocationCode: firstValidValue(currentProperty?.locationCode, currentProperty?.area, owner?.checkinArea, owner?.locationCode)
+        })
+      });
+      if (response?.owner) {
+        setOwner((prev) => ({ ...(prev || {}), ...response.owner }));
+      }
+      if (Array.isArray(response?.rooms)) {
+        writeJson("roomhy_rooms", response.rooms);
+        setRooms(response.rooms.map((room) => normalizeRoomRecord(room, owner.loginId)));
+      }
+    } catch (err) {
+      setErrorMsg(err?.body || err?.message || "Failed to sync room inventory.");
+    }
+
+    return nextRooms;
+  };
+
   const syncOccupancySummary = (nextRooms) => {
     const summary = summarizeOccupancy(nextRooms);
     const propertyId = currentProperty?._id || currentProperty?.id || currentProperty?.propertyId || "";
@@ -439,7 +520,7 @@ export default function Rooms() {
       occupiedRooms: summary.occupiedRooms,
       occupiedBeds: summary.occupiedBeds,
       bedCount: summary.vacantBeds + summary.occupiedBeds,
-      isLiveOnWebsite: summary.vacantRooms > 0
+      isLiveOnWebsite: summary.vacantRooms > 0 || summary.vacantBeds > 0
     });
 
     const allProperties = readJson("roomhy_properties", []).map((item) => {
@@ -473,15 +554,7 @@ export default function Rooms() {
     }
   };
 
-  const persistRooms = (updater) => {
-    const nextRooms = typeof updater === "function" ? updater(readJson("roomhy_rooms", [])) : updater;
-    writeJson("roomhy_rooms", nextRooms);
-    setRooms(mergeRoomSources(owner?.loginId || "", currentProperty, nextRooms));
-    syncOccupancySummary(nextRooms);
-    return nextRooms;
-  };
-
-  const markBedOccupied = (roomId, bedIndex, tenantId, tenantName) => {
+  const markBedOccupied = async (roomId, bedIndex, tenantId, tenantName) => {
     const applyBedUpdate = (room) => {
       const normalizedRoom = normalizeRoomRecord(room, owner?.loginId || "");
       const beds = toLegacyBeds(normalizedRoom);
@@ -494,32 +567,136 @@ export default function Rooms() {
     };
 
     setRooms((prevRooms) => prevRooms.map((room) => (
-      String(room.id || room._id) === String(roomId) ? applyBedUpdate(room) : room
+        String(room.id || room._id) === String(roomId) ? applyBedUpdate(room) : room
     )));
 
-    const localRooms = readJson("roomhy_rooms", []);
-    const localRoomIndex = localRooms.findIndex((room) => String(room.id || room._id) === String(roomId));
-    const nextLocalRooms = [...localRooms];
-    if (localRoomIndex >= 0) {
-      nextLocalRooms[localRoomIndex] = applyBedUpdate(nextLocalRooms[localRoomIndex]);
-    } else {
-      const currentRoom = rooms.find((room) => String(room.id || room._id) === String(roomId));
-      if (currentRoom) {
-        nextLocalRooms.push(applyBedUpdate(currentRoom));
+    await persistRooms((allRooms) => {
+      const localRoomIndex = allRooms.findIndex((room) => String(room.id || room._id) === String(roomId));
+      const nextLocalRooms = [...allRooms];
+      if (localRoomIndex >= 0) {
+        nextLocalRooms[localRoomIndex] = applyBedUpdate(nextLocalRooms[localRoomIndex]);
+      } else {
+        const currentRoom = rooms.find((room) => String(room.id || room._id) === String(roomId));
+        if (currentRoom) nextLocalRooms.push(applyBedUpdate(currentRoom));
       }
-    }
-    writeJson("roomhy_rooms", nextLocalRooms);
-    syncOccupancySummary(nextLocalRooms);
+      return nextLocalRooms;
+    });
   };
 
-  const handleVacateBed = (roomId, bedIndex) => {
-    persistRooms((allRooms) => allRooms.map((room) => {
+  const prefillReuploadForm = () => ({
+    propertyName: firstValidValue(currentPropertyTitle, cachedProperty?.title, owner?.propertyTitle),
+    propertyType: firstValidValue(currentProperty?.propertyType, cachedProperty?.propertyType),
+    city: firstValidValue(currentProperty?.city, cachedProperty?.city),
+    area: firstValidValue(currentProperty?.area, cachedProperty?.area, owner?.checkinArea),
+    address: firstValidValue(currentProperty?.address, cachedProperty?.address, owner?.checkinAddress),
+    pincode: "",
+    landmark: "",
+    nearbyLocation: "",
+    description: "",
+    amenities: Array.isArray(currentProperty?.amenities) ? currentProperty.amenities.join(", ") : "",
+    genderSuitability: firstValidValue(currentProperty?.gender, cachedProperty?.gender, "Co-ed"),
+    monthlyRent: String(currentProperty?.monthlyRent || currentProperty?.rent || 0),
+    deposit: String(currentProperty?.deposit || cachedProperty?.deposit || ""),
+    roomCount: String(occupancySummary.totalRooms || 0),
+    bedCount: String((occupancySummary.vacantBeds || 0) + (occupancySummary.occupiedBeds || 0)),
+    vacantRooms: String(occupancySummary.vacantRooms || 0),
+    vacantBeds: String(occupancySummary.vacantBeds || 0),
+    occupiedRooms: String(occupancySummary.occupiedRooms || 0),
+    occupiedBeds: String(occupancySummary.occupiedBeds || 0),
+    studentReviewsRating: "",
+    studentReviews: "",
+    employeeRating: "",
+    cleanlinessRating: "",
+    cleanliness: "",
+    ownerBehaviour: "",
+    furnishing: "",
+    ventilation: "",
+    minStay: "",
+    entryExit: "",
+    visitorsAllowed: false,
+    cookingAllowed: false,
+    smokingAllowed: false,
+    petsAllowed: false,
+    internalRemarks: "",
+    cleanlinessNote: ""
+  });
+
+  const openVacateModal = (room, bedIndex) => {
+    setVacateContext({ room, bedIndex });
+    setVacateDecision({ securityDepositSettled: "no", wantsReupload: "no" });
+    setReuploadForm(prefillReuploadForm());
+    setVacateModalOpen(true);
+  };
+
+  const handleVacateBed = async () => {
+    if (!vacateContext || !owner?.loginId) return;
+    const roomId = vacateContext.room.id || vacateContext.room._id;
+    const bedIndex = Number(vacateContext.bedIndex || 0);
+    await persistRooms((allRooms) => allRooms.map((room) => {
       const normalized = normalizeRoomRecord(room, owner?.loginId || "");
       if ((normalized.id || normalized._id) !== roomId) return room;
       const beds = toLegacyBeds(normalized);
       beds[bedIndex] = { status: "available", tenantId: null, tenantName: null };
       return { ...normalized, beds };
     }));
+
+    if (vacateDecision.wantsReupload === "yes") {
+      const amenities = String(reuploadForm.amenities || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+      await fetchJson(`/api/owners/${encodeURIComponent(owner.loginId)}/reupload-request`, {
+        method: "POST",
+        body: JSON.stringify({
+          approvedVisitId: owner.approvedVisitId || "",
+          roomId,
+          roomNo: vacateContext.room.number || vacateContext.room.roomNo || "",
+          bedNo: bedIndex + 1,
+          securityDepositSettled: vacateDecision.securityDepositSettled === "yes",
+          wantsReupload: true,
+          propertyInfo: {
+            name: reuploadForm.propertyName,
+            propertyType: reuploadForm.propertyType,
+            city: reuploadForm.city,
+            area: reuploadForm.area,
+            address: reuploadForm.address,
+            pincode: reuploadForm.pincode,
+            landmark: reuploadForm.landmark,
+            nearbyLocation: reuploadForm.nearbyLocation,
+            description: reuploadForm.description,
+            amenities,
+            genderSuitability: reuploadForm.genderSuitability,
+            rent: Number(reuploadForm.monthlyRent || 0),
+            deposit: reuploadForm.deposit,
+            roomCount: Number(reuploadForm.roomCount || 0),
+            bedCount: Number(reuploadForm.bedCount || 0),
+            vacantRooms: Number(reuploadForm.vacantRooms || 0),
+            vacantBeds: Number(reuploadForm.vacantBeds || 0),
+            occupiedRooms: Number(reuploadForm.occupiedRooms || 0),
+            occupiedBeds: Number(reuploadForm.occupiedBeds || 0),
+            studentReviewsRating: Number(reuploadForm.studentReviewsRating || 0),
+            studentReviews: reuploadForm.studentReviews,
+            employeeRating: Number(reuploadForm.employeeRating || 0),
+            cleanlinessRating: Number(reuploadForm.cleanlinessRating || 0),
+            cleanliness: reuploadForm.cleanliness,
+            ownerBehaviour: reuploadForm.ownerBehaviour,
+            furnishing: reuploadForm.furnishing,
+            ventilation: reuploadForm.ventilation,
+            minStay: reuploadForm.minStay,
+            entryExit: reuploadForm.entryExit,
+            visitorsAllowed: Boolean(reuploadForm.visitorsAllowed),
+            cookingAllowed: Boolean(reuploadForm.cookingAllowed),
+            smokingAllowed: Boolean(reuploadForm.smokingAllowed),
+            petsAllowed: Boolean(reuploadForm.petsAllowed),
+            internalRemarks: reuploadForm.internalRemarks,
+            cleanlinessNote: reuploadForm.cleanlinessNote
+          }
+        })
+      });
+    }
+
+    setVacateModalOpen(false);
+    setVacateContext(null);
   };
 
   const ensurePropertyId = async (session, propertyList) => {
@@ -566,7 +743,10 @@ export default function Rooms() {
         setOwner((prev) => ({ ...(prev || {}), ...ownerProfile }));
       }
       const resolvedProperties = propertyList.length ? propertyList : roomData.properties || [];
-      const mergedRooms = mergeRoomSources(session.loginId, resolvedProperties[0], roomData.rooms || []);
+      const ownerRooms = Array.isArray(ownerProfile?.roomInventory) && ownerProfile.roomInventory.length > 0
+        ? ownerProfile.roomInventory
+        : roomData.rooms || [];
+      const mergedRooms = mergeRoomSources(session.loginId, resolvedProperties[0], ownerRooms);
       setProperties(resolvedProperties);
       setRooms(mergedRooms);
       setTenants(tenantList || []);
@@ -644,24 +824,7 @@ export default function Rooms() {
         approvalStatus: "auto-approved",
         submittedAt: new Date().toISOString()
       }, session.loginId);
-      persistRooms((allRooms) => [...allRooms, localRoom]);
-      try {
-        await createRoom({
-          propertyId,
-          title: roomForm.roomNo,
-          type: roomForm.roomType,
-          price: Number(roomForm.roomRent || 0),
-          rent: Number(roomForm.roomRent || 0),
-          beds: bedCount,
-          capacity: bedCount,
-          roomNo: roomForm.roomNo,
-          number: roomForm.roomNo,
-          gender: roomForm.roomGender,
-          ownerLoginId: session.loginId
-        });
-      } catch (_) {
-        // keep legacy local-first behavior when backend sync fails
-      }
+      await persistRooms((allRooms) => [...allRooms, localRoom]);
       setRoomModalOpen(false);
       setRoomForm(initialRoomForm);
       await loadPage(session);
@@ -740,7 +903,7 @@ export default function Rooms() {
       }
 
       await assignTenant(payload);
-      markBedOccupied(selectedRoom.id || selectedRoom._id, selectedBedIndex, assignedTenantId, assignedTenantName);
+      await markBedOccupied(selectedRoom.id || selectedRoom._id, selectedBedIndex, assignedTenantId, assignedTenantName);
       setAssignModalOpen(false);
       await loadPage(owner);
     } catch (err) {
@@ -842,8 +1005,8 @@ export default function Rooms() {
                         </button>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => handleVacateBed(room.id || room._id, bed.index)} className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-amber-50 hover:text-amber-700">
-                        Occupied
+                      <button type="button" onClick={() => openVacateModal(room, bed.index)} className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100">
+                        Vacate
                       </button>
                     )}
                   </div>
@@ -1007,6 +1170,96 @@ export default function Rooms() {
               <button type="submit" className="px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 shadow-md hover:shadow-lg transition">Confirm Assignment</button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <div className={`fixed inset-0 bg-black/60 ${vacateModalOpen ? "flex" : "hidden"} items-center justify-center z-50 backdrop-blur-sm p-4`}>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 relative">
+          <button type="button" onClick={() => setVacateModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 bg-gray-100 p-1 rounded-full">
+            <i data-lucide="x" className="w-5 h-5"></i>
+          </button>
+          <div className="mb-6">
+            <h3 className="text-xl font-bold text-gray-900">Vacate Bed</h3>
+            <p className="text-sm text-gray-500">{`${vacateContext?.room?.number || vacateContext?.room?.roomNo || "Room"} - Bed ${(vacateContext?.bedIndex ?? 0) + 1}`}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Is security deposit settled?</label>
+              <select className="w-full border border-gray-300 rounded-lg px-4 py-2.5" value={vacateDecision.securityDepositSettled} onChange={(event) => setVacateDecision((prev) => ({ ...prev, securityDepositSettled: event.target.value }))}>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Do you want to upload property again?</label>
+              <select className="w-full border border-gray-300 rounded-lg px-4 py-2.5" value={vacateDecision.wantsReupload} onChange={(event) => setVacateDecision((prev) => ({ ...prev, wantsReupload: event.target.value }))}>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+          </div>
+
+          {vacateDecision.wantsReupload === "yes" ? (
+            <div className="space-y-4 border-t border-gray-200 pt-6">
+              <h4 className="text-lg font-semibold text-gray-900">Reupload Property Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  ["propertyName", "Property Name"],
+                  ["propertyType", "Property Type"],
+                  ["city", "City"],
+                  ["area", "Area"],
+                  ["address", "Address"],
+                  ["pincode", "Pincode"],
+                  ["landmark", "Landmark"],
+                  ["nearbyLocation", "Nearby Location"],
+                  ["genderSuitability", "Gender Suitability"],
+                  ["monthlyRent", "Monthly Rent"],
+                  ["deposit", "Security Deposit"],
+                  ["roomCount", "Room Count"],
+                  ["bedCount", "Bed Count"],
+                  ["vacantRooms", "Vacant Rooms"],
+                  ["vacantBeds", "Vacant Beds"],
+                  ["occupiedRooms", "Occupied Rooms"],
+                  ["occupiedBeds", "Occupied Beds"],
+                  ["studentReviewsRating", "Student Reviews Rating"],
+                  ["employeeRating", "Employee Rating"],
+                  ["cleanlinessRating", "Cleanliness Rating"],
+                  ["cleanliness", "Cleanliness"],
+                  ["ownerBehaviour", "Owner Behaviour"],
+                  ["furnishing", "Furnishing"],
+                  ["ventilation", "Ventilation"],
+                  ["minStay", "Min Stay"],
+                  ["entryExit", "Entry/Exit"],
+                  ["amenities", "Amenities (comma separated)"],
+                  ["internalRemarks", "Internal Remarks"],
+                  ["cleanlinessNote", "Cleanliness Note"]
+                ].map(([key, label]) => (
+                  <input key={key} className="border border-gray-300 rounded-lg px-3 py-2" placeholder={label} value={reuploadForm[key]} onChange={(event) => setReuploadForm((prev) => ({ ...prev, [key]: event.target.value }))} />
+                ))}
+                <textarea className="border border-gray-300 rounded-lg px-3 py-2 md:col-span-2" placeholder="Description" value={reuploadForm.description} onChange={(event) => setReuploadForm((prev) => ({ ...prev, description: event.target.value }))} />
+                <textarea className="border border-gray-300 rounded-lg px-3 py-2 md:col-span-2" placeholder="Student Reviews" value={reuploadForm.studentReviews} onChange={(event) => setReuploadForm((prev) => ({ ...prev, studentReviews: event.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                {[
+                  ["visitorsAllowed", "Visitors Allowed"],
+                  ["cookingAllowed", "Cooking Allowed"],
+                  ["smokingAllowed", "Smoking Allowed"],
+                  ["petsAllowed", "Pets Allowed"]
+                ].map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2">
+                    <input type="checkbox" checked={Boolean(reuploadForm[key])} onChange={(event) => setReuploadForm((prev) => ({ ...prev, [key]: event.target.checked }))} />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button type="button" onClick={() => setVacateModalOpen(false)} className="px-5 py-2.5 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium transition">Cancel</button>
+            <button type="button" onClick={handleVacateBed} className="px-5 py-2.5 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 shadow-md transition">Confirm Vacate</button>
+          </div>
         </div>
       </div>
     </PropertyOwnerLayout>

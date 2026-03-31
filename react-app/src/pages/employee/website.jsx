@@ -23,15 +23,20 @@ export default function Website() {
 
   const [filter, setFilter] = useState("online");
   const [properties, setProperties] = useState([]);
+  const [reuploadRequests, setReuploadRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
   const loadWebsite = async () => {
     try {
       setErrorMsg("");
-      const data = await fetchJson("/api/approved-properties/public/approved");
+      const [data, requestsPayload] = await Promise.all([
+        fetchJson("/api/approved-properties/all"),
+        fetchJson("/api/approved-properties/reupload-requests").catch(() => ({ requests: [] }))
+      ]);
       const list = Array.isArray(data) ? data : (data.properties || data.visits || []);
       setProperties(list);
+      setReuploadRequests(Array.isArray(requestsPayload?.requests) ? requestsPayload.requests : []);
       setLoading(false);
     } catch (err) {
       setLoading(false);
@@ -53,12 +58,24 @@ export default function Website() {
     );
   }, [properties, filter]);
 
-  const toggleLive = async (propertyId) => {
+  const toggleLive = async (property) => {
     try {
-      await fetchJson(`/api/approved-properties/${propertyId}/toggle-live`, { method: "PUT" });
+      await fetchJson(`/api/approved-properties/${property.propertyId || property.visitId || property._id}/toggle-live`, {
+        method: "PUT",
+        body: JSON.stringify({ isLiveOnWebsite: !property?.isLiveOnWebsite })
+      });
       await loadWebsite();
     } catch (err) {
       window.alert(err?.body || err?.message || "Failed to toggle status");
+    }
+  };
+
+  const publishReupload = async (request) => {
+    try {
+      await fetchJson(`/api/approved-properties/${encodeURIComponent(request.visitId)}/reupload-requests/${encodeURIComponent(request.requestId)}/publish`, { method: "PUT" });
+      await loadWebsite();
+    } catch (err) {
+      window.alert(err?.body || err?.message || "Failed to publish reupload request");
     }
   };
 
@@ -136,7 +153,7 @@ export default function Website() {
                         <td className="px-4 py-3 font-bold">₹{rent}</td>
                         <td className="px-4 py-3">
                           <button
-                            onClick={() => toggleLive(v.propertyId || visitId)}
+                            onClick={() => toggleLive(v)}
                             className={`px-3 py-1 rounded text-xs font-medium ${v.isLiveOnWebsite ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}
                           >
                             {v.isLiveOnWebsite ? "ONLINE" : "OFFLINE"}
@@ -147,6 +164,45 @@ export default function Website() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            <div className="mt-8 bg-white rounded-xl shadow border overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h3 className="text-base font-semibold text-slate-800">Reupload Requests</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left min-w-full">
+                  <thead className="bg-gray-50 text-[10px] text-gray-500 uppercase border-b">
+                    <tr>
+                      <th className="px-4 py-3">Visit ID</th>
+                      <th className="px-4 py-3">Property</th>
+                      <th className="px-4 py-3">Room / Bed</th>
+                      <th className="px-4 py-3">Deposit Settled</th>
+                      <th className="px-4 py-3">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {reuploadRequests.length === 0 ? (
+                      <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-400">No reupload requests.</td></tr>
+                    ) : reuploadRequests.map((request) => (
+                      <tr key={request.requestId}>
+                        <td className="px-4 py-3 font-mono text-xs text-gray-600">{String(request.visitId || "").slice(-8).toUpperCase()}</td>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-gray-800">{request.propertyInfo?.name || "-"}</div>
+                          <div className="text-xs text-gray-500">{request.propertyInfo?.area || "-"}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{`${request.roomNo || "-"} / Bed ${request.bedNo || "-"}`}</td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{request.securityDepositSettled ? "Yes" : "No"}</td>
+                        <td className="px-4 py-3">
+                          <button onClick={() => publishReupload(request)} className="px-3 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700">
+                            Publish
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </main>
         </div>

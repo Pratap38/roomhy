@@ -79,7 +79,7 @@ router.get('/all', async (req, res) => {
         console.log('🔍 [approved-properties/all] Fetching all approved properties...');
         
         const properties = await ApprovedProperty.find({ 
-            status: { $in: ['approved', 'live'] }
+            status: { $in: ['approved', 'live', 'offline'] }
         }).sort({ approvedAt: -1 });
         
         console.log('✅ [approved-properties/all] Found', properties.length, 'approved properties');
@@ -97,6 +97,36 @@ router.get('/all', async (req, res) => {
             message: 'Error fetching properties',
             error: error.message
         });
+    }
+});
+
+router.get('/reupload-requests', async (req, res) => {
+    try {
+        const properties = await ApprovedProperty.find({
+            reuploadRequests: { $exists: true, $ne: [] }
+        })
+            .select('visitId propertyInfo isLiveOnWebsite reuploadRequests generatedCredentials')
+            .sort({ approvedAt: -1 });
+
+        const requests = [];
+        properties.forEach((property) => {
+            (property.reuploadRequests || []).forEach((request) => {
+                if (request.status === 'pending') {
+                    requests.push({
+                        visitId: property.visitId,
+                        propertyInfo: property.propertyInfo,
+                        isLiveOnWebsite: property.isLiveOnWebsite,
+                        ownerLoginId: property.generatedCredentials?.loginId || request.ownerLoginId || '',
+                        ...request.toObject()
+                    });
+                }
+            });
+        });
+
+        return res.status(200).json({ success: true, requests });
+    } catch (error) {
+        console.error('❌ [approved-properties/reupload-requests] Error:', error.message);
+        return res.status(500).json({ success: false, message: 'Error fetching reupload requests', error: error.message });
     }
 });
 
@@ -138,9 +168,8 @@ router.get('/public/approved', async (req, res) => {
     try {
         console.log('🔍 [approved-properties/public/approved] Fetching public approved properties...');
 
-        // For now, return all approved properties (both live and offline) to test display
-        // Later we can filter by isLiveOnWebsite: true for production
         const properties = await ApprovedProperty.find({
+            isLiveOnWebsite: true,
             status: { $in: ['approved', 'live'] }
         }).sort({ approvedAt: -1 });
 
@@ -177,6 +206,7 @@ router.get('/public/approved', async (req, res) => {
             approvedAt: prop.approvedAt,
             generatedCredentials: prop.generatedCredentials,
             ownerLoginId: prop.generatedCredentials?.loginId,
+            reuploadRequests: prop.reuploadRequests || [],
             createdBy: prop.approvedBy
         }));
 
@@ -272,7 +302,7 @@ router.put('/:visitId/toggle-live', async (req, res) => {
         }
 
         property.isLiveOnWebsite = isLiveOnWebsite;
-        property.status = isLiveOnWebsite ? 'live' : 'approved';
+        property.status = isLiveOnWebsite ? 'live' : 'offline';
         await property.save();
 
         console.log('✅ [approved-properties/toggle-live] Updated property:', visitId, 'isLive:', isLiveOnWebsite);
@@ -351,7 +381,7 @@ router.put('/:id/toggle-live', async (req, res) => {
 
         // Toggle the live status
         property.isLiveOnWebsite = !property.isLiveOnWebsite;
-        property.status = property.isLiveOnWebsite ? 'live' : 'approved';
+        property.status = property.isLiveOnWebsite ? 'live' : 'offline';
         await property.save();
 
         console.log('✅ [approved-properties/toggle-live] Toggled to:', property.isLiveOnWebsite);
@@ -375,6 +405,40 @@ router.put('/:id/toggle-live', async (req, res) => {
             message: 'Error toggling live status',
             error: error.message
         });
+    }
+});
+
+router.put('/:visitId/reupload-requests/:requestId/publish', async (req, res) => {
+    try {
+        const { visitId, requestId } = req.params;
+        const property = await ApprovedProperty.findOne({ visitId });
+        if (!property) {
+            return res.status(404).json({ success: false, message: 'Property not found' });
+        }
+
+        const request = (property.reuploadRequests || []).find((item) => item.requestId === requestId);
+        if (!request) {
+            return res.status(404).json({ success: false, message: 'Reupload request not found' });
+        }
+
+        property.propertyInfo = {
+            ...(property.propertyInfo || {}),
+            ...(request.propertyInfo || {})
+        };
+        property.isLiveOnWebsite = true;
+        property.status = 'live';
+        request.status = 'published';
+        request.publishedAt = new Date();
+        await property.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Reupload request published',
+            property
+        });
+    } catch (error) {
+        console.error('❌ [approved-properties/reupload-publish] Error:', error.message);
+        return res.status(500).json({ success: false, message: 'Error publishing reupload request', error: error.message });
     }
 });
 

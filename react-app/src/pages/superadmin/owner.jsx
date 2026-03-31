@@ -149,6 +149,7 @@ export default function Owner() {
                                         <th>DOB</th>
                                         <th>Gmail</th>
                                         <th>Aadhaar Linked Phone</th>
+                                        <th>Aadhaar Number</th>
                                         <th>Account Holder</th>
                                         <th>UPI ID</th>
                                         <th>Address</th> <!-- Address Column -->

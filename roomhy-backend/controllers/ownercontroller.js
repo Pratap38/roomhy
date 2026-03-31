@@ -50,6 +50,7 @@ const Owner = require('../models/Owner');
 const Notification = require('../models/Notification');
 const Property = require('../models/Property');
 const CheckinRecord = require('../models/CheckinRecord');
+const ApprovedProperty = require('../models/ApprovedProperty');
 
 // List Owners with Filtering (Area, KYC Status)
 exports.getAllOwners = async (req, res) => {
@@ -85,6 +86,7 @@ exports.getAllOwners = async (req, res) => {
         // Attach property counts per owner for frontend display
         const ownerLoginIds = owners.map(o => o.loginId).filter(Boolean);
         const primaryPropertyMap = {};
+        const approvedPropertyMap = {};
         if (ownerLoginIds.length > 0) {
             const counts = await Property.aggregate([
                 { $match: { ownerLoginId: { $in: ownerLoginIds } } },
@@ -101,6 +103,19 @@ exports.getAllOwners = async (req, res) => {
             firstProperties.forEach((property) => {
                 if (property?.ownerLoginId && !primaryPropertyMap[property.ownerLoginId]) {
                     primaryPropertyMap[property.ownerLoginId] = property;
+                }
+            });
+
+            const approvedProperties = await ApprovedProperty.find({
+                'generatedCredentials.loginId': { $in: ownerLoginIds }
+            })
+                .sort({ approvedAt: -1 })
+                .select('visitId isLiveOnWebsite status generatedCredentials propertyInfo')
+                .lean();
+            approvedProperties.forEach((item) => {
+                const loginId = item?.generatedCredentials?.loginId;
+                if (loginId && !approvedPropertyMap[loginId]) {
+                    approvedPropertyMap[loginId] = item;
                 }
             });
         } else {
@@ -141,6 +156,10 @@ exports.getAllOwners = async (req, res) => {
             vacantBeds: Number(o.vacantBeds ?? primaryPropertyMap[o.loginId]?.vacantBeds ?? 0),
             occupiedRooms: Number(o.occupiedRooms ?? primaryPropertyMap[o.loginId]?.occupiedRooms ?? 0),
             occupiedBeds: Number(o.occupiedBeds ?? primaryPropertyMap[o.loginId]?.occupiedBeds ?? 0),
+            roomInventory: Array.isArray(o.roomInventory) ? o.roomInventory : [],
+            approvedVisitId: approvedPropertyMap[o.loginId]?.visitId || '',
+            isLiveOnWebsite: Boolean(approvedPropertyMap[o.loginId]?.isLiveOnWebsite),
+            websiteStatus: approvedPropertyMap[o.loginId]?.status || '',
             // Merge profile data to top level (profile takes priority, then top-level field)
             name: o.profile?.name || o.name || 'Unknown',
             email: o.profile?.email || o.email || o.checkinEmail || (checkinMap[o.loginId]?.ownerProfile?.email || ''),
@@ -219,6 +238,10 @@ exports.getOwnerById = async (req, res) => {
             .sort({ createdAt: 1 })
             .select('title locationCode roomCount bedCount vacantRooms vacantBeds occupiedRooms occupiedBeds')
             .lean();
+        const approvedProperty = await ApprovedProperty.findOne({ 'generatedCredentials.loginId': normalizedLoginId })
+            .sort({ approvedAt: -1 })
+            .select('visitId isLiveOnWebsite status')
+            .lean();
         res.json({
             ...owner,
             propertyTitle: primaryProperty?.title || '',
@@ -258,7 +281,11 @@ exports.getOwnerById = async (req, res) => {
             vacantRooms: Number(owner.vacantRooms || primaryProperty?.vacantRooms || 0),
             vacantBeds: Number(owner.vacantBeds || primaryProperty?.vacantBeds || 0),
             occupiedRooms: Number(owner.occupiedRooms || primaryProperty?.occupiedRooms || 0),
-            occupiedBeds: Number(owner.occupiedBeds || primaryProperty?.occupiedBeds || 0)
+            occupiedBeds: Number(owner.occupiedBeds || primaryProperty?.occupiedBeds || 0),
+            roomInventory: Array.isArray(owner.roomInventory) ? owner.roomInventory : [],
+            approvedVisitId: approvedProperty?.visitId || '',
+            isLiveOnWebsite: Boolean(approvedProperty?.isLiveOnWebsite),
+            websiteStatus: approvedProperty?.status || ''
         });
     } catch (err) {
         res.status(500).json({ message: err.message });
