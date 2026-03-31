@@ -29,6 +29,7 @@ const normalizeApprovedProperty = (prop = {}) => {
     photos: Array.isArray(prop.photos) ? prop.photos : (Array.isArray(info.photos) ? info.photos : []),
     professionalPhotos: Array.isArray(prop.professionalPhotos) ? prop.professionalPhotos : [],
     vacantRooms: prop.vacantRooms ?? info.vacantRooms ?? 0,
+    vacantBeds: prop.vacantBeds ?? info.vacantBeds ?? 0,
     occupiedRooms: prop.occupiedRooms ?? info.occupiedRooms ?? 0,
     occupiedBeds: prop.occupiedBeds ?? info.occupiedBeds ?? 0,
     isLiveOnWebsite: Boolean(prop.isLiveOnWebsite),

@@ -162,6 +162,7 @@ router.get('/public/approved', async (req, res) => {
             roomCount: prop.propertyInfo?.roomCount || 0,
             bedCount: prop.propertyInfo?.bedCount || 0,
             vacantRooms: prop.propertyInfo?.vacantRooms || 0,
+            vacantBeds: prop.propertyInfo?.vacantBeds || 0,
             occupiedRooms: prop.propertyInfo?.occupiedRooms || 0,
             occupiedBeds: prop.propertyInfo?.occupiedBeds || 0,
             isVerified: true,

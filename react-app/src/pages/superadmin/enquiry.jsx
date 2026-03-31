@@ -282,6 +282,7 @@ export default function SuperadminEnquiry() {
                   locationCode: property.locationCode || "-",
                   monthlyRent: property.monthlyRent || 0,
                   vacantRooms: property.vacantRooms || owner.vacantRooms || 0,
+                  vacantBeds: property.vacantBeds || owner.vacantBeds || 0,
                   occupiedRooms: property.occupiedRooms || owner.occupiedRooms || 0,
                   occupiedBeds: property.occupiedBeds || owner.occupiedBeds || 0,
                   status: property.status || "-",
@@ -794,6 +795,7 @@ export default function SuperadminEnquiry() {
                           <th className="px-6 py-4">Location Code</th>
                           <th className="px-6 py-4">Rent/mo</th>
                           <th className="px-6 py-4">Vacant Rooms</th>
+                          <th className="px-6 py-4">Vacant Beds</th>
                           <th className="px-6 py-4">Occupied Rooms</th>
                           <th className="px-6 py-4">Occupied Beds</th>
                           <th className="px-6 py-4">Status</th>
@@ -815,6 +817,7 @@ export default function SuperadminEnquiry() {
                               <td className="px-6 py-4 text-sm font-mono">{property.locationCode}</td>
                               <td className="px-6 py-4 text-sm font-bold">{"\u20B9"}{property.monthlyRent || 0}</td>
                               <td className="px-6 py-4 text-sm font-semibold">{property.vacantRooms || 0}</td>
+                              <td className="px-6 py-4 text-sm font-semibold">{property.vacantBeds || 0}</td>
                               <td className="px-6 py-4 text-sm font-semibold">{property.occupiedRooms || 0}</td>
                               <td className="px-6 py-4 text-sm font-semibold">{property.occupiedBeds || 0}</td>
                               <td className="px-6 py-4 text-sm">{property.status}</td>

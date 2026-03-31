@@ -129,6 +129,7 @@ export default function Owner() {
                                         <th>IFSC Code</th>
                                         <th>Branch</th>
                                         <th>Vacant Rooms</th>
+                                        <th>Vacant Beds</th>
                                         <th>Occupied Rooms</th>
                                         <th>Occupied Beds</th>
                                         <th>Monthly Rent</th> <!-- NEW: Property Rent -->

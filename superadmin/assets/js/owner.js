@@ -223,15 +223,16 @@ lucide.createIcons();
                         const monthlyRent = v.monthlyRent || v.propertyInfo?.rent || '-';
                         const deposit = v.deposit || v.propertyInfo?.deposit || '-';
                         const vacantRooms = v.vacantRooms || v.propertyInfo?.vacantRooms || 0;
+                        const vacantBeds = v.vacantBeds || v.propertyInfo?.vacantBeds || 0;
                         const occupiedRooms = v.occupiedRooms || v.propertyInfo?.occupiedRooms || 0;
                         const occupiedBeds = v.occupiedBeds || v.propertyInfo?.occupiedBeds || 0;
 
                         if (ownerLoginId && !visitMap[ownerLoginId]) {
-                            visitMap[ownerLoginId] = { monthlyRent, deposit, vacantRooms, occupiedRooms, occupiedBeds };
+                            visitMap[ownerLoginId] = { monthlyRent, deposit, vacantRooms, vacantBeds, occupiedRooms, occupiedBeds };
                         }
 
                         if (ownerName && !visitMap[ownerName]) {
-                            visitMap[ownerName] = { monthlyRent, deposit, vacantRooms, occupiedRooms, occupiedBeds };
+                            visitMap[ownerName] = { monthlyRent, deposit, vacantRooms, vacantBeds, occupiedRooms, occupiedBeds };
                         }
                     });
                     console.log('Loaded visit data for', Object.keys(visitMap).length, 'owners');
@@ -336,6 +337,7 @@ lucide.createIcons();
                 const statusRaw = (o.kycStatus || o.kyc?.status || '').toLowerCase();
                 const derivedKycStatus = (statusRaw === 'verified' || statusRaw === 'submitted' || o.checkinOtpVerified || o.checkinSubmittedAt) ? 'Verified' : 'Pending';
                 const vacantRooms = o.vacantRooms || visitInfo.vacantRooms || 0;
+                const vacantBeds = o.vacantBeds || visitInfo.vacantBeds || 0;
                 const occupiedRooms = o.occupiedRooms || visitInfo.occupiedRooms || 0;
                 const occupiedBeds = o.occupiedBeds || visitInfo.occupiedBeds || 0;
 
@@ -358,6 +360,7 @@ lucide.createIcons();
                     "IFSC Code": o.checkinIfscCode || o.ifscCode || o.profile?.ifscCode || '-',
                     "Branch": o.checkinBranchName || o.branchName || o.profile?.branchName || '-',
                     "Vacant Rooms": vacantRooms || '-',
+                    "Vacant Beds": vacantBeds || '-',
                     "Occupied Rooms": occupiedRooms || '-',
                     "Occupied Beds": occupiedBeds || '-',
                     "Monthly Rent": visitInfo.monthlyRent || latestRentInfo.rentAmount || '-',
@@ -397,6 +400,7 @@ lucide.createIcons();
                 const monthlyRent = visitInfo.monthlyRent || latestRentInfo.rentAmount || '-';
                 const securityDeposit = visitInfo.deposit || latestRentInfo.deposit || '-';
                 const vacantRooms = o.vacantRooms || visitInfo.vacantRooms || 0;
+                const vacantBeds = o.vacantBeds || visitInfo.vacantBeds || 0;
                 const occupiedRooms = o.occupiedRooms || visitInfo.occupiedRooms || 0;
                 const occupiedBeds = o.occupiedBeds || visitInfo.occupiedBeds || 0;
                 let kycBadge = `<span class="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded">Pending</span>`;
@@ -426,6 +430,7 @@ lucide.createIcons();
                         <td class="text-xs text-gray-700 font-mono">${ifscCode}</td>
                         <td class="text-xs text-gray-700">${branchName}</td>
                         <td class="text-xs text-gray-700 font-semibold">${vacantRooms || '-'}</td>
+                        <td class="text-xs text-gray-700 font-semibold">${vacantBeds || '-'}</td>
                         <td class="text-xs text-gray-700 font-semibold">${occupiedRooms || '-'}</td>
                         <td class="text-xs text-gray-700 font-semibold">${occupiedBeds || '-'}</td>
                         <td class="text-xs text-gray-700 font-semibold">${monthlyRent === '-' ? '-' : '₹' + monthlyRent}</td>

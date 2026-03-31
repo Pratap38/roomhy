@@ -96,7 +96,7 @@ exports.getAllOwners = async (req, res) => {
 
             const firstProperties = await Property.find({ ownerLoginId: { $in: ownerLoginIds } })
                 .sort({ createdAt: 1 })
-                .select('ownerLoginId title locationCode roomCount bedCount vacantRooms occupiedRooms occupiedBeds')
+                .select('ownerLoginId title locationCode roomCount bedCount vacantRooms vacantBeds occupiedRooms occupiedBeds')
                 .lean();
             firstProperties.forEach((property) => {
                 if (property?.ownerLoginId && !primaryPropertyMap[property.ownerLoginId]) {
@@ -138,6 +138,7 @@ exports.getAllOwners = async (req, res) => {
             roomCount: Number(o.roomCount || primaryPropertyMap[o.loginId]?.roomCount || 0),
             bedCount: Number(o.bedCount || primaryPropertyMap[o.loginId]?.bedCount || 0),
             vacantRooms: Number(o.vacantRooms || primaryPropertyMap[o.loginId]?.vacantRooms || 0),
+            vacantBeds: Number(o.vacantBeds || primaryPropertyMap[o.loginId]?.vacantBeds || 0),
             occupiedRooms: Number(o.occupiedRooms || primaryPropertyMap[o.loginId]?.occupiedRooms || 0),
             occupiedBeds: Number(o.occupiedBeds || primaryPropertyMap[o.loginId]?.occupiedBeds || 0),
             // Merge profile data to top level (profile takes priority, then top-level field)
@@ -215,7 +216,7 @@ exports.getOwnerById = async (req, res) => {
         const checkin = await CheckinRecord.findOne({ role: 'owner', loginId: normalizedLoginId }).lean();
         const primaryProperty = await Property.findOne({ ownerLoginId: normalizedLoginId })
             .sort({ createdAt: 1 })
-            .select('title locationCode roomCount bedCount vacantRooms occupiedRooms occupiedBeds')
+            .select('title locationCode roomCount bedCount vacantRooms vacantBeds occupiedRooms occupiedBeds')
             .lean();
         res.json({
             ...owner,
@@ -254,6 +255,7 @@ exports.getOwnerById = async (req, res) => {
             roomCount: Number(owner.roomCount || primaryProperty?.roomCount || 0),
             bedCount: Number(owner.bedCount || primaryProperty?.bedCount || 0),
             vacantRooms: Number(owner.vacantRooms || primaryProperty?.vacantRooms || 0),
+            vacantBeds: Number(owner.vacantBeds || primaryProperty?.vacantBeds || 0),
             occupiedRooms: Number(owner.occupiedRooms || primaryProperty?.occupiedRooms || 0),
             occupiedBeds: Number(owner.occupiedBeds || primaryProperty?.occupiedBeds || 0)
         });

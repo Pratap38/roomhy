@@ -351,6 +351,7 @@ export default function WebsiteOurproperty() {
       rent,
       propertyType,
       vacantRooms: prop.vacantRooms ?? info.vacantRooms ?? 0,
+      vacantBeds: prop.vacantBeds ?? info.vacantBeds ?? 0,
       occupiedRooms: prop.occupiedRooms ?? info.occupiedRooms ?? 0,
       occupiedBeds: prop.occupiedBeds ?? info.occupiedBeds ?? 0,
       photos,
@@ -517,6 +518,7 @@ export default function WebsiteOurproperty() {
 
                       <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
                         <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{`Vacant Rooms: ${property.vacantRooms}`}</span>
+                        <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">{`Vacant Beds: ${property.vacantBeds}`}</span>
                         <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">{`Occupied Rooms: ${property.occupiedRooms}`}</span>
                         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{`Occupied Beds: ${property.occupiedBeds}`}</span>
                       </div>

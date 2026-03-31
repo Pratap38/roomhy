@@ -217,6 +217,7 @@ export default function WebsiteProperty() {
     if (info.propertyId) facts.push({ label: "Property ID", value: info.propertyId });
     if (info.propertyType || record.propertyType) facts.push({ label: "Type", value: info.propertyType || record.propertyType });
     if (record.vacantRooms) facts.push({ label: "Vacant Rooms", value: record.vacantRooms });
+    if (record.vacantBeds) facts.push({ label: "Vacant Beds", value: record.vacantBeds });
     if (record.occupiedRooms) facts.push({ label: "Occupied Rooms", value: record.occupiedRooms });
     if (record.roomType) facts.push({ label: "Room Type", value: record.roomType });
     if (record.occupiedBeds) facts.push({ label: "Occupied Beds", value: record.occupiedBeds });

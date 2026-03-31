@@ -687,6 +687,7 @@ export default function SuperadminEnquiry() {
                           <th className="px-4 py-3">Owner Gmail</th>
                           <th className="px-4 py-3">Gender</th>
                           <th className="px-4 py-3">Vacant Rooms</th>
+                          <th className="px-4 py-3">Vacant Beds</th>
                           <th className="px-4 py-3">Occupied Rooms</th>
                           <th className="px-4 py-3">Occupied Beds</th>
                           <th className="px-4 py-3">Student Reviews</th>
@@ -737,6 +738,7 @@ export default function SuperadminEnquiry() {
                                 <td className="px-4 py-3">{v.ownerEmail || prop.ownerEmail || "-"}</td>
                                 <td className="px-4 py-3">{v.gender || "-"}</td>
                                 <td className="px-4 py-3 text-center">{v.vacantRooms || prop.vacantRooms || 0}</td>
+                                <td className="px-4 py-3 text-center">{v.vacantBeds || prop.vacantBeds || 0}</td>
                                 <td className="px-4 py-3 text-center">{v.occupiedRooms || prop.occupiedRooms || 0}</td>
                                 <td className="px-4 py-3 text-center">{v.occupiedBeds || prop.occupiedBeds || 0}</td>
                                 <td className="px-4 py-3 text-center bg-amber-50 border-x border-amber-200">

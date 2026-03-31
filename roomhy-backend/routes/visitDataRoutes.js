@@ -26,14 +26,16 @@ function toNonNegativeInt(value) {
 
 function normalizeOccupancyFields(source = {}) {
     const vacantRooms = toNonNegativeInt(source.vacantRooms);
+    const vacantBeds = toNonNegativeInt(source.vacantBeds);
     const occupiedRooms = toNonNegativeInt(source.occupiedRooms);
     const occupiedBeds = toNonNegativeInt(source.occupiedBeds ?? source.bedCount);
     return {
         vacantRooms,
+        vacantBeds,
         occupiedRooms,
         occupiedBeds,
         roomCount: vacantRooms + occupiedRooms,
-        bedCount: occupiedBeds
+        bedCount: vacantBeds + occupiedBeds
     };
 }
 

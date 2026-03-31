@@ -656,6 +656,7 @@ export default function Visit() {
       gender: fd.get("gender"),
       monthlyRent: Number(fd.get("monthlyRent") || 0), deposit: Number(fd.get("deposit") || 0),
       vacantRooms: Number(fd.get("vacantRooms") || 0),
+      vacantBeds: Number(fd.get("vacantBeds") || 0),
       occupiedRooms: Number(fd.get("occupiedRooms") || 0),
       occupiedBeds: Number(fd.get("occupiedBeds") || 0),
       electricityCharges: Number(fd.get("electricityCharges") || 0),
@@ -753,7 +754,7 @@ export default function Visit() {
                         <th>Visit ID</th><th>Visit Date & Time</th><th>Staff Name</th><th>Staff ID</th>
                         <th>Property Name</th><th>Property Type</th><th>Full Address</th><th>Area / Locality</th>
                         <th>Nearby Location</th><th>Landmark</th><th>Owner Name</th><th>Owner Contact</th>
-                        <th>Owner Gmail</th><th>Gender</th><th>Vacant Rooms</th><th>Occupied Rooms</th><th>Occupied Beds</th><th>Student Reviews</th><th>Employee Rating</th>
+                        <th>Owner Gmail</th><th>Gender</th><th>Vacant Rooms</th><th>Vacant Beds</th><th>Occupied Rooms</th><th>Occupied Beds</th><th>Student Reviews</th><th>Employee Rating</th>
                         <th>Amenities</th><th>Cleanliness</th><th>Owner Behaviour</th><th>Photo Count</th>
                         <th>Professional Photo</th><th>Geo Status</th><th>Map</th><th>Status</th>
                         <th>Add Property</th>{/* ← NEW COLUMN */}
@@ -789,6 +790,7 @@ export default function Visit() {
                             <td className="text-sm text-gray-600">{prop.ownerEmail || visit.ownerEmail || "-"}</td>
                             <td className="text-sm text-gray-600">{visit.gender || "-"}</td>
                             <td className="text-sm text-gray-600 text-center">{visit.vacantRooms ?? prop.vacantRooms ?? "-"}</td>
+                            <td className="text-sm text-gray-600 text-center">{visit.vacantBeds ?? prop.vacantBeds ?? "-"}</td>
                             <td className="text-sm text-gray-600 text-center">{visit.occupiedRooms ?? prop.occupiedRooms ?? "-"}</td>
                             <td className="text-sm text-gray-600 text-center">{visit.occupiedBeds ?? prop.occupiedBeds ?? "-"}</td>
                             <td className="text-center"><span className="text-lg font-bold text-amber-600">{visit.studentReviewsRating ? `${"★".repeat(Math.floor(visit.studentReviewsRating))}${"☆".repeat(5 - Math.floor(visit.studentReviewsRating))}` : "-"}</span></td>
@@ -896,6 +898,7 @@ export default function Visit() {
                 <input name="monthlyRent" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Monthly Rent" />
                 <input name="deposit" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Deposit" />
                 <input name="vacantRooms" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Vacant Rooms" />
+                <input name="vacantBeds" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Beds in Vacant Rooms" />
                 <input name="occupiedRooms" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Occupied Rooms" />
                 <input name="occupiedBeds" type="number" min="0" className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Beds in Occupied Rooms" />
               </div>

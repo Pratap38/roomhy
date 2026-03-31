@@ -22,6 +22,7 @@ const ApprovedPropertySchema = new mongoose.Schema({
         roomCount: { type: Number, default: 0 },
         bedCount: { type: Number, default: 0 },
         vacantRooms: { type: Number, default: 0 },
+        vacantBeds: { type: Number, default: 0 },
         occupiedRooms: { type: Number, default: 0 },
         occupiedBeds: { type: Number, default: 0 },
         description: { type: String },

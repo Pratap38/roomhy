@@ -184,6 +184,7 @@ const findVacantBeds = (room) =>
 const summarizeOccupancy = (rooms = []) => {
   const summary = {
     vacantRooms: 0,
+    vacantBeds: 0,
     occupiedRooms: 0,
     occupiedBeds: 0,
     totalRooms: 0
@@ -191,8 +192,10 @@ const summarizeOccupancy = (rooms = []) => {
   (rooms || []).forEach((room) => {
     const beds = toLegacyBeds(room);
     const occupiedBeds = beds.filter((bed) => bed?.status === "occupied" || bed?.tenantName || bed?.tenantId || bed?.loginId).length;
+    const vacantBeds = Math.max(0, beds.length - occupiedBeds);
     summary.totalRooms += 1;
     summary.occupiedBeds += occupiedBeds;
+    summary.vacantBeds += vacantBeds;
     if (occupiedBeds > 0) {
       summary.occupiedRooms += 1;
     } else {
@@ -341,6 +344,7 @@ export default function Rooms() {
       ...record,
       roomCount: summary.totalRooms,
       vacantRooms: summary.vacantRooms,
+      vacantBeds: summary.vacantBeds,
       occupiedRooms: summary.occupiedRooms,
       occupiedBeds: summary.occupiedBeds,
       bedCount: summary.occupiedBeds,
@@ -700,6 +704,7 @@ export default function Rooms() {
           <div id="dataStatus" className="mt-2 text-xs text-gray-500 flex items-center gap-3">
             <span id="backendStatus">{`Backend: ${loading ? "loading" : backendStatus}`}</span>
             <span id="roomsCount">{`Vacant Rooms: ${occupancySummary.vacantRooms}`}</span>
+            <span>{`Vacant Beds: ${occupancySummary.vacantBeds}`}</span>
             <span>{`Occupied Rooms: ${occupancySummary.occupiedRooms}`}</span>
             <span>{`Occupied Beds: ${occupancySummary.occupiedBeds}`}</span>
             <span id="tenantsCount">{`Tenants: ${tenants.length}`}</span>
