@@ -17,6 +17,9 @@ const TenantSchema = new mongoose.Schema({
     // Rental Details
     moveInDate: { type: Date },
     agreedRent: { type: Number },
+    securityDepositTotal: { type: Number, default: 0 },
+    securityDepositPaid: { type: Number, default: 0 },
+    securityDepositBalance: { type: Number, default: 0 },
     
     // Login Credentials (generated during assignment)
     loginId: { type: String, unique: true, sparse: true }, // e.g., ROOMHYTNT4821

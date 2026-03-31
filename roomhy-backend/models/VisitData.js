@@ -32,6 +32,8 @@ const VisitDataSchema = new mongoose.Schema({
     gender: String,
     monthlyRent: Number,
     deposit: String,
+    roomCount: { type: Number, default: 0 },
+    bedCount: { type: Number, default: 0 },
     
     // Owner Information
     ownerName: String,

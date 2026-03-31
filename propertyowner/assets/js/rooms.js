@@ -119,7 +119,10 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                         role: 'owner',
                         name: profile.name || owner?.name || user?.name || 'Owner',
                         locationCode: profile.area || owner?.locationCode || user?.locationCode || '',
-                        area: profile.area || owner?.area || user?.area || ''
+                        area: profile.area || owner?.area || user?.area || '',
+                        checkinUpiId: owner?.checkinUpiId || profile?.upiId || user?.checkinUpiId || '',
+                        roomCount: Number(owner?.roomCount || user?.roomCount || 0),
+                        bedCount: Number(owner?.bedCount || user?.bedCount || 0)
                     };
                     areaCode = user.locationCode || user.area || areaCode;
                     try { localStorage.setItem('owner_user', JSON.stringify(user)); } catch (e) {}
@@ -146,6 +149,56 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 if (cleaned) return cleaned;
             }
             return '';
+        }
+
+        function hasOwnerUpiConfigured() {
+            return !!firstValidValue(user?.checkinUpiId, window.__ownerContext?.upiId);
+        }
+
+        function recalculateSecurityDepositBalance() {
+            const totalEl = document.getElementById('securityDepositTotal');
+            const paidEl = document.getElementById('securityDepositPaid');
+            const balanceEl = document.getElementById('securityDepositBalance');
+            if (!totalEl || !paidEl || !balanceEl) return 0;
+            const total = Math.max(0, parseInt(totalEl.value, 10) || 0);
+            const paid = Math.max(0, parseInt(paidEl.value, 10) || 0);
+            const balance = Math.max(0, total - paid);
+            balanceEl.value = String(balance);
+            return balance;
+        }
+
+        function buildSyntheticRoomsFromSummary(propertyInfo) {
+            const roomCount = Math.max(0, parseInt(propertyInfo?.roomCount, 10) || 0);
+            const bedCount = Math.max(0, parseInt(propertyInfo?.bedCount, 10) || 0);
+            if (!roomCount || !bedCount) return [];
+
+            const bedsPerRoomBase = Math.floor(bedCount / roomCount);
+            const remainderBeds = bedCount % roomCount;
+            const propertyId = propertyInfo?._id || propertyInfo?.id || propertyInfo?.propertyId || ('PROP_' + ownerId);
+            const propertyTitle = firstValidValue(propertyInfo?.title, propertyInfo?.name) || 'Owner Property';
+            const rent = Number(propertyInfo?.monthlyRent || 0);
+
+            return Array.from({ length: roomCount }, (_, idx) => {
+                const roomBeds = bedsPerRoomBase + (idx < remainderBeds ? 1 : 0);
+                return {
+                    id: `VISIT-ROOM-${ownerId}-${idx + 1}`,
+                    ownerId,
+                    ownerLoginId: ownerId,
+                    propertyId,
+                    propertyTitle,
+                    number: String(idx + 1),
+                    type: 'Visit',
+                    rent,
+                    gender: '',
+                    source: 'tenant',
+                    approvalStatus: 'auto-approved',
+                    beds: Array.from({ length: Math.max(1, roomBeds) }, () => ({
+                        status: 'available',
+                        tenantId: null,
+                        tenantName: null
+                    }))
+                };
+            });
         }
 
         if(!user || user.role !== 'owner') {
@@ -353,6 +406,8 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
             const modalIdEl = document.getElementById('modalPropertyId');
 
             if (currentProperty) {
+                currentProperty.roomCount = Number(currentProperty.roomCount || user?.roomCount || 0);
+                currentProperty.bedCount = Number(currentProperty.bedCount || user?.bedCount || 0);
                 const title = firstValidValue(
                     currentProperty.title,
                     currentProperty.name,
@@ -508,6 +563,10 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                     myRooms = allRooms.filter(r => r.propertyId === pid || r.propertyTitle === (currentProperty.title || currentProperty.name));
                     if(myRooms && myRooms.length > 0) console.debug('loadRooms: matched rooms by property fallback', pid, myRooms.length);
                 }
+            }
+
+            if ((!myRooms || myRooms.length === 0) && currentProperty && (currentProperty.roomCount || currentProperty.bedCount)) {
+                myRooms = buildSyntheticRoomsFromSummary(currentProperty);
             }
 
             // Deduplicate rooms by room number + property to prevent showing the same room twice
@@ -883,6 +942,10 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
         }
         // 5. Assign Tenant Logic with TABS
         function openAssignModal(roomId, bedIndex, roomNum) {
+            if (!hasOwnerUpiConfigured()) {
+                alert('Complete owner profile UPI details before assigning a tenant.');
+                return;
+            }
             document.getElementById('assignRoomId').value = roomId;
             document.getElementById('assignBedIndex').value = bedIndex;
             const titleEl = document.getElementById('assignRoomTitle');
@@ -903,7 +966,16 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 if (propertyNameEl) propertyNameEl.innerText = resolvedPropertyName;
                 if (roomNoEl) roomNoEl.innerText = room.number || roomNum || '-';
                 if (rentEl) rentEl.innerText = `INR ${room.rent || 0}`;
+                const depositTotalEl = document.getElementById('securityDepositTotal');
+                const depositPaidEl = document.getElementById('securityDepositPaid');
+                if (depositTotalEl) {
+                    depositTotalEl.value = String(currentProperty?.securityDeposit || currentProperty?.deposit || room.rent || 0);
+                }
+                if (depositPaidEl) {
+                    depositPaidEl.value = '';
+                }
             }
+            recalculateSecurityDepositBalance();
             
             const tenants = JSON.parse(localStorage.getItem('roomhy_tenants') || '[]');
             const available = tenants.filter(t => t.ownerId === ownerId && !t.roomNo);
@@ -972,6 +1044,19 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 const mode = document.getElementById('assignMode').value;
                 const roomId = document.getElementById('assignRoomId').value;
                 const bedIdx = parseInt(document.getElementById('assignBedIndex').value);
+                const securityDepositTotal = Math.max(0, parseInt(document.getElementById('securityDepositTotal')?.value, 10) || 0);
+                const securityDepositPaid = Math.max(0, parseInt(document.getElementById('securityDepositPaid')?.value, 10) || 0);
+                const securityDepositBalance = recalculateSecurityDepositBalance();
+
+                if (!hasOwnerUpiConfigured()) {
+                    throw new Error("Owner UPI details are required before assigning a tenant.");
+                }
+                if (!securityDepositTotal) {
+                    throw new Error("Security deposit is required.");
+                }
+                if (securityDepositPaid > securityDepositTotal) {
+                    throw new Error("Security deposit paid cannot exceed total deposit.");
+                }
                 
                 let tenantId, tenantName;
                 
@@ -1015,7 +1100,10 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                     showCredentialsModal(t.name, t.loginId, t.password, t.email, {
                         propertyName: assignedPropertyName,
                         roomNo: allRooms[roomIdx].number,
-                        agreedRent: allRooms[roomIdx].rent || 0
+                        agreedRent: allRooms[roomIdx].rent || 0,
+                        securityDepositTotal,
+                        securityDepositPaid,
+                        securityDepositBalance
                     });
                 }
                 t.roomNo = allRooms[roomIdx].number;
@@ -1024,6 +1112,9 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 t.propertyTitle = assignedPropertyName;
                 t.ownerLoginId = ownerId;
                 t.agreedRent = allRooms[roomIdx].rent || 0;
+                t.securityDepositTotal = securityDepositTotal;
+                t.securityDepositPaid = securityDepositPaid;
+                t.securityDepositBalance = securityDepositBalance;
                 t.moveInDate = new Date().toISOString().split('T')[0];
                 // assign property object or fallback to title for display
                 try {
@@ -1050,6 +1141,9 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                             bedNo: t.bedNo,
                             moveInDate: t.moveInDate,
                             agreedRent: t.agreedRent,
+                            securityDepositTotal,
+                            securityDepositPaid,
+                            securityDepositBalance,
                             ownerLoginId: ownerId,
                             propertyTitle: assignedPropertyName,
                             locationCode: (window.__ownerContext && (window.__ownerContext.area || window.__ownerContext.locationCode)) || areaCode || ''
@@ -1098,6 +1192,9 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                     propertyId: allRooms[roomIdx].propertyId,
                     propertyTitle: allRooms[roomIdx].propertyTitle || (currentProperty && (currentProperty.title || currentProperty.name)) || '',
                     agreedRent: allRooms[roomIdx].rent || 0,
+                    securityDepositTotal,
+                    securityDepositPaid,
+                    securityDepositBalance,
                     moveInDate: new Date().toISOString().split('T')[0],
                     // attach property object for immediate display in tenant records
                     property: (function(){
@@ -1137,6 +1234,9 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                         bedNo: newTenant.bedNo,
                         moveInDate: newTenant.moveInDate,
                         agreedRent: newTenant.agreedRent,
+                        securityDepositTotal,
+                        securityDepositPaid,
+                        securityDepositBalance,
                         ownerLoginId: ownerId,
                         propertyTitle: assignedPropertyName,
                         locationCode: (window.__ownerContext && (window.__ownerContext.area || window.__ownerContext.locationCode)) || areaCode || ''
@@ -1175,7 +1275,10 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 showCredentialsModal(name, modalLoginId, modalPassword, email, {
                     propertyName: assignedPropertyName,
                     roomNo: newTenant.roomNo,
-                    agreedRent: newTenant.agreedRent || 0
+                    agreedRent: newTenant.agreedRent || 0,
+                    securityDepositTotal,
+                    securityDepositPaid,
+                    securityDepositBalance
                 });
             }
 
@@ -1250,6 +1353,9 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                     ) || 'Owner Property';
                     const roomNo = assignmentDetails.roomNo || '-';
                     const agreedRent = assignmentDetails.agreedRent || 0;
+                    const securityDepositTotal = assignmentDetails.securityDepositTotal || 0;
+                    const securityDepositPaid = assignmentDetails.securityDepositPaid || 0;
+                    const securityDepositBalance = assignmentDetails.securityDepositBalance || 0;
                     const emailHtml = `
                         <!DOCTYPE html>
                         <html>
@@ -1279,6 +1385,12 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                                     <p><strong>Property:</strong> ${propertyName}</p>
                                     <p><strong>Room Number:</strong> ${roomNo}</p>
                                     <p><strong>Rent:</strong> INR ${agreedRent}</p>
+                                    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0;">
+                                        <p style="margin:0 0 8px;font-weight:bold;">Security Deposit Bill</p>
+                                        <p style="margin:4px 0;"><strong>Total Deposit:</strong> INR ${securityDepositTotal}</p>
+                                        <p style="margin:4px 0;"><strong>Paid:</strong> INR ${securityDepositPaid}</p>
+                                        <p style="margin:4px 0;"><strong>Balance:</strong> INR ${securityDepositBalance}</p>
+                                    </div>
                                     
                                     <div class="credentials-box">
                                         <p><span class="label">Login ID:</span><br><span class="value">${id}</span></p>
@@ -1315,7 +1427,7 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                             to: email,
                             subject: '🏠 Your RoomHy Tenant Account Credentials',
                             html: emailHtml,
-                            text: `Tenant login credentials\nProperty: ${propertyName}\nRoom Number: ${roomNo}\nRent: INR ${agreedRent}\nLogin ID: ${id}\nPassword: ${pass}\nDigital Check-In: ${checkinLink}`
+                            text: `Tenant login credentials\nProperty: ${propertyName}\nRoom Number: ${roomNo}\nRent: INR ${agreedRent}\nSecurity Deposit Total: INR ${securityDepositTotal}\nSecurity Deposit Paid: INR ${securityDepositPaid}\nSecurity Deposit Balance: INR ${securityDepositBalance}\nLogin ID: ${id}\nPassword: ${pass}\nDigital Check-In: ${checkinLink}`
                         })
                     }).then(res => res.json()).then(data => {
                         if (data.success) {
@@ -1441,6 +1553,12 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
             }
+            const totalEl = document.getElementById('securityDepositTotal');
+            const paidEl = document.getElementById('securityDepositPaid');
+            const balanceEl = document.getElementById('securityDepositBalance');
+            if (totalEl) totalEl.value = '';
+            if (paidEl) paidEl.value = '';
+            if (balanceEl) balanceEl.value = '';
         }
         const menuBtn = document.getElementById('mobile-menu-open');
         const closeMenuBtn = document.getElementById('close-mobile-menu');
@@ -1459,6 +1577,10 @@ window.addEventListener('load', () => { if(typeof lucide!=='undefined') lucide.c
 
         // Init (ensure backend calls complete before rendering)
         (async function initPage(){
+            ['securityDepositTotal', 'securityDepositPaid'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', recalculateSecurityDepositBalance);
+            });
             await ensureOwnerContext();
             await loadOwnerProperty();
             await checkBackendStatus();

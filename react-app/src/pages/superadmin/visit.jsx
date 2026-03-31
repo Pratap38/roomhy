@@ -565,6 +565,8 @@ export default function Visit() {
       gender: fd.get("gender"),
       monthlyRent: Number(fd.get("monthlyRent") || 0),
       deposit: Number(fd.get("deposit") || 0),
+      roomCount: Number(fd.get("roomCount") || 0),
+      bedCount: Number(fd.get("bedCount") || 0),
       electricityCharges: Number(fd.get("electricityCharges") || 0),
       foodCharges: Number(fd.get("foodCharges") || 0),
       maintenanceCharges: Number(fd.get("maintenanceCharges") || 0),
@@ -735,6 +737,8 @@ export default function Visit() {
                         <th>Owner Gmail</th>
                         <th>Owner Login ID</th>
                         <th>Gender</th>
+                        <th>Rooms</th>
+                        <th>Beds</th>
                         <th>Student Reviews</th>
                         <th>Employee Rating</th>
                         <th>Amenities</th>
@@ -751,17 +755,17 @@ export default function Visit() {
                     <tbody>
                       {loading && (
                         <tr>
-                          <td colSpan={26} className="text-center py-8 text-gray-500">Loading...</td>
+                          <td colSpan={28} className="text-center py-8 text-gray-500">Loading...</td>
                         </tr>
                       )}
                       {!loading && errorMsg && (
                         <tr>
-                          <td colSpan={26} className="text-center py-8 text-red-500">{errorMsg}</td>
+                          <td colSpan={28} className="text-center py-8 text-red-500">{errorMsg}</td>
                         </tr>
                       )}
                       {!loading && !errorMsg && rows.length === 0 && (
                         <tr>
-                          <td colSpan={26} className="text-center py-8 text-gray-500">No visits found. Add one to start.</td>
+                          <td colSpan={28} className="text-center py-8 text-gray-500">No visits found. Add one to start.</td>
                         </tr>
                       )}
                       {rows.map((visit) => {
@@ -787,6 +791,8 @@ export default function Visit() {
                             <td className="text-sm text-gray-600">{prop.ownerEmail || visit.ownerEmail || "-"}</td>
                             <td className="text-xs font-mono text-blue-700">{visit.generatedCredentials?.loginId || prop.ownerLoginId || "-"}</td>
                             <td className="text-sm text-gray-600">{visit.gender || "-"}</td>
+                            <td className="text-sm text-gray-600 text-center">{visit.roomCount || prop.roomCount || "-"}</td>
+                            <td className="text-sm text-gray-600 text-center">{visit.bedCount || prop.bedCount || "-"}</td>
                             <td className="text-center">
                               <span className="text-lg font-bold text-amber-600">
                                 {visit.studentReviewsRating
@@ -916,14 +922,18 @@ export default function Visit() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <input name="monthlyRent" type="number" min="0" defaultValue={editingVisit?.monthlyRent || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Monthly Rent" />
                 <input name="deposit" type="number" min="0" defaultValue={editingVisit?.deposit || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Deposit" />
-                <input name="electricityCharges" type="number" min="0" defaultValue={editingVisit?.electricityCharges || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Electricity Charges" />
+                <input name="roomCount" type="number" min="0" defaultValue={editingVisit?.roomCount || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Rooms" />
+                <input name="bedCount" type="number" min="0" defaultValue={editingVisit?.bedCount || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Beds" />
               </div>
               <div className="grid grid-cols-3 gap-3 mt-2">
+                <input name="electricityCharges" type="number" min="0" defaultValue={editingVisit?.electricityCharges || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Electricity Charges" />
                 <input name="foodCharges" type="number" min="0" defaultValue={editingVisit?.foodCharges || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Food Charges" />
                 <input name="maintenanceCharges" type="number" min="0" defaultValue={editingVisit?.maintenanceCharges || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Maintenance Charges" />
+              </div>
+              <div className="grid grid-cols-1 gap-3 mt-2">
                 <input name="minStay" type="number" min="0" defaultValue={editingVisit?.minStay || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Minimum Stay (months)" />
               </div>
 

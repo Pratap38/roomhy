@@ -8,6 +8,8 @@ const PropertySchema = new mongoose.Schema({
 	area: { type: String },
 	propertyType: { type: String },
 	monthlyRent: { type: Number, default: 0 },
+	roomCount: { type: Number, default: 0 },
+	bedCount: { type: Number, default: 0 },
 	ownerName: { type: String },
 	ownerEmail: { type: String },
 	ownerPhone: { type: String },

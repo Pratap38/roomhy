@@ -158,6 +158,8 @@ export default function Owner() {
                                         <th>Account Number</th>
                                         <th>IFSC Code</th>
                                         <th>Branch</th>
+                                        <th>Rooms</th>
+                                        <th>Beds</th>
                                         <th>Monthly Rent</th> <!-- NEW: Property Rent -->
                                         <th>Security Deposit</th> <!-- NEW: Security Deposit -->
                                         <th>KYC Status</th>
@@ -165,7 +167,7 @@ export default function Owner() {
                                     </tr>
                                 </thead>
                                 <tbody id="ownersTableBody">
-                                    <tr><td colspan="20" class="text-center py-8 text-gray-500">Loading owners...</td></tr>
+                                    <tr><td colspan="22" class="text-center py-8 text-gray-500">Loading owners...</td></tr>
                                 </tbody>
                             </table>
                         </div>

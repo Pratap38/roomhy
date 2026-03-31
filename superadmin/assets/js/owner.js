@@ -222,13 +222,15 @@ lucide.createIcons();
                         const ownerName = (v.ownerName || v.propertyInfo?.ownerName || '').toUpperCase();
                         const monthlyRent = v.monthlyRent || v.propertyInfo?.rent || '-';
                         const deposit = v.deposit || v.propertyInfo?.deposit || '-';
+                        const roomCount = v.roomCount || v.propertyInfo?.roomCount || 0;
+                        const bedCount = v.bedCount || v.propertyInfo?.bedCount || 0;
 
                         if (ownerLoginId && !visitMap[ownerLoginId]) {
-                            visitMap[ownerLoginId] = { monthlyRent, deposit };
+                            visitMap[ownerLoginId] = { monthlyRent, deposit, roomCount, bedCount };
                         }
 
                         if (ownerName && !visitMap[ownerName]) {
-                            visitMap[ownerName] = { monthlyRent, deposit };
+                            visitMap[ownerName] = { monthlyRent, deposit, roomCount, bedCount };
                         }
                     });
                     console.log('Loaded visit data for', Object.keys(visitMap).length, 'owners');
@@ -315,7 +317,7 @@ lucide.createIcons();
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="20" class="text-center py-8 text-gray-500">No owners found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="22" class="text-center py-8 text-gray-500">No owners found.</td></tr>`;
                 return;
             }
 
@@ -332,6 +334,8 @@ lucide.createIcons();
                 const latestRentInfo = latestRentMap[id] || {};
                 const statusRaw = (o.kycStatus || o.kyc?.status || '').toLowerCase();
                 const derivedKycStatus = (statusRaw === 'verified' || statusRaw === 'submitted' || o.checkinOtpVerified || o.checkinSubmittedAt) ? 'Verified' : 'Pending';
+                const roomCount = o.roomCount || visitInfo.roomCount || 0;
+                const bedCount = o.bedCount || visitInfo.bedCount || 0;
 
                 return {
                     "Owner ID": id,
@@ -351,6 +355,8 @@ lucide.createIcons();
                     "Account Number": o.checkinBankAccountNumber || o.accountNumber || o.profile?.accountNumber || '-',
                     "IFSC Code": o.checkinIfscCode || o.ifscCode || o.profile?.ifscCode || '-',
                     "Branch": o.checkinBranchName || o.branchName || o.profile?.branchName || '-',
+                    "Rooms": roomCount || '-',
+                    "Beds": bedCount || '-',
                     "Monthly Rent": visitInfo.monthlyRent || latestRentInfo.rentAmount || '-',
                     "Security Deposit": visitInfo.deposit || latestRentInfo.deposit || '-',
                     "Aadhar": o.aadharNumber || o.kyc?.aadharNumber || '-',
@@ -387,6 +393,8 @@ lucide.createIcons();
                 const latestRentInfo = latestRentMap[id] || {};
                 const monthlyRent = visitInfo.monthlyRent || latestRentInfo.rentAmount || '-';
                 const securityDeposit = visitInfo.deposit || latestRentInfo.deposit || '-';
+                const roomCount = o.roomCount || visitInfo.roomCount || 0;
+                const bedCount = o.bedCount || visitInfo.bedCount || 0;
                 let kycBadge = `<span class="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded">Pending</span>`;
                 if (kycStatus === 'pending') kycBadge = `<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded font-bold">Pending</span>`;
                 if (kycStatus === 'verified') kycBadge = `<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded font-bold">Verified</span>`;
@@ -413,6 +421,8 @@ lucide.createIcons();
                         <td class="text-xs text-gray-700 font-mono">${accountNumber}</td>
                         <td class="text-xs text-gray-700 font-mono">${ifscCode}</td>
                         <td class="text-xs text-gray-700">${branchName}</td>
+                        <td class="text-xs text-gray-700 font-semibold">${roomCount || '-'}</td>
+                        <td class="text-xs text-gray-700 font-semibold">${bedCount || '-'}</td>
                         <td class="text-xs text-gray-700 font-semibold">${monthlyRent === '-' ? '-' : '₹' + monthlyRent}</td>
                         <td class="text-xs text-gray-700 font-semibold">${securityDeposit === '-' ? '-' : '₹' + securityDeposit}</td>
                         <td>${kycBadge}</td>

@@ -96,7 +96,7 @@ exports.getAllOwners = async (req, res) => {
 
             const firstProperties = await Property.find({ ownerLoginId: { $in: ownerLoginIds } })
                 .sort({ createdAt: 1 })
-                .select('ownerLoginId title locationCode')
+                .select('ownerLoginId title locationCode roomCount bedCount')
                 .lean();
             firstProperties.forEach((property) => {
                 if (property?.ownerLoginId && !primaryPropertyMap[property.ownerLoginId]) {
@@ -135,6 +135,8 @@ exports.getAllOwners = async (req, res) => {
             checkinAadhaarNumber: o.checkinAadhaarNumber || checkinMap[o.loginId]?.ownerKyc?.aadhaarNumber || o.kyc?.aadharNumber || o.kyc?.aadhaarNumber || '',
             checkinOtpVerified: !!checkinMap[o.loginId]?.ownerKyc?.otpVerified,
             checkinSubmittedAt: checkinMap[o.loginId]?.ownerSubmittedAt || null,
+            roomCount: Number(o.roomCount || primaryPropertyMap[o.loginId]?.roomCount || 0),
+            bedCount: Number(o.bedCount || primaryPropertyMap[o.loginId]?.bedCount || 0),
             // Merge profile data to top level (profile takes priority, then top-level field)
             name: o.profile?.name || o.name || 'Unknown',
             email: o.profile?.email || o.email || o.checkinEmail || (checkinMap[o.loginId]?.ownerProfile?.email || ''),
@@ -210,7 +212,7 @@ exports.getOwnerById = async (req, res) => {
         const checkin = await CheckinRecord.findOne({ role: 'owner', loginId: normalizedLoginId }).lean();
         const primaryProperty = await Property.findOne({ ownerLoginId: normalizedLoginId })
             .sort({ createdAt: 1 })
-            .select('title locationCode')
+            .select('title locationCode roomCount bedCount')
             .lean();
         res.json({
             ...owner,
@@ -245,7 +247,9 @@ exports.getOwnerById = async (req, res) => {
             checkinAadhaarLinkedPhone: owner.checkinAadhaarLinkedPhone || checkin?.ownerKyc?.aadhaarLinkedPhone || owner.kyc?.aadhaarLinkedPhone || '',
             checkinAadhaarNumber: owner.checkinAadhaarNumber || checkin?.ownerKyc?.aadhaarNumber || owner.kyc?.aadharNumber || owner.kyc?.aadhaarNumber || '',
             checkinOtpVerified: !!checkin?.ownerKyc?.otpVerified,
-            checkinSubmittedAt: checkin?.ownerSubmittedAt || null
+            checkinSubmittedAt: checkin?.ownerSubmittedAt || null,
+            roomCount: Number(owner.roomCount || primaryProperty?.roomCount || 0),
+            bedCount: Number(owner.bedCount || primaryProperty?.bedCount || 0)
         });
     } catch (err) {
         res.status(500).json({ message: err.message });

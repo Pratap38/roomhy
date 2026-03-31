@@ -1,0 +1,288 @@
+{
+  "business_info": {
+    "business_name": "RoomHy",
+    "business_email": "support@roomhy.com",
+    "support_phone": "+91-8764425030",
+    "website": "https://roomhy.com",
+    "app_url": "https://app.roomhy.com",
+    "whatsapp_business_account_id": "1463189491991857",
+    "phone_number_id": "982540604952277",
+    "api_version": "v21.0"
+  },
+  "templates": [
+    {
+      "id": 1,
+      "name": "welcome_main_menu",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "interactive_button",
+      "body": "Welcome to {{business_name}} WhatsApp Bot.\nChoose one option below.",
+      "buttons": [
+        {
+          "type": "reply",
+          "reply": {
+            "id": "auth_signup",
+            "title": "Signup"
+          }
+        },
+        {
+          "type": "reply",
+          "reply": {
+            "id": "auth_login",
+            "title": "Login"
+          }
+        },
+        {
+          "type": "reply",
+          "reply": {
+            "id": "support_menu",
+            "title": "Support"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "signup_link",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "Signup here:\n{{website_url}}/website/signup?mode=signup\n\nAfter signup is complete, reply with \"done\" or \"menu\"."
+    },
+    {
+      "id": 3,
+      "name": "login_link",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "Login here:\n{{website_url}}/website/signup?mode=login\n\nAfter login is complete, reply with \"done\" or \"menu\"."
+    },
+    {
+      "id": 4,
+      "name": "city_selection_prompt",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "Select a city by replying with the number or city name.\n\n{{city_list}}"
+    },
+    {
+      "id": 5,
+      "name": "area_selection_prompt",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "Selected city: {{city_name}}\nNow reply with the area number or name.\n\n{{area_list}}"
+    },
+    {
+      "id": 6,
+      "name": "property_results",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "Properties in {{area_name}}, {{city_name}}:\n\n{{property_list}}\n\nMore in this city: {{website_url}}/website/ourproperty"
+    },
+    {
+      "id": 7,
+      "name": "booking_confirmed_menu",
+      "language": "en",
+      "category": "TRANSACTION_UPDATE",
+      "type": "interactive_button",
+      "body": "Booking confirmed for {{property_name}}.\nChoose refund or alternative property.\n\nSaved preference: {{area_name}}, {{city_name}}\nYou can reply \"alternative\" any time to get matching property links in that area.",
+      "buttons": [
+        {
+          "type": "reply",
+          "reply": {
+            "id": "booking_refund",
+            "title": "Refund"
+          }
+        },
+        {
+          "type": "reply",
+          "reply": {
+            "id": "booking_alternative",
+            "title": "Alternative"
+          }
+        },
+        {
+          "type": "reply",
+          "reply": {
+            "id": "post_auth_menu",
+            "title": "Main Menu"
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "refund_request_link",
+      "language": "en",
+      "category": "TRANSACTION_UPDATE",
+      "type": "text",
+      "body": "Refund request link:\n{{website_url}}/website/refund-request\n\nIf your booking is already visible in My Stays, you can also raise refund from there.\n\nNeed help? Contact: {{support_email}}"
+    },
+    {
+      "id": 9,
+      "name": "alternative_property_flow",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "Based on your preference for {{area_name}}, {{city_name}}, here are alternative properties:\n\n{{property_alternatives}}\n\nBrowse more properties: {{website_url}}/website/ourproperty\n\nReply \"bidding\" to start fast bidding."
+    },
+    {
+      "id": 10,
+      "name": "fast_bidding_link",
+      "language": "en",
+      "category": "MARKETING",
+      "type": "text",
+      "body": "Fast bidding link:\n{{website_url}}/website/fast-bidding\n\nBid on your favorite properties and get instant responses from owners!"
+    },
+    {
+      "id": 11,
+      "name": "property_listing_link",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "List your property here:\n{{website_url}}/website/list\n\nGet verified tenants and manage your property all from one place!\n\nFor owner support, reply \"owner help\""
+    },
+    {
+      "id": 12,
+      "name": "support_menu",
+      "language": "en",
+      "category": "CUSTOMER_CARE",
+      "type": "interactive_button",
+      "body": "{{business_name}} support\nSelect owner or tenant support.",
+      "buttons": [
+        {
+          "type": "reply",
+          "reply": {
+            "id": "support_owner",
+            "title": "Owner Help"
+          }
+        },
+        {
+          "type": "reply",
+          "reply": {
+            "id": "support_tenant",
+            "title": "Tenant Help"
+          }
+        },
+        {
+          "type": "reply",
+          "reply": {
+            "id": "main_menu",
+            "title": "Main Menu"
+          }
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "owner_support",
+      "language": "en",
+      "category": "CUSTOMER_CARE",
+      "type": "text",
+      "body": "Owner support\n\nOwner panel login: {{app_url}}/propertyowner/ownerlogin\nPhone: {{support_phone}}\nEmail: {{support_email}}\n\nNeed help with listings, payments, or tenant management? We're here to help!"
+    },
+    {
+      "id": 14,
+      "name": "tenant_support",
+      "language": "en",
+      "category": "CUSTOMER_CARE",
+      "type": "text",
+      "body": "Tenant support\n\nWebsite login/signup: {{website_url}}/website/signup?mode=login\nMy stays: {{website_url}}/website/mystays\nPhone: {{support_phone}}\nEmail: {{support_email}}\n\nCheck your bookings, raise refunds, and chat with property owners from My Stays!"
+    },
+    {
+      "id": 15,
+      "name": "session_cleared",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "Session cleared. Type \"hi\" or \"hello\" to start fresh."
+    },
+    {
+      "id": 16,
+      "name": "invalid_city_area",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "Invalid {{entity_type}}. Reply with the {{entity_type}} number or exact name.\n\nType \"menu\" to return to main menu."
+    },
+    {
+      "id": 17,
+      "name": "no_properties_found",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "No properties found right now in {{area_name}}, {{city_name}}.\n\nBrowse city listings: {{website_url}}/website/ourproperty\n\nOr type \"bidding\" to go to fast bidding.\nType \"menu\" for other options."
+    },
+    {
+      "id": 18,
+      "name": "no_cities_available",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "text",
+      "body": "No active cities are available right now. Please try again later.\n\nContact us for assistance: {{support_email}}"
+    },
+    {
+      "id": 19,
+      "name": "post_auth_menu",
+      "language": "en",
+      "category": "ACCOUNT_UPDATE",
+      "type": "interactive_button",
+      "body": "{{business_name}} options\nChoose your next step.",
+      "buttons": [
+        {
+          "type": "reply",
+          "reply": {
+            "id": "go_bidding",
+            "title": "Bidding"
+          }
+        },
+        {
+          "type": "reply",
+          "reply": {
+            "id": "go_property",
+            "title": "View Property"
+          }
+        },
+        {
+          "type": "reply",
+          "reply": {
+            "id": "go_listing",
+            "title": "List Property"
+          }
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "business_name": "RoomHy",
+    "website_url": "https://roomhy.com",
+    "app_url": "https://app.roomhy.com",
+    "support_phone": "+91-8764425030",
+    "support_email": "support@roomhy.com",
+    "city_name": "City name selected by user",
+    "area_name": "Area name selected by user",
+    "property_name": "Property name",
+    "city_list": "Numbered list of available cities",
+    "area_list": "Numbered list of available areas",
+    "property_list": "Detailed property list with links",
+    "property_alternatives": "Alternative property suggestions",
+    "entity_type": "city or area"
+  },
+  "meta_submission_guidelines": {
+    "platform": "Meta Business Manager",
+    "navigation": "Accounts → Phone Numbers → Message Templates",
+    "expected_approval_time": "24-48 hours",
+    "quality_assurance": [
+      "All templates use only approved variable placeholders",
+      "No personal data (PII) in templates",
+      "Professional tone and relevant content",
+      "Clear contact information provided",
+      "Button titles <= 20 characters",
+      "Text body <= 3900 characters",
+      "Max 3 buttons per interactive message"
+    ],
+    "submission_status": "READY_FOR_APPROVAL"
+  }
+}

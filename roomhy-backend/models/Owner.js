@@ -46,6 +46,8 @@ const ownerSchema = new mongoose.Schema({
     checkinIfscCode: String,
     checkinBankName: String,
     checkinBranchName: String,
+    roomCount: { type: Number, default: 0 },
+    bedCount: { type: Number, default: 0 },
     agreementRequestId: String,
     agreementStatus: String,
     agreementSignedAt: Date,

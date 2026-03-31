@@ -281,6 +281,8 @@ export default function SuperadminEnquiry() {
                   city: property.city || "-",
                   locationCode: property.locationCode || "-",
                   monthlyRent: property.monthlyRent || 0,
+                  roomCount: property.roomCount || owner.roomCount || 0,
+                  bedCount: property.bedCount || owner.bedCount || 0,
                   status: property.status || "-",
                   createdAt: property.createdAt
                 }));
@@ -790,12 +792,14 @@ export default function SuperadminEnquiry() {
                           <th className="px-6 py-4">City</th>
                           <th className="px-6 py-4">Location Code</th>
                           <th className="px-6 py-4">Rent/mo</th>
+                          <th className="px-6 py-4">Rooms</th>
+                          <th className="px-6 py-4">Beds</th>
                           <th className="px-6 py-4">Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {propertyUnderOwner.length === 0 ? (
-                          <tr><td colSpan={10} className="px-6 py-12 text-center text-gray-400">No property-under-owner records found.</td></tr>
+                          <tr><td colSpan={12} className="px-6 py-12 text-center text-gray-400">No property-under-owner records found.</td></tr>
                         ) : (
                           propertyUnderOwner.map((property) => (
                             <tr key={`${property.ownerLoginId}-${property.propertyId}`} className="hover:bg-gray-50">
@@ -808,6 +812,8 @@ export default function SuperadminEnquiry() {
                               <td className="px-6 py-4 text-sm">{property.city}</td>
                               <td className="px-6 py-4 text-sm font-mono">{property.locationCode}</td>
                               <td className="px-6 py-4 text-sm font-bold">{"\u20B9"}{property.monthlyRent || 0}</td>
+                              <td className="px-6 py-4 text-sm font-semibold">{property.roomCount || 0}</td>
+                              <td className="px-6 py-4 text-sm font-semibold">{property.bedCount || 0}</td>
                               <td className="px-6 py-4 text-sm">{property.status}</td>
                             </tr>
                           ))

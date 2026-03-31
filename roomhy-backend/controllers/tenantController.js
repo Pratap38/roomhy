@@ -10,16 +10,51 @@ const mailer = require('../utils/mailer');
 /**
  * Assign a tenant to a room
  * POST /api/tenants/assign
- * Body: { name, phone, email, propertyId, roomNo, bedNo, moveInDate, agreedRent }
+ * Body: { name, phone, email, propertyId, roomNo, bedNo, moveInDate, agreedRent, securityDepositTotal, securityDepositPaid, securityDepositBalance }
  */
 exports.assignTenant = async (req, res) => {
     try {
-        const { name, phone, email, propertyId, roomNo, bedNo, moveInDate, agreedRent, ownerLoginId, propertyTitle, locationCode } = req.body;
+        const {
+            name,
+            phone,
+            email,
+            propertyId,
+            roomNo,
+            bedNo,
+            moveInDate,
+            agreedRent,
+            ownerLoginId,
+            propertyTitle,
+            locationCode,
+            securityDepositTotal,
+            securityDepositPaid,
+            securityDepositBalance
+        } = req.body;
         let assignedPropertyTitle = String(propertyTitle || '').trim();
+        const normalizedOwnerLoginId = String(ownerLoginId || '').toUpperCase();
+        const depositTotal = Math.max(0, parseInt(securityDepositTotal, 10) || 0);
+        const depositPaid = Math.max(0, parseInt(securityDepositPaid, 10) || 0);
+        const explicitDepositBalance = parseInt(securityDepositBalance, 10);
+        const depositBalance = Math.max(0, Number.isFinite(explicitDepositBalance) ? explicitDepositBalance : (depositTotal - depositPaid));
 
         // Validation
         if (!name || !phone || !email || !agreedRent) {
             return res.status(400).json({ success: false, message: 'Missing required fields (name, phone, email, agreedRent)' });
+        }
+        if (depositPaid > depositTotal) {
+            return res.status(400).json({ success: false, message: 'Security deposit paid cannot exceed total security deposit' });
+        }
+        if (normalizedOwnerLoginId) {
+            const ownerProfile = await Owner.findOne({ loginId: normalizedOwnerLoginId })
+                .select('checkinUpiId profile')
+                .lean();
+            const ownerUpiId = String(ownerProfile?.checkinUpiId || ownerProfile?.profile?.upiId || '').trim();
+            if (!ownerUpiId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Owner UPI details are missing. Please complete owner profile payment details before assigning a tenant.'
+                });
+            }
         }
 
         // Resolve property. If raw propertyId is not a Mongo id, fallback by owner/title.
@@ -106,6 +141,9 @@ exports.assignTenant = async (req, res) => {
             bedNo,
             moveInDate: moveInDate ? new Date(moveInDate) : null,
             agreedRent: parseInt(agreedRent),
+            securityDepositTotal: depositTotal,
+            securityDepositPaid: depositPaid,
+            securityDepositBalance: depositBalance,
             loginId,
             tempPassword, // Store for now; will be displayed once, then forgotten
             user: user._id,
@@ -155,7 +193,14 @@ exports.assignTenant = async (req, res) => {
                         <p>Your tenant account has been created successfully.</p>
                         <p><strong>Property:</strong> ${assignedPropertyTitle || property.title || '-'}</p>
                         <p><strong>Room Number:</strong> ${roomNo || '-'}</p>
+                        <p><strong>Bed Number:</strong> ${bedNo || '-'}</p>
                         <p><strong>Rent:</strong> INR ${parseInt(agreedRent || 0, 10)}</p>
+                        <div style="margin:16px 0;padding:16px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb;">
+                            <h4 style="margin:0 0 12px;font-size:16px;">Security Deposit Bill</h4>
+                            <p style="margin:6px 0;"><strong>Total Deposit:</strong> INR ${depositTotal}</p>
+                            <p style="margin:6px 0;"><strong>Paid:</strong> INR ${depositPaid}</p>
+                            <p style="margin:6px 0;"><strong>Balance:</strong> INR ${depositBalance}</p>
+                        </div>
                         <p><strong>Login ID:</strong> ${tenant.loginId}</p>
                         <p><strong>Password:</strong> ${tenant.tempPassword}</p>
                         <p><strong>Digital Check-In Form:</strong><br>
@@ -163,7 +208,7 @@ exports.assignTenant = async (req, res) => {
                         <p>Please complete profile, KYC, OTP verification, and agreement e-sign.</p>
                     </div>
                 `;
-                const text = `Tenant account created.\nProperty: ${assignedPropertyTitle || property.title || '-'}\nRoom Number: ${roomNo || '-'}\nRent: INR ${parseInt(agreedRent || 0, 10)}\nLogin ID: ${tenant.loginId}\nPassword: ${tenant.tempPassword}\nDigital Check-In: ${tenantCheckinLink}`;
+                const text = `Tenant account created.\nProperty: ${assignedPropertyTitle || property.title || '-'}\nRoom Number: ${roomNo || '-'}\nBed Number: ${bedNo || '-'}\nRent: INR ${parseInt(agreedRent || 0, 10)}\nSecurity Deposit Total: INR ${depositTotal}\nSecurity Deposit Paid: INR ${depositPaid}\nSecurity Deposit Balance: INR ${depositBalance}\nLogin ID: ${tenant.loginId}\nPassword: ${tenant.tempPassword}\nDigital Check-In: ${tenantCheckinLink}`;
                 mailer.sendMail(tenant.email, subject, text, html);
             }
 
@@ -197,7 +242,10 @@ exports.assignTenant = async (req, res) => {
                 roomNo: tenant.roomNo,
                 bedNo: tenant.bedNo,
                 moveInDate: tenant.moveInDate,
-                agreedRent: tenant.agreedRent
+                agreedRent: tenant.agreedRent,
+                securityDepositTotal: tenant.securityDepositTotal,
+                securityDepositPaid: tenant.securityDepositPaid,
+                securityDepositBalance: tenant.securityDepositBalance
             },
             tenantCheckinLink
         });
