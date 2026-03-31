@@ -7,6 +7,7 @@ const ownerSchema = new mongoose.Schema({
     email: String,
     phone: String,
     address: String,
+    city: String,
     locationCode: String, // e.g. area code like 'KO', 'IN'
     area: String, // human-friendly area name (Koramangala, Indiranagar)
     // Nested profile object (preferred structure)
@@ -15,6 +16,7 @@ const ownerSchema = new mongoose.Schema({
         email: String,
         phone: String,
         address: String,
+        city: String,
         locationCode: String,
         bankName: String,
         accountNumber: String,

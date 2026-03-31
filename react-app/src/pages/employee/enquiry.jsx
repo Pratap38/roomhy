@@ -437,8 +437,15 @@ export default function SuperadminEnquiry() {
     const ownerName = enquiry.ownerName || "Owner";
     const ownerEmail = String(enquiry.ownerEmail || "").trim();
     const ownerPhone = String(enquiry.ownerPhone || "").trim();
+    const ownerCity = String(enquiry.city || "").trim();
     const ownerArea = enquiry.area || enquiry.visitArea || "";
     const locationCode = toLocationCode(ownerArea, enquiry.city, loginId);
+    const vacantRooms = Number(enquiry.vacantRooms ?? 0);
+    const vacantBeds = Number(enquiry.vacantBeds ?? 0);
+    const occupiedRooms = Number(enquiry.occupiedRooms ?? 0);
+    const occupiedBeds = Number(enquiry.occupiedBeds ?? 0);
+    const roomCount = Number(enquiry.roomCount ?? (vacantRooms + occupiedRooms));
+    const bedCount = Number(enquiry.bedCount ?? (vacantBeds + occupiedBeds));
 
     setOwnerApprovingId(enquiryId);
     setOwnerApprovalBusy(true);
@@ -450,13 +457,21 @@ export default function SuperadminEnquiry() {
         email: ownerEmail,
         phone: ownerPhone,
         address: enquiry.address || "",
+        city: ownerCity,
         area: ownerArea,
         locationCode,
+        roomCount,
+        bedCount,
+        vacantRooms,
+        vacantBeds,
+        occupiedRooms,
+        occupiedBeds,
         profile: {
           name: ownerName,
           email: ownerEmail,
           phone: ownerPhone,
           address: enquiry.address || "",
+          city: ownerCity,
           locationCode,
           updatedAt: new Date().toISOString()
         },
@@ -483,12 +498,18 @@ export default function SuperadminEnquiry() {
         body: JSON.stringify({
           title: enquiry.propertyName || "Property",
           address: enquiry.address || "",
-          city: enquiry.city || "",
+          city: ownerCity,
           area: ownerArea,
           locationCode,
           description: "",
           propertyType: enquiry.propertyType || "",
           monthlyRent: Number(enquiry.monthlyRent || 0),
+          roomCount,
+          bedCount,
+          vacantRooms,
+          vacantBeds,
+          occupiedRooms,
+          occupiedBeds,
           ownerName,
           ownerEmail,
           ownerPhone

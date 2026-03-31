@@ -96,7 +96,7 @@ exports.getAllOwners = async (req, res) => {
 
             const firstProperties = await Property.find({ ownerLoginId: { $in: ownerLoginIds } })
                 .sort({ createdAt: 1 })
-                .select('ownerLoginId title locationCode roomCount bedCount vacantRooms vacantBeds occupiedRooms occupiedBeds')
+                .select('ownerLoginId title city locationCode roomCount bedCount vacantRooms vacantBeds occupiedRooms occupiedBeds')
                 .lean();
             firstProperties.forEach((property) => {
                 if (property?.ownerLoginId && !primaryPropertyMap[property.ownerLoginId]) {
@@ -146,6 +146,7 @@ exports.getAllOwners = async (req, res) => {
             email: o.profile?.email || o.email || o.checkinEmail || (checkinMap[o.loginId]?.ownerProfile?.email || ''),
             phone: o.profile?.phone || o.phone || o.checkinPhone || (checkinMap[o.loginId]?.ownerProfile?.phone || ''),
             address: o.profile?.address || o.address || o.checkinAddress || (checkinMap[o.loginId]?.ownerProfile?.address || ''),
+            city: o.profile?.city || o.city || primaryPropertyMap[o.loginId]?.city || '',
             locationCode: o.profile?.locationCode || o.locationCode || o.checkinArea || (checkinMap[o.loginId]?.ownerProfile?.area || ''),
             bankName: o.profile?.bankName || o.checkinBankName || '',
             accountNumber: o.profile?.accountNumber || o.accountNumber || o.checkinBankAccountNumber || (checkinMap[o.loginId]?.ownerProfile?.payment?.bankAccountNumber || ''),

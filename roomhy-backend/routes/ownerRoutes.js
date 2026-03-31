@@ -148,6 +148,12 @@ router.post('/:loginId/properties', auditTrail('owners'), async (req, res) => {
             description,
             propertyType,
             monthlyRent,
+            roomCount,
+            bedCount,
+            vacantRooms,
+            vacantBeds,
+            occupiedRooms,
+            occupiedBeds,
             ownerName,
             ownerEmail,
             ownerPhone
@@ -176,6 +182,12 @@ router.post('/:loginId/properties', auditTrail('owners'), async (req, res) => {
                 description: description || '',
                 propertyType: propertyType || '',
                 monthlyRent: Number(monthlyRent || 0),
+                roomCount: Number(roomCount || 0),
+                bedCount: Number(bedCount || 0),
+                vacantRooms: Number(vacantRooms || 0),
+                vacantBeds: Number(vacantBeds || 0),
+                occupiedRooms: Number(occupiedRooms || 0),
+                occupiedBeds: Number(occupiedBeds || 0),
                 ownerName: ownerName || '',
                 ownerEmail: ownerEmail || '',
                 ownerPhone: ownerPhone || '',
@@ -190,6 +202,12 @@ router.post('/:loginId/properties', auditTrail('owners'), async (req, res) => {
             property.description = description || property.description || '';
             property.propertyType = propertyType || property.propertyType || '';
             property.monthlyRent = Number(monthlyRent || property.monthlyRent || 0);
+            property.roomCount = Number(roomCount ?? property.roomCount ?? 0);
+            property.bedCount = Number(bedCount ?? property.bedCount ?? 0);
+            property.vacantRooms = Number(vacantRooms ?? property.vacantRooms ?? 0);
+            property.vacantBeds = Number(vacantBeds ?? property.vacantBeds ?? 0);
+            property.occupiedRooms = Number(occupiedRooms ?? property.occupiedRooms ?? 0);
+            property.occupiedBeds = Number(occupiedBeds ?? property.occupiedBeds ?? 0);
             property.ownerName = ownerName || property.ownerName || '';
             property.ownerEmail = ownerEmail || property.ownerEmail || '';
             property.ownerPhone = ownerPhone || property.ownerPhone || '';

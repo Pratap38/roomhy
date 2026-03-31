@@ -278,13 +278,13 @@ export default function SuperadminEnquiry() {
                   propertyType: property.propertyType || "-",
                   address: property.address || "-",
                   area: property.area || "-",
-                  city: property.city || "-",
+                  city: property.city || owner.city || owner.profile?.city || "-",
                   locationCode: property.locationCode || "-",
-                  monthlyRent: property.monthlyRent || 0,
-                  vacantRooms: property.vacantRooms || owner.vacantRooms || 0,
-                  vacantBeds: property.vacantBeds || owner.vacantBeds || 0,
-                  occupiedRooms: property.occupiedRooms || owner.occupiedRooms || 0,
-                  occupiedBeds: property.occupiedBeds || owner.occupiedBeds || 0,
+                  monthlyRent: property.monthlyRent ?? 0,
+                  vacantRooms: property.vacantRooms ?? owner.vacantRooms ?? 0,
+                  vacantBeds: property.vacantBeds ?? owner.vacantBeds ?? 0,
+                  occupiedRooms: property.occupiedRooms ?? owner.occupiedRooms ?? 0,
+                  occupiedBeds: property.occupiedBeds ?? owner.occupiedBeds ?? 0,
                   status: property.status || "-",
                   createdAt: property.createdAt
                 }));
@@ -690,6 +690,10 @@ export default function SuperadminEnquiry() {
                           <th className="px-4 py-3">Owner Contact</th>
                           <th className="px-4 py-3">Owner Gmail</th>
                           <th className="px-4 py-3">Gender</th>
+                          <th className="px-4 py-3">Vacant Rooms</th>
+                          <th className="px-4 py-3">Vacant Beds</th>
+                          <th className="px-4 py-3">Occupied Rooms</th>
+                          <th className="px-4 py-3">Occupied Beds</th>
                           <th className="px-4 py-3">Student Reviews</th>
                           <th className="px-4 py-3">Employee Rating</th>
                           <th className="px-4 py-3 text-center">Monthly Rent</th>
@@ -708,7 +712,7 @@ export default function SuperadminEnquiry() {
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {visits.length === 0 ? (
-                          <tr><td colSpan={28} className="px-6 py-12 text-center text-gray-400">No pending reports found.</td></tr>
+                          <tr><td colSpan={32} className="px-6 py-12 text-center text-gray-400">No pending reports found.</td></tr>
                         ) : (
                           visits.map((v) => {
                             const prop = v.propertyInfo || {};
@@ -737,6 +741,10 @@ export default function SuperadminEnquiry() {
                                 <td className="px-4 py-3">{v.contactPhone || prop.contactPhone || "-"}</td>
                                 <td className="px-4 py-3">{v.ownerEmail || prop.ownerEmail || "-"}</td>
                                 <td className="px-4 py-3">{v.gender || "-"}</td>
+                                <td className="px-4 py-3 text-center">{v.vacantRooms || prop.vacantRooms || 0}</td>
+                                <td className="px-4 py-3 text-center">{v.vacantBeds || prop.vacantBeds || 0}</td>
+                                <td className="px-4 py-3 text-center">{v.occupiedRooms || prop.occupiedRooms || 0}</td>
+                                <td className="px-4 py-3 text-center">{v.occupiedBeds || prop.occupiedBeds || 0}</td>
                                 <td className="px-4 py-3 text-center bg-amber-50 border-x border-amber-200">
                                   <div className="flex items-center justify-center">
                                     <span className="text-lg font-bold text-amber-600">{v.studentReviewsRating ? "\u2605".repeat(Math.floor(v.studentReviewsRating)) + "\u2606".repeat(5 - Math.floor(v.studentReviewsRating)) : "-"}</span>

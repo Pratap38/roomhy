@@ -359,10 +359,10 @@ lucide.createIcons();
                     "Account Number": o.checkinBankAccountNumber || o.accountNumber || o.profile?.accountNumber || '-',
                     "IFSC Code": o.checkinIfscCode || o.ifscCode || o.profile?.ifscCode || '-',
                     "Branch": o.checkinBranchName || o.branchName || o.profile?.branchName || '-',
-                    "Vacant Rooms": vacantRooms || '-',
-                    "Vacant Beds": vacantBeds || '-',
-                    "Occupied Rooms": occupiedRooms || '-',
-                    "Occupied Beds": occupiedBeds || '-',
+                    "Vacant Rooms": vacantRooms ?? '-',
+                    "Vacant Beds": vacantBeds ?? '-',
+                    "Occupied Rooms": occupiedRooms ?? '-',
+                    "Occupied Beds": occupiedBeds ?? '-',
                     "Monthly Rent": visitInfo.monthlyRent || latestRentInfo.rentAmount || '-',
                     "Security Deposit": visitInfo.deposit || latestRentInfo.deposit || '-',
                     "Aadhar": o.aadharNumber || o.kyc?.aadharNumber || '-',
@@ -429,10 +429,10 @@ lucide.createIcons();
                         <td class="text-xs text-gray-700 font-mono">${accountNumber}</td>
                         <td class="text-xs text-gray-700 font-mono">${ifscCode}</td>
                         <td class="text-xs text-gray-700">${branchName}</td>
-                        <td class="text-xs text-gray-700 font-semibold">${vacantRooms || '-'}</td>
-                        <td class="text-xs text-gray-700 font-semibold">${vacantBeds || '-'}</td>
-                        <td class="text-xs text-gray-700 font-semibold">${occupiedRooms || '-'}</td>
-                        <td class="text-xs text-gray-700 font-semibold">${occupiedBeds || '-'}</td>
+                        <td class="text-xs text-gray-700 font-semibold">${vacantRooms ?? '-'}</td>
+                        <td class="text-xs text-gray-700 font-semibold">${vacantBeds ?? '-'}</td>
+                        <td class="text-xs text-gray-700 font-semibold">${occupiedRooms ?? '-'}</td>
+                        <td class="text-xs text-gray-700 font-semibold">${occupiedBeds ?? '-'}</td>
                         <td class="text-xs text-gray-700 font-semibold">${monthlyRent === '-' ? '-' : '₹' + monthlyRent}</td>
                         <td class="text-xs text-gray-700 font-semibold">${securityDeposit === '-' ? '-' : '₹' + securityDeposit}</td>
                         <td>${kycBadge}</td>

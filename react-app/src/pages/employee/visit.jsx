@@ -135,6 +135,12 @@ function AddPropertyModal({ visit, staffName, staffId, areaName, onClose, onSucc
     gender: visit?.gender || "",
     monthlyRent: visit?.monthlyRent || "",
     deposit: visit?.deposit || "",
+    roomCount: visit?.roomCount ?? visit?.propertyInfo?.roomCount ?? "",
+    bedCount: visit?.bedCount ?? visit?.propertyInfo?.bedCount ?? "",
+    vacantRooms: visit?.vacantRooms ?? visit?.propertyInfo?.vacantRooms ?? "",
+    vacantBeds: visit?.vacantBeds ?? visit?.propertyInfo?.vacantBeds ?? "",
+    occupiedRooms: visit?.occupiedRooms ?? visit?.propertyInfo?.occupiedRooms ?? "",
+    occupiedBeds: visit?.occupiedBeds ?? visit?.propertyInfo?.occupiedBeds ?? "",
   };
 
   const toggleAmenity = (a) =>
