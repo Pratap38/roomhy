@@ -181,6 +181,27 @@ const findVacantBeds = (room) =>
     tenant: bed
   }));
 
+const summarizeOccupancy = (rooms = []) => {
+  const summary = {
+    vacantRooms: 0,
+    occupiedRooms: 0,
+    occupiedBeds: 0,
+    totalRooms: 0
+  };
+  (rooms || []).forEach((room) => {
+    const beds = toLegacyBeds(room);
+    const occupiedBeds = beds.filter((bed) => bed?.status === "occupied" || bed?.tenantName || bed?.tenantId || bed?.loginId).length;
+    summary.totalRooms += 1;
+    summary.occupiedBeds += occupiedBeds;
+    if (occupiedBeds > 0) {
+      summary.occupiedRooms += 1;
+    } else {
+      summary.vacantRooms += 1;
+    }
+  });
+  return summary;
+};
+
 const normalizeTextValue = (value) => {
   const text = String(value || "").trim();
   if (!text) return "";
@@ -309,11 +330,59 @@ export default function Rooms() {
     () => tenants.filter((tenant) => !tenant.room && !tenant.roomNo && !tenant.roomNumber),
     [tenants]
   );
+  const occupancySummary = useMemo(() => summarizeOccupancy(rooms), [rooms]);
+
+  const syncOccupancySummary = (nextRooms) => {
+    const summary = summarizeOccupancy(nextRooms);
+    const propertyId = currentProperty?._id || currentProperty?.id || currentProperty?.propertyId || "";
+    const propertyTitle = currentPropertyTitle;
+
+    const patchRecord = (record) => ({
+      ...record,
+      roomCount: summary.totalRooms,
+      vacantRooms: summary.vacantRooms,
+      occupiedRooms: summary.occupiedRooms,
+      occupiedBeds: summary.occupiedBeds,
+      bedCount: summary.occupiedBeds,
+      isLiveOnWebsite: summary.vacantRooms > 0
+    });
+
+    const allProperties = readJson("roomhy_properties", []).map((item) => {
+      const candidateId = item?._id || item?.id || item?.propertyId || "";
+      if ((propertyId && String(candidateId) === String(propertyId)) || (propertyTitle && firstValidValue(item?.title, item?.name, item?.propertyName) === propertyTitle)) {
+        return patchRecord(item);
+      }
+      return item;
+    });
+    writeJson("roomhy_properties", allProperties);
+
+    const allVisits = readJson("roomhy_visits", []).map((visit) => {
+      const candidateLogin = String(visit?.generatedCredentials?.loginId || visit?.ownerLoginId || "").toUpperCase();
+      const sameOwner = candidateLogin && candidateLogin === String(owner?.loginId || "").toUpperCase();
+      if (!sameOwner) return visit;
+      const nextVisit = patchRecord(visit);
+      return {
+        ...nextVisit,
+        propertyInfo: patchRecord(visit?.propertyInfo || {})
+      };
+    });
+    writeJson("roomhy_visits", allVisits);
+
+    if (currentProperty) {
+      writeJson("currentProperty", patchRecord(currentProperty));
+    }
+
+    if (owner?.loginId) {
+      const ownerUser = readJson("owner_user", {});
+      writeJson("owner_user", patchRecord(ownerUser));
+    }
+  };
 
   const persistRooms = (updater) => {
     const nextRooms = typeof updater === "function" ? updater(readJson("roomhy_rooms", [])) : updater;
     writeJson("roomhy_rooms", nextRooms);
     setRooms(mergeRoomSources(owner?.loginId || "", currentProperty, nextRooms));
+    syncOccupancySummary(nextRooms);
     return nextRooms;
   };
 
@@ -345,6 +414,17 @@ export default function Rooms() {
       }
     }
     writeJson("roomhy_rooms", nextLocalRooms);
+    syncOccupancySummary(nextLocalRooms);
+  };
+
+  const handleVacateBed = (roomId, bedIndex) => {
+    persistRooms((allRooms) => allRooms.map((room) => {
+      const normalized = normalizeRoomRecord(room, owner?.loginId || "");
+      if ((normalized.id || normalized._id) !== roomId) return room;
+      const beds = toLegacyBeds(normalized);
+      beds[bedIndex] = { status: "available", tenantId: null, tenantName: null };
+      return { ...normalized, beds };
+    }));
   };
 
   const ensurePropertyId = async (session, propertyList) => {
@@ -619,7 +699,9 @@ export default function Rooms() {
           </div>
           <div id="dataStatus" className="mt-2 text-xs text-gray-500 flex items-center gap-3">
             <span id="backendStatus">{`Backend: ${loading ? "loading" : backendStatus}`}</span>
-            <span id="roomsCount">{`Rooms: ${rooms.length}`}</span>
+            <span id="roomsCount">{`Vacant Rooms: ${occupancySummary.vacantRooms}`}</span>
+            <span>{`Occupied Rooms: ${occupancySummary.occupiedRooms}`}</span>
+            <span>{`Occupied Beds: ${occupancySummary.occupiedBeds}`}</span>
             <span id="tenantsCount">{`Tenants: ${tenants.length}`}</span>
             <button id="loadTenantsBtn" type="button" onClick={() => owner && loadPage(owner)} className="ml-2 text-xs px-2 py-1 bg-gray-100 rounded-md">
               Import Tenants
@@ -642,7 +724,8 @@ export default function Rooms() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">{room.number || room.roomNo || room.title || "Room"}</h3>
-                  <p className="text-sm text-gray-500">{`${room.type || room.roomType || "AC"} | ${formatMoney(room.rent ?? room.price)}/month`}</p>
+                      <p className="text-sm text-gray-500">{`${room.type || room.roomType || "AC"} | ${formatMoney(room.rent ?? room.price)}/month`}</p>
+                      <p className="text-xs font-medium text-slate-500">{`${beds.filter((bed) => bed.occupied).length > 0 ? "Occupied" : "Vacant"} room`}</p>
                 </div>
                 <span className="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700">{room.gender || "Mixed"}</span>
               </div>
@@ -663,7 +746,9 @@ export default function Rooms() {
                         </button>
                       </div>
                     ) : (
-                      <span className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700">Occupied</span>
+                      <button type="button" onClick={() => handleVacateBed(room.id || room._id, bed.index)} className="text-xs px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-amber-50 hover:text-amber-700">
+                        Occupied
+                      </button>
                     )}
                   </div>
                 ))}

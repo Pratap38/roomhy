@@ -20,6 +20,27 @@ function stringToBoolean(value) {
     return false;
 }
 
+function toNonNegativeInt(value) {
+    return Math.max(0, parseInt(value, 10) || 0);
+}
+
+function normalizeOccupancyFields(source = {}) {
+    const vacantRooms = toNonNegativeInt(source.vacantRooms);
+    const occupiedRooms = toNonNegativeInt(source.occupiedRooms);
+    const occupiedBeds = toNonNegativeInt(source.occupiedBeds ?? source.bedCount);
+    return {
+        vacantRooms,
+        occupiedRooms,
+        occupiedBeds,
+        roomCount: vacantRooms + occupiedRooms,
+        bedCount: occupiedBeds
+    };
+}
+
+function hasVacancy(source = {}) {
+    return toNonNegativeInt(source.vacantRooms) > 0;
+}
+
 // Owner login ID format: ROOMHY + 4 digits (e.g., ROOMHY1234)
 const OWNER_LOGIN_ID_REGEX = /^ROOMHY\d{4}$/i;
 
@@ -80,8 +101,7 @@ router.post('/', async (req, res) => {
         processedData.cookingAllowed = stringToBoolean(processedData.cookingAllowed);
         processedData.smokingAllowed = stringToBoolean(processedData.smokingAllowed);
         processedData.petsAllowed = stringToBoolean(processedData.petsAllowed);
-        processedData.roomCount = Math.max(0, parseInt(processedData.roomCount, 10) || 0);
-        processedData.bedCount = Math.max(0, parseInt(processedData.bedCount, 10) || 0);
+        Object.assign(processedData, normalizeOccupancyFields(processedData));
 
         // Generate visitId if not provided
         // Use _id from frontend as visitId (it comes as _id from visit.html)
@@ -329,6 +349,8 @@ router.post('/approve', async (req, res) => {
             visit.city ||
             finalLoginId
         ).trim().toUpperCase();
+        const occupancy = normalizeOccupancyFields(visit);
+        const propertyHasVacancy = hasVacancy(occupancy);
 
         await Owner.findOneAndUpdate(
             { loginId: finalLoginId },
@@ -349,8 +371,7 @@ router.post('/approve', async (req, res) => {
                         locationCode: propertyLocationCode,
                         updatedAt: new Date()
                     },
-                    roomCount: Math.max(0, parseInt(visit.roomCount, 10) || 0),
-                    bedCount: Math.max(0, parseInt(visit.bedCount, 10) || 0),
+                    ...occupancy,
                     credentials: {
                         password: finalPassword,
                         firstTime: true
@@ -379,15 +400,14 @@ router.post('/approve', async (req, res) => {
                 area: ownerArea || '',
                 propertyType: visit.propertyType || '',
                 monthlyRent: Number(visit.monthlyRent || 0),
-                roomCount: Math.max(0, parseInt(visit.roomCount, 10) || 0),
-                bedCount: Math.max(0, parseInt(visit.bedCount, 10) || 0),
+                ...occupancy,
                 ownerName,
                 ownerEmail: ownerEmailFromVisit,
                 ownerPhone,
                 locationCode: propertyLocationCode || 'GEN',
                 ownerLoginId: finalLoginId,
                 status: 'active',
-                isPublished: true
+                isPublished: propertyHasVacancy
             });
         } else {
             ownerProperty.description = visit.description || ownerProperty.description || '';
@@ -396,15 +416,18 @@ router.post('/approve', async (req, res) => {
             ownerProperty.area = ownerArea || ownerProperty.area || '';
             ownerProperty.propertyType = visit.propertyType || ownerProperty.propertyType || '';
             ownerProperty.monthlyRent = Number(visit.monthlyRent || ownerProperty.monthlyRent || 0);
-            ownerProperty.roomCount = Math.max(0, parseInt(visit.roomCount, 10) || ownerProperty.roomCount || 0);
-            ownerProperty.bedCount = Math.max(0, parseInt(visit.bedCount, 10) || ownerProperty.bedCount || 0);
+            ownerProperty.roomCount = occupancy.roomCount || ownerProperty.roomCount || 0;
+            ownerProperty.bedCount = occupancy.bedCount || ownerProperty.bedCount || 0;
+            ownerProperty.vacantRooms = occupancy.vacantRooms;
+            ownerProperty.occupiedRooms = occupancy.occupiedRooms;
+            ownerProperty.occupiedBeds = occupancy.occupiedBeds;
             ownerProperty.ownerName = ownerName || ownerProperty.ownerName || '';
             ownerProperty.ownerEmail = ownerEmailFromVisit || ownerProperty.ownerEmail || '';
             ownerProperty.ownerPhone = ownerPhone || ownerProperty.ownerPhone || '';
             ownerProperty.locationCode = propertyLocationCode || ownerProperty.locationCode || 'GEN';
             ownerProperty.ownerLoginId = finalLoginId;
             ownerProperty.status = 'active';
-            ownerProperty.isPublished = true;
+            ownerProperty.isPublished = propertyHasVacancy;
             await ownerProperty.save();
         }
 
@@ -426,8 +449,7 @@ router.post('/approve', async (req, res) => {
                     ownerLoginId: finalLoginId,
                     rent: visit.monthlyRent || 0,
                     deposit: visit.deposit || '',
-                    roomCount: Math.max(0, parseInt(visit.roomCount, 10) || 0),
-                    bedCount: Math.max(0, parseInt(visit.bedCount, 10) || 0),
+                    ...occupancy,
                     description: visit.description || '',
                     amenities: visit.amenities || [],
                     genderSuitability: visit.gender || (visit.propertyInfo && visit.propertyInfo.genderSuitability) || '',
@@ -439,8 +461,8 @@ router.post('/approve', async (req, res) => {
                     tempPassword: finalPassword
                 },
                 propertyRef: ownerProperty._id,
-                isLiveOnWebsite: isLiveOnWebsite || false,
-                status: isLiveOnWebsite ? 'live' : 'approved',
+                isLiveOnWebsite: propertyHasVacancy ? Boolean(isLiveOnWebsite) : false,
+                status: propertyHasVacancy && isLiveOnWebsite ? 'live' : 'approved',
                 approvedAt: new Date(),
                 submittedAt: visit.submittedAt || new Date(),
                 approvedBy: 'superadmin'
@@ -598,8 +620,9 @@ router.post('/submit', async (req, res) => {
             genderSuitability,
             monthlyRent,
             deposit,
-            roomCount,
-            bedCount,
+            vacantRooms,
+            occupiedRooms,
+            occupiedBeds,
             ownerName,
             ownerEmail,
             ownerPhone,
@@ -686,8 +709,7 @@ router.post('/submit', async (req, res) => {
             genderSuitability,
             monthlyRent: parseInt(monthlyRent) || 0,
             deposit,
-            roomCount: parseInt(roomCount, 10) || 0,
-            bedCount: parseInt(bedCount, 10) || 0,
+            ...normalizeOccupancyFields({ vacantRooms, occupiedRooms, occupiedBeds }),
             ownerName,
             ownerEmail,
             ownerPhone,
@@ -874,8 +896,9 @@ router.put('/:visitId', async (req, res) => {
             gender,
             monthlyRent,
             deposit,
-            roomCount,
-            bedCount,
+            vacantRooms,
+            occupiedRooms,
+            occupiedBeds,
             electricityCharges,
             foodCharges,
             maintenanceCharges,
@@ -919,8 +942,9 @@ router.put('/:visitId', async (req, res) => {
                 ...(gender !== undefined && { gender }),
                 ...(monthlyRent !== undefined && { monthlyRent: parseInt(monthlyRent, 10) || 0 }),
                 ...(deposit !== undefined && { deposit: parseInt(deposit, 10) || 0 }),
-                ...(roomCount !== undefined && { roomCount: parseInt(roomCount, 10) || 0 }),
-                ...(bedCount !== undefined && { bedCount: parseInt(bedCount, 10) || 0 }),
+                ...((vacantRooms !== undefined || occupiedRooms !== undefined || occupiedBeds !== undefined)
+                    ? normalizeOccupancyFields({ vacantRooms, occupiedRooms, occupiedBeds })
+                    : {}),
                 ...(electricityCharges !== undefined && { electricityCharges: parseInt(electricityCharges, 10) || 0 }),
                 ...(foodCharges !== undefined && { foodCharges: parseInt(foodCharges, 10) || 0 }),
                 ...(maintenanceCharges !== undefined && { maintenanceCharges: parseInt(maintenanceCharges, 10) || 0 }),

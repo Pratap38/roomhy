@@ -28,6 +28,9 @@ const normalizeApprovedProperty = (prop = {}) => {
     monthlyRent: prop.monthlyRent ?? info.rent ?? prop.rent ?? 0,
     photos: Array.isArray(prop.photos) ? prop.photos : (Array.isArray(info.photos) ? info.photos : []),
     professionalPhotos: Array.isArray(prop.professionalPhotos) ? prop.professionalPhotos : [],
+    vacantRooms: prop.vacantRooms ?? info.vacantRooms ?? 0,
+    occupiedRooms: prop.occupiedRooms ?? info.occupiedRooms ?? 0,
+    occupiedBeds: prop.occupiedBeds ?? info.occupiedBeds ?? 0,
     isLiveOnWebsite: Boolean(prop.isLiveOnWebsite),
     status: prop.status || (prop.isLiveOnWebsite ? "live" : "approved"),
     generatedCredentials: prop.generatedCredentials || {},
@@ -65,7 +68,8 @@ export const loadApprovedProperties = async ({ includeOffline = true } = {}) => 
 
       const list = extractApprovedPropertyList(data);
       if (list.length > 0) {
-        return mergeByVisitId(list);
+        const merged = mergeByVisitId(list);
+        return includeOffline ? merged : merged.filter((item) => item.isLiveOnWebsite === true);
       }
 
       if (index === endpoints.length - 1) {

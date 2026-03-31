@@ -216,9 +216,10 @@ export default function WebsiteProperty() {
     const facts = [];
     if (info.propertyId) facts.push({ label: "Property ID", value: info.propertyId });
     if (info.propertyType || record.propertyType) facts.push({ label: "Type", value: info.propertyType || record.propertyType });
-    if (record.roomsAvailable) facts.push({ label: "Rooms", value: record.roomsAvailable });
+    if (record.vacantRooms) facts.push({ label: "Vacant Rooms", value: record.vacantRooms });
+    if (record.occupiedRooms) facts.push({ label: "Occupied Rooms", value: record.occupiedRooms });
     if (record.roomType) facts.push({ label: "Room Type", value: record.roomType });
-    if (record.bedCount) facts.push({ label: "Beds", value: record.bedCount });
+    if (record.occupiedBeds) facts.push({ label: "Occupied Beds", value: record.occupiedBeds });
     if (record.bathroomType) facts.push({ label: "Bathroom", value: record.bathroomType });
     if (record.furnishing) facts.push({ label: "Furnishing", value: record.furnishing });
     if (record.ventilation) facts.push({ label: "Ventilation", value: record.ventilation });

@@ -565,8 +565,9 @@ export default function Visit() {
       gender: fd.get("gender"),
       monthlyRent: Number(fd.get("monthlyRent") || 0),
       deposit: Number(fd.get("deposit") || 0),
-      roomCount: Number(fd.get("roomCount") || 0),
-      bedCount: Number(fd.get("bedCount") || 0),
+      vacantRooms: Number(fd.get("vacantRooms") || 0),
+      occupiedRooms: Number(fd.get("occupiedRooms") || 0),
+      occupiedBeds: Number(fd.get("occupiedBeds") || 0),
       electricityCharges: Number(fd.get("electricityCharges") || 0),
       foodCharges: Number(fd.get("foodCharges") || 0),
       maintenanceCharges: Number(fd.get("maintenanceCharges") || 0),
@@ -737,8 +738,9 @@ export default function Visit() {
                         <th>Owner Gmail</th>
                         <th>Owner Login ID</th>
                         <th>Gender</th>
-                        <th>Rooms</th>
-                        <th>Beds</th>
+                        <th>Vacant Rooms</th>
+                        <th>Occupied Rooms</th>
+                        <th>Occupied Beds</th>
                         <th>Student Reviews</th>
                         <th>Employee Rating</th>
                         <th>Amenities</th>
@@ -791,8 +793,9 @@ export default function Visit() {
                             <td className="text-sm text-gray-600">{prop.ownerEmail || visit.ownerEmail || "-"}</td>
                             <td className="text-xs font-mono text-blue-700">{visit.generatedCredentials?.loginId || prop.ownerLoginId || "-"}</td>
                             <td className="text-sm text-gray-600">{visit.gender || "-"}</td>
-                            <td className="text-sm text-gray-600 text-center">{visit.roomCount || prop.roomCount || "-"}</td>
-                            <td className="text-sm text-gray-600 text-center">{visit.bedCount || prop.bedCount || "-"}</td>
+                            <td className="text-sm text-gray-600 text-center">{visit.vacantRooms ?? prop.vacantRooms ?? "-"}</td>
+                            <td className="text-sm text-gray-600 text-center">{visit.occupiedRooms ?? prop.occupiedRooms ?? "-"}</td>
+                            <td className="text-sm text-gray-600 text-center">{visit.occupiedBeds ?? prop.occupiedBeds ?? "-"}</td>
                             <td className="text-center">
                               <span className="text-lg font-bold text-amber-600">
                                 {visit.studentReviewsRating
@@ -925,8 +928,9 @@ export default function Visit() {
               <div className="grid grid-cols-4 gap-3">
                 <input name="monthlyRent" type="number" min="0" defaultValue={editingVisit?.monthlyRent || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Monthly Rent" />
                 <input name="deposit" type="number" min="0" defaultValue={editingVisit?.deposit || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Deposit" />
-                <input name="roomCount" type="number" min="0" defaultValue={editingVisit?.roomCount || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Rooms" />
-                <input name="bedCount" type="number" min="0" defaultValue={editingVisit?.bedCount || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Beds" />
+                <input name="vacantRooms" type="number" min="0" defaultValue={editingVisit?.vacantRooms || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Vacant Rooms" />
+                <input name="occupiedRooms" type="number" min="0" defaultValue={editingVisit?.occupiedRooms || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Occupied Rooms" />
+                <input name="occupiedBeds" type="number" min="0" defaultValue={editingVisit?.occupiedBeds || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Beds in Occupied Rooms" />
               </div>
               <div className="grid grid-cols-3 gap-3 mt-2">
                 <input name="electricityCharges" type="number" min="0" defaultValue={editingVisit?.electricityCharges || ""} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="Electricity Charges" />

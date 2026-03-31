@@ -281,8 +281,9 @@ export default function SuperadminEnquiry() {
                   city: property.city || "-",
                   locationCode: property.locationCode || "-",
                   monthlyRent: property.monthlyRent || 0,
-                  roomCount: property.roomCount || owner.roomCount || 0,
-                  bedCount: property.bedCount || owner.bedCount || 0,
+                  vacantRooms: property.vacantRooms || owner.vacantRooms || 0,
+                  occupiedRooms: property.occupiedRooms || owner.occupiedRooms || 0,
+                  occupiedBeds: property.occupiedBeds || owner.occupiedBeds || 0,
                   status: property.status || "-",
                   createdAt: property.createdAt
                 }));
@@ -792,8 +793,9 @@ export default function SuperadminEnquiry() {
                           <th className="px-6 py-4">City</th>
                           <th className="px-6 py-4">Location Code</th>
                           <th className="px-6 py-4">Rent/mo</th>
-                          <th className="px-6 py-4">Rooms</th>
-                          <th className="px-6 py-4">Beds</th>
+                          <th className="px-6 py-4">Vacant Rooms</th>
+                          <th className="px-6 py-4">Occupied Rooms</th>
+                          <th className="px-6 py-4">Occupied Beds</th>
                           <th className="px-6 py-4">Status</th>
                         </tr>
                       </thead>
@@ -812,8 +814,9 @@ export default function SuperadminEnquiry() {
                               <td className="px-6 py-4 text-sm">{property.city}</td>
                               <td className="px-6 py-4 text-sm font-mono">{property.locationCode}</td>
                               <td className="px-6 py-4 text-sm font-bold">{"\u20B9"}{property.monthlyRent || 0}</td>
-                              <td className="px-6 py-4 text-sm font-semibold">{property.roomCount || 0}</td>
-                              <td className="px-6 py-4 text-sm font-semibold">{property.bedCount || 0}</td>
+                              <td className="px-6 py-4 text-sm font-semibold">{property.vacantRooms || 0}</td>
+                              <td className="px-6 py-4 text-sm font-semibold">{property.occupiedRooms || 0}</td>
+                              <td className="px-6 py-4 text-sm font-semibold">{property.occupiedBeds || 0}</td>
                               <td className="px-6 py-4 text-sm">{property.status}</td>
                             </tr>
                           ))

@@ -38,7 +38,7 @@ const loadCachedApprovedProperties = () => {
   } catch (_) {}
 
   return mergePropertiesById(
-    cached.filter((item) => item && (item.isLiveOnWebsite === true || item.status === "approved" || item.status === "live"))
+    cached.filter((item) => item && item.isLiveOnWebsite === true)
   );
 };
 
@@ -263,7 +263,7 @@ export default function WebsiteOurproperty() {
     const loadProperties = async () => {
       setLoadingProperties(true);
       try {
-        const list = await loadApprovedProperties({ includeOffline: true });
+        const list = await loadApprovedProperties({ includeOffline: false });
         const apiList = Array.isArray(list) ? list.filter(Boolean) : [];
         const finalList = apiList.length > 0 ? apiList : loadCachedApprovedProperties();
         if (mounted) setProperties(finalList);
@@ -350,6 +350,9 @@ export default function WebsiteOurproperty() {
       area,
       rent,
       propertyType,
+      vacantRooms: prop.vacantRooms ?? info.vacantRooms ?? 0,
+      occupiedRooms: prop.occupiedRooms ?? info.occupiedRooms ?? 0,
+      occupiedBeds: prop.occupiedBeds ?? info.occupiedBeds ?? 0,
       photos,
       img,
       rating: prop.rating || prop.reviewsAvg || "4.5",
@@ -510,6 +513,12 @@ export default function WebsiteOurproperty() {
                           <span className="ml-1">({property.reviewsCount})</span>
                         </div>
                         <span className="text-xs text-slate-500">Updated listing</span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{`Vacant Rooms: ${property.vacantRooms}`}</span>
+                        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">{`Occupied Rooms: ${property.occupiedRooms}`}</span>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">{`Occupied Beds: ${property.occupiedBeds}`}</span>
                       </div>
 
                       {thumbs.length > 0 && (
