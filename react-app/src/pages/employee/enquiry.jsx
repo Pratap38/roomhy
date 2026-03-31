@@ -686,6 +686,8 @@ export default function SuperadminEnquiry() {
                           <th className="px-4 py-3">Owner Contact</th>
                           <th className="px-4 py-3">Owner Gmail</th>
                           <th className="px-4 py-3">Gender</th>
+                          <th className="px-4 py-3">Rooms</th>
+                          <th className="px-4 py-3">Beds</th>
                           <th className="px-4 py-3">Student Reviews</th>
                           <th className="px-4 py-3">Employee Rating</th>
                           <th className="px-4 py-3 text-center">Monthly Rent</th>
@@ -704,7 +706,7 @@ export default function SuperadminEnquiry() {
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {visits.length === 0 ? (
-                          <tr><td colSpan={28} className="px-6 py-12 text-center text-gray-400">No pending reports found.</td></tr>
+                          <tr><td colSpan={30} className="px-6 py-12 text-center text-gray-400">No pending reports found.</td></tr>
                         ) : (
                           visits.map((v) => {
                             const prop = v.propertyInfo || {};
@@ -733,6 +735,8 @@ export default function SuperadminEnquiry() {
                                 <td className="px-4 py-3">{v.contactPhone || prop.contactPhone || "-"}</td>
                                 <td className="px-4 py-3">{v.ownerEmail || prop.ownerEmail || "-"}</td>
                                 <td className="px-4 py-3">{v.gender || "-"}</td>
+                                <td className="px-4 py-3 text-center">{v.roomCount || prop.roomCount || 0}</td>
+                                <td className="px-4 py-3 text-center">{v.bedCount || prop.bedCount || 0}</td>
                                 <td className="px-4 py-3 text-center bg-amber-50 border-x border-amber-200">
                                   <div className="flex items-center justify-center">
                                     <span className="text-lg font-bold text-amber-600">{v.studentReviewsRating ? "\u2605".repeat(Math.floor(v.studentReviewsRating)) + "\u2606".repeat(5 - Math.floor(v.studentReviewsRating)) : "-"}</span>

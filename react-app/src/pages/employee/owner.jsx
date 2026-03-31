@@ -36,6 +36,12 @@ export default function Owner() {
 },
   {
   "src": "https://unpkg.com/lucide@latest"
+},
+  {
+  "src": "https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"
+},
+  {
+  "src": "/superadmin/assets/js/owner.js"
 }
 ],
     inlineScripts: []
@@ -108,6 +114,7 @@ export default function Owner() {
                                     <tr>
                                         <th>Owner ID / Login ID</th>
                                         <th>Name & Contact</th>
+                                        <th>Property Under Owner</th>
                                         <th>DOB</th>
                                         <th>Gmail</th>
                                         <th>Aadhaar Linked Phone</th>
@@ -121,6 +128,8 @@ export default function Owner() {
                                         <th>Account Number</th>
                                         <th>IFSC Code</th>
                                         <th>Branch</th>
+                                        <th>Rooms</th>
+                                        <th>Beds</th>
                                         <th>Monthly Rent</th> <!-- NEW: Property Rent -->
                                         <th>Security Deposit</th> <!-- NEW: Security Deposit -->
                                         <th>KYC Status</th>
@@ -128,7 +137,7 @@ export default function Owner() {
                                     </tr>
                                 </thead>
                                 <tbody id="ownersTableBody">
-                                    <tr><td colspan="19" class="text-center py-8 text-gray-500">Loading owners...</td></tr>
+                                    <tr><td colspan="22" class="text-center py-8 text-gray-500">Loading owners...</td></tr>
                                 </tbody>
                             </table>
                         </div>
