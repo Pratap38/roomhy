@@ -1,4 +1,5 @@
 import React from "react";
+import WebsiteFooter from "../../components/website/WebsiteFooter";
 import { useHtmlPage } from "../../utils/htmlPage";
 import { buildBreadcrumbJsonLd, buildOrganizationJsonLd, buildSeoConfig } from "../../utils/websiteSeo";
 import { useHeroSlideshow, useWebsiteCommon, useWebsiteMenu } from "../../utils/websiteUi";
@@ -690,55 +691,7 @@ export default function WebsiteAbout() {
           </main>
       
           
-          <footer className="footer mt-auto"> 
-           
-          
-            <div className="footer-main">
-              <div className="footer-logo">
-                <img src="https://res.cloudinary.com/dpwgvcibj/image/upload/v1768990260/roomhy/website/logoroomhy.png" alt="Roomhy Logo" className="h-10 w-25" /> 
-                <p>Discover Your Next Home, Together.</p>
-              </div>
-          
-              <div className="footer-links">
-                <h4>Quick Links</h4>
-                <ul>
-                  <li><a href="/website/index">Find a Room</a></li>
-                  <li><a href="/website/about">Our Story</a></li>
-                  <li><a href="/website/contact">Contact Support</a></li>
-                  <li><a href="/website/terms">Terms and Conditions</a></li>
-                  <li><a href="/website/privacy">Privacy Policy</a></li>
-                  <li><a href="/website/cancellation">Cancellation Policy</a></li>
-                </ul>
-              </div>
-          
-              <div className="footer-legal">
-                <h4>Legal</h4>
-                <ul>
-                  <li><a href="#">Terms & Conditions</a></li>
-                  <li><a href="#">Privacy Policy</a></li>
-                  <li><a href="#">Cancellation Policy</a></li>
-                  <li><a href="#">Refund Policy</a></li>
-                </ul>
-              </div>
-          
-              <div className="footer-contact">
-                <h4>Contact</h4>
-                <p><i className="fas fa-phone"></i> +91 99830 05030</p>
-                <p><i className="fas fa-envelope"></i> hello@roomhy.com</p>
-                <div className="footer-social">
-                  <a href="#" title="Facebook"><i className="fab fa-facebook-f"></i></a>
-                  <a href="#" title="X"><i className="fab fa-x-twitter"></i></a>
-                  <a href="#" title="Instagram"><i className="fab fa-instagram"></i></a>
-                  <a href="#" title="LinkedIn"><i className="fab fa-linkedin-in"></i></a>
-                  <a href="#" title="YouTube"><i className="fab fa-youtube"></i></a>
-                </div>
-              </div>
-            </div>
-          
-            <div className="footer-bottom">
-              <p> 2025 <strong>Roomhy</strong>. All Rights Reserved.</p>
-            </div>
-          </footer>
+          <WebsiteFooter />
       
           
           

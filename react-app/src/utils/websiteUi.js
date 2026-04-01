@@ -199,8 +199,15 @@ const ensureSharedFooter = () => {
   const existingShared = document.querySelector("[data-roomhy-shared-footer='1']");
   if (existingShared) return;
 
-  const footer = document.querySelector("footer");
-  if (!footer) return;
+  let footer = document.querySelector("footer");
+  if (!footer) {
+    footer = document.createElement("footer");
+    const mountTarget =
+      document.querySelector(".html-page") ||
+      document.querySelector("main")?.parentElement ||
+      document.body;
+    mountTarget?.appendChild(footer);
+  }
 
   footer.setAttribute("data-roomhy-shared-footer", "1");
   footer.className = "";
@@ -311,7 +318,11 @@ export const useWebsiteCommon = () => {
 
     updateMobileMenuState();
     updateWelcomeMessage();
-    ensureSharedFooter();
+    try {
+      ensureSharedFooter();
+    } catch (error) {
+      console.error("Shared footer injection failed:", error);
+    }
 
     const handleStorage = () => {
       updateMobileMenuState();
