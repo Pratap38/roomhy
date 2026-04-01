@@ -315,7 +315,7 @@ export default function WebsitePrivacy() {
                       <p>If you have any privacy-related questions, please contact:</p>
                       <p>
                           ?? <a href="mailto:hello@roomhy.com">hello@roomhy.com</a><br />
-                          ?? +91-9983005030
+                          ?? +91-7413040868
                       </p>
                   </article>
               </div>

@@ -4,6 +4,8 @@ import { useHtmlPage } from "../../utils/htmlPage";
 import { buildOrganizationJsonLd, buildSeoConfig, buildWebsiteJsonLd } from "../../utils/websiteSeo";
 import { useWebsiteCommon } from "../../utils/websiteUi";
 
+const WHATSAPP_SUPPORT_NUMBER = "917413040868";
+
 const parseAttributes = (input = "") => {
   const attrs = {};
   const regex = /([^\s=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
@@ -139,7 +141,12 @@ const scripts = scriptEntries
   }));
 const inlineScripts = scriptEntries
   .filter((entry) => !entry.attrs.src)
-  .map((entry) => entry.content)
+  .map((entry) =>
+    entry.content.replace(
+      /https:\/\/wa\.me\/\d+\?text=/g,
+      `https://wa.me/${WHATSAPP_SUPPORT_NUMBER}?text=`
+    )
+  )
   .filter(Boolean);
 const styles = extractWrappedTagEntries("style", templateHtml)
   .map((entry) => entry.content)

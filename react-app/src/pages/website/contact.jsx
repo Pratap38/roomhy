@@ -219,7 +219,7 @@ export default function WebsiteContact() {
                           <div>
                               <h3 className="text-lg font-semibold text-gray-900">Call Us</h3>
                               <p className="text-gray-500 mt-1">We're available from 10 AM to 7 PM IST.</p>
-                              <a href="tel:+919983005030" className="text-blue-600 font-medium hover:underline mt-2 inline-block">+91 99830 05030</a>
+                              <a href="tel:+917413040868" className="text-blue-600 font-medium hover:underline mt-2 inline-block">+91 74130 40868</a>
                           </div>
                       </div>
                       <div className="light-card p-6 rounded-xl flex items-start space-x-4">

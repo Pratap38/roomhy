@@ -335,7 +335,7 @@ export default function WebsiteTerms() {
                       <p>For any questions or concerns regarding these Terms & Conditions, contact us at:</p>
                       <p>
                           ?? <a href="mailto:hello@roomhy.com">hello@roomhy.com</a><br />
-                          ?? +91-9983005030
+                          ?? +91-7413040868
                       </p>
                   </article>
               </div>

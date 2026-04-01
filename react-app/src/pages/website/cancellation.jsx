@@ -245,7 +245,7 @@ export default function WebsiteCancellation() {
                       <p>If you need assistance with a cancellation or have concerns about fair use, contact:</p>
                       <p>
                           ?? <a href="mailto:hello@roomhy.com">hello@roomhy.com</a><br />
-                          ?? +91-9983005030
+                          ?? +91-7413040868
                       </p>
                   </article>
               </div>
