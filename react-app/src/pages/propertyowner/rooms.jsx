@@ -939,7 +939,7 @@ export default function Rooms() {
   return (
     <PropertyOwnerLayout
       owner={owner}
-      title="Manage Rooms"
+      title="Manage Beds"
       navVariant="default"
       headerVariant="compact"
       onLogout={() => {
@@ -957,9 +957,7 @@ export default function Rooms() {
           </div>
           <div id="dataStatus" className="mt-2 text-xs text-gray-500 flex items-center gap-3">
             <span id="backendStatus">{`Backend: ${loading ? "loading" : backendStatus}`}</span>
-            <span id="roomsCount">{`Vacant Rooms: ${occupancySummary.vacantRooms}`}</span>
             <span>{`Vacant Beds: ${occupancySummary.vacantBeds}`}</span>
-            <span>{`Occupied Rooms: ${occupancySummary.occupiedRooms}`}</span>
             <span>{`Occupied Beds: ${occupancySummary.occupiedBeds}`}</span>
             <span id="tenantsCount">{`Tenants: ${tenants.length}`}</span>
             <button id="loadTenantsBtn" type="button" onClick={() => owner && loadPage(owner)} className="ml-2 text-xs px-2 py-1 bg-gray-100 rounded-md">
@@ -969,7 +967,7 @@ export default function Rooms() {
         </div>
         <button type="button" onClick={() => setRoomModalOpen(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 shadow-lg hover:shadow-purple-500/30 transition-all font-medium">
           <i data-lucide="plus-circle" className="w-5 h-5"></i>
-          Add New Room
+          Add New Bed
         </button>
       </div>
 
@@ -984,7 +982,7 @@ export default function Rooms() {
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">{room.number || room.roomNo || room.title || "Room"}</h3>
                       <p className="text-sm text-gray-500">{`${room.type || room.roomType || "AC"} | ${formatMoney(room.rent ?? room.price)}/month`}</p>
-                      <p className="text-xs font-medium text-slate-500">{`${beds.filter((bed) => bed.occupied).length > 0 ? "Occupied" : "Vacant"} room`}</p>
+                      <p className="text-xs font-medium text-slate-500">{`${beds.filter((bed) => bed.occupied).length}/${beds.length} beds occupied`}</p>
                 </div>
                 <span className="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700">{room.gender || "Mixed"}</span>
               </div>
@@ -1030,9 +1028,9 @@ export default function Rooms() {
           <div className="bg-purple-50 p-4 rounded-full mb-4">
             <i data-lucide="bed-double" className="w-10 h-10 text-purple-400"></i>
           </div>
-          <h3 className="text-lg font-semibold text-gray-700">No rooms added yet</h3>
-          <p className="text-sm">Start by adding a room to manage beds and tenants.</p>
-          <button type="button" onClick={() => setRoomModalOpen(true)} className="mt-4 text-purple-600 font-medium hover:underline">Add Room Now</button>
+          <h3 className="text-lg font-semibold text-gray-700">No beds added yet</h3>
+          <p className="text-sm">Start by adding beds to manage occupancy and tenants.</p>
+          <button type="button" onClick={() => setRoomModalOpen(true)} className="mt-4 text-purple-600 font-medium hover:underline">Add Bed Now</button>
         </div>
       ) : null}
 
@@ -1042,8 +1040,8 @@ export default function Rooms() {
             <i data-lucide="x" className="w-5 h-5"></i>
           </button>
           <div className="mb-6">
-            <h3 className="text-xl font-bold text-gray-900">Add New Room</h3>
-            <p className="text-sm text-gray-500">Configure room details and capacity.</p>
+            <h3 className="text-xl font-bold text-gray-900">Add New Bed</h3>
+            <p className="text-sm text-gray-500">Add bed capacity for tenant assignment.</p>
           </div>
           <form id="roomForm" onSubmit={handleCreateRoom}>
             <div className="space-y-5">
