@@ -329,7 +329,22 @@ router.post('/owner/profile', async (req, res) => {
         if (!loginId || !name || !dob || !email || !phone || !address || !area || !payment.bankAccountNumber || !payment.ifscCode || !payment.accountHolderName) {
             return res.status(400).json({ success: false, message: 'Missing required owner profile fields' });
         }
-        const normalizedRoomInventory = normalizeRoomInventory(roomInventory);
+        
+        // Ensure roomInventory is always an array
+        let safeRoomInventory = roomInventory;
+        if (typeof roomInventory === 'string') {
+            try {
+                safeRoomInventory = JSON.parse(roomInventory);
+                if (!Array.isArray(safeRoomInventory)) safeRoomInventory = [];
+            } catch (parseErr) {
+                console.warn('Failed to parse roomInventory from string:', parseErr.message);
+                safeRoomInventory = [];
+            }
+        } else if (!Array.isArray(roomInventory)) {
+            safeRoomInventory = [];
+        }
+        
+        const normalizedRoomInventory = normalizeRoomInventory(safeRoomInventory);
         const derivedOccupancy = normalizedRoomInventory.length > 0
             ? summarizeRoomInventory(normalizedRoomInventory)
             : {
@@ -406,7 +421,8 @@ router.post('/owner/profile', async (req, res) => {
                     credentials: {
                         password: password || (existingOwner?.credentials && existingOwner.credentials.password) || '',
                         firstTime: true
-                    }
+                    },
+                    roomInventory: normalizedRoomInventory
                 },
                 $setOnInsert: {
                     kyc: { status: 'pending' }
