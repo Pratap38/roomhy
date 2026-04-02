@@ -44,6 +44,33 @@ const parseArrayInput = (value) => {
     return [];
 };
 
+const ownerBedSchema = new mongoose.Schema(
+    {
+        status: { type: String, enum: ['available', 'occupied'], default: 'available' },
+        tenantId: String,
+        tenantName: String
+    },
+    { _id: false }
+);
+
+const ownerRoomInventorySchema = new mongoose.Schema(
+    {
+        id: String,
+        propertyId: String,
+        propertyTitle: String,
+        number: String,
+        roomNo: String,
+        title: String,
+        type: String,
+        roomType: String,
+        rent: { type: Number, default: 0 },
+        price: { type: Number, default: 0 },
+        gender: String,
+        beds: { type: [ownerBedSchema], default: [] }
+    },
+    { _id: false }
+);
+
 const ownerSchema = new mongoose.Schema({
     loginId: { type: String, required: true, unique: true },
     // Top-level fields for backward compatibility
@@ -99,24 +126,7 @@ const ownerSchema = new mongoose.Schema({
     occupiedRooms: { type: Number, default: 0 },
     occupiedBeds: { type: Number, default: 0 },
     roomInventory: {
-        type: [{
-        id: String,
-        propertyId: String,
-        propertyTitle: String,
-        number: String,
-        roomNo: String,
-        title: String,
-        type: String,
-        roomType: String,
-        rent: { type: Number, default: 0 },
-        price: { type: Number, default: 0 },
-        gender: String,
-        beds: [{
-            status: { type: String, enum: ['available', 'occupied'], default: 'available' },
-            tenantId: String,
-            tenantName: String
-        }]
-    }],
+        type: [ownerRoomInventorySchema],
         default: [],
         set: parseArrayInput
     },
