@@ -1,5 +1,18 @@
 const mongoose = require('mongoose');
 
+const parseArrayInput = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+            return [];
+        }
+    }
+    return [];
+};
+
 const ownerSchema = new mongoose.Schema({
     loginId: { type: String, required: true, unique: true },
     // Top-level fields for backward compatibility
@@ -54,7 +67,8 @@ const ownerSchema = new mongoose.Schema({
     vacantBeds: { type: Number, default: 0 },
     occupiedRooms: { type: Number, default: 0 },
     occupiedBeds: { type: Number, default: 0 },
-    roomInventory: [{
+    roomInventory: {
+        type: [{
         id: String,
         propertyId: String,
         propertyTitle: String,
@@ -72,6 +86,9 @@ const ownerSchema = new mongoose.Schema({
             tenantName: String
         }]
     }],
+        default: [],
+        set: parseArrayInput
+    },
     agreementRequestId: String,
     agreementStatus: String,
     agreementSignedAt: Date,

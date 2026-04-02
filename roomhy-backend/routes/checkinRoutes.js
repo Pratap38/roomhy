@@ -341,7 +341,18 @@ router.post('/owner/profile', async (req, res) => {
                 bedCount: Number(vacantBeds || 0) + Number(occupiedBeds || 0)
             };
         const record = await upsertRecord(loginId, 'owner', {
-            ownerProfile: { name, dob, email, phone, address, area, password, payment, ...derivedOccupancy }
+            ownerProfile: {
+                name,
+                dob,
+                email,
+                phone,
+                address,
+                area,
+                password,
+                payment,
+                roomInventory: normalizedRoomInventory,
+                ...derivedOccupancy
+            }
         });
 
         // Mirror to Owner collection so superadmin owner list can show this data

@@ -10,8 +10,23 @@ const firstText = (...values) => {
     return '';
 };
 
+const toArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return [];
+        try {
+            const parsed = JSON.parse(trimmed);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+            return [];
+        }
+    }
+    return [];
+};
+
 const normalizeBeds = (beds = []) => {
-    const list = Array.isArray(beds) ? beds : [];
+    const list = toArray(beds);
     return list.map((bed, index) => ({
         status: String(bed?.status || '').toLowerCase() === 'occupied' ? 'occupied' : 'available',
         tenantId: bed?.tenantId || bed?.loginId || `BED-${index + 1}`,
@@ -20,7 +35,7 @@ const normalizeBeds = (beds = []) => {
 };
 
 const normalizeRoomInventory = (rooms = [], meta = {}) => {
-    return (Array.isArray(rooms) ? rooms : []).map((room, index) => {
+    return toArray(rooms).map((room, index) => {
         const number = firstText(room?.number, room?.roomNo, room?.title, `Room ${index + 1}`);
         const beds = normalizeBeds(room?.beds);
         return {

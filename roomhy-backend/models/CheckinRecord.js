@@ -1,5 +1,18 @@
 const mongoose = require('mongoose');
 
+const parseArrayInput = (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+            return [];
+        }
+    }
+    return [];
+};
+
 const fileSchema = new mongoose.Schema(
     {
         name: String,
@@ -65,7 +78,11 @@ const checkinRecordSchema = new mongoose.Schema(
             occupiedBeds: { type: Number, default: 0 },
             roomCount: { type: Number, default: 0 },
             bedCount: { type: Number, default: 0 },
-            roomInventory: [roomInventorySchema]
+            roomInventory: {
+                type: [roomInventorySchema],
+                default: [],
+                set: parseArrayInput
+            }
         },
         ownerKyc: {
             aadhaarLinkedPhone: String,
