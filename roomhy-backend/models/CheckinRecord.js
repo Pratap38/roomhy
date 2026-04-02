@@ -10,6 +10,33 @@ const fileSchema = new mongoose.Schema(
     { _id: false }
 );
 
+const bedSchema = new mongoose.Schema(
+    {
+        status: { type: String, enum: ['available', 'occupied'], default: 'available' },
+        tenantId: String,
+        tenantName: String
+    },
+    { _id: false }
+);
+
+const roomInventorySchema = new mongoose.Schema(
+    {
+        id: String,
+        propertyId: String,
+        propertyTitle: String,
+        number: String,
+        roomNo: String,
+        title: String,
+        type: String,
+        roomType: String,
+        rent: { type: Number, default: 0 },
+        price: { type: Number, default: 0 },
+        gender: String,
+        beds: [bedSchema]
+    },
+    { _id: false }
+);
+
 const checkinRecordSchema = new mongoose.Schema(
     {
         loginId: { type: String, required: true, trim: true, uppercase: true },
@@ -19,13 +46,26 @@ const checkinRecordSchema = new mongoose.Schema(
             name: String,
             dob: String,
             email: String,
+            phone: String,
+            address: String,
+            area: String,
+            password: String,
             payment: {
                 bankAccountNumber: String,
                 ifscCode: String,
                 accountHolderName: String,
+                bankName: String,
+                branchName: String,
                 upiId: String,
                 cancelledCheque: fileSchema
-            }
+            },
+            vacantRooms: { type: Number, default: 0 },
+            vacantBeds: { type: Number, default: 0 },
+            occupiedRooms: { type: Number, default: 0 },
+            occupiedBeds: { type: Number, default: 0 },
+            roomCount: { type: Number, default: 0 },
+            bedCount: { type: Number, default: 0 },
+            roomInventory: [roomInventorySchema]
         },
         ownerKyc: {
             aadhaarLinkedPhone: String,
